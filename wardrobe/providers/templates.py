@@ -1,40 +1,65 @@
+"""Template provider — the reliable production path.
+
+It does not produce geometry itself: it resolves the plan to a template and
+hands the fitting stage the parameters to build a shell at the avatar's own
+measurements. That is what makes one template work across every body.
+"""
+
+from __future__ import annotations
+
 from hashlib import sha1
 
-from wardrobe.domain.garments import GarmentArtifact
-from wardrobe.domain.jobs import OutfitRequest
+from wardrobe.domain.avatars import AvatarAnalysis
+from wardrobe.domain.garments import GarmentArtifact, GarmentTemplate, TemplateCatalog
+from wardrobe.domain.looks import OutfitPlan
+from wardrobe.errors import PlanningError
 from wardrobe.providers.base import GarmentProvider
 
 
 class TemplateGarmentProvider(GarmentProvider):
-    """Deterministic V1 provider using known garment topology."""
+    name = "template"
+    produces_raw_mesh = False
 
-    CATEGORY_TO_TEMPLATE = {
-        "dress": "assets/garment_templates/dresses/a-line.glb",
-        "jacket": "assets/garment_templates/jackets/basic.glb",
-        "top": "assets/garment_templates/tops/basic.glb",
-        "skirt": "assets/garment_templates/skirts/basic.glb",
-        "trousers": "assets/garment_templates/trousers/basic.glb",
-    }
+    def __init__(self, catalog: TemplateCatalog) -> None:
+        self.catalog = catalog
 
-    async def create(self, outfit: OutfitRequest, *, avatar_analysis: dict) -> GarmentArtifact:
-        prompt = outfit.prompt.lower()
-        category = outfit.category or self._infer_category(prompt)
-        mesh = self.CATEGORY_TO_TEMPLATE.get(category, self.CATEGORY_TO_TEMPLATE["dress"])
-        digest = sha1(outfit.prompt.encode("utf-8")).hexdigest()[:12]
+    async def create(
+        self,
+        plan: OutfitPlan,
+        *,
+        template: GarmentTemplate | None = None,
+        analysis: AvatarAnalysis | None = None,
+    ) -> GarmentArtifact:
+        template = template or (self.catalog.get(plan.template_id) if plan.template_id else None)
+        if template is None:
+            candidates = self.catalog.by_category(plan.category)
+            if not candidates:
+                raise PlanningError(f"no template available for category {plan.category!r}")
+            template = candidates[0]
+
+        digest = sha1(
+            f"{template.id}|{plan.silhouette}|{plan.hem}|{plan.sleeve}|{plan.material.color_name}".encode()
+        ).hexdigest()[:12]
+
         return GarmentArtifact(
             id=f"garment_{digest}",
-            source="template",
-            mesh_path=mesh,
-            material_metadata={
-                "prompt": outfit.prompt,
-                "category": category,
-                "color": outfit.color,
-                "style": outfit.style,
+            source=self.name,
+            templateId=template.id,
+            meshPath=None if template.is_procedural else template.mesh,
+            proceduralKind=template.procedural_kind if template.is_procedural else None,
+            coverage=list(template.coverage),
+            anchors=list(template.anchors),
+            material=plan.material.to_dict(),
+            metadata={
+                "templateName": template.name,
+                "silhouette": plan.silhouette,
+                "hem": plan.hem,
+                "sleeve": plan.sleeve,
+                "bodyClearanceMm": template.fit.body_clearance_mm,
+                "allowLengthScale": template.fit.allow_length_scale,
+                "allowWidthScale": template.fit.allow_width_scale,
             },
         )
 
-    def _infer_category(self, prompt: str) -> str:
-        for candidate in ("jacket", "skirt", "trousers", "top", "dress"):
-            if candidate in prompt:
-                return candidate
-        return "dress"
+
+__all__ = ["TemplateGarmentProvider"]

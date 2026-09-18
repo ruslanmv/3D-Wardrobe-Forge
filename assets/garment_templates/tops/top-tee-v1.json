@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "top-tee-v1",
+  "name": "Basic tee",
+  "category": "top",
+  "mesh": "procedural:top",
+  "coverage": [
+    "chest",
+    "waist",
+    "upperArms"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "upperArms"
+  ],
+  "silhouette": "straight",
+  "hem": "mini",
+  "sleeve": "short",
+  "fit": {
+    "bodyClearanceMm": 7.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "top",
+    "tee",
+    "casual",
+    "everyday",
+    "sporty"
+  ],
+  "description": "Relaxed short-sleeved tee."
+}

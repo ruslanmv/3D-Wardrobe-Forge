@@ -1,0 +1,66 @@
+# Blender worker image.
+#
+# Adds headless Blender and the VRM Add-on for Blender on top of the API image
+# so the worker can deform authored meshes, transfer skin weights from the body,
+# delete covered body polygons and render previews.
+#
+# Build:  docker build -f Dockerfile.blender -t wardrobe-forge-worker .
+FROM python:3.11-slim
+
+ARG BLENDER_VERSION=4.2.1
+ARG BLENDER_SERIES=4.2
+ARG VRM_ADDON_VERSION=2.20.77
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    BLENDER_BIN=/opt/blender/blender \
+    DEBIAN_FRONTEND=noninteractive
+
+# Blender's runtime needs these even in --background: it still initialises its
+# graphics and audio stacks.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl xz-utils ca-certificates \
+        libx11-6 libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libglu1-mesa \
+        libsm6 libice6 libxkbcommon0 libegl1 libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Blender ---------------------------------------------------------------
+RUN curl -fsSL -o /tmp/blender.tar.xz \
+        "https://download.blender.org/release/Blender${BLENDER_SERIES}/blender-${BLENDER_VERSION}-linux-x64.tar.xz" \
+    && mkdir -p /opt/blender \
+    && tar -xJf /tmp/blender.tar.xz -C /opt/blender --strip-components=1 \
+    && rm /tmp/blender.tar.xz \
+    && /opt/blender/blender --version
+
+# --- VRM Add-on for Blender ------------------------------------------------
+# Installed into the add-ons directory and enabled at startup by the pipeline
+# script, so no interactive preferences step is required.
+RUN curl -fsSL -o /tmp/vrm-addon.zip \
+        "https://github.com/saturday06/VRM-Addon-for-Blender/releases/download/v${VRM_ADDON_VERSION}/VRM_Addon_for_Blender-release.zip" \
+    && mkdir -p "/opt/blender/${BLENDER_SERIES}/scripts/addons" \
+    && python -c "import zipfile,sys; zipfile.ZipFile('/tmp/vrm-addon.zip').extractall('/opt/blender/${BLENDER_SERIES}/scripts/addons')" \
+    && rm /tmp/vrm-addon.zip \
+    && ls "/opt/blender/${BLENDER_SERIES}/scripts/addons"
+
+# --- application -----------------------------------------------------------
+WORKDIR /app
+
+COPY pyproject.toml README.md ./
+COPY apps ./apps
+COPY wardrobe ./wardrobe
+COPY worker ./worker
+COPY assets ./assets
+
+RUN pip install --no-cache-dir ".[preview,s3,redis]"
+
+RUN useradd --create-home --uid 10001 wardrobe \
+    && mkdir -p /data/wardrobe \
+    && chown -R wardrobe:wardrobe /data/wardrobe /app
+USER wardrobe
+
+ENV WARDROBE_STORAGE_ROOT=/data/wardrobe \
+    WARDROBE_ENGINE=blender \
+    WARDROBE_BLENDER_SCRIPT=/app/worker/blender/run_pipeline.py
+
+CMD ["python", "-m", "worker.runner"]

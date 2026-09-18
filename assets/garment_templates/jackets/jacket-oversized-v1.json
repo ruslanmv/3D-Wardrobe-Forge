@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "jacket-oversized-v1",
+  "name": "Oversized coat",
+  "category": "jacket",
+  "mesh": "procedural:jacket",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips",
+    "upperArms",
+    "lowerArms",
+    "shoulders",
+    "upperLegs"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips",
+    "upperArms",
+    "lowerArms",
+    "shoulders"
+  ],
+  "silhouette": "oversized",
+  "hem": "knee",
+  "sleeve": "long",
+  "fit": {
+    "bodyClearanceMm": 18.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "jacket",
+    "coat",
+    "oversized",
+    "winter",
+    "casual"
+  ],
+  "description": "Long oversized coat with generous clearance."
+}

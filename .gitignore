@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.ruff_cache/
 .coverage
 htmlcov/
 .venv/
@@ -11,6 +12,11 @@ build/
 *.egg-info/
 .DS_Store
 outputs/
+output/
 work/
 cache/
 *.blend1
+
+# Generated fixtures and any real avatars dropped in for local testing.
+assets/fixtures/*.vrm
+assets/fixtures/*.glb
