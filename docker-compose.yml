@@ -1,0 +1,12 @@
+services:
+  api:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - wardrobe_data:/data/wardrobe
+
+volumes:
+  wardrobe_data:

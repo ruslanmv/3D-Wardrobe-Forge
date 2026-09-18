@@ -76,9 +76,7 @@ docker compose up --build
 Then:
 
 ```bash
-curl -X POST http://localhost:8080/v1/jobs \
-  -H 'content-type: application/json' \
-  -d '{
+curl -X POST http://localhost:8080/v1/jobs   -H 'content-type: application/json'   -d '{
     "avatar": {
       "url": "https://example.invalid/avatar.vrm"
     },
