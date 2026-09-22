@@ -2,16 +2,97 @@ name: CI
 
 on:
   push:
+    branches: ["**"]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python -m pip install -e ".[dev]"
+          cache: pip
+      - run: python -m pip install -e ".[dev,preview]"
       - run: ruff check .
-      - run: pytest
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install -e ".[dev,preview]"
+
+      - name: Unit and integration tests
+        run: pytest tests/unit tests/integration -q
+
+      # The real bar: generate a look on four different bodies in both VRM
+      # specs, re-import each result and prove it is still a working avatar.
+      - name: Acceptance matrix
+        run: pytest tests/e2e -q
+
+      - name: Garment library is valid
+        run: python -m apps.cli templates
+
+  cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e ".[dev,preview]"
+
+      - name: Generate calibration avatars
+        run: python -m apps.cli fixtures --out /tmp/fixtures
+
+      - name: End-to-end CLI run
+        run: |
+          python -m apps.cli create \
+            --avatar /tmp/fixtures/calibration-b-medium-vrm1.vrm \
+            --prompt "elegant dark red evening dress" \
+            --out /tmp/output
+
+      - name: Every promised artifact exists
+        run: |
+          set -eux
+          ls -la /tmp/output
+          test -f /tmp/output/wardrobe.json
+          test -f /tmp/output/fit-report.json
+          test -f /tmp/output/preview.webp
+          ls /tmp/output/*.vrm
+
+      - name: The fit report actually passed
+        run: |
+          python - <<'PY'
+          import json, sys
+          report = json.load(open("/tmp/output/fit-report.json"))
+          checks = ("vrmValid", "humanoidValid", "weightsValid",
+                    "skeletonPreserved", "sourceRecoverable")
+          failed = [name for name in checks if not report.get(name)]
+          if failed:
+              sys.exit(f"fit report failed: {failed}")
+          if report.get("clippingCheck") == "failed":
+              sys.exit("garment intersects the body")
+          print("fit report OK:", {name: report[name] for name in checks})
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cli-output
+          path: /tmp/output
+          retention-days: 7

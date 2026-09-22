@@ -1,12 +1,78 @@
+# Local development.
+#
+#   docker compose up --build              API only, native engine
+#   docker compose --profile blender up    adds the Blender worker + Redis
+#   docker compose --profile s3 up         adds MinIO for S3-backed storage
+#
+# The default stack has no Blender and no external services: the native engine
+# runs the whole pipeline in-process, which is enough to generate real looks.
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     env_file:
       - .env
+    environment:
+      WARDROBE_ENGINE: ${WARDROBE_ENGINE:-native}
+      WARDROBE_JOB_BACKEND: ${WARDROBE_JOB_BACKEND:-memory}
+      WARDROBE_STORAGE_ROOT: /data/wardrobe
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
     ports:
       - "8080:8080"
     volumes:
       - wardrobe_data:/data/wardrobe
+    restart: unless-stopped
+
+  # Heavy geometry work, split out so the API stays responsive.
+  worker:
+    profiles: ["blender"]
+    build:
+      context: .
+      dockerfile: Dockerfile.blender
+    env_file:
+      - .env
+    environment:
+      WARDROBE_ENGINE: blender
+      WARDROBE_JOB_BACKEND: redis://redis:6379/0
+      WARDROBE_STORAGE_ROOT: /data/wardrobe
+    volumes:
+      - wardrobe_data:/data/wardrobe
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    # Blender parses untrusted user models: drop everything it does not need.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  redis:
+    profiles: ["blender"]
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    profiles: ["s3"]
+    image: minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-wardrobe}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-wardrobe-secret}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
 
 volumes:
   wardrobe_data:
+  minio_data:

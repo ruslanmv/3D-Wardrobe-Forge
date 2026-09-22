@@ -1,18 +1,9 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+"""API configuration.
 
+Configuration lives in :mod:`wardrobe.config` so the worker and the CLI share
+it; this module re-exports it for the API's own imports.
+"""
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+from wardrobe.config import REPO_ROOT, Settings, get_settings, settings
 
-    app_env: str = "development"
-    app_host: str = "0.0.0.0"
-    app_port: int = 8080
-    wardrobe_provider: str = "template"
-    wardrobe_storage_backend: str = "local"
-    wardrobe_storage_root: str = "/data/wardrobe"
-    wardrobe_job_backend: str = "memory"
-    meshy_api_key: str = ""
-    tripo_api_key: str = ""
-
-
-settings = Settings()
+__all__ = ["Settings", "get_settings", "settings", "REPO_ROOT"]
