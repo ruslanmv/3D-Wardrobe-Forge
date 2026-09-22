@@ -71,15 +71,20 @@ jobs:
           set -eux
           ls -la /tmp/output
           test -f /tmp/output/wardrobe.json
-          test -f /tmp/output/fit-report.json
-          test -f /tmp/output/preview.webp
-          ls /tmp/output/*.vrm
+          test -f /tmp/output/avatars.json
+          test -f /tmp/output/catalog.json
+          test -f /tmp/output/provenance.json
+          find /tmp/output/looks -name fit-report.json -print -quit | grep -q .
+          find /tmp/output/looks -name preview.webp -print -quit | grep -q .
+          find /tmp/output/looks -name look.vrm -print -quit | grep -q .
 
       - name: The fit report actually passed
         run: |
           python - <<'PY'
           import json, sys
-          report = json.load(open("/tmp/output/fit-report.json"))
+          from pathlib import Path
+          report_path = next(Path("/tmp/output/looks").glob("*/*/fit-report.json"))
+          report = json.load(open(report_path))
           checks = ("vrmValid", "humanoidValid", "weightsValid",
                     "skeletonPreserved", "sourceRecoverable")
           failed = [name for name in checks if not report.get(name)]
