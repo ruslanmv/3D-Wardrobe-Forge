@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "dress-a-line-v1",
+  "name": "A-line dress",
+  "category": "dress",
+  "mesh": "procedural:dress",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "a-line",
+  "hem": "knee",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 6.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "dress",
+    "a-line",
+    "casual",
+    "formal",
+    "everyday"
+  ],
+  "description": "Fitted bodice flaring from the waist. The most forgiving dress across body types."
+}

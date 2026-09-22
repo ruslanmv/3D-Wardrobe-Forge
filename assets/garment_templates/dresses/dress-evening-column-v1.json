@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "dress-evening-column-v1",
+  "name": "Evening column gown",
+  "category": "dress",
+  "mesh": "procedural:dress",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs",
+    "lowerLegs"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "sheath",
+  "hem": "floor",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 5.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": true
+  },
+  "tags": [
+    "dress",
+    "evening",
+    "formal",
+    "gown",
+    "elegant"
+  ],
+  "description": "Floor-length narrow column for formal looks."
+}
