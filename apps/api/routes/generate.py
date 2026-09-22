@@ -7,6 +7,7 @@ Orchestrator.
 
 from __future__ import annotations
 
+from fastapi import APIRouter, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from apps.api.dependencies import OrchestratorDep
@@ -33,8 +34,6 @@ class GenerateAccepted(BaseModel):
     status_url: str = Field(alias="statusUrl")
     events_url: str = Field(alias="eventsUrl")
 
-
-from fastapi import APIRouter, status
 
 router = APIRouter(tags=["generation"])
 
