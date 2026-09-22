@@ -2,6 +2,8 @@
 
 Outfit generation for VRM avatars.
 
+By default the CLI now packages generated looks as a static `yourfriend.online` wardrobe bundle. The same pipeline can also run as a hosted FastAPI service (including a Hugging Face Docker Space).
+
 > **Input:** a compatible VRM avatar + an outfit request
 > **Output:** the same character wearing a new outfit as a validated VRM, plus
 > a preview and wardrobe metadata.
@@ -66,14 +68,23 @@ job job_…: completed
     PASS  preview rendered
     ----  clipping: passed
 
-output/
-├── calibration-b-medium-vrm1-red-evening.vrm
-├── preview.webp
+dist/yourfriend-online/
 ├── wardrobe.json
-└── fit-report.json
+├── avatars.json
+├── catalog.json
+├── provenance.json
+└── looks/
+    └── calibration-b-medium-vrm1/
+        └── look-…/
+            ├── look.vrm
+            ├── preview.webp
+            ├── look.json
+            └── fit-report.json
 ```
 
 That runs with **no Blender, no API keys and no third-party assets**.
+
+The legacy flat output remains available with `--target generic`. See [docs/YOURFRIEND_ASSET_BUNDLE.md](docs/YOURFRIEND_ASSET_BUNDLE.md).
 
 ## As a service
 
@@ -92,7 +103,7 @@ curl -s -X POST http://localhost:8080/v1/jobs \
        \"outfit\":{\"prompt\":\"black satin cocktail dress\"}}"
 ```
 
-Then poll `GET /v1/jobs/{id}` or subscribe to `GET /v1/jobs/{id}/events`.
+For product integrations you can also submit the smaller `POST /v1/generate` facade, which delegates to the same job pipeline. Then poll `GET /v1/jobs/{id}` or subscribe to `GET /v1/jobs/{id}/events`.
 Full reference: [docs/API.md](docs/API.md).
 
 ## How it actually works
@@ -213,6 +224,8 @@ acceptance matrix caught are in
 | [LICENSING](docs/LICENSING.md) | usage terms as a pipeline stage |
 | [3D_AVATAR_CHATBOT_INTEGRATION](docs/3D_AVATAR_CHATBOT_INTEGRATION.md) | client integration |
 | [IMPLEMENTATION_PLAN](docs/IMPLEMENTATION_PLAN.md) | milestones and next steps |
+| [YOURFRIEND_ASSET_BUNDLE](docs/YOURFRIEND_ASSET_BUNDLE.md) | static product bundle contract |
+| [HUGGING FACE](deploy/huggingface/README.md) | Docker Space and production deployment profiles |
 
 ## License
 
