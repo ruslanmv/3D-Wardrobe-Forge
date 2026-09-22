@@ -1,4 +1,4 @@
-.PHONY: help install dev api worker test test-unit test-e2e test-blender lint fmt fixtures templates docker clean
+.PHONY: help install dev api worker test test-unit test-e2e test-blender lint fmt fixtures templates assets assets-demo validate-assets docker clean
 
 PYTHON ?= python
 PORT ?= 8080
@@ -16,6 +16,9 @@ help:
 	@echo "fmt           ruff format + autofix"
 	@echo "fixtures      regenerate the calibration avatars"
 	@echo "templates     list and validate the garment library"
+	@echo "assets        build a yourfriend.online bundle (AVATAR=... PROMPT=...)"
+	@echo "assets-demo   build a demo yourfriend.online bundle from a generated fixture"
+	@echo "validate-assets validate the default static bundle manifests"
 
 install:
 	$(PYTHON) -m pip install -e ".[dev,preview]"
@@ -53,6 +56,23 @@ fixtures:
 
 templates:
 	$(PYTHON) -m apps.cli templates
+
+assets:
+	@test -n "$(AVATAR)" || (echo "AVATAR is required" && exit 2)
+	@test -n "$(PROMPT)" || (echo "PROMPT is required" && exit 2)
+	$(PYTHON) -m apps.cli create --avatar "$(AVATAR)" --prompt "$(PROMPT)" --target yourfriend
+
+assets-demo:
+	rm -rf /tmp/wardrobe-demo dist/yourfriend-online
+	$(PYTHON) -m apps.cli fixtures --out /tmp/wardrobe-demo
+	$(PYTHON) -m apps.cli create --avatar /tmp/wardrobe-demo/calibration-b-medium-vrm1.vrm --prompt "elegant dark red evening dress" --target yourfriend
+
+validate-assets:
+	@test -f dist/yourfriend-online/wardrobe.json
+	@test -f dist/yourfriend-online/avatars.json
+	@test -f dist/yourfriend-online/catalog.json
+	@test -f dist/yourfriend-online/provenance.json
+	@find dist/yourfriend-online/looks -name look.vrm -print -quit | grep -q .
 
 docker:
 	docker compose build
