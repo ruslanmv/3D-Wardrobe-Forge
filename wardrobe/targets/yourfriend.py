@@ -7,8 +7,8 @@ import re
 from pathlib import Path
 
 from wardrobe.domain.jobs import JobRecord
-from wardrobe.domain.manifests import WardrobeManifest
 from wardrobe.domain.looks import LookResult
+from wardrobe.domain.manifests import WardrobeManifest
 
 
 def _slug(value: str) -> str:
