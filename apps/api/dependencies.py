@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import secrets
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, Header, HTTPException
 
 from wardrobe.config import Settings, get_settings
 from wardrobe.domain.garments import TemplateCatalog
@@ -64,6 +65,27 @@ async def require_job(job_id: str, orchestrator: OrchestratorDep) -> JobRecord:
 JobDep = Annotated[JobRecord, Depends(require_job)]
 
 
+def require_api_key(
+    settings: SettingsDep,
+    authorization: Annotated[str | None, Header()] = None,
+) -> None:
+    """Optional bearer authentication for hosted deployments."""
+    if settings.wardrobe_auth_mode == "none":
+        return
+
+    expected = settings.wardrobe_api_key
+    supplied = ""
+    if authorization and authorization.lower().startswith("bearer "):
+        supplied = authorization[7:].strip()
+
+    if not expected or not secrets.compare_digest(supplied, expected):
+        raise HTTPException(
+            status_code=401,
+            detail={"reason": "unauthorized", "message": "valid bearer token required"},
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 def http_error_for(error: WardrobeError) -> HTTPException:
     """Translate a pipeline error into the right HTTP response."""
     return HTTPException(
@@ -79,5 +101,6 @@ __all__ = [
     "CatalogDep",
     "JobDep",
     "require_job",
+    "require_api_key",
     "http_error_for",
 ]
