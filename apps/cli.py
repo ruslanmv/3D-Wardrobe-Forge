@@ -30,6 +30,7 @@ from wardrobe.policy.file_safety import sanitize_component
 from wardrobe.queue.jobs import AsyncioJobQueue
 from wardrobe.storage.database import InMemoryJobRepository, InMemoryWardrobeRepository
 from wardrobe.storage.object_store import LocalObjectStore
+from wardrobe.targets import TargetName, package_yourfriend_bundle
 from wardrobe.vrm.build import CALIBRATION_BODIES, build_vrm
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.inspect import inspect_document, validate_humanoid
@@ -72,7 +73,9 @@ async def _create(args: argparse.Namespace) -> int:
         }
     )
 
-    output_dir = Path(args.out).expanduser().resolve()
+    target = TargetName(args.target or settings.wardrobe_target)
+    default_out = "dist/yourfriend-online" if target is TargetName.YOURFRIEND else "output"
+    output_dir = Path(args.out or default_out).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     with tempfile.TemporaryDirectory(prefix="wardrobe-cli-") as scratch:
@@ -109,7 +112,15 @@ async def _create(args: argparse.Namespace) -> int:
         if record.state is not JobState.COMPLETED or record.look is None:
             return EXIT_REJECTED if record.state is JobState.REJECTED else EXIT_FAILED
 
-        written = await _write_outputs(orchestrator, record, output_dir, avatar_path, avatar_id)
+        written = await _write_outputs(
+            orchestrator,
+            record,
+            output_dir,
+            avatar_path,
+            avatar_id,
+            target=target,
+            settings=settings,
+        )
 
     print(f"\noutput/ ({output_dir})")
     for path in written:
@@ -118,6 +129,48 @@ async def _create(args: argparse.Namespace) -> int:
 
 
 async def _write_outputs(
+    orchestrator: Orchestrator,
+    record: JobRecord,
+    output_dir: Path,
+    avatar_path: Path,
+    avatar_id: str,
+    *,
+    target: TargetName,
+    settings: Settings,
+) -> list[Path]:
+    look = record.look
+    assert look is not None
+
+    if target is TargetName.GENERIC:
+        return await _write_generic_outputs(
+            orchestrator, record, output_dir, avatar_path, avatar_id
+        )
+
+    manifest = await orchestrator.wardrobes.get(avatar_id)
+    if manifest is None:
+        raise RuntimeError(f"pipeline completed without wardrobe manifest for {avatar_id!r}")
+
+    look_key = f"looks/{look.id}"
+    vrm_bytes = await orchestrator.store.get(f"{look_key}/look.vrm")
+    preview_bytes = None
+    if look.preview_url:
+        preview_bytes = await orchestrator.store.get(f"{look_key}/preview.webp")
+
+    return package_yourfriend_bundle(
+        output_dir,
+        look=look,
+        manifest=manifest,
+        record=record,
+        vrm_bytes=vrm_bytes,
+        preview_bytes=preview_bytes,
+        avatar_id=avatar_id,
+        forge_version=__version__,
+        engine=record.fit_report.engine if record.fit_report is not None else settings.wardrobe_engine,
+        provider=settings.wardrobe_provider,
+    )
+
+
+async def _write_generic_outputs(
     orchestrator: Orchestrator,
     record: JobRecord,
     output_dir: Path,
@@ -249,7 +302,13 @@ def build_parser() -> argparse.ArgumentParser:
     create = sub.add_parser("create", help="generate a new look for an avatar")
     create.add_argument("--avatar", required=True, help="path to the source .vrm")
     create.add_argument("--prompt", required=True, help="the outfit to generate")
-    create.add_argument("--out", default="output", help="output directory (default: output)")
+    create.add_argument("--out", default=None, help="output directory (target-specific default)")
+    create.add_argument(
+        "--target",
+        default=None,
+        choices=[item.value for item in TargetName],
+        help="delivery target (default: WARDROBE_TARGET, normally yourfriend)",
+    )
     create.add_argument("--mode", default="auto", choices=["auto", "template", "generated"])
     create.add_argument("--engine", default="auto", choices=["auto", "native", "blender"])
     create.add_argument("--template", default=None, help="force a specific template id")
