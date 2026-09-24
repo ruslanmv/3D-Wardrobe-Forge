@@ -35,6 +35,10 @@ class OutfitRequest(BaseModel):
     coverage: str | None = None
     straps: str | None = None
     neckline: str | None = None
+    #: A layered outfit: one request per garment, in any order — each is placed
+    #: by its layer (foundation, legwear, main, one-piece, outer, shoes). Absent,
+    #: the planner splits the prompt itself ("… + matching briefs under a … dress").
+    layers: list[OutfitRequest] | None = Field(default=None, max_length=6)
 
 
 class MaterialPlan(BaseModel):
@@ -124,6 +128,14 @@ class OutfitPlan(BaseModel):
     sleeve: str = "none"
     material: MaterialPlan = Field(default_factory=MaterialPlan)
     style: StylePlan = Field(default_factory=StylePlan)
+    #: foundation | legwear | main | one-piece | outer | shoes — where it sits in a stack.
+    role: str = "main"
+    #: 1 (next to the body) .. 6 (outermost); inner layers are fitted first.
+    layer: int = 3
+    #: The garments of a layered outfit, inner first. Empty for one garment; when
+    #: present, the fields above describe the outermost layer, so a client that
+    #: knows nothing of layers still reads a sensible plan.
+    layers: list[OutfitPlan] = Field(default_factory=list)
     #: Whether this garment, as it will render, needs an adult declaration: an
     #: intimate category, a template that says so, or fabric the body shows through.
     requires_adult: bool = Field(default=False, alias="requiresAdult")
@@ -132,6 +144,39 @@ class OutfitPlan(BaseModel):
     #: 0..1 — how much of the prompt the planner could actually account for.
     confidence: float = 0.0
     notes: list[str] = Field(default_factory=list)
+
+    @property
+    def garments(self) -> list[OutfitPlan]:
+        """Every garment to build, inner first: the layers, or this plan alone."""
+        return list(self.layers) if self.layers else [self]
+
+    def design_sheet(self) -> dict:
+        """The garment as a designer's specification: construction, material, fit, gate."""
+        material, style = self.material, self.style
+        return {
+            "garment": self.name,
+            "category": self.category,
+            "template": self.template_id,
+            "layer": self.layer,
+            "role": self.role,
+            "silhouette": self.silhouette,
+            "coverage": style.coverage,
+            "hem": self.hem,
+            "sleeve": self.sleeve,
+            "neckline": style.neckline or "as cut",
+            "back": style.back or "as cut",
+            "legCut": style.leg_cut or "as cut",
+            "straps": style.straps or "as cut",
+            "finish": material.finish,
+            "opacity": material.opacity,
+            "alphaMode": material.alpha_mode,
+            "lining": "lined" if material.lined else "unlined" if material.exposes_body else "opaque fabric",
+            "pattern": material.pattern,
+            "roughness": material.roughness,
+            "metallic": material.metallic,
+            "colour": material.color_name,
+            "adultGateRequired": self.requires_adult,
+        }
 
 
 class LookResult(BaseModel):
@@ -187,6 +232,10 @@ class FitReport(BaseModel):
     errors: list[str] = Field(default_factory=list)
     #: Worn clothing slots the garment replaced ("tops", "bottoms", …); empty when it layered.
     replaced_garments: list[str] = Field(default_factory=list, alias="replacedGarments")
+    #: Base Body Prep: mode, what was taken off, and whether the body under it was complete.
+    base_body: dict = Field(default_factory=dict, alias="baseBody")
+    #: One entry per garment of a layered outfit, inner first: its own fit and clearance.
+    layers: list[dict] = Field(default_factory=list)
 
     @property
     def passed(self) -> bool:
@@ -211,3 +260,8 @@ __all__ = [
     "ClippingCheck",
     "FitReport",
 ]
+
+
+# Self-referencing models (a request or plan made of layers of itself).
+OutfitRequest.model_rebuild()
+OutfitPlan.model_rebuild()

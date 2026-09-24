@@ -70,6 +70,11 @@ _SLOT_FOR_REGIONS: dict[frozenset[str], str] = {
 }
 
 
+def garment_slot(kind: str) -> str | None:
+    """The VRoid slot a garment of this shape fills ("Tops", …), or None for a layer."""
+    return _SLOT_FOR_REGIONS.get(KIND_REGIONS.get(kind.lower(), frozenset()))
+
+
 def garment_material_name(look_name: str, kind: str) -> str:
     """Name a generated garment's material so the *next* garment can replace it.
 
@@ -160,6 +165,7 @@ def remove_slots(document: GltfDocument, slots: list[str]) -> list[str]:
 __all__ = [
     "KIND_REGIONS",
     "garment_material_name",
+    "garment_slot",
     "SLOT_REGIONS",
     "WornGarment",
     "remove_slots",

@@ -44,6 +44,12 @@ class AdultDeclarationRequired(WardrobeError):
     reason = FailureReason.ADULT_DECLARATION_REQUIRED
 
 
+class BodyIncomplete(WardrobeError):
+    """Taking off her clothes would expose missing body geometry; nothing is invented to fill it."""
+
+    reason = FailureReason.BODY_INCOMPLETE
+
+
 class NotHumanoid(WardrobeError):
     reason = FailureReason.SOURCE_NOT_HUMANOID
 

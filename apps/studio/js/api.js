@@ -84,6 +84,10 @@ export const api = {
     createLibraryJob: (slug, body) =>
         request(`/v1/library/${encodeURIComponent(slug)}/jobs`, { method: 'POST', body }),
 
+    /** What that job would do — layers, gate, what comes off, the body under it — without doing it. */
+    planLibrary: (slug, body) =>
+        request(`/v1/library/${encodeURIComponent(slug)}/plan`, { method: 'POST', body }),
+
     /** The avatar's wardrobe, or null when it has never had a look generated. */
     async wardrobe(avatarId) {
         try {

@@ -70,7 +70,11 @@ def _surface_samples(points: np.ndarray, triangles: np.ndarray, spacing: float) 
 
 
 def body_points(
-    document: GltfDocument, *, limit: int = MAX_BODY_POINTS, spacing: float = SURFACE_SPACING_M
+    document: GltfDocument,
+    *,
+    limit: int = MAX_BODY_POINTS,
+    spacing: float = SURFACE_SPACING_M,
+    skip: set[tuple[int, int]] | None = None,
 ) -> np.ndarray:
     """Rest-pose body surface — vertices plus samples across triangles — subsampled deterministically.
 
@@ -78,6 +82,8 @@ def body_points(
     skin, tops, bottoms and shoes as primitives over *one* shared position
     buffer; reading the buffer whole counted a skirt that garment replacement
     had just taken off as part of her body — and read it once per primitive.
+    ``skip`` leaves out (mesh, primitive) pairs: the body as it would be with
+    those garments off, without taking them off.
     """
     collected: list[np.ndarray] = []
     accessors = document.gltf.get("accessors") or []
@@ -90,7 +96,9 @@ def body_points(
 
         cache: dict[int, np.ndarray] = {}
         used: dict[int, list[np.ndarray]] = {}
-        for primitive in mesh.get("primitives", []):
+        for primitive_index, primitive in enumerate(mesh.get("primitives", [])):
+            if skip and (node["mesh"], primitive_index) in skip:
+                continue
             position = primitive.get("attributes", {}).get("POSITION")
             if position is None or position >= len(accessors):
                 continue

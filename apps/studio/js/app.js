@@ -180,6 +180,8 @@ function bindChrome() {
     });
     $('export-btn').addEventListener('click', exportBundle);
     $('build-on').addEventListener('change', updatePreview);
+    $('plan-btn').addEventListener('click', checkPlan);
+    $('base-body-select').addEventListener('change', () => ($('plan-report').hidden = true));
 }
 
 // ---------------------------------------------------------------- capabilities
@@ -275,6 +277,8 @@ async function selectAvatar(slug) {
     $('stage-sub').textContent = `${avatar.license} · ${avatar.presentation || 'avatar'}`;
     $('stage-empty').hidden = true;
     $('generate-btn').disabled = false;
+    $('plan-btn').disabled = false;
+    $('plan-report').hidden = true;
     $('report').hidden = true;
     if (state.vocab) renderDesigner();
 
@@ -445,6 +449,10 @@ function renderStyle(adult) {
         state.design.neckline = value;
         updatePreview();
     });
+    const underwearBase = $('base-body-select').querySelector('option[value="underwear-base"]');
+    underwearBase.disabled = !adult;
+    underwearBase.title = adult ? '' : 'Underwear needs this avatar declared as depicting an adult';
+    if (!adult && $('base-body-select').value === 'underwear-base') $('base-body-select').value = 'replace-outer';
     $('style-hint').textContent = adult ? 'overrides the prompt' : 'overrides the prompt · see-through needs an adult declaration';
 }
 
@@ -572,11 +580,7 @@ async function generate() {
     let job;
     try {
         const base = buildOnLook();
-        job = await api.createLibraryJob(slug, {
-            outfit,
-            ...(base ? { baseLookId: base.id } : {}),
-            options: { renderPreview: true, engine: state.caps.engines.default || 'auto' },
-        });
+        job = await api.createLibraryJob(slug, jobBody(outfit));
     } catch (error) {
         return finishJob({ state: 'failed', error: describe(error), events: [] }, slug, outfit.prompt);
     }
@@ -593,6 +597,73 @@ async function generate() {
         await new Promise((resolve) => setTimeout(resolve, POLL_MS));
     }
     await finishJob(job, slug, outfit.prompt);
+}
+
+function jobBody(outfit) {
+    const base = buildOnLook();
+    return {
+        outfit,
+        ...(base ? { baseLookId: base.id } : {}),
+        options: {
+            renderPreview: true,
+            engine: state.caps.engines.default || 'auto',
+            baseBody: $('base-body-select').value,
+        },
+    };
+}
+
+/** "Before you generate": each garment's layer and gate, what comes off, and the body under it. */
+async function checkPlan() {
+    if (!state.avatar) return;
+    const box = $('plan-report');
+    box.hidden = false;
+    box.replaceChildren(el('p', { class: 'report-line', text: 'Checking…' }));
+    let report;
+    try {
+        report = await api.planLibrary(state.avatar.slug, jobBody(outfitRequest()));
+    } catch (error) {
+        return box.replaceChildren(el('p', { class: 'report-line bad', text: describe(error) }));
+    }
+    const lines = report.garments.map((g) =>
+        el(
+            'li',
+            { class: g.allowed ? '' : 'no', title: g.refusal || '' },
+            el('span', { class: 'plan-layer', text: `${g.layer}` }),
+            ` ${g.garment} · ${g.role}`,
+            el('span', {
+                class: 'plan-sub',
+                text: ` ${g.finish}${g.opacity < 1 ? ` · opacity ${g.opacity}` : ''}${g.pattern !== 'none' ? ` · ${g.pattern}` : ''}${g.coverage !== 'standard' ? ` · ${g.coverage}` : ''}`,
+            })
+        )
+    );
+    const body = report.body;
+    const missing = body ? Object.entries(body.regions).filter(([, r]) => !r.present).map(([k]) => k) : [];
+    box.replaceChildren(
+        el('ol', { class: 'plan-layers' }, lines),
+        ...[...new Set(report.garments.filter((g) => !g.allowed).map((g) => g.refusal))].map((refusal) =>
+            el('p', { class: 'report-line bad', text: `✕ ${refusal}` })
+        ),
+        el('p', {
+            class: 'report-line',
+            text: report.remove.length
+                ? `✓ Her ${report.remove.join(' and ')} will come off${report.retain.length ? `; ${report.retain.join(', ')} stay` : ''}`
+                : report.wearing.length
+                  ? `The new outfit layers over her ${[...new Set(report.wearing.map((w) => w.slot))].join(', ')}`
+                  : 'She wears no removable clothing',
+        }),
+        body
+            ? el('p', {
+                  class: `report-line ${missing.length ? 'bad' : ''}`,
+                  text: missing.length
+                      ? `! No body under her clothes at ${missing.join(', ')} — that part stays on`
+                      : '✓ Complete body under what comes off',
+              })
+            : null,
+        el('p', {
+            class: `report-line ${report.allowed ? '' : 'bad'}`,
+            text: report.allowed ? `→ ${report.garments.length} layer(s) will be built` : 'This outfit will be refused',
+        })
+    );
 }
 
 function showJob(job, prompt) {

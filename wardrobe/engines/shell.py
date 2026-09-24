@@ -60,6 +60,11 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     artifact = context.artifact
     template = context.catalog.get(artifact.template_id) if artifact.template_id else None
     clearance = float(artifact.metadata.get("bodyClearanceMm", 6.0)) / 1000.0
+    if context.collision_points is not None and context.collision_points.shape[0]:
+        # Over another garment, allow for its thickness and for this shell's faces
+        # dipping between vertices: lace specks showed through an opaque dress
+        # at the body clearance alone.
+        clearance += INNER_LAYER_ALLOWANCE_M
 
     metadata = dict(artifact.metadata)
     # Which way she faces, for a rig without toes to say so: VRM 0.x faces -Z.
@@ -85,7 +90,15 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     region_bones = set(bones_for_coverage(artifact.coverage)) - CLEARANCE_EXCLUDED_BONES
     whole = body_points(context.document)
     body = _restrict_to_covered_region(context, whole, region_bones)
-    index = BodyRadialIndex(body, surroundings=_torso(context, whole))
+    torso = _torso(context, whole)
+    inner = context.collision_points
+    if inner is not None and inner.shape[0]:
+        # The layers already fitted are part of what this one must clear: a
+        # dress goes over the underwear, not through it.
+        whole = np.vstack([whole, inner])
+        body = np.vstack([body, inner])
+        torso = inner if torso is None else np.vstack([torso, inner])
+    index = BodyRadialIndex(body, surroundings=torso)
 
     axis_mask = on_axis_mask(mesh, context.measurements)
 
@@ -99,7 +112,7 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     # off the body axis; fit them round each leg's own bones instead.
     leg_worn = ~axis_mask & (mesh.positions[:, 1] < params.hip_y + params.height * 0.03)
     if leg_worn.any():
-        legs = _skinned_to(context, whole, LEG_BONES)
+        legs = _skinned_to(context, whole, LEG_BONES)  # inner layers included: stockings under trousers
         conform_limbs(mesh, leg_worn, legs if legs is not None else whole,
                       context.measurements.bone_positions, clearance,
                       strength=conform, forward=params.forward)
@@ -243,6 +256,9 @@ def _restrict_to_covered_region(
     )
     return fallback if fallback.shape[0] >= MIN_REGION_POINTS else body
 
+
+#: Extra clearance for a garment going on over another one (see build_fitted_shell).
+INNER_LAYER_ALLOWANCE_M = 0.003
 
 #: Never part of the body's outline for a torso garment: they share height bands
 #: with it (a T-pose arm, the head above a collar) without being under it.

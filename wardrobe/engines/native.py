@@ -19,8 +19,8 @@ from wardrobe.engines.geometry_checks import pose_stress_test
 from wardrobe.engines.shell import build_fitted_shell, shell_coverage
 from wardrobe.errors import FittingError
 from wardrobe.geometry.raster import RenderLayer, render
-from wardrobe.pipeline.context import PipelineContext
-from wardrobe.vrm.garments import garment_material_name
+from wardrobe.pipeline.context import BuiltLayer, PipelineContext
+from wardrobe.vrm.garments import garment_material_name, garment_slot
 from wardrobe.vrm.merge import GarmentMaterial, attach_garment, set_title, tag_derived
 from wardrobe.vrm.skinning import bind_mesh, bones_for_coverage, build_bone_segments, weight_report
 
@@ -99,22 +99,32 @@ class NativeEngine(FittingEngine):
             raise FittingError("nothing to assemble; fitting did not complete")
 
         plan = context.plan
-        artifact_kind = context.artifact.procedural_kind if context.artifact else None
-        kind = artifact_kind or (plan.category if plan else "")
-        material = (
-            GarmentMaterial.from_plan(garment_material_name(plan.name, kind), plan.material)
-            if plan
-            else GarmentMaterial(name="Garment", base_color=(0.6, 0.6, 0.6, 1.0))
-        )
-
-        attach_garment(
-            context.document,
-            context.info,
-            context.mesh,
-            context.segments,
-            material=material,
-            name=plan.name if plan else "Garment",
-        )
+        if plan is None or context.artifact is None:
+            raise FittingError("nothing to assemble; planning did not complete")
+        layers = context.built or [BuiltLayer(plan, context.artifact, context.mesh, context.segments)]
+        for layer in layers:
+            kind = layer.artifact.procedural_kind or layer.plan.category
+            attached = attach_garment(
+                context.document,
+                context.info,
+                layer.mesh,
+                layer.segments,
+                material=GarmentMaterial.from_plan(
+                    garment_material_name(layer.plan.name, kind), layer.plan.material
+                ),
+                name=layer.plan.name,
+            )
+            # What this garment is, for the next job that meets it: an outer layer
+            # made later knows not to take this underwear off (garment_inventory).
+            slot = garment_slot(kind)
+            context.document.nodes[attached.node_index].setdefault("extras", {})["wardrobeForge"] = {
+                "kind": "garment",
+                "slot": slot.lower() if slot else None,
+                "role": layer.plan.role,
+                "layer": layer.plan.layer,
+                "templateId": layer.plan.template_id,
+                "lookId": context.look_id,
+            }
 
         title = f"{context.info.title or 'Avatar'} — {plan.name}" if plan else context.info.title
         if title:
@@ -124,6 +134,16 @@ class NativeEngine(FittingEngine):
             source_hash=context.source_sha256,
             look_id=context.look_id,
             generator=GENERATOR,
+            outfit={
+                "baseBodyMode": context.fit_report.base_body.get("mode"),
+                "removedSourceSlots": context.fit_report.base_body.get("removedSlots", []),
+                "removedSourceMaterials": context.fit_report.base_body.get("removedMaterials", []),
+                "layers": [
+                    {"name": layer.plan.name, "role": layer.plan.role, "layer": layer.plan.layer,
+                     "templateId": layer.plan.template_id}
+                    for layer in layers
+                ],
+            },
         )
 
         context.output_bytes = context.document.to_bytes()
@@ -145,14 +165,17 @@ class NativeEngine(FittingEngine):
         accessors = document.gltf.get("accessors") or []
         layers: list[RenderLayer] = []
 
-        garment_mesh_names = {context.plan.name} if context.plan else set()
+        colours = {
+            garment.name: tuple(float(c) for c in garment.material.base_color[:3])
+            for garment in (context.plan.garments if context.plan else [])
+        }
 
         for node_index in document.mesh_nodes():
             node = document.nodes[node_index]
             mesh = document.meshes[node["mesh"]]
             matrix = document.world_matrices()[node_index]
             skinned = "skin" in node
-            is_garment = mesh.get("name") in garment_mesh_names
+            colour_of_garment = colours.get(mesh.get("name"))
 
             for primitive in mesh.get("primitives", []):
                 attributes = primitive.get("attributes", {})
@@ -167,10 +190,7 @@ class NativeEngine(FittingEngine):
                     points = (homogeneous @ matrix.T)[:, :3]
                 indices = document.read_accessor(index_accessor).reshape(-1).astype(np.int64)
 
-                if is_garment and context.plan is not None:
-                    colour = tuple(float(c) for c in context.plan.material.base_color[:3])
-                else:
-                    colour = (0.76, 0.70, 0.66)
+                colour = colour_of_garment or (0.76, 0.70, 0.66)
                 layers.append(RenderLayer(positions=points, indices=indices, color=colour))
 
         return layers

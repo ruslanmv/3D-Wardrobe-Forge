@@ -463,13 +463,25 @@ def set_title(document: GltfDocument, info: VrmInfo, title: str) -> None:
         meta["title"] = title
 
 
-def tag_derived(document: GltfDocument, *, source_hash: str | None, look_id: str, generator: str) -> None:
-    """Record provenance in glTF ``extras`` so a derived VRM is traceable."""
+def tag_derived(
+    document: GltfDocument,
+    *,
+    source_hash: str | None,
+    look_id: str,
+    generator: str,
+    outfit: dict | None = None,
+) -> None:
+    """Record provenance in glTF ``extras`` so a derived VRM is traceable — and reproducible.
+
+    ``outfit`` records how it was made from the source: the base-body mode, which
+    of her own garments were taken off, and the layers put on, inner first.
+    """
     extras = document.gltf.setdefault("extras", {})
     extras["wardrobeForge"] = {
         "lookId": look_id,
         "sourceAvatarSha256": source_hash,
         "generator": generator,
+        **(outfit or {}),
     }
     asset = document.gltf.setdefault("asset", {})
     asset["generator"] = generator

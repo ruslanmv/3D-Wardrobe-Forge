@@ -1054,3 +1054,49 @@ dialog .primary {
         padding-top: 0;
     }
 }
+
+/* ---------------------------------------------------------------- plan preview */
+#plan-btn {
+    margin-top: 0.5rem;
+}
+.plan {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+}
+.plan-layers {
+    list-style: none;
+    margin: 0 0 0.5rem;
+    padding: 0;
+    display: grid;
+    gap: 0.35rem;
+}
+.plan-layers li.no {
+    opacity: 0.55;
+    text-decoration: line-through;
+}
+.plan-layer {
+    display: inline-grid;
+    place-items: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.plan-sub {
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+.build-on {
+    display: flex;
+    min-width: 0;
+}
+.build-on span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

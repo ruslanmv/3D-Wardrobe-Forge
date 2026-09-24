@@ -1,8 +1,8 @@
 """Pipeline stages, in the order the orchestrator runs them.
 
-    validate_source -> analyze_avatar -> plan_outfit -> generate_garment
-                    -> fit_garment -> assemble_vrm -> validate_output
-                    -> render_preview
+    validate_source -> analyze_avatar -> plan (plan_outfit_stack) -> prepare_base_body
+                    -> generate_garment -> fit_garment -> assemble_vrm
+                    -> validate_output -> render_preview
 
 The stage modules are deliberately *not* imported here. They depend on
 ``wardrobe.engines``, whose own modules import :mod:`wardrobe.pipeline.context`
@@ -17,6 +17,8 @@ __all__ = [
     "validate_source",
     "analyze_avatar",
     "plan_outfit",
+    "plan_outfit_stack",
+    "prepare_base_body",
     "generate_garment",
     "fit_garment",
     "assemble_vrm",

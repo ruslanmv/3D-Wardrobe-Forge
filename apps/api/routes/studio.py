@@ -27,6 +27,7 @@ from wardrobe.domain.jobs import TERMINAL_STATES, CreateJobRequest, JobOptions, 
 from wardrobe.domain.looks import OutfitRequest
 from wardrobe.library import AvatarLibrary
 from wardrobe.materials.finishes import FINISHES, OPACITY_LEVELS, PATTERNS
+from wardrobe.pipeline.generate_garment import with_foundation
 from wardrobe.pipeline.plan_outfit import (
     CATEGORY_KEYWORDS,
     COLORS,
@@ -35,7 +36,14 @@ from wardrobe.pipeline.plan_outfit import (
     SILHOUETTE_KEYWORDS,
     SLEEVE_KEYWORDS,
 )
+from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
+from wardrobe.policy import intimate
 from wardrobe.targets.bundle import LookFiles, build_wardrobe_bundle, select_looks
+from wardrobe.vrm.body_integrity import check_body
+from wardrobe.vrm.document import GltfDocument
+from wardrobe.vrm.garment_inventory import build_strip_plan, garment_inventory
+from wardrobe.vrm.inspect import inspect_document
+from wardrobe.vrm.measure import measure_body
 
 router = APIRouter(tags=["studio"])
 
@@ -97,6 +105,75 @@ async def create_library_job(
         }
     )
     return await orchestrator.submit(job)
+
+
+@router.post("/library/{slug}/plan")
+async def preview_library_plan(
+    slug: str, body: LibraryJobRequest, request: Request, orchestrator: OrchestratorDep
+) -> dict:
+    """What a job would do, without doing it: the Studio's "before you generate" report.
+
+    Each garment's design sheet and whether the adult gate lets it through; which
+    of her garments would come off and which stay; and whether there is a body
+    under what comes off. Read-only — nothing is stripped, built or stored.
+    """
+    avatar = _library(request).get(slug)
+    if avatar is None or not avatar.available:
+        raise HTTPException(status_code=404, detail="avatar not in the library")
+    avatar_input = avatar.avatar_input()
+    if body.base_look_id:
+        avatar_input = await _base_look_input(orchestrator, avatar.slug, body.base_look_id, avatar_input)
+    source = await orchestrator.store.get(avatar_input["storageKey"])
+    return plan_report(
+        source,
+        body.outfit,
+        body.options.base_body_mode,
+        orchestrator.catalog,
+        depicts_adult=bool(avatar_input.get("depictsAdult")),
+    )
+
+
+def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, depicts_adult: bool) -> dict:
+    document = GltfDocument.from_bytes(source)
+    info = inspect_document(document)
+    measurements = measure_body(document, info)
+    plan = plan_outfit_stack(outfit, catalog)
+    if mode == "underwear-base":
+        plan = with_foundation(plan, outfit, catalog)
+
+    garments = []
+    for garment in plan.garments:
+        decision = intimate.evaluate(
+            garment.category, info.license, depicts_adult=depicts_adult,
+            requires_adult=garment.requires_adult,
+            reason=intimate.gate_reason(garment.category, see_through=garment.material.exposes_body),
+        )
+        garments.append({**garment.design_sheet(), "allowed": decision.allowed, "refusal": decision.message
+                         if not decision.allowed else None})
+
+    inventory = garment_inventory(document)
+    kinds = []
+    for garment in plan.garments:
+        template = catalog.get(garment.template_id) if garment.template_id else None
+        kinds.append((template.procedural_kind if template is not None else garment.category, garment.role))
+    strip = build_strip_plan(inventory, kinds) if mode != "preserve" else build_strip_plan(inventory, [])
+    integrity = (
+        check_body(document, measurements, set().union(*(g.regions for g in strip.remove)),
+                   without={(g.mesh, g.primitive) for g in strip.remove},
+                   also_without={(g.mesh, g.primitive) for g in strip.retain})
+        if strip.remove else None
+    )
+    return {
+        "name": plan.name,
+        "mode": mode,
+        "garments": garments,
+        "allowed": all(g["allowed"] for g in garments),
+        "wearing": [{"slot": g.slot, "material": g.material, "detector": g.detector, "role": g.role}
+                    for g in inventory],
+        "remove": strip.slots,
+        "retain": list(dict.fromkeys(g.slot for g in strip.retain)),
+        "body": integrity.to_dict() if integrity else None,
+    }
 
 
 async def _base_look_input(orchestrator, slug: str, look_id: str, avatar_input: dict) -> dict:

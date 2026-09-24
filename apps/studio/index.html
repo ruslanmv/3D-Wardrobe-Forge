@@ -158,9 +158,23 @@
                     </fieldset>
 
                     <fieldset>
-                        <legend>Prompt</legend>
+                        <legend>Prompt <span class="legend-hint">layer garments with +</span></legend>
                         <textarea id="prompt" rows="3" maxlength="1000" placeholder="e.g. elegant satin evening dress"></textarea>
                         <p class="request-preview" id="request-preview"></p>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Her own outfit</legend>
+                        <label class="field">
+                            <span>Before dressing</span>
+                            <select id="base-body-select">
+                                <option value="replace-outer">Take off what the new outfit covers</option>
+                                <option value="preserve">Keep it on — layer over it</option>
+                                <option value="underwear-base">Take it off, underwear first</option>
+                            </select>
+                        </label>
+                        <button type="button" class="secondary" id="plan-btn" disabled>Check plan</button>
+                        <div class="plan" id="plan-report" hidden></div>
                     </fieldset>
 
                     <label class="check build-on" id="build-on-label" title="Generate onto the look on stage instead of her original outfit: a top onto a skirt is a set">

@@ -285,3 +285,23 @@ def test_a_set_cannot_be_built_on_another_avatars_look(orchestrator, monkeypatch
         assert client.post("/v1/library/nia/jobs", json=body).status_code == 404
         body["baseLookId"] = "look_does_not_exist"
         assert client.post("/v1/library/mira/jobs", json=body).status_code == 404
+
+
+# ----------------------------------------------------------------------
+# plan preview: what a job would do, without doing it
+# ----------------------------------------------------------------------
+def test_the_plan_preview_reports_layers_gate_and_strip_plan_and_changes_nothing(client: TestClient, orchestrator):
+    outfit = {"prompt": "black lace bralette + matching briefs + red bodycon mini dress"}
+    response = client.post("/v1/library/mira/plan", json={"outfit": outfit})
+    assert response.status_code == 200, response.text
+    report = response.json()
+    assert [g["role"] for g in report["garments"]] == ["foundation", "foundation", "one-piece"]
+    assert report["allowed"] is False  # Mira is not declared adult: the underwear is refused
+    assert report["garments"][0]["refusal"] and report["garments"][2]["allowed"] is True
+    assert report["mode"] == "replace-outer" and report["remove"] == []  # a generated body wears nothing
+    assert asyncio.run(orchestrator.jobs.list()) == []
+
+
+def test_the_plan_preview_for_an_everyday_outfit_is_allowed(client: TestClient):
+    report = client.post("/v1/library/mira/plan", json={"outfit": {"prompt": "white tee + black cropped cardigan"}}).json()
+    assert report["allowed"] is True and [g["layer"] for g in report["garments"]] == [3, 5]
