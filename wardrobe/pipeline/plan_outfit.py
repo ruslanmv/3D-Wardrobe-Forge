@@ -89,10 +89,29 @@ FABRICS: dict[str, tuple[float, float]] = {
 CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     "dress": ("dress", "gown", "frock", "sundress"),
     "skirt": ("skirt",),
-    "jacket": ("jacket", "blazer", "coat", "parka", "cardigan"),
+    "jacket": ("jacket", "blazer", "coat", "parka", "cardigan", "trench"),
     "trousers": ("trousers", "pants", "jeans", "slacks", "chinos", "leggings"),
-    "top": ("top", "shirt", "blouse", "tee", "t-shirt", "sweater", "hoodie", "jumper"),
+    "top": (
+        "top", "shirt", "blouse", "tee", "t-shirt", "sweater", "hoodie", "jumper", "crop top", "tube top",
+        "halter top",
+    ),
     "shoes": ("shoes", "boots", "heels", "sneakers", "trainers", "sandals"),
+    # try-on haul. The planner takes the longest phrase that matches, so a word
+    # must never sit in two categories: "bandeau" is a template tag, not a
+    # keyword, or "bandeau bikini" would plan a top.
+    "shorts": ("shorts", "hot pants", "cut-offs"),
+    "swimwear": (
+        "swimwear", "swimsuit", "bikini", "monokini", "bathing suit", "tankini", "swim dress",
+        "one-piece swimsuit",
+    ),
+    "underwear": (
+        "underwear", "lingerie", "bra", "bralette", "panties", "briefs", "knickers", "bodysuit", "teddy",
+    ),
+    "nightwear": (
+        "nightwear", "nightgown", "nightdress", "nightie", "chemise", "pajamas", "pyjamas", "pajama",
+        "pyjama", "sleepwear",
+    ),
+    "legwear": ("stockings", "thigh highs", "thigh-highs", "thigh-high socks", "over-the-knee socks"),
 }
 
 SILHOUETTE_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -271,8 +290,14 @@ def select_template(catalog: TemplateCatalog, parsed: ParsedPrompt, text: str) -
     return ranked[0]
 
 
-def display_name(prompt: str, parsed: ParsedPrompt) -> str:
-    """A short, human-friendly look name, e.g. 'Burgundy Evening'."""
+def display_name(prompt: str, parsed: ParsedPrompt, template: GarmentTemplate | None = None) -> str:
+    """A short, human-friendly look name, e.g. 'Burgundy Evening' or 'Red Triangle Bikini'.
+
+    Where the name would otherwise end in the bare category, the template's own
+    name is used. In a haul every look is announced by name, and "Red Swimwear",
+    "Black Underwear", "Nightwear" said nothing about which of four swimsuits or
+    three lingerie pieces was on screen.
+    """
     parts: list[str] = []
     if parsed.color_name:
         parts.append(parsed.color_name.title())
@@ -283,7 +308,7 @@ def display_name(prompt: str, parsed: ParsedPrompt) -> str:
     elif parsed.formality == "sporty":
         parts.append("Sport")
     if parsed.category and len(parts) < 2:
-        parts.append(parsed.category.title())
+        parts.append(template.name.title() if template is not None else parsed.category.title())
 
     if not parts:
         words = [w for w in re.split(r"\W+", prompt) if w][:3]
@@ -355,7 +380,7 @@ def plan_outfit(request: OutfitRequest, catalog: TemplateCatalog) -> OutfitPlan:
     )
 
     return OutfitPlan(
-        name=display_name(request.prompt, parsed),
+        name=display_name(request.prompt, parsed, template),
         category=template.category,
         templateId=template.id,
         silhouette=parsed.silhouette or template.silhouette,

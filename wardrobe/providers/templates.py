@@ -58,6 +58,10 @@ class TemplateGarmentProvider(GarmentProvider):
                 "bodyClearanceMm": template.fit.body_clearance_mm,
                 "allowLengthScale": template.fit.allow_length_scale,
                 "allowWidthScale": template.fit.allow_width_scale,
+                "conform": template.fit.conform,
+                "conformBelowHips": template.fit.conform_below_hips,
+                "straps": template.fit.straps,
+                "pleats": template.fit.pleats,
             },
         )
 

@@ -23,12 +23,56 @@ from wardrobe.vrm.skinning import HUMANOID_CHILDREN, BoneSegment, distance_to_se
 
 DEFAULT_BANDS = 64
 DEFAULT_SECTORS = 16
-#: Cap on body vertices sampled, so a 200k-vertex avatar stays cheap to check.
-MAX_BODY_POINTS = 60_000
+#: Cap on body points sampled, so a 200k-vertex avatar stays cheap to check.
+MAX_BODY_POINTS = 160_000
 
 
-def body_points(document: GltfDocument, *, limit: int = MAX_BODY_POINTS) -> np.ndarray:
-    """Rest-pose body vertex positions, subsampled deterministically."""
+#: Target spacing of points sampled across body triangles, in metres.
+SURFACE_SPACING_M = 0.012
+
+
+def _surface_samples(points: np.ndarray, triangles: np.ndarray, spacing: float) -> np.ndarray:
+    """Points spread across each triangle, more on large ones. Deterministic.
+
+    Vertices alone describe a body poorly where its triangles are large. A VRoid
+    torso has a handful of vertices across the front at bust height, so most of
+    the radial index's buckets there were *empty* — and an empty bucket reads as
+    "no body here": the front of a close-fitting garment was neither drawn onto
+    the body nor clearance-checked. Measured on AvatarSample A: 4 vertices in the
+    front 45° sector at bust height, and a bralette reported 14 cm "from" a body
+    the index could not see. Sampling the surface fills those buckets.
+    """
+    if triangles.size == 0:
+        return np.zeros((0, 3))
+    a, b, c = points[triangles[:, 0]], points[triangles[:, 1]], points[triangles[:, 2]]
+    longest = np.maximum.reduce(
+        [np.linalg.norm(b - a, axis=1), np.linalg.norm(c - b, axis=1), np.linalg.norm(a - c, axis=1)]
+    )
+    steps = np.clip(np.ceil(longest / spacing), 1, 12).astype(int)
+    samples: list[np.ndarray] = []
+    for n in np.unique(steps):
+        chosen = steps == n
+        # Barycentric grid of step 1/n, excluding the corners (the vertices are already in).
+        grid = [
+            (i / n, j / n)
+            for i in range(n + 1)
+            for j in range(n + 1 - i)
+            if not ((i == 0 and j == 0) or (i == n and j == 0) or (i == 0 and j == n))
+        ]
+        if not grid:
+            grid = [(1 / 3, 1 / 3)]
+        weights = np.array(grid, dtype=np.float64)
+        u = weights[:, 0][None, :, None]
+        v = weights[:, 1][None, :, None]
+        ta, tb, tc = a[chosen][:, None, :], b[chosen][:, None, :], c[chosen][:, None, :]
+        samples.append((ta + (tb - ta) * u + (tc - ta) * v).reshape(-1, 3))
+    return np.vstack(samples)
+
+
+def body_points(
+    document: GltfDocument, *, limit: int = MAX_BODY_POINTS, spacing: float = SURFACE_SPACING_M
+) -> np.ndarray:
+    """Rest-pose body surface — vertices plus samples across triangles — subsampled deterministically."""
     collected: list[np.ndarray] = []
     accessors = document.gltf.get("accessors") or []
 
@@ -47,6 +91,10 @@ def body_points(document: GltfDocument, *, limit: int = MAX_BODY_POINTS) -> np.n
                 homogeneous = np.hstack([points, np.ones((points.shape[0], 1))])
                 points = (homogeneous @ matrix.T)[:, :3]
             collected.append(points)
+            index_accessor = primitive.get("indices")
+            if spacing > 0 and index_accessor is not None and primitive.get("mode", 4) == 4:
+                triangles = document.read_accessor(index_accessor).astype(np.int64).reshape(-1, 3)
+                collected.append(_surface_samples(points, triangles, spacing))
 
     if not collected:
         return np.zeros((0, 3))
@@ -245,6 +293,163 @@ def resolve_clearance(
     return int(needs_push.sum())
 
 
+def conform_to_body(
+    mesh: Mesh,
+    index: BodyRadialIndex,
+    clearance_m: float,
+    mask: np.ndarray | None = None,
+    *,
+    strength: float,
+    min_y: float | None = None,
+) -> int:
+    """Draw the shell onto the body's actual surface, by ``strength`` (0..1).
+
+    The shell is built from bone-derived widths, which is right for a coat and
+    wrong for anything meant to be close: a bikini or a bodysuit built that way
+    stands off the body like a box. Once the worn clothes have been taken off, the
+    radial index describes the bare body, so a vertex can be moved toward exactly
+    ``body radius + clearance`` in its own direction — in *or* out. Strength 1 is
+    skin-tight; the clearance pass that follows still guarantees nothing ends up
+    inside. ``min_y`` leaves everything below it alone, so a dress can hug the
+    bodice and keep its skirt's flare.
+    """
+    if strength <= 0.0 or not index.valid or mesh.vertex_count == 0:
+        return 0
+    points = mesh.positions.astype(np.float64)
+    radius = index.point_radius(points)
+    target = index.body_radius_at(points) + clearance_m
+    active = target > clearance_m * 1.5  # a bucket with body under it
+    if mask is not None:
+        active &= mask
+    if min_y is not None:
+        active &= points[:, 1] >= min_y
+    if not active.any():
+        return 0
+
+    new_radius = radius + (target - radius) * min(strength, 1.0)
+    dx = points[active, 0] - index.axis_x
+    dz = points[active, 2] - index.axis_z
+    current = np.maximum(np.sqrt(dx * dx + dz * dz), 1e-9)
+    scale = new_radius[active] / current
+    points[active, 0] = index.axis_x + dx * scale
+    points[active, 2] = index.axis_z + dz * scale
+    mesh.positions = points.astype(np.float32)
+    mesh.compute_normals()
+    return int(active.sum())
+
+
+def smooth_radial(
+    mesh: Mesh,
+    index: BodyRadialIndex,
+    clearance_m: float,
+    mask: np.ndarray | None = None,
+    *,
+    iterations: int = 4,
+    weight: float = 0.6,
+) -> int:
+    """Even out the silhouette the push-out leaves, without giving any clearance back.
+
+    ``resolve_clearance`` moves each vertex out by its own amount, read from a
+    radial index sampled off the body's own vertices. Neighbouring vertices land
+    at noticeably different radii, and a hem that should read as one curve reads
+    as torn fabric — the most visible flaw of a native-engine garment on screen.
+
+    This relaxes each vertex's distance from the body axis toward the mean of its
+    mesh neighbours, then clamps it at the clearance target, so a vertex may move
+    *out* to meet its neighbours but never back inside the body. Only the radius
+    changes: heights and angles stay put, so hem length and seam placement are
+    exactly what the template asked for. Returns how many vertices moved.
+    """
+    if not index.valid or mesh.vertex_count == 0 or mesh.indices.size < 3:
+        return 0
+
+    points = mesh.positions.astype(np.float64)
+    count = points.shape[0]
+    triangles = mesh.indices.reshape(-1, 3).astype(np.int64)
+    edges = np.concatenate([triangles[:, [0, 1]], triangles[:, [1, 2]], triangles[:, [2, 0]]])
+    edges = np.concatenate([edges, edges[:, ::-1]])  # both directions
+
+    dx = points[:, 0] - index.axis_x
+    dz = points[:, 2] - index.axis_z
+    radius = np.sqrt(dx * dx + dz * dz)
+    safe = np.maximum(radius, 1e-9)
+    floor = index.body_radius_at(points) + clearance_m
+    # Only vertices the index can speak for are floored; the rest (on-limb sleeves,
+    # shoes) keep their built radius as their floor, so they can only grow.
+    active = (floor > clearance_m) if mask is None else (mask & (floor > clearance_m))
+    floor = np.where(active, np.maximum(floor, 0.0), radius)
+
+    # Loft seams duplicate their vertices for clean UVs. The twins share a position
+    # but not an edge, so relaxed independently they part and open a crack down
+    # the seam. Group coincident vertices and move each group as one.
+    _, twin = np.unique(np.round(points / 1e-6).astype(np.int64), axis=0, return_inverse=True)
+    twin = twin.reshape(-1)
+    twins = np.bincount(twin).astype(np.float64)
+
+    degree = np.bincount(edges[:, 0], minlength=count).astype(np.float64)
+    degree[degree == 0] = 1.0
+    original = radius.copy()
+    for _ in range(iterations):
+        neighbour_sum = np.bincount(edges[:, 0], weights=radius[edges[:, 1]], minlength=count)
+        relaxed = (1.0 - weight) * radius + weight * (neighbour_sum / degree)
+        relaxed = (np.bincount(twin, weights=relaxed) / twins)[twin]
+        radius = np.maximum(relaxed, floor)
+    # A vertex with no neighbours on the body axis is left exactly where it was.
+    radius = np.where(active, radius, original)
+
+    moved = np.abs(radius - original) > 1e-6
+    if not moved.any():
+        return 0
+    scale = radius / safe
+    points[:, 0] = index.axis_x + dx * scale
+    points[:, 2] = index.axis_z + dz * scale
+    mesh.positions = points.astype(np.float32)
+    mesh.compute_normals()
+    return int(moved.sum())
+
+
+def apply_pleats(
+    mesh: Mesh,
+    index: BodyRadialIndex,
+    *,
+    count: int,
+    from_y: float,
+    amplitude: float = 0.06,
+    mask: np.ndarray | None = None,
+) -> int:
+    """Fold a skirt into ``count`` knife pleats that open toward the hem.
+
+    A pleated skirt used to come out as a plain A-line — the pleats were a tag and
+    nothing more. This ripples each vertex below ``from_y`` outward by a sawtooth
+    in its angle round the body, scaled from nothing at ``from_y`` to
+    ``amplitude`` of its radius at the hem, the way pressed pleats open as they
+    fall. Outward only, and applied after smoothing (which would iron it flat), so
+    the clearance already established still holds.
+    """
+    if count <= 0 or not index.valid or mesh.vertex_count == 0:
+        return 0
+    points = mesh.positions.astype(np.float64)
+    below = points[:, 1] < from_y
+    if mask is not None:
+        below &= mask
+    if not below.any():
+        return 0
+    hem = float(points[below, 1].min())
+    depth = np.clip((from_y - points[:, 1]) / max(from_y - hem, 1e-6), 0.0, 1.0)
+    dx = points[:, 0] - index.axis_x
+    dz = points[:, 2] - index.axis_z
+    angle = np.arctan2(dz, dx)
+    phase = (angle + np.pi) / (2 * np.pi) * count
+    saw = phase - np.floor(phase)  # 0 → 1 across each pleat, then folds back
+    scale = 1.0 + amplitude * depth * saw
+    scale = np.where(below, scale, 1.0)
+    points[:, 0] = index.axis_x + dx * scale
+    points[:, 2] = index.axis_z + dz * scale
+    mesh.positions = points.astype(np.float32)
+    mesh.compute_normals()
+    return int(below.sum())
+
+
 def coverage_report(index: BodyRadialIndex, mesh: Mesh, points: np.ndarray) -> dict:
     """Which fraction of body vertices sit underneath the garment.
 
@@ -279,8 +484,12 @@ def coverage_report(index: BodyRadialIndex, mesh: Mesh, points: np.ndarray) -> d
 POSE_TESTS: dict[str, dict[str, tuple[float, float, float]]] = {
     "arms-down": {"leftUpperArm": (0.0, 0.0, -65.0), "rightUpperArm": (0.0, 0.0, 65.0)},
     "walk": {"leftUpperLeg": (28.0, 0.0, 0.0), "rightUpperLeg": (-28.0, 0.0, 0.0)},
-    "sit": {"leftUpperLeg": (85.0, 0.0, 0.0), "rightUpperLeg": (85.0, 0.0, 0.0),
-            "leftLowerLeg": (-85.0, 0.0, 0.0), "rightLowerLeg": (-85.0, 0.0, 0.0)},
+    "sit": {
+        "leftUpperLeg": (85.0, 0.0, 0.0),
+        "rightUpperLeg": (85.0, 0.0, 0.0),
+        "leftLowerLeg": (-85.0, 0.0, 0.0),
+        "rightLowerLeg": (-85.0, 0.0, 0.0),
+    },
     "legs-apart": {"leftUpperLeg": (0.0, 0.0, -22.0), "rightUpperLeg": (0.0, 0.0, 22.0)},
 }
 

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from wardrobe.domain.jobs import JobState
-from wardrobe.errors import PlanningError
+from wardrobe.domain.jobs import FailureReason, JobState
+from wardrobe.errors import AdultDeclarationRequired, IntimateNotPermitted, PlanningError
 from wardrobe.pipeline.context import PipelineContext
 from wardrobe.pipeline.plan_outfit import plan_outfit
+from wardrobe.policy import intimate
 from wardrobe.providers import provider_for_mode
 
 
@@ -19,6 +20,21 @@ async def plan(context: PipelineContext) -> None:
     context.record.plan = outfit_plan
     for note in outfit_plan.notes:
         context.warn(note)
+
+    # Checked here, after planning, because only the plan knows the category — and
+    # before anything is taken off or built, so a refusal changes nothing.
+    decision = intimate.evaluate(
+        outfit_plan.category,
+        context.info.license if context.info is not None else None,
+        depicts_adult=context.record.request.avatar.depicts_adult,
+    )
+    if not decision.allowed:
+        error = (
+            IntimateNotPermitted
+            if decision.reason is FailureReason.INTIMATE_NOT_PERMITTED
+            else AdultDeclarationRequired
+        )
+        raise error(decision.message, detail={"category": outfit_plan.category})
 
     await context.emit(
         JobState.PLANNING,

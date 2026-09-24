@@ -123,6 +123,7 @@ def attach_garment(
     material = material or GarmentMaterial(name=name)
     material_index = document.add_material(material.to_gltf())
     _register_vrm0_material(document, info, material_index)
+    borrow_toon_shading(document, info, material_index, material.base_color)
 
     primitive = {
         "attributes": attributes,
@@ -173,6 +174,101 @@ def _register_vrm0_material(document: GltfDocument, info: VrmInfo, material_inde
             "tagMap": {},
         }
     )
+
+
+#: MToon texture slots. A borrowed material keeps none of them: they are laid out for
+#: the avatar's own UVs, and the garment's UVs are a plain cylinder unwrap.
+_VRM0_TEXTURE_KEYWORDS = {"_NORMALMAP", "_ALPHATEST_ON", "_ALPHABLEND_ON", "_ALPHAPREMULTIPLY_ON"}
+_SHADE_FACTOR = 0.72
+
+
+def _linear_to_srgb(channel: float) -> float:
+    channel = min(max(float(channel), 0.0), 1.0)
+    return 12.92 * channel if channel <= 0.0031308 else 1.055 * channel ** (1 / 2.4) - 0.055
+
+
+def _is_mtoon_vrm0(entry: dict) -> bool:
+    return isinstance(entry, dict) and str(entry.get("shader", "")).startswith("VRM/MToon")
+
+
+def _pick_source(names: list[str], candidates: list[int]) -> int | None:
+    """Prefer the avatar's own clothing — cloth, not skin, is what a garment should shade like."""
+    for index in candidates:
+        if "_CLOTH" in names[index].upper():
+            return index
+    return candidates[0] if candidates else None
+
+
+def borrow_toon_shading(
+    document: GltfDocument, info: VrmInfo, material_index: int, base_color: tuple[float, ...]
+) -> str | None:
+    """Shade the garment the way the avatar's own clothes are shaded. Returns the source's name.
+
+    A garment used to be a plain glTF PBR material: lit like a product shot, and
+    visibly foreign on an anime avatar whose body, hair and clothes are all
+    cel-shaded MToon. Rather than invent MToon parameters, this *borrows* them from
+    a material the avatar already has — its toon ramp, shade shift, rim and outline
+    — and puts the garment's colour in place of the texture. A model with no MToon
+    material keeps the PBR one, exactly as before.
+    """
+    materials = document.materials
+    names = [str(m.get("name") or "") for m in materials]
+
+    if info.spec is VrmSpec.VRM1:
+        candidates = [
+            i for i, m in enumerate(materials)
+            if i != material_index and "VRMC_materials_mtoon" in (m.get("extensions") or {})
+        ]
+        source = _pick_source(names, candidates)
+        if source is None:
+            return None
+        mtoon = {
+            key: value
+            for key, value in materials[source]["extensions"]["VRMC_materials_mtoon"].items()
+            if not key.endswith("Texture")
+        }
+        mtoon["shadeColorFactor"] = [float(c) * _SHADE_FACTOR for c in base_color[:3]]
+        target = materials[material_index]
+        target.setdefault("extensions", {})["VRMC_materials_mtoon"] = mtoon
+        target["alphaMode"] = "OPAQUE"
+        document.declare_extension("VRMC_materials_mtoon")
+        return names[source]
+
+    block = document.extension(VRM0_EXTENSION)
+    properties = (block or {}).get("materialProperties")
+    if not isinstance(properties, list) or material_index >= len(properties):
+        return None
+    candidates = [i for i, entry in enumerate(properties) if i != material_index and _is_mtoon_vrm0(entry)]
+    source = _pick_source(names, candidates) if all(i < len(names) for i in candidates) else None
+    if source is None:
+        return None
+
+    borrowed = properties[source]
+    # VRM 0.x stores colours gamma-encoded; the plan's colour is linear.
+    color = [_linear_to_srgb(c) for c in base_color[:3]]
+    floats = dict(borrowed.get("floatProperties") or {})
+    floats.update({"_BlendMode": 0, "_SrcBlend": 1, "_DstBlend": 0, "_ZWrite": 1})
+    vectors = {
+        key: value
+        for key, value in (borrowed.get("vectorProperties") or {}).items()
+        if key in {"_OutlineColor", "_EmissionColor"}
+    }
+    vectors["_Color"] = [*color, 1.0]
+    vectors["_ShadeColor"] = [c * _SHADE_FACTOR for c in color] + [1.0]
+    properties[material_index] = {
+        "name": names[material_index],
+        "shader": borrowed.get("shader", "VRM/MToon"),
+        "renderQueue": 2000,
+        "floatProperties": floats,
+        "vectorProperties": vectors,
+        "textureProperties": {},
+        "keywordMap": {
+            key: value for key, value in (borrowed.get("keywordMap") or {}).items()
+            if key not in _VRM0_TEXTURE_KEYWORDS
+        },
+        "tagMap": {"RenderType": "Opaque"},
+    }
+    return names[source]
 
 
 def _register_first_person(document: GltfDocument, info: VrmInfo, node_index: int, mesh_index: int) -> None:

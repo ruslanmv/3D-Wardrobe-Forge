@@ -21,11 +21,14 @@ from wardrobe.domain.looks import ClippingCheck
 from wardrobe.engines.geometry_checks import (
     BodyRadialIndex,
     ClearanceReport,
+    apply_pleats,
     body_points,
+    conform_to_body,
     coverage_report,
     measure_clearance,
     resolve_clearance,
     select_region_points,
+    smooth_radial,
 )
 from wardrobe.errors import FittingError
 from wardrobe.geometry.mesh import Mesh
@@ -64,10 +67,15 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     )
     if template is not None and not template.fit.allow_width_scale:
         params.width_scale = 1.0
+    pleats = int(artifact.metadata.get("pleats") or 0)
+    if pleats:
+        # Four vertices a pleat, or the sawtooth aliases into noise.
+        params.segments = max(params.segments, pleats * 4)
 
-    mesh = build_garment(
-        context.plan.category, params, silhouette=context.plan.silhouette, hem=context.plan.hem
-    )
+    # Build the template's own shape. The original five templates share their
+    # category's name as their shape; a bikini and a crop top do not.
+    kind = artifact.procedural_kind or context.plan.category
+    mesh = build_garment(kind, params, silhouette=context.plan.silhouette, hem=context.plan.hem)
 
     region_bones = set(bones_for_coverage(artifact.coverage)) - CLEARANCE_EXCLUDED_BONES
     body = body_points(context.document)
@@ -76,8 +84,17 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
 
     axis_mask = on_axis_mask(mesh, context.measurements)
 
+    conform = float(artifact.metadata.get("conform") or 0.0)
+    if conform > 0.0:
+        below_hips = bool(artifact.metadata.get("conformBelowHips"))
+        conform_to_body(mesh, index, clearance, axis_mask, strength=conform,
+                        min_y=None if below_hips else params.hip_y)
+
     before = measure_clearance(mesh, index, clearance, axis_mask)
     pushed = resolve_clearance(mesh, index, clearance, axis_mask)
+    smooth_radial(mesh, index, clearance, axis_mask)
+    if pleats:
+        apply_pleats(mesh, index, count=pleats, from_y=params.hip_y, mask=axis_mask)
     after = measure_clearance(mesh, index, clearance, axis_mask)
     after.resolved = pushed
 

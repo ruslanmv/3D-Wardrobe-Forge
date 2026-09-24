@@ -22,9 +22,11 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
-// Normalized-bone rotations (radians). In three-vrm's normalized rig the left arm
-// lies along +X, so lowering it is a positive roll about Z — the opposite sign
-// raises both arms over the head.
+// Normalized-bone rotations (radians), written for VRM 0.x. A VRM 0.x model faces
+// -Z, so its left arm lies along -X and lowering it is a positive roll about Z.
+// VRM 1.0 faces +Z, its left arm lies along +X, and the same roll raises it — so
+// applyPose() flips the sign for 1.0. Without that, every VRM 1.0 upload stood
+// with both arms over its head.
 const RELAXED = {
     leftUpperArm: [0, 0, 1.18],
     rightUpperArm: [0, 0, -1.18],
@@ -152,10 +154,11 @@ export class Viewer {
     applyPose(vrm) {
         const humanoid = vrm.humanoid;
         if (!humanoid) return;
+        const sign = vrm.meta && vrm.meta.metaVersion === '1' ? -1 : 1;
         for (const [bone, [x, y, z]] of Object.entries(RELAXED)) {
             const node = humanoid.getNormalizedBoneNode(bone);
             if (!node) continue;
-            if (this.pose === 'relaxed') node.rotation.set(x, y, z);
+            if (this.pose === 'relaxed') node.rotation.set(x, y * sign, z * sign);
             else node.rotation.set(0, 0, 0);
         }
     }

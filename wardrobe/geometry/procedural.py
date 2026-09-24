@@ -268,17 +268,20 @@ def build_bodice(params: FitParameters, *, y_top: float | None = None, y_bottom:
 def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: float = 1.0,
                 name: str = "skirt") -> Mesh:
     hip_w, hip_d = params.hip_half
-    waist_w, waist_d = params.waist_half
 
     span = max(y_top - y_bottom, 1e-4)
 
     # Flare decays from the hem up to the waist, so the skirt falls rather than
     # forming a cone.
+    # The top ring takes the torso's width at wherever the skirt starts. It used to
+    # be the waist's, always — right for a skirt, wrong for a dress, whose skirt
+    # starts at the hips: the narrower ring met a wider bodice and left a ledge.
+    top_w, top_d = half_at(params, y_top)
     rings: list[Ring] = []
     for fraction in (0.0, 0.18, 0.38, 0.58, 0.78, 1.0):
         taper = 1.0 + (flare - 1.0) * (1.0 - fraction) ** 1.4
-        width = hip_w * taper if fraction < 0.9 else waist_w * 1.01
-        depth = hip_d * taper if fraction < 0.9 else waist_d * 1.01
+        width = hip_w * taper if fraction < 0.9 else top_w * 1.01
+        depth = hip_d * taper if fraction < 0.9 else top_d * 1.01
         rings.append(Ring(y_bottom + span * fraction, width, depth))
     return loft(rings, segments=params.segments, name=name)
 
@@ -342,6 +345,103 @@ def build_trousers(params: FitParameters, *, hem_y: float, flare: float = 1.0,
     return meshes
 
 
+def half_at(params: FitParameters, y: float) -> tuple[float, float]:
+    """Torso half-extents at any height, interpolated between the landmark rings.
+
+    ``build_bodice`` places its rings at fixed fractions of one span, which is
+    fine for a garment that runs hip to chest. The haul garments start and stop
+    anywhere — a bikini band spans a hand's width under the bust, briefs sit
+    between the hip joint and the waist — so they need the body's width *at* an
+    arbitrary height rather than at five fixed ones.
+    """
+    marks = [
+        (params.hip_y - (params.hip_y - params.knee_y) * 0.25, params.hip_half),
+        (params.hip_y, params.hip_half),
+        (params.waist_y, params.waist_half),
+        (params.chest_y, params.chest_half),
+        (params.shoulder_y, params.shoulder_half),
+    ]
+    marks.sort(key=lambda mark: mark[0])
+    if y <= marks[0][0]:
+        return marks[0][1]
+    for (y0, (w0, d0)), (y1, (w1, d1)) in zip(marks, marks[1:], strict=False):
+        if y <= y1:
+            t = (y - y0) / max(y1 - y0, 1e-6)
+            return (w0 + (w1 - w0) * t, d0 + (d1 - d0) * t)
+    return marks[-1][1]
+
+
+def build_band(params: FitParameters, *, y_bottom: float, y_top: float, looseness: float = 1.0,
+               rows: int = 5, name: str = "band") -> Mesh:
+    """A torso shell between two heights: the section every haul garment is built from."""
+    y_bottom, y_top = min(y_bottom, y_top), max(y_bottom, y_top)
+    rings = []
+    for row in range(rows):
+        y = y_bottom + (y_top - y_bottom) * row / (rows - 1)
+        half_w, half_d = half_at(params, y)
+        rings.append(Ring(y, half_w * looseness, half_d * looseness))
+    return loft(rings, segments=params.segments, name=name)
+
+
+def build_straps(params: FitParameters, *, top_y: float, style: str = "shoulder",
+                 name: str = "strap") -> list[Mesh]:
+    """Thin straps from a bodice's top edge over the shoulders, or round the neck.
+
+    Each strap is its own mesh component off the midline, so the clearance pass
+    treats it as limb-worn and leaves it as built — it has to be placed right
+    here: out to the front of the bust, over the top of the shoulder a little
+    above the joint, and down the back.
+    """
+    if style == "none":
+        return []
+    half_w, half_d = half_at(params, top_y)
+    shoulder_top = params.shoulder_y + params.height * 0.03
+    radius = max(params.height * 0.004, 0.004)
+    meshes: list[Mesh] = []
+
+    if style == "halter":
+        neck = params.neck_y - params.height * 0.01
+        for side in (-1.0, 1.0):
+            path = np.array([
+                [side * half_w * 0.42, top_y, half_d * 0.92],
+                [side * half_w * 0.2, (top_y + neck) * 0.5, half_d * 0.75],
+                [side * params.height * 0.035, neck, 0.0],
+                [side * params.height * 0.012, neck + params.height * 0.004, -params.height * 0.03],
+            ])
+            meshes.append(sweep(path, [radius] * 4, segments=6, name=f"{name}-halter-{side:+.0f}"))
+        return meshes
+
+    shoulder_x = params.measurements.shoulder_width_m * 0.5 * 0.55
+    for side in (-1.0, 1.0):
+        path = np.array([
+            [side * half_w * 0.5, top_y, half_d * 0.9],
+            [side * shoulder_x, shoulder_top, half_d * 0.35],
+            [side * shoulder_x, shoulder_top, -half_d * 0.35],
+            [side * half_w * 0.5, top_y, -half_d * 0.9],
+        ])
+        meshes.append(sweep(path, [radius] * 4, segments=6, name=f"{name}-{side:+.0f}"))
+    return meshes
+
+
+def build_legwear(params: FitParameters, *, top_y: float, name: str = "legwear") -> list[Mesh]:
+    """Thigh-high stockings: a close tube per leg, ankle to ``top_y``."""
+    meshes: list[Mesh] = []
+    for side in ("left", "right"):
+        hip = params.measurements.bone_positions.get(f"{side}UpperLeg")
+        knee = params.measurements.bone_positions.get(f"{side}LowerLeg")
+        foot = params.measurements.bone_positions.get(f"{side}Foot")
+        if hip is None or knee is None or foot is None:
+            continue
+        hip_p, knee_p, foot_p = (np.array(p, dtype=np.float64) for p in (hip, knee, foot))
+        t = (hip_p[1] - top_y) / max(hip_p[1] - knee_p[1], 1e-6)
+        top = hip_p + (knee_p - hip_p) * float(np.clip(t, 0.0, 1.0))
+        thigh = max(params.measurements.hip_width_m * 0.2, 0.04) + params.clearance_m
+        path = np.array([top, knee_p, foot_p + np.array([0.0, params.height * 0.02, 0.0])])
+        meshes.append(sweep(path, [thigh, thigh * 0.7, thigh * 0.5], segments=max(params.segments // 2, 8),
+                            name=f"{name}-{side}"))
+    return meshes
+
+
 def build_shoes(params: FitParameters, *, name: str = "shoes") -> list[Mesh]:
     meshes: list[Mesh] = []
     length = max(params.height * 0.14, 0.12)
@@ -385,9 +485,81 @@ SILHOUETTES: dict[str, dict[str, float]] = {
 }
 
 
+#: Shapes built from torso bands, straps and legwear rather than the original five.
+HAUL_KINDS = frozenset(
+    {
+        "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
+        "slip-dress", "shorts", "cropped-jacket", "legwear",
+    }
+)
+
+
+def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: float) -> list[Mesh]:
+    """Landmark heights shared by every haul garment, so a bikini top and a crop top agree
+    on where the bust is, and briefs and a one-piece agree on where the leg opening is."""
+    rise = params.waist_y - params.hip_y
+    thigh = params.hip_y - params.knee_y
+    torso = params.chest_y - params.waist_y
+    bust_top = params.chest_y + (params.shoulder_y - params.chest_y) * 0.3
+    underbust = params.chest_y - torso * 0.32
+    low_rise = params.waist_y - rise * 0.35
+    leg_opening = params.hip_y - thigh * 0.07
+    straps = str(params.metadata.get("straps") or "")
+
+    def bra() -> list[Mesh]:
+        band = build_band(params, y_bottom=underbust, y_top=bust_top, rows=4, name="bra")
+        return [band, *build_straps(params, top_y=bust_top, style=straps or "shoulder")]
+
+    def briefs() -> list[Mesh]:
+        return [build_band(params, y_bottom=leg_opening, y_top=low_rise, rows=4, name="briefs")]
+
+    def one_piece() -> list[Mesh]:
+        body = build_band(params, y_bottom=leg_opening, y_top=bust_top, rows=8, name="one-piece")
+        return [body, *build_straps(params, top_y=bust_top, style=straps or "shoulder")]
+
+    if kind == "crop-top":
+        top = build_band(params, y_bottom=params.waist_y + torso * 0.38,
+                         y_top=params.chest_y + (params.shoulder_y - params.chest_y) * 0.6,
+                         looseness=1.0 + (flare - 1.0) * 0.2, name="crop-top")
+        return [top, *build_straps(params, top_y=bust_top, style=straps or "none"),
+                *build_sleeves(params, length=params.sleeve_length or "none")]
+    if kind == "tube-top":
+        top = build_band(params, y_bottom=params.waist_y + torso * 0.3, y_top=bust_top, name="tube-top")
+        return [top, *build_straps(params, top_y=bust_top, style=straps or "none")]
+    if kind == "bra":
+        return bra()
+    if kind == "briefs":
+        return briefs()
+    if kind == "bikini":
+        return bra() + briefs()
+    if kind == "one-piece":
+        return one_piece()
+    if kind == "swim-dress":
+        hem = params.hip_y - thigh * 0.4
+        return [*one_piece(), build_skirt(params, y_top=params.hip_y, y_bottom=hem, flare=max(flare, 1.3))]
+    if kind == "slip-dress":
+        bodice = build_band(params, y_bottom=params.hip_y, y_top=bust_top, rows=6, name="slip-bodice")
+        skirt = build_skirt(params, y_top=params.hip_y + 1e-3, y_bottom=hem_y, flare=flare, name="slip-skirt")
+        return [bodice, skirt, *build_straps(params, top_y=bust_top, style=straps or "shoulder")]
+    if kind == "shorts":
+        return build_trousers(params, hem_y=max(hem_y, params.hip_y - thigh * 0.55), flare=flare)
+    if kind == "cropped-jacket":
+        jacket = build_band(params, y_bottom=params.waist_y - rise * 0.1,
+                            y_top=params.chest_y + (params.shoulder_y - params.chest_y) * 0.68,
+                            looseness=1.06 + (flare - 1.0) * 0.3, name="cropped-jacket")
+        return [jacket, *build_sleeves(params, length="long", thickness=1.4)]
+    if kind == "legwear":
+        return build_legwear(params, top_y=params.hip_y - thigh * 0.4)
+    raise ValueError(f"unsupported haul garment: {kind!r}")
+
+
 def build_garment(category: str, params: FitParameters, *, silhouette: str = "straight",
                   hem: str = "knee") -> Mesh:
-    """Build a complete garment shell for ``category``."""
+    """Build a complete garment shell for ``category`` — or for a template's own shape.
+
+    ``category`` is the procedural kind: the original five share their category's
+    name, and the haul garments (``HAUL_KINDS``) have their own.
+    """
     modifiers = SILHOUETTES.get(silhouette, SILHOUETTES["straight"])
     flare = modifiers["flare"] * params.flare
     length_scale = modifiers["length"] * params.length_scale
@@ -440,6 +612,10 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
     elif category == "shoes":
         sections = build_shoes(params)
 
+    # ---- haul garments: every one is a band between two body heights -------
+    elif category in HAUL_KINDS:
+        sections = _haul_sections(category, params, hem_y=hem_y, flare=flare)
+
     else:
         raise ValueError(f"unsupported garment category: {category!r}")
 
@@ -462,5 +638,10 @@ __all__ = [
     "build_sleeves",
     "build_trousers",
     "build_shoes",
+    "build_band",
+    "build_straps",
+    "build_legwear",
+    "half_at",
+    "HAUL_KINDS",
     "build_garment",
 ]

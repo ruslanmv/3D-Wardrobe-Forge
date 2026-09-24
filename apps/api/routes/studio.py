@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from apps.api.dependencies import OrchestratorDep, SettingsDep, StoreDep
 from wardrobe import __version__
+from wardrobe.domain.garments import INTIMATE_CATEGORIES
 from wardrobe.domain.jobs import TERMINAL_STATES, CreateJobRequest, JobOptions, JobRecord, JobState
 from wardrobe.domain.looks import OutfitRequest
 from wardrobe.library import AvatarLibrary
@@ -130,6 +131,8 @@ def vocabulary() -> dict:
             "sleeve": {name: words[0] for name, words in SLEEVE_KEYWORDS.items() if words and name != "none"}
             | {"none": "sleeveless"},
         },
+        # Categories that need an avatar declared adult; the Studio disables them otherwise.
+        "intimateCategories": sorted(INTIMATE_CATEGORIES),
         "jobStates": [state.value for state in JobState if state not in TERMINAL_STATES],
         "terminalStates": sorted(state.value for state in TERMINAL_STATES),
     }

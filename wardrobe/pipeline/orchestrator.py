@@ -29,6 +29,7 @@ from wardrobe.pipeline import (
     fit_garment,
     generate_garment,
     render_preview,
+    replace_garments,
     validate_output,
     validate_source,
 )
@@ -133,6 +134,7 @@ class Orchestrator:
             await validate_source.run(context)
             await analyze_avatar.run(context)
             await generate_garment.plan(context)
+            await replace_garments.run(context)
             await generate_garment.generate(context)
             await fit_garment.run(context, engine)
             await assemble_vrm.run(context, engine)

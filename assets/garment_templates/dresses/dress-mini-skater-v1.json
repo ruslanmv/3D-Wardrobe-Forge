@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "dress-mini-skater-v1",
+  "name": "Skater Mini Dress",
+  "category": "dress",
+  "mesh": "procedural:dress",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips"
+  ],
+  "silhouette": "fit-and-flare",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 6.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 0.5
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "mini",
+    "skater",
+    "flared",
+    "party",
+    "flirty"
+  ],
+  "description": "Fitted bodice, flared mini skirt."
+}

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "under-bralette-v1",
+  "name": "Bralette",
+  "category": "underwear",
+  "mesh": "procedural:bra",
+  "coverage": [
+    "chest"
+  ],
+  "anchors": [
+    "chest"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "straps": "shoulder"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "bralette",
+    "bra",
+    "lace bralette"
+  ],
+  "description": "Soft lace bralette."
+}

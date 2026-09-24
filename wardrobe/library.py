@@ -24,7 +24,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from wardrobe.storage.object_store import ObjectStore
@@ -32,6 +32,9 @@ from wardrobe.storage.object_store import ObjectStore
 logger = logging.getLogger(__name__)
 
 MANIFEST_NAME = "models.json"
+#: Operator-owned declarations the provenance manifest does not make (and should not:
+#: it is a verbatim copy of yourfriend's). Absent file, absent avatar = nothing declared.
+POLICY_NAME = "policy.json"
 
 #: Licence names from a provenance manifest -> the VRoid-style conditions they grant.
 #:
@@ -71,6 +74,7 @@ class LibraryAvatar:
     presentation: str | None = None
     path: Path | None = None
     problem: str | None = None
+    depicts_adult: bool = False
 
     @property
     def available(self) -> bool:
@@ -99,6 +103,8 @@ class LibraryAvatar:
             "avatarId": self.slug,
             "name": self.name,
         }
+        if self.depicts_adult:
+            payload["depictsAdult"] = True
         conditions = self.granted_conditions
         if conditions:
             payload["license"] = {
@@ -121,6 +127,7 @@ class LibraryAvatar:
             "available": self.available,
             "problem": self.problem,
             "licenseGrants": self.granted_conditions,
+            "depictsAdult": self.depicts_adult,
             "storageKey": self.storage_key if self.available else None,
             "fileUrl": f"/v1/library/{self.slug}/avatar.vrm" if self.available else None,
         }
@@ -144,10 +151,14 @@ class AvatarLibrary:
             logger.warning("avatar library unavailable at %s: %s", root, exc)
             return cls(root=root, problem=f"library manifest unreadable: {exc}")
 
+        declared = cls._declarations(root)
         avatars = []
         for item in items:
             try:
-                avatars.append(cls._verify(root, item))
+                avatar = cls._verify(root, item)
+                if declared.get(avatar.slug, {}).get("depictsAdult") is True:
+                    avatar = replace(avatar, depicts_adult=True)
+                avatars.append(avatar)
             except (KeyError, TypeError) as exc:
                 logger.warning("skipping malformed library entry %r: %s", item, exc)
         library = cls(root=root, avatars=avatars, license_note=manifest.get("license_note"))
@@ -160,6 +171,19 @@ class AvatarLibrary:
                 ", ".join(missing),
             )
         return library
+
+    @staticmethod
+    def _declarations(root: Path) -> dict:
+        """The operator's policy file, or nothing. Only a literal ``true`` counts."""
+        try:
+            policy = json.loads((root / POLICY_NAME).read_text(encoding="utf-8"))
+            avatars = policy.get("avatars") or {}
+            return avatars if isinstance(avatars, dict) else {}
+        except FileNotFoundError:
+            return {}
+        except (OSError, ValueError, AttributeError) as exc:
+            logger.warning("ignoring unreadable library policy %s: %s", root / POLICY_NAME, exc)
+            return {}
 
     @staticmethod
     def _verify(root: Path, item: dict) -> LibraryAvatar:

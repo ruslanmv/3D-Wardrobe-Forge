@@ -32,6 +32,18 @@ class AttestationRequired(WardrobeError):
     reason = FailureReason.LICENSE_ATTESTATION_REQUIRED
 
 
+class IntimateNotPermitted(WardrobeError):
+    """The model's own terms disallow sexual usage; swimwear and underwear are refused."""
+
+    reason = FailureReason.INTIMATE_NOT_PERMITTED
+
+
+class AdultDeclarationRequired(WardrobeError):
+    """Swimwear and underwear need the avatar declared as depicting an adult."""
+
+    reason = FailureReason.ADULT_DECLARATION_REQUIRED
+
+
 class NotHumanoid(WardrobeError):
     reason = FailureReason.SOURCE_NOT_HUMANOID
 
@@ -57,6 +69,8 @@ __all__ = [
     "SourceRejected",
     "LicenseRejected",
     "AttestationRequired",
+    "IntimateNotPermitted",
+    "AdultDeclarationRequired",
     "NotHumanoid",
     "PlanningError",
     "ProviderError",

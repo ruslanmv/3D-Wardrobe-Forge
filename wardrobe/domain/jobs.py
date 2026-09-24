@@ -65,6 +65,8 @@ class FailureReason(StrEnum):
     FITTING_FAILED = "fitting_failed"
     OUTPUT_INVALID = "output_validation_failed"
     PROVIDER_ERROR = "garment_provider_error"
+    INTIMATE_NOT_PERMITTED = "intimate_garments_not_permitted_by_model"
+    ADULT_DECLARATION_REQUIRED = "requires_adult_declaration"
     INTERNAL = "internal_error"
 
 
@@ -76,6 +78,8 @@ class JobOptions(BaseModel):
     engine: Literal["auto", "native", "blender"] = "auto"
     keep_source: bool = Field(default=False, alias="keepSource")
     wardrobe_id: str | None = Field(default=None, alias="wardrobeId")
+    #: Take off the worn garment the new one replaces (VRoid clothing slots), or layer over it.
+    replace_garments: bool = Field(default=True, alias="replaceGarments")
 
 
 class CreateJobRequest(BaseModel):
@@ -174,6 +178,8 @@ _REJECTION_REASONS = frozenset(
         FailureReason.SOURCE_UNREACHABLE,
         FailureReason.HASH_MISMATCH,
         FailureReason.UNSUPPORTED_ASSET,
+        FailureReason.INTIMATE_NOT_PERMITTED,
+        FailureReason.ADULT_DECLARATION_REQUIRED,
     }
 )
 

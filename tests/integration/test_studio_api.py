@@ -193,3 +193,40 @@ def test_passed_only_with_nothing_passing_is_a_409_with_the_reason(client: TestC
     response = client.get("/v1/wardrobes/mira/bundle.zip?passedOnly=true")
     assert response.status_code == 409
     assert "fit" in response.json()["detail"]
+
+
+# ----------------------------------------------------------------------
+# try-on haul
+# ----------------------------------------------------------------------
+def test_vocabulary_names_the_categories_that_need_an_adult_declaration(client: TestClient):
+    vocabulary = client.get("/v1/vocabulary").json()
+    assert vocabulary["intimateCategories"] == ["swimwear", "underwear"]
+    assert {"swimwear", "underwear", "nightwear", "shorts", "legwear"} <= set(vocabulary["overrides"]["category"])
+
+
+def test_an_undeclared_library_avatar_cannot_be_put_in_swimwear(client: TestClient):
+    job = dress(client, prompt="red triangle bikini")
+    assert job["state"] == "rejected"
+    assert job["reason"] == "requires_adult_declaration"
+
+
+def test_a_declared_library_avatar_can_and_the_body_cannot_declare_it(orchestrator, monkeypatch, tmp_path, vrm_bytes):
+    # Both built before make_client, which patches AvatarLibrary.from_directory on the class.
+    root = write_library(tmp_path / "declared", {"Mira.vrm": vrm_bytes})
+    (root / "policy.json").write_text(json.dumps({"avatars": {"mira": {"depictsAdult": True}}}))
+    declared = AvatarLibrary.from_directory(root)
+    undeclared = AvatarLibrary.from_directory(write_library(tmp_path / "plain", {"Mira.vrm": vrm_bytes}))
+    assert declared.get("mira").depicts_adult and not undeclared.get("mira").depicts_adult
+
+    with make_client(orchestrator, monkeypatch, declared) as client:
+        assert client.get("/v1/library").json()["avatars"][0]["depictsAdult"] is True
+        assert dress(client, prompt="red triangle bikini")["state"] == "completed"
+
+    with make_client(orchestrator, monkeypatch, undeclared) as client:
+        response = client.post(
+            "/v1/library/mira/jobs",
+            json={"avatar": {"depictsAdult": True}, "outfit": {"prompt": "red triangle bikini"}},
+        )
+        # What the server wrote into the job is the whole point; that the gate then
+        # refuses an undeclared avatar is test_an_undeclared_library_avatar_cannot_be_put_in_swimwear.
+        assert response.json()["request"]["avatar"]["depictsAdult"] is False

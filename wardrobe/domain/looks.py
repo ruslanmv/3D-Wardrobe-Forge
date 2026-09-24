@@ -121,6 +121,8 @@ class FitReport(BaseModel):
     pose_tests: dict = Field(default_factory=dict, alias="poseTests")
     warnings: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
+    #: Worn clothing slots the garment replaced ("tops", "bottoms", …); empty when it layered.
+    replaced_garments: list[str] = Field(default_factory=list, alias="replacedGarments")
 
     @property
     def passed(self) -> bool:

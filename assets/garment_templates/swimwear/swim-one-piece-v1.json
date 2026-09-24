@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "swim-one-piece-v1",
+  "name": "One-Piece Swimsuit",
+  "category": "swimwear",
+  "mesh": "procedural:one-piece",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 3.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true,
+    "straps": "shoulder"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "one-piece",
+    "swimsuit",
+    "bathing suit",
+    "monokini",
+    "maillot"
+  ],
+  "description": "Classic scoop one-piece swimsuit."
+}
