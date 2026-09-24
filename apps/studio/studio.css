@@ -1021,3 +1021,36 @@ dialog .primary {
         opacity: 1;
     }
 }
+
+/* ---------------------------------------------------------------- style layer */
+.style .style-row {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    align-items: start;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.style .style-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding-top: 0.35rem;
+}
+.chip:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.build-on {
+    margin: 0.25rem 0 0.75rem;
+}
+.build-on input:disabled + span {
+    opacity: 0.5;
+}
+@media (max-width: 720px) {
+    .style .style-row {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+    .style .style-label {
+        padding-top: 0;
+    }
+}

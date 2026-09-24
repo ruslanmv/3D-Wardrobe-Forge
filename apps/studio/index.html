@@ -117,6 +117,36 @@
                         </div>
                     </fieldset>
 
+                    <fieldset class="style">
+                        <legend>Style <span class="legend-hint" id="style-hint"></span></legend>
+                        <div class="style-row">
+                            <span class="style-label">Finish</span>
+                            <div class="chips small" id="finish-chips" role="radiogroup" aria-label="Finish"></div>
+                        </div>
+                        <div class="style-row">
+                            <span class="style-label">Pattern</span>
+                            <div class="chips small" id="pattern-chips" role="radiogroup" aria-label="Pattern"></div>
+                        </div>
+                        <div class="style-row">
+                            <span class="style-label">See-through</span>
+                            <div class="chips small" id="opacity-chips" role="radiogroup" aria-label="See-through"></div>
+                        </div>
+                        <div class="style-row">
+                            <span class="style-label">Coverage</span>
+                            <div class="chips small" id="coverage-chips" role="radiogroup" aria-label="Coverage"></div>
+                        </div>
+                        <div class="row">
+                            <label class="field">
+                                <span>Straps</span>
+                                <select id="straps-select"></select>
+                            </label>
+                            <label class="field">
+                                <span>Neckline</span>
+                                <select id="neckline-select"></select>
+                            </label>
+                        </div>
+                    </fieldset>
+
                     <fieldset>
                         <legend>Colour <span class="legend-value" id="color-value">Planner chooses</span></legend>
                         <div class="swatches" id="swatches" role="radiogroup" aria-label="Colour"></div>
@@ -133,6 +163,10 @@
                         <p class="request-preview" id="request-preview"></p>
                     </fieldset>
 
+                    <label class="check build-on" id="build-on-label" title="Generate onto the look on stage instead of her original outfit: a top onto a skirt is a set">
+                        <input type="checkbox" id="build-on" disabled />
+                        <span id="build-on-text">Build on the look on stage</span>
+                    </label>
                     <button type="submit" class="primary" id="generate-btn" disabled>Generate look</button>
                 </form>
 

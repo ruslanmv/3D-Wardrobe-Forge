@@ -46,7 +46,19 @@ const state = {
     vocab: null,
     library: [],
     avatar: null,
-    design: { category: null, templateId: null, silhouette: null, hem: null, color: null },
+    design: {
+        category: null,
+        templateId: null,
+        silhouette: null,
+        hem: null,
+        color: null,
+        finish: null,
+        pattern: null,
+        opacity: null,
+        coverage: null,
+        straps: null,
+        neckline: null,
+    },
     promptDirty: false,
     wardrobe: null,
     activeLookId: null,
@@ -167,6 +179,7 @@ function bindChrome() {
         updatePreview();
     });
     $('export-btn').addEventListener('click', exportBundle);
+    $('build-on').addEventListener('change', updatePreview);
 }
 
 // ---------------------------------------------------------------- capabilities
@@ -263,7 +276,7 @@ async function selectAvatar(slug) {
     $('stage-empty').hidden = true;
     $('generate-btn').disabled = false;
     $('report').hidden = true;
-    updatePreview();
+    if (state.vocab) renderDesigner();
 
     viewer.clear('look');
     revoke(state.urls.look);
@@ -303,6 +316,8 @@ function setViewMode(mode) {
 function renderDesigner() {
     const { overrides, promptWords } = state.vocab;
 
+    const adult = Boolean(state.avatar && state.avatar.depictsAdult);
+    const needsAdult = (category) => state.vocab.intimateCategories.includes(category);
     const categoryChips = [null, ...overrides.category].map((category) =>
         el('button', {
             class: 'chip',
@@ -310,6 +325,11 @@ function renderDesigner() {
             role: 'radio',
             'aria-checked': String(category === state.design.category),
             text: category || 'Any',
+            disabled: category && needsAdult(category) && !adult,
+            title:
+                category && needsAdult(category) && !adult
+                    ? 'Needs this avatar declared as depicting an adult, by the operator, in assets/library/policy.json'
+                    : undefined,
             onclick: () => {
                 state.design.category = category;
                 state.design.templateId = null;
@@ -355,7 +375,9 @@ function renderDesigner() {
     $('swatches').replaceChildren(...swatches);
     $('color-value').textContent = state.design.color || 'Planner chooses';
 
-    const words = [...promptWords.fabric, ...Object.values(promptWords.sleeve)];
+    renderStyle(adult);
+
+    const words = [...promptWords.fabric, ...Object.values(promptWords.sleeve), ...(promptWords.cut || [])];
     $('word-chips').replaceChildren(
         ...words.map((word) =>
             el('button', {
@@ -370,6 +392,60 @@ function renderDesigner() {
 
     if (!$('template-select').options.length) loadTemplates();
     updatePreview();
+}
+
+/**
+ * The style layer. Every choice is an ``OutfitRequest`` override, so it wins
+ * over the prompt. Choices that make the body show through — sheer levels and
+ * fishnet — are disabled, with the reason, for an avatar the operator has not
+ * declared adult; the server refuses them anyway, this only says so first.
+ */
+function renderStyle(adult) {
+    const { overrides } = state.vocab;
+    const seeThrough = new Set(state.vocab.seeThroughPatterns || []);
+    const reason = 'Shows the body: needs this avatar declared as depicting an adult (assets/library/policy.json)';
+
+    const chips = (id, key, values, { label = (v) => v, value = (v) => v, gated = () => false } = {}) =>
+        $(id).replaceChildren(
+            ...[null, ...values].map((item) => {
+                const v = item === null ? null : value(item);
+                const blocked = item !== null && gated(item) && !adult;
+                if (blocked && state.design[key] === v) state.design[key] = null;
+                return el('button', {
+                    class: 'chip',
+                    type: 'button',
+                    role: 'radio',
+                    'aria-checked': String(state.design[key] === v),
+                    text: item === null ? 'Auto' : label(item),
+                    disabled: blocked,
+                    title: blocked ? reason : undefined,
+                    onclick: () => {
+                        state.design[key] = v;
+                        renderDesigner();
+                    },
+                });
+            })
+        );
+
+    chips('finish-chips', 'finish', overrides.finish);
+    chips('pattern-chips', 'pattern', overrides.pattern.filter((p) => p !== 'none'), {
+        gated: (p) => seeThrough.has(p),
+    });
+    chips('opacity-chips', 'opacity', overrides.opacity.filter((o) => o.value < 1), {
+        label: (o) => o.name,
+        value: (o) => o.value,
+        gated: () => true,
+    });
+    chips('coverage-chips', 'coverage', overrides.coverage);
+    fillSelect($('straps-select'), overrides.straps, state.design.straps, (value) => {
+        state.design.straps = value;
+        updatePreview();
+    });
+    fillSelect($('neckline-select'), overrides.neckline, state.design.neckline, (value) => {
+        state.design.neckline = value;
+        updatePreview();
+    });
+    $('style-hint').textContent = adult ? 'overrides the prompt' : 'overrides the prompt · see-through needs an adult declaration';
 }
 
 function fillSelect(select, values, current, onChange) {
@@ -437,8 +513,13 @@ function composedPrompt() {
     const typed = $('prompt').value.trim();
     if (state.promptDirty && typed) return typed;
     const templateName = $('template-select').selectedOptions[0]?.dataset?.name;
+    const opacity = (state.vocab.overrides.opacity || []).find((o) => o.value === state.design.opacity);
     const parts = [
         state.design.color,
+        opacity && opacity.value < 1 ? opacity.name : null,
+        state.design.finish && state.design.finish !== 'matte' ? state.design.finish : null,
+        state.design.pattern,
+        state.design.coverage && state.design.coverage !== 'standard' ? state.design.coverage : null,
         state.design.silhouette,
         state.design.hem ? HEM_WORDS[state.design.hem] : null,
         state.design.category || templateName || 'outfit',
@@ -448,7 +529,9 @@ function composedPrompt() {
 
 function outfitRequest() {
     const outfit = { prompt: composedPrompt(), mode: 'template' };
-    for (const key of ['category', 'color', 'silhouette', 'hem']) if (state.design[key]) outfit[key] = state.design[key];
+    for (const key of ['category', 'color', 'silhouette', 'hem', 'finish', 'pattern', 'coverage', 'straps', 'neckline'])
+        if (state.design[key]) outfit[key] = state.design[key];
+    if (state.design.opacity !== null && state.design.opacity < 1) outfit.opacity = state.design.opacity;
     if (state.design.templateId) outfit.templateId = state.design.templateId;
     return outfit;
 }
@@ -459,9 +542,20 @@ function updatePreview() {
     const fields = Object.entries(outfit)
         .filter(([key]) => key !== 'prompt' && key !== 'mode')
         .map(([key, value]) => `${key}=${value}`);
+    const base = buildOnLook();
     $('request-preview').textContent = state.avatar
-        ? `→ ${state.avatar.slug} · ${fields.join(' · ') || 'planner decides'} · "${outfit.prompt}"`
+        ? `→ ${state.avatar.slug}${base ? ` + ${base.name}` : ''} · ${fields.join(' · ') || 'planner decides'} · "${outfit.prompt}"`
         : '';
+}
+
+/** The look on stage, when the user asked to build on it (an outfit set). */
+function buildOnLook() {
+    const look = state.wardrobe && state.activeLookId && state.wardrobe.looks.find((l) => l.id === state.activeLookId);
+    const box = $('build-on');
+    box.disabled = !look;
+    if (!look) box.checked = false;
+    $('build-on-text').textContent = look ? `Build on “${look.name}”` : 'Build on the look on stage';
+    return look && box.checked ? look : null;
 }
 
 // ---------------------------------------------------------------- generation
@@ -477,8 +571,10 @@ async function generate() {
 
     let job;
     try {
+        const base = buildOnLook();
         job = await api.createLibraryJob(slug, {
             outfit,
+            ...(base ? { baseLookId: base.id } : {}),
             options: { renderPreview: true, engine: state.caps.engines.default || 'auto' },
         });
     } catch (error) {
@@ -658,6 +754,7 @@ async function wearLook(lookId, { mode = null } = {}) {
         state.urls.look = url;
         setViewMode(mode || (viewer.mode === 'original' ? 'compare' : viewer.mode));
         setStatus(look.prompt ? `“${look.prompt}”` : look.name);
+        updatePreview();
     } catch (error) {
         setStatus(`Could not load ${look.name}: ${describe(error)}`, true);
     }

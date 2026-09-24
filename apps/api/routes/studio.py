@@ -22,10 +22,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from apps.api.dependencies import OrchestratorDep, SettingsDep, StoreDep
 from wardrobe import __version__
-from wardrobe.domain.garments import INTIMATE_CATEGORIES
+from wardrobe.domain.garments import COVERAGE_PRESETS, INTIMATE_CATEGORIES, NECKLINES, STRAP_PRESETS
 from wardrobe.domain.jobs import TERMINAL_STATES, CreateJobRequest, JobOptions, JobRecord, JobState
 from wardrobe.domain.looks import OutfitRequest
 from wardrobe.library import AvatarLibrary
+from wardrobe.materials.finishes import FINISHES, OPACITY_LEVELS, PATTERNS
 from wardrobe.pipeline.plan_outfit import (
     CATEGORY_KEYWORDS,
     COLORS,
@@ -151,14 +152,27 @@ def vocabulary() -> dict:
             "color": [{"name": name, "hex": value} for name, value in COLORS.items() if name != "gray"],
             "silhouette": sorted(SILHOUETTE_KEYWORDS),
             "hem": list(HEM_KEYWORDS),
+            # The style layer: how it is finished, patterned, cut and held up.
+            "finish": list(FINISHES),
+            "pattern": list(PATTERNS),
+            "opacity": [{"name": name, "value": value} for name, value in OPACITY_LEVELS.items()],
+            "coverage": list(COVERAGE_PRESETS),
+            "straps": list(STRAP_PRESETS),
+            "neckline": list(NECKLINES),
         },
         "promptWords": {
             "fabric": [name for name in FABRICS if name != "sequined"],
             "sleeve": {name: words[0] for name, words in SLEEVE_KEYWORDS.items() if words and name != "none"}
             | {"none": "sleeveless"},
+            "cut": ["backless", "high-cut"],
         },
         # Categories that need an avatar declared adult; the Studio disables them otherwise.
         "intimateCategories": sorted(INTIMATE_CATEGORIES),
+        # Patterns whose holes show the body (lace outside underwear is lined, so
+        # only fishnet here), and every opacity below 1: gated like the categories.
+        "seeThroughPatterns": sorted(
+            name for name, spec in PATTERNS.items() if spec.alpha == "mask" and name != "lace"
+        ),
         "jobStates": [state.value for state in JobState if state not in TERMINAL_STATES],
         "terminalStates": sorted(state.value for state in TERMINAL_STATES),
     }

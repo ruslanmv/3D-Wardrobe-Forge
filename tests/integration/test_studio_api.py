@@ -109,6 +109,30 @@ def test_vocabulary_offers_only_what_the_planner_reads(client: TestClient):
     assert set(vocabulary["terminalStates"]) == {"completed", "failed", "rejected"}
 
 
+def test_every_style_choice_the_studio_offers_plans_as_chosen(client: TestClient, template_catalog):
+    """The style chips send overrides; each must be one the planner honours, not silently drops."""
+    from wardrobe.domain.looks import OutfitRequest
+    from wardrobe.pipeline.plan_outfit import plan_outfit
+
+    overrides = client.get("/v1/vocabulary").json()["overrides"]
+    for finish in overrides["finish"]:
+        assert plan_outfit(OutfitRequest(prompt="black mini dress", finish=finish), template_catalog).material.finish == finish
+    for pattern in overrides["pattern"]:
+        plan = plan_outfit(OutfitRequest(prompt="black mini dress", pattern=pattern), template_catalog)
+        assert plan.material.pattern == pattern
+    for level in overrides["opacity"]:
+        plan = plan_outfit(OutfitRequest(prompt="black mini dress", opacity=level["value"]), template_catalog)
+        assert plan.material.opacity == level["value"] and plan.requires_adult is (level["value"] < 1)
+    for coverage in overrides["coverage"]:
+        assert plan_outfit(OutfitRequest(prompt="red bikini", coverage=coverage), template_catalog).style.coverage == coverage
+    for straps in overrides["straps"]:
+        assert plan_outfit(OutfitRequest(prompt="red bikini", straps=straps), template_catalog).style.straps == straps
+    for neckline in overrides["neckline"]:
+        plan = plan_outfit(OutfitRequest(prompt="red dress", neckline=neckline), template_catalog)
+        assert plan.style.neckline == neckline
+    assert client.get("/v1/vocabulary").json()["seeThroughPatterns"] == ["fishnet"]
+
+
 # ----------------------------------------------------------------------
 # dressing a library avatar
 # ----------------------------------------------------------------------
