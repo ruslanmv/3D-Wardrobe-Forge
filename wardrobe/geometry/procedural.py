@@ -62,6 +62,22 @@ class FitParameters:
         return self.measurements.height_m
 
     @property
+    def forward(self) -> float:
+        """+1 when the avatar faces +Z (VRM 1.0), -1 when she faces -Z (VRM 0.x).
+
+        Anything cut differently at the front and the back — a V-neck, a halter,
+        bikini cups, a high-cut leg — needs it, and so does the seam, which
+        belongs at her back. Read from the feet where there are toes (the rig
+        says which way she faces); otherwise from the spec, via ``metadata``.
+        """
+        for side in ("left", "right"):
+            foot = self.measurements.bone_positions.get(f"{side}Foot")
+            toes = self.measurements.bone_positions.get(f"{side}Toes")
+            if foot is not None and toes is not None and abs(float(toes[2]) - float(foot[2])) > 1e-4:
+                return math.copysign(1.0, float(toes[2]) - float(foot[2]))
+        return 1.0 if float(self.metadata.get("forward", 1.0)) >= 0 else -1.0
+
+    @property
     def hip_y(self) -> float:
         return self.bone_y("leftUpperLeg", "hips", default=self.height * 0.52)
 
@@ -115,26 +131,44 @@ class FitParameters:
 # ----------------------------------------------------------------------
 # lofting primitives
 # ----------------------------------------------------------------------
+def _ellipse_perimeter(a: float, b: float) -> float:
+    """Ramanujan's approximation; within 0.04% for any garment cross-section."""
+    a, b = abs(a), abs(b)
+    return math.pi * (3.0 * (a + b) - math.sqrt(max((3.0 * a + b) * (a + 3.0 * b), 0.0)))
+
+
 def loft(rings: list[Ring], *, segments: int = DEFAULT_SEGMENTS, cap_top: bool = False,
-         cap_bottom: bool = False, name: str = "loft") -> Mesh:
-    """Build a closed tube through ``rings`` (ordered bottom to top)."""
+         cap_bottom: bool = False, name: str = "loft", front: float = 1.0) -> Mesh:
+    """Build a closed tube through ``rings`` (ordered bottom to top).
+
+    UVs are in metres of fabric: u runs round the ring (its perimeter), v down
+    from the top edge. A fabric texture is then scaled once, by the pattern's
+    tile size, and a fishnet diamond or a lace motif is the same physical size
+    on a stocking, a bodysuit and a skirt hem, on any avatar.
+
+    ``front`` is the sign of Z the wearer faces. The duplicated seam goes at her
+    back, and u is measured from her front centre: the pattern's seam is where
+    a sewn garment's is, and a flared skirt's vertical lines stay vertical down
+    the front instead of shearing with the flare.
+    """
     if len(rings) < 2:
         raise ValueError("a loft needs at least two rings")
 
     ring_vertex_count = segments + 1  # duplicated seam vertex for clean UVs
-    angles = np.linspace(0.0, 2.0 * math.pi, ring_vertex_count)
+    # x = sin, z = cos: angle 0 is +Z. Start (and end) the ring at her back.
+    back = math.pi if front >= 0 else 0.0
+    angles = back + np.linspace(0.0, 2.0 * math.pi, ring_vertex_count)
 
     positions: list[np.ndarray] = []
     uvs: list[np.ndarray] = []
 
-    total_height = max(rings[-1].y - rings[0].y, 1e-6)
     for ring in rings:
         x = ring.center_x + ring.half_width * np.sin(angles)
         z = ring.center_z + ring.half_depth * np.cos(angles)
         y = np.full(ring_vertex_count, ring.y)
         positions.append(np.stack([x, y, z], axis=1))
-        u = angles / (2.0 * math.pi)
-        v = np.full(ring_vertex_count, 1.0 - (ring.y - rings[0].y) / total_height)
+        u = (angles - back - math.pi) / (2.0 * math.pi) * _ellipse_perimeter(ring.half_width, ring.half_depth)
+        v = np.full(ring_vertex_count, rings[-1].y - ring.y)
         uvs.append(np.stack([u, v], axis=1))
 
     vertices = np.vstack(positions).astype(np.float32)
@@ -159,7 +193,7 @@ def loft(rings: list[Ring], *, segments: int = DEFAULT_SEGMENTS, cap_top: bool =
         center_index = vertices.shape[0] + len(extra_positions)
         ring = rings[0]
         extra_positions.append(np.array([ring.center_x, ring.y, ring.center_z], dtype=np.float32))
-        extra_uvs.append(np.array([0.5, 1.0], dtype=np.float32))
+        extra_uvs.append(np.array([0.0, rings[-1].y - ring.y], dtype=np.float32))
         for column in range(segments):
             faces.append((center_index, column + 1, column))
 
@@ -168,7 +202,7 @@ def loft(rings: list[Ring], *, segments: int = DEFAULT_SEGMENTS, cap_top: bool =
         ring = rings[-1]
         base = (len(rings) - 1) * ring_vertex_count
         extra_positions.append(np.array([ring.center_x, ring.y, ring.center_z], dtype=np.float32))
-        extra_uvs.append(np.array([0.5, 0.0], dtype=np.float32))
+        extra_uvs.append(np.array([0.0, 0.0], dtype=np.float32))
         for column in range(segments):
             faces.append((center_index, base + column, base + column + 1))
 
@@ -207,6 +241,8 @@ def sweep(points: np.ndarray, radii: list[float], *, segments: int = 12, name: s
     positions: list[np.ndarray] = []
     uvs: list[np.ndarray] = []
     reference = np.array([0.0, 1.0, 0.0])
+    # Metres of fabric, as in ``loft``: round the tube, and along the path.
+    along = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(points, axis=0), axis=1))])
 
     for index, (point, tangent, radius) in enumerate(zip(points, tangents, radii, strict=True)):
         helper = reference if abs(float(np.dot(tangent, reference))) < 0.9 else np.array([1.0, 0.0, 0.0])
@@ -216,12 +252,7 @@ def sweep(points: np.ndarray, radii: list[float], *, segments: int = 12, name: s
 
         ring = point + radius * (np.outer(np.cos(angles), normal) + np.outer(np.sin(angles), binormal))
         positions.append(ring)
-        uvs.append(
-            np.stack(
-                [angles / (2.0 * math.pi), np.full(ring_vertex_count, index / (points.shape[0] - 1))],
-                axis=1,
-            )
-        )
+        uvs.append(np.stack([angles * radius, np.full(ring_vertex_count, along[index])], axis=1))
 
     faces: list[tuple[int, int, int]] = []
     for row in range(points.shape[0] - 1):
@@ -262,7 +293,7 @@ def build_bodice(params: FitParameters, *, y_top: float | None = None, y_bottom:
         Ring(bottom + (top - bottom) * 0.72, chest_w * looseness, chest_d * looseness),
         Ring(top, chest_w * looseness * 0.98, chest_d * looseness * 0.98),
     ]
-    return loft(rings, segments=params.segments, name=name)
+    return loft(rings, segments=params.segments, name=name, front=params.forward)
 
 
 def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: float = 1.0,
@@ -283,7 +314,7 @@ def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: 
         width = hip_w * taper if fraction < 0.9 else top_w * 1.01
         depth = hip_d * taper if fraction < 0.9 else top_d * 1.01
         rings.append(Ring(y_bottom + span * fraction, width, depth))
-    return loft(rings, segments=params.segments, name=name)
+    return loft(rings, segments=params.segments, name=name, front=params.forward)
 
 
 def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25,
@@ -380,7 +411,7 @@ def build_band(params: FitParameters, *, y_bottom: float, y_top: float, loosenes
         y = y_bottom + (y_top - y_bottom) * row / (rows - 1)
         half_w, half_d = half_at(params, y)
         rings.append(Ring(y, half_w * looseness, half_d * looseness))
-    return loft(rings, segments=params.segments, name=name)
+    return loft(rings, segments=params.segments, name=name, front=params.forward)
 
 
 def build_straps(params: FitParameters, *, top_y: float, style: str = "shoulder",
@@ -399,14 +430,15 @@ def build_straps(params: FitParameters, *, top_y: float, style: str = "shoulder"
     radius = max(params.height * 0.004, 0.004)
     meshes: list[Mesh] = []
 
+    front = params.forward  # a halter ties behind her neck, whichever way she faces
     if style == "halter":
         neck = params.neck_y - params.height * 0.01
         for side in (-1.0, 1.0):
             path = np.array([
-                [side * half_w * 0.42, top_y, half_d * 0.92],
-                [side * half_w * 0.2, (top_y + neck) * 0.5, half_d * 0.75],
+                [side * half_w * 0.42, top_y, front * half_d * 0.92],
+                [side * half_w * 0.2, (top_y + neck) * 0.5, front * half_d * 0.75],
                 [side * params.height * 0.035, neck, 0.0],
-                [side * params.height * 0.012, neck + params.height * 0.004, -params.height * 0.03],
+                [side * params.height * 0.012, neck + params.height * 0.004, -front * params.height * 0.03],
             ])
             meshes.append(sweep(path, [radius] * 4, segments=6, name=f"{name}-halter-{side:+.0f}"))
         return meshes
@@ -463,6 +495,7 @@ def build_shoes(params: FitParameters, *, name: str = "shoes") -> list[Mesh]:
                  center_x=float(foot[0]), center_z=float(foot[2]) + forward * length * 0.05),
         ]
         meshes.append(loft(rings, segments=max(params.segments // 2, 8), cap_top=True, cap_bottom=True,
+                           front=forward,
                            name=f"{name}-{side}"))
     return meshes
 

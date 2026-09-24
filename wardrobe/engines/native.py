@@ -101,11 +101,10 @@ class NativeEngine(FittingEngine):
         plan = context.plan
         artifact_kind = context.artifact.procedural_kind if context.artifact else None
         kind = artifact_kind or (plan.category if plan else "")
-        material = GarmentMaterial(
-            name=garment_material_name(plan.name, kind) if plan else "Garment",
-            base_color=tuple(plan.material.base_color) if plan else (0.6, 0.6, 0.6, 1.0),
-            metallic=plan.material.metallic if plan else 0.0,
-            roughness=plan.material.roughness if plan else 0.7,
+        material = (
+            GarmentMaterial.from_plan(garment_material_name(plan.name, kind), plan.material)
+            if plan
+            else GarmentMaterial(name="Garment", base_color=(0.6, 0.6, 0.6, 1.0))
         )
 
         attach_garment(

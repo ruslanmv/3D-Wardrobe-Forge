@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "under-bodysuit-v1",
-  "name": "Lace Bodysuit",
+  "name": "Bodysuit",
   "category": "underwear",
   "mesh": "procedural:one-piece",
   "coverage": [

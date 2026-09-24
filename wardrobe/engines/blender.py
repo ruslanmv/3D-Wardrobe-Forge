@@ -72,19 +72,9 @@ class BlenderEngine(FittingEngine):
         material_name = garment_material_name(
             context.plan.name, context.artifact.procedural_kind or context.plan.category
         )
+        material = GarmentMaterial.from_plan(material_name, context.plan.material)
         garment_path = workdir / "garment.glb"
-        garment_path.write_bytes(
-            mesh_to_glb(
-                shell.mesh,
-                name=context.plan.name,
-                material=GarmentMaterial(
-                    name=material_name,
-                    base_color=tuple(context.plan.material.base_color),
-                    metallic=context.plan.material.metallic,
-                    roughness=context.plan.material.roughness,
-                ),
-            )
-        )
+        garment_path.write_bytes(mesh_to_glb(shell.mesh, name=context.plan.name, material=material))
 
         template = context.catalog.get(context.artifact.template_id) if context.artifact.template_id else None
         spec = {
@@ -100,6 +90,9 @@ class BlenderEngine(FittingEngine):
             "reportPath": str(report_path),
             "generator": GENERATOR,
             "materialName": material_name,
+            # The material resolved once, here, so Blender renders what the native
+            # engine renders: the same factor, alpha, rim and texture images.
+            "material": self._material_spec(material, workdir),
             "options": {
                 "outputVersion": context.record.request.options.output_version,
                 "renderPreview": context.record.request.options.render_preview,
@@ -135,6 +128,28 @@ class BlenderEngine(FittingEngine):
             self._merge_report(context, json.loads(report_path.read_text(encoding="utf-8")))
         else:
             context.warn("Blender produced no fit report; output validation is the only evidence")
+
+    @staticmethod
+    def _material_spec(material: GarmentMaterial, workdir: Path) -> dict:
+        textures: dict[str, str] = {}
+        for slot, data in (("baseColor", material.texture), ("matcap", material.matcap)):
+            if data is not None:
+                path = workdir / f"{slot}.png"
+                path.write_bytes(data)
+                textures[slot] = str(path)
+        return {
+            "name": material.name,
+            "finish": material.finish,
+            "baseColorFactor": [float(c) for c in material.base_color],
+            "metallic": float(material.metallic),
+            "roughness": float(material.roughness),
+            "alphaMode": material.alpha_mode,
+            "alphaCutoff": float(material.alpha_cutoff),
+            "rimColor": [float(c) for c in material.rim_color],
+            "rimPower": float(material.rim_power),
+            "rimLift": float(material.rim_lift),
+            "textures": textures,
+        }
 
     @staticmethod
     def _bone_names(context: PipelineContext) -> dict[str, str]:

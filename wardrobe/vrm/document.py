@@ -40,6 +40,12 @@ SIZE_TYPES = {1: "SCALAR", 2: "VEC2", 3: "VEC3", 4: "VEC4", 16: "MAT4"}
 ARRAY_BUFFER = 34962
 ELEMENT_ARRAY_BUFFER = 34963
 
+# Sampler constants.
+LINEAR = 9729
+LINEAR_MIPMAP_LINEAR = 9987
+REPEAT = 10497
+CLAMP_TO_EDGE = 33071
+
 
 class UnsupportedAsset(ValueError):
     """The document is valid glTF but uses a feature this engine will not touch."""
@@ -390,6 +396,26 @@ class GltfDocument:
         materials = self.materials
         materials.append(material)
         return len(materials) - 1
+
+    def add_image(self, data: bytes, *, mime_type: str = "image/png", name: str | None = None) -> int:
+        """Embed an image in the binary chunk. Returns the image index."""
+        image: dict[str, Any] = {"bufferView": self.add_buffer_view(data), "mimeType": mime_type}
+        if name:
+            image["name"] = name
+        images = self.list("images")
+        images.append(image)
+        return len(images) - 1
+
+    def add_texture(self, image: int, *, repeat: bool = True) -> int:
+        """A texture over ``image`` with its own sampler: tiling, or clamped (a matcap)."""
+        wrap = REPEAT if repeat else CLAMP_TO_EDGE
+        samplers = self.list("samplers")
+        samplers.append(
+            {"magFilter": LINEAR, "minFilter": LINEAR_MIPMAP_LINEAR, "wrapS": wrap, "wrapT": wrap}
+        )
+        textures = self.list("textures")
+        textures.append({"source": image, "sampler": len(samplers) - 1})
+        return len(textures) - 1
 
 
 # ----------------------------------------------------------------------

@@ -34,6 +34,7 @@ from wardrobe.errors import FittingError
 from wardrobe.geometry.mesh import Mesh
 from wardrobe.geometry.procedural import FitParameters, build_garment
 from wardrobe.pipeline.context import PipelineContext
+from wardrobe.vrm.inspect import VrmSpec
 from wardrobe.vrm.skinning import bones_for_coverage, build_bone_segments, connected_components
 
 
@@ -59,11 +60,14 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     template = context.catalog.get(artifact.template_id) if artifact.template_id else None
     clearance = float(artifact.metadata.get("bodyClearanceMm", 6.0)) / 1000.0
 
+    metadata = dict(artifact.metadata)
+    # Which way she faces, for a rig without toes to say so: VRM 0.x faces -Z.
+    metadata.setdefault("forward", -1.0 if context.info.spec is VrmSpec.VRM0 else 1.0)
     params = FitParameters(
         measurements=context.measurements,
         clearance_m=clearance,
         sleeve_length=context.plan.sleeve,
-        metadata=dict(artifact.metadata),
+        metadata=metadata,
     )
     if template is not None and not template.fit.allow_width_scale:
         params.width_scale = 1.0
@@ -97,6 +101,11 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         apply_pleats(mesh, index, count=pleats, from_y=params.hip_y, mask=axis_mask)
     after = measure_clearance(mesh, index, clearance, axis_mask)
     after.resolved = pushed
+
+    # The shell's UVs are metres of fabric; one pattern tile covers its physical size.
+    scale = float(context.plan.material.texture_scale or 0.0)
+    if scale > 0.0 and mesh.uvs is not None:
+        mesh.uvs = (mesh.uvs * scale).astype(np.float32)
 
     if not after.checked:
         # Nothing on the body's axis to check: the whole garment is limb-worn

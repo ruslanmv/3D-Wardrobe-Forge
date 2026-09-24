@@ -17,7 +17,13 @@ overridden; beyond that, the caller supplies what the file cannot.
    it comes from ``assets/library/policy.json``, an operator file shipped empty:
    the server, not the browser, supplies it.
 
-Every other category — dresses, skirts, tops, nightwear — is untouched.
+Every other category — dresses, skirts, tops, nightwear — is untouched, *unless
+the body shows through it*. The gate follows what will render, not the word
+for the category: an opaque bodycon dress is a dress; the same dress in sheer
+fabric, a lace bodysuit or fishnet stockings needs exactly what a bikini needs.
+The planner decides that (``OutfitPlan.requiresAdult``) from three things — an
+intimate category, a template that says so, fabric with holes or alpha — and
+passes it here as ``requires_adult``.
 """
 
 from __future__ import annotations
@@ -41,22 +47,43 @@ def sexual_usage_disallowed(terms: LicenseTerms | None) -> bool:
     return str(raw.get("sexualUssageName", "")).strip().lower() == "disallow"
 
 
-def evaluate(category: str, terms: LicenseTerms | None, *, depicts_adult: bool) -> IntimateDecision:
-    if category not in INTIMATE_CATEGORIES:
+def evaluate(
+    category: str,
+    terms: LicenseTerms | None,
+    *,
+    depicts_adult: bool,
+    requires_adult: bool | None = None,
+    reason: str | None = None,
+) -> IntimateDecision:
+    """``requires_adult`` adds to the category rule and never subtracts from it.
+
+    Swimwear and underwear are gated whatever the caller passes; ``requires_adult``
+    can only extend the gate to see-through fabric in other categories.
+    ``reason`` names what triggered it in the refusal.
+    """
+    if not (category in INTIMATE_CATEGORIES or requires_adult):
         return IntimateDecision(True)
+    what = reason or category
     if sexual_usage_disallowed(terms):
         return IntimateDecision(
             False,
-            f"this model's own terms disallow sexual usage, so it cannot be dressed in {category}",
+            f"this model's own terms disallow sexual usage, so it cannot be dressed in {what}",
             FailureReason.INTIMATE_NOT_PERMITTED,
         )
     if not depicts_adult:
         return IntimateDecision(
             False,
-            f"{category} needs the avatar declared as depicting an adult (avatar.depictsAdult)",
+            f"{what} needs the avatar declared as depicting an adult (avatar.depictsAdult)",
             FailureReason.ADULT_DECLARATION_REQUIRED,
         )
-    return IntimateDecision(True, f"{category} permitted: adult declared, model terms allow it")
+    return IntimateDecision(True, f"{what} permitted: adult declared, model terms allow it")
 
 
-__all__ = ["IntimateDecision", "evaluate", "sexual_usage_disallowed"]
+def gate_reason(category: str, *, see_through: bool) -> str:
+    """What to call the garment in a refusal: its category, or its see-through fabric."""
+    if category in INTIMATE_CATEGORIES:
+        return category
+    return f"see-through {category}" if see_through else category
+
+
+__all__ = ["IntimateDecision", "evaluate", "gate_reason", "sexual_usage_disallowed"]

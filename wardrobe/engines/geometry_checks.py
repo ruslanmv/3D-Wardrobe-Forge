@@ -130,6 +130,9 @@ class BodyRadialIndex:
         band_index, sector_index, radius = self._bucket(points)
         self.radii = np.zeros((bands, sectors))
         np.maximum.at(self.radii, (band_index, sector_index), radius)
+        self._points = points
+        self._hull = self._build_hull()
+        self._hull_bands = self._hull.max(axis=1) > 0
 
     def _bucket(self, points: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         height = max(self.y_max - self.y_min, 1e-6)
@@ -146,20 +149,117 @@ class BodyRadialIndex:
         return band, sector, radius
 
     def body_radius_at(self, points: np.ndarray) -> np.ndarray:
-        """Body radius under each point, smoothed across neighbouring sectors."""
+        """How far out the body reaches under each point: what clearance is measured from.
+
+        The convex hull of the body in the point's height band, in the point's
+        direction. The hull contains every body vertex, so clearance from it is
+        clearance from the body — and it follows the body's actual outline,
+        where the old lookup took the largest radius in three neighbouring
+        22.5° sectors: across a hollow (the gap between the thighs) that read
+        the far side of a leg as the body and held a skirt 5 cm out. Bands too
+        sparse for a hull keep that sector lookup.
+        """
         if not self.valid:
             return np.zeros(points.shape[0])
         band, sector, _ = self._bucket(points)
         left = (sector - 1) % self.sectors
         right = (sector + 1) % self.sectors
-        return np.maximum.reduce(
+        sectors = np.maximum.reduce(
             [self.radii[band, sector], self.radii[band, left], self.radii[band, right]]
         )
+        hull = self.hull_radius_at(points)
+        return np.where(self._hull_bands[band], hull, sectors)
 
     def point_radius(self, points: np.ndarray) -> np.ndarray:
         dx = points[:, 0] - self.axis_x
         dz = points[:, 2] - self.axis_z
         return np.sqrt(dx * dx + dz * dz)
+
+    #: Angular resolution of the hull lookup.
+    HULL_SAMPLES = 128
+
+    def hull_radius_at(self, points: np.ndarray) -> np.ndarray:
+        """Radius of the body's convex hull, in each point's band and direction.
+
+        What close-fitting fabric actually rests on. ``body_radius_at`` is the
+        body itself, hollows included: the gap between the thighs, the small of
+        the back. Nothing there to measure, so a conformed bodycon dress or a
+        pair of briefs left those vertices where they were built — 13 cm off
+        the body behind the thighs, measured on AvatarSample A — and the dress
+        stood out like a box. Fabric under tension spans a hollow; the hull
+        is that span.
+        """
+        if not self.valid:
+            return np.zeros(points.shape[0])
+        band, _, _ = self._bucket(points)
+        angle = np.arctan2(points[:, 2] - self.axis_z, points[:, 0] - self.axis_x)
+        position = (angle + np.pi) / (2 * np.pi) * self.HULL_SAMPLES
+        lo = np.floor(position).astype(int) % self.HULL_SAMPLES
+        hi = (lo + 1) % self.HULL_SAMPLES
+        t = position - np.floor(position)
+        return self._hull[band, lo] * (1.0 - t) + self._hull[band, hi] * t
+
+    def _build_hull(self) -> np.ndarray:
+        samples = self.HULL_SAMPLES
+        hull = np.zeros((self.bands, samples))
+        band, _, radius = self._bucket(self._points)
+        dx = self._points[:, 0] - self.axis_x
+        dz = self._points[:, 2] - self.axis_z
+        sector = ((np.arctan2(dz, dx) + np.pi) / (2 * np.pi) * samples).astype(int) % samples
+        directions = np.linspace(-np.pi, np.pi, samples, endpoint=False) + np.pi / samples
+        for b in range(self.bands):
+            member = np.flatnonzero(band == b)
+            if member.size < 3:
+                continue
+            # The farthest point in each fine sector spans the same hull as all of them.
+            order = member[np.lexsort((radius[member], sector[member]))]
+            last = np.r_[sector[order][1:] != sector[order][:-1], True]
+            extreme = np.stack([dx[order][last], dz[order][last]], axis=1)
+            polygon = _convex_hull(extreme)
+            if polygon.shape[0] >= 3:
+                hull[b] = _ray_polygon(polygon, directions)
+        return hull
+
+
+def _convex_hull(points: np.ndarray) -> np.ndarray:
+    """Andrew's monotone chain; counter-clockwise, no repeated endpoint."""
+    unique = np.unique(points, axis=0)
+    if unique.shape[0] < 3:
+        return unique
+
+    def cross(o, a, b) -> float:
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower: list[np.ndarray] = []
+    for p in unique:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    upper: list[np.ndarray] = []
+    for p in unique[::-1]:
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return np.array(lower[:-1] + upper[:-1])
+
+
+def _ray_polygon(polygon: np.ndarray, directions: np.ndarray) -> np.ndarray:
+    """Distance from the origin along each direction to a convex polygon's boundary.
+
+    An origin outside the polygon (a band that is two separate legs with the
+    axis between them) still works: the farthest crossing is the boundary the
+    fabric rests on.
+    """
+    ux, uz = np.cos(directions)[:, None], np.sin(directions)[:, None]
+    a = polygon[None, :, :]
+    b = np.roll(polygon, -1, axis=0)[None, :, :]
+    ex, ez = b[..., 0] - a[..., 0], b[..., 1] - a[..., 1]
+    denominator = ux * ez - uz * ex
+    with np.errstate(divide="ignore", invalid="ignore"):
+        t = (a[..., 0] * ez - a[..., 1] * ex) / denominator  # distance along the ray
+        s = (a[..., 0] * uz - a[..., 1] * ux) / denominator  # position along the edge
+    hit = (np.abs(denominator) > 1e-12) & (s >= -1e-9) & (s <= 1.0 + 1e-9) & (t > 0)
+    return np.where(hit, t, 0.0).max(axis=1)
 
 
 @dataclass(slots=True)
@@ -317,6 +417,7 @@ def conform_to_body(
         return 0
     points = mesh.positions.astype(np.float64)
     radius = index.point_radius(points)
+    # Onto the hull, not into the hollows: see ``BodyRadialIndex.hull_radius_at``.
     target = index.body_radius_at(points) + clearance_m
     active = target > clearance_m * 1.5  # a bucket with body under it
     if mask is not None:
@@ -385,6 +486,24 @@ def smooth_radial(
     _, twin = np.unique(np.round(points / 1e-6).astype(np.int64), axis=0, return_inverse=True)
     twin = twin.reshape(-1)
     twins = np.bincount(twin).astype(np.float64)
+
+    # An open edge — a hem, a neckline, a leg opening — has neighbours on one side
+    # only. Relaxed toward all of them it is dragged toward the row inside it: a
+    # bodycon hem took the hips' width and stood 6 cm off the thighs. Such a vertex
+    # relaxes along its own edge instead, which is what evens out a torn hem.
+    # Found on the welded mesh, so a loft seam is not mistaken for an open edge.
+    welded = np.sort(twin[triangles[:, [0, 1, 1, 2, 2, 0]].reshape(-1, 2)], axis=1)
+    welded = welded[welded[:, 0] != welded[:, 1]]
+    pairs, uses = np.unique(welded, axis=0, return_counts=True)
+    open_pairs = pairs[uses == 1]
+    on_edge = np.zeros(count, dtype=bool)
+    on_edge[np.isin(twin, open_pairs.reshape(-1))] = True
+    keep = ~on_edge[edges[:, 0]] | np.isin(
+        twin[edges[:, 0]] * (count + 1) + twin[edges[:, 1]],
+        np.concatenate([open_pairs[:, 0] * (count + 1) + open_pairs[:, 1],
+                        open_pairs[:, 1] * (count + 1) + open_pairs[:, 0]]),
+    )
+    edges = edges[keep]
 
     degree = np.bincount(edges[:, 0], minlength=count).astype(np.float64)
     degree[degree == 0] = 1.0

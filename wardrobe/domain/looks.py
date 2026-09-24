@@ -27,6 +27,14 @@ class OutfitRequest(BaseModel):
     silhouette: str | None = None
     hem: str | None = None
     template_id: str | None = Field(default=None, alias="templateId")
+    # Style overrides — the same words the prompt can carry, as explicit choices.
+    finish: str | None = None
+    pattern: str | None = None
+    #: 0.2..1; below 1 the fabric is see-through.
+    opacity: float | None = Field(default=None, ge=0.2, le=1.0)
+    coverage: str | None = None
+    straps: str | None = None
+    neckline: str | None = None
 
 
 class MaterialPlan(BaseModel):
@@ -40,6 +48,25 @@ class MaterialPlan(BaseModel):
     roughness: float = 0.7
     fabric: str | None = None
     emissive: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    #: matte | satin | gloss | latex | metallic | sequin — see wardrobe.materials.finishes.
+    finish: str = "matte"
+    #: 1 is opaque; below it the fabric is see-through (alpha blended).
+    opacity: float = Field(default=1.0, ge=0.0, le=1.0)
+    #: opaque | mask (holes: lace, fishnet) | blend (sheer).
+    alpha_mode: str = Field(default="opaque", alias="alphaMode")
+    #: none | lace | fishnet | sequin | stripes | dots | gingham
+    pattern: str = "none"
+    #: The pattern's second colour (stripes, dots, gingham), linear RGBA.
+    pattern_color: tuple[float, float, float, float] | None = Field(default=None, alias="patternColor")
+    #: Pattern tiles per metre of fabric; 0 without a pattern.
+    texture_scale: float = Field(default=0.0, alias="textureScale")
+    #: Lace over an opaque lining: the pattern shows, the body does not.
+    lined: bool = False
+
+    @property
+    def exposes_body(self) -> bool:
+        """Whether the body shows through the fabric: holes (lace, fishnet) or sheer."""
+        return self.alpha_mode != "opaque" or self.opacity < 0.999
 
     def to_dict(self) -> dict:
         return {
@@ -48,7 +75,40 @@ class MaterialPlan(BaseModel):
             "metallic": round(self.metallic, 3),
             "roughness": round(self.roughness, 3),
             "fabric": self.fabric,
+            "finish": self.finish,
+            "opacity": round(self.opacity, 3),
+            "alphaMode": self.alpha_mode,
+            "pattern": self.pattern,
+            "patternColor": [round(c, 4) for c in self.pattern_color] if self.pattern_color else None,
+            "textureScale": self.texture_scale,
+            "lined": self.lined,
         }
+
+
+class StylePlan(BaseModel):
+    """How much the garment covers and how it is cut — independent of what it is.
+
+    A micro bikini is a bikini at ``coverage="micro"``, not a category of its
+    own; a V-neck is an edge profile on whatever bodice the template builds.
+    Every field's empty value means "as the template makes it", so a plan that
+    names none of them builds exactly what it always built.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    #: full | standard | minimal | micro
+    coverage: str = "standard"
+    #: "" (the template's) | shoulder | halter | none | string | cross-back | garter | harness
+    straps: str = ""
+    #: "" | v | plunge | sweetheart | triangle (bikini cups)
+    neckline: str = ""
+    #: "" | low
+    back: str = ""
+    #: "" | high
+    leg_cut: str = Field(default="", alias="legCut")
+
+    def to_dict(self) -> dict:
+        return self.model_dump(by_alias=True)
 
 
 class OutfitPlan(BaseModel):
@@ -63,6 +123,10 @@ class OutfitPlan(BaseModel):
     hem: str = "knee"
     sleeve: str = "none"
     material: MaterialPlan = Field(default_factory=MaterialPlan)
+    style: StylePlan = Field(default_factory=StylePlan)
+    #: Whether this garment, as it will render, needs an adult declaration: an
+    #: intimate category, a template that says so, or fabric the body shows through.
+    requires_adult: bool = Field(default=False, alias="requiresAdult")
     #: Free-form keywords the planner recognised, for debugging and telemetry.
     keywords: list[str] = Field(default_factory=list)
     #: 0..1 — how much of the prompt the planner could actually account for.

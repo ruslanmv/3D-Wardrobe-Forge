@@ -54,3 +54,18 @@ def test_the_shipped_policy_declares_nobody():
 
     policy = json.loads((Path(__file__).resolve().parents[2] / "assets/library/policy.json").read_text())
     assert policy["avatars"] == {}
+
+
+def test_see_through_fabric_in_an_everyday_category_is_gated_like_swimwear():
+    decision = evaluate("dress", ALLOW, depicts_adult=False, requires_adult=True, reason="see-through dress")
+    assert not decision.allowed and decision.reason is FailureReason.ADULT_DECLARATION_REQUIRED
+    assert "see-through dress" in decision.message
+    assert evaluate("dress", DISALLOW, depicts_adult=True, requires_adult=True).reason is (
+        FailureReason.INTIMATE_NOT_PERMITTED
+    )
+    assert evaluate("dress", ALLOW, depicts_adult=False, requires_adult=False).allowed
+
+
+def test_the_category_rule_is_a_floor_a_caller_cannot_lower():
+    assert not evaluate("swimwear", ALLOW, depicts_adult=False).allowed
+    assert not evaluate("swimwear", ALLOW, depicts_adult=False, requires_adult=False).allowed

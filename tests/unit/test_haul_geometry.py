@@ -123,3 +123,39 @@ def test_body_points_include_surface_samples(vrm_bytes):
     vertices = body_points(document, spacing=0)
     surface = body_points(document)
     assert surface.shape[0] > vertices.shape[0]
+
+
+def two_legs(radius: float = 0.06, gap: float = 0.14, count: int = 6000) -> np.ndarray:
+    """Two upright thighs side by side, the body's axis in the gap between them."""
+    rng = np.random.default_rng(3)
+    angle = rng.uniform(-np.pi, np.pi, count)
+    side = np.where(rng.random(count) < 0.5, -1.0, 1.0)
+    y = rng.uniform(0.0, 0.6, count)
+    return np.stack([side * gap / 2 + np.cos(angle) * radius, y, np.sin(angle) * radius], axis=1)
+
+
+def test_the_hull_spans_the_gap_between_the_legs():
+    index = BodyRadialIndex(two_legs())
+    behind = np.array([[0.0, 0.3, -0.2]])
+    # Nothing is there — it is the hollow between the legs — and the fabric spans it.
+    assert index.hull_radius_at(behind)[0] == pytest.approx(0.06, abs=0.012)
+    assert index.body_radius_at(behind)[0] == pytest.approx(0.06, abs=0.012)
+
+
+def test_conform_draws_a_skirt_onto_both_legs_not_just_beside_them():
+    index = BodyRadialIndex(two_legs())
+    mesh = shell(0.25, y0=0.1, y1=0.5)
+    conform_to_body(mesh, index, CLEARANCE, strength=1.0)
+    back = mesh.positions[mesh.positions[:, 2] < -0.01]
+    assert back[:, 2].min() > -0.085  # 6 cm legs + clearance, not the 25 cm it was built at
+
+
+def test_smoothing_leaves_a_hem_where_it_is():
+    """A hem has neighbours above it only; it must not be dragged out to the row above."""
+    index = BodyRadialIndex(cylinder_body(radius=0.1))
+    rings = [Ring(0.2, 0.105, 0.105)] + [Ring(0.2 + 0.1 * i, 0.16, 0.16) for i in range(1, 6)]
+    mesh = loft(rings, segments=32)
+    hem = mesh.positions[:, 1] < 0.21
+    before = radii(mesh)[hem].copy()
+    smooth_radial(mesh, index, CLEARANCE)
+    np.testing.assert_allclose(radii(mesh)[hem], before, atol=2e-3)

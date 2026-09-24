@@ -24,7 +24,7 @@
     "allowWidthScale": true,
     "minLengthScale": 0.7,
     "maxLengthScale": 1.3,
-    "conform": 0.75,
+    "conform": 0.95,
     "conformBelowHips": true
   },
   "materials": {

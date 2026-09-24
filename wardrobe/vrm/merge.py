@@ -11,11 +11,14 @@ bind matrices are simply the inverses of each joint's world matrix.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
+from wardrobe.domain.looks import MaterialPlan
 from wardrobe.geometry.mesh import Mesh
+from wardrobe.materials.finishes import FINISHES, PATTERNS
+from wardrobe.materials.textures import matcap, pattern_texture
 from wardrobe.vrm.document import ARRAY_BUFFER, ELEMENT_ARRAY_BUFFER, GltfDocument
 from wardrobe.vrm.inspect import VRM0_EXTENSION, VRM1_EXTENSION, VrmInfo, VrmSpec
 from wardrobe.vrm.skinning import BoneSegment
@@ -29,6 +32,67 @@ class GarmentMaterial:
     roughness: float = 0.7
     emissive: tuple[float, float, float] = (0.0, 0.0, 0.0)
     double_sided: bool = True
+    #: The finish's name, for the record; its effect is in ``matcap`` and the rim below.
+    finish: str = "matte"
+    #: opaque | mask | blend
+    alpha_mode: str = "opaque"
+    alpha_cutoff: float = 0.5
+    #: A tiling base-colour texture (PNG), laid over UVs already scaled to it.
+    texture: bytes | None = None
+    #: The texture carries colour (stripes), so the colour factor is white.
+    texture_coloured: bool = False
+    #: An additive matcap (PNG) — how gloss and metal show under a toon shader.
+    matcap: bytes | None = None
+    rim_color: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    rim_power: float = 5.0
+    rim_lift: float = 0.0
+    #: Shade colour as a fraction of the lit colour (see ``Finish.shade``).
+    shade: float = 0.72
+    #: Filled by :meth:`add_to`: texture indices by slot ("baseColor", "matcap").
+    texture_indices: dict[str, int] = field(default_factory=dict)
+
+    @classmethod
+    def from_plan(cls, name: str, plan: MaterialPlan) -> GarmentMaterial:
+        """Everything the plan says about the surface, resolved into images and factors."""
+        finish = FINISHES.get(plan.finish, FINISHES["matte"])
+        pattern = PATTERNS.get(plan.pattern, PATTERNS["none"])
+        colour = tuple(_linear_to_srgb(c) for c in plan.base_color[:3])
+        other = tuple(_linear_to_srgb(c) for c in (plan.pattern_color or (1.0, 1.0, 1.0, 1.0))[:3])
+        opacity = float(plan.opacity)
+
+        texture = (
+            pattern_texture(pattern.name, colour, other, lined=plan.lined) if pattern.name != "none" else None
+        )
+        coloured = texture is not None and pattern.coloured
+        factor = (1.0, 1.0, 1.0, opacity) if coloured else (*plan.base_color[:3], opacity)
+
+        tint = tuple(0.65 * c + 0.35 for c in colour) if finish.tinted else (1.0, 1.0, 1.0)
+        return cls(
+            name=name,
+            base_color=factor,
+            metallic=plan.metallic,
+            roughness=plan.roughness,
+            finish=finish.name,
+            alpha_mode=plan.alpha_mode,
+            texture=texture,
+            texture_coloured=coloured,
+            matcap=matcap(finish.matcap, finish.matcap_strength, tint) if finish.matcap else None,
+            rim_color=tuple(c * finish.rim for c in tint),
+            rim_power=finish.rim_power,
+            rim_lift=finish.rim_lift,
+            shade=finish.shade,
+        )
+
+    def add_to(self, document: GltfDocument) -> int:
+        """Embed the textures and add the material. Returns the material index."""
+        self.texture_indices = {}
+        if self.texture is not None:
+            image = document.add_image(self.texture, name=f"{self.name} fabric")
+            self.texture_indices["baseColor"] = document.add_texture(image)
+        if self.matcap is not None:
+            image = document.add_image(self.matcap, name=f"{self.name} matcap")
+            self.texture_indices["matcap"] = document.add_texture(image, repeat=False)
+        return document.add_material(self.to_gltf())
 
     def to_gltf(self) -> dict:
         material: dict = {
@@ -40,6 +104,13 @@ class GarmentMaterial:
                 "roughnessFactor": float(self.roughness),
             },
         }
+        if "baseColor" in self.texture_indices:
+            texture = {"index": self.texture_indices["baseColor"]}
+            material["pbrMetallicRoughness"]["baseColorTexture"] = texture
+        if self.alpha_mode != "opaque":
+            material["alphaMode"] = self.alpha_mode.upper()
+            if self.alpha_mode == "mask":
+                material["alphaCutoff"] = float(self.alpha_cutoff)
         if any(self.emissive):
             material["emissiveFactor"] = [float(c) for c in self.emissive]
         return material
@@ -121,9 +192,10 @@ def attach_garment(
 
     # ---- material, mesh, skin, node --------------------------------------
     material = material or GarmentMaterial(name=name)
-    material_index = document.add_material(material.to_gltf())
+    material_index = material.add_to(document)
     _register_vrm0_material(document, info, material_index)
-    borrow_toon_shading(document, info, material_index, material.base_color)
+    if borrow_toon_shading(document, info, material_index, material.base_color) is not None:
+        apply_toon_finish(document, info, material_index, material)
 
     primitive = {
         "attributes": attributes,
@@ -271,6 +343,94 @@ def borrow_toon_shading(
     return names[source]
 
 
+def apply_toon_finish(
+    document: GltfDocument, info: VrmInfo, material_index: int, material: GarmentMaterial
+) -> None:
+    """Make the garment's own surface win over what it borrowed.
+
+    ``borrow_toon_shading`` takes the avatar's toon ramp, shade shift and
+    outline, and deliberately takes nothing else: her textures map her UVs,
+    and her alpha settings are hers. That left every garment opaque and flat
+    — "sheer", "lace", "latex" all rendered as a solid colour. This writes the
+    garment's finish (rim and matcap), its fabric texture and its alpha mode
+    into the MToon it borrowed, in each spec's own terms.
+
+    A see-through garment also loses its outline: MToon draws the outline as an
+    inverted hull, and around a fishnet or a sheer skirt that hull is a solid
+    shell in outline colour.
+    """
+    textures = material.texture_indices
+    see_through = material.alpha_mode != "opaque"
+    if info.spec is VrmSpec.VRM1:
+        target = document.materials[material_index]
+        mtoon = target.setdefault("extensions", {}).get("VRMC_materials_mtoon")
+        if mtoon is None:
+            return
+        mtoon["shadeColorFactor"] = [float(c) * material.shade for c in material.base_color[:3]]
+        if any(material.rim_color):
+            mtoon["parametricRimColorFactor"] = [float(c) for c in material.rim_color]
+            mtoon["parametricRimFresnelPowerFactor"] = float(material.rim_power)
+            mtoon["parametricRimLiftFactor"] = float(material.rim_lift)
+            mtoon["rimLightingMixFactor"] = 1.0
+        if "matcap" in textures:
+            mtoon["matcapTexture"] = {"index": textures["matcap"]}
+            mtoon["matcapFactor"] = [1.0, 1.0, 1.0]
+        if "baseColor" in textures:
+            texture = {"index": textures["baseColor"]}
+            target.setdefault("pbrMetallicRoughness", {})["baseColorTexture"] = texture
+            mtoon["shadeMultiplyTexture"] = {"index": textures["baseColor"]}
+        target["alphaMode"] = material.alpha_mode.upper()
+        if material.alpha_mode == "mask":
+            target["alphaCutoff"] = float(material.alpha_cutoff)
+        if see_through:
+            mtoon["transparentWithZWrite"] = False
+            mtoon["renderQueueOffsetNumber"] = 0
+            mtoon["outlineWidthMode"] = "none"
+        return
+
+    block = document.extension(VRM0_EXTENSION)
+    properties = (block or {}).get("materialProperties")
+    if not isinstance(properties, list) or material_index >= len(properties):
+        return
+    entry = properties[material_index]
+    floats = entry.setdefault("floatProperties", {})
+    vectors = entry.setdefault("vectorProperties", {})
+    slots = entry.setdefault("textureProperties", {})
+    keywords = entry.setdefault("keywordMap", {})
+
+    colour = list(vectors.get("_Color", [1.0, 1.0, 1.0, 1.0]))
+    vectors["_Color"] = [*colour[:3], float(material.base_color[3])]
+    vectors["_ShadeColor"] = [c * material.shade for c in colour[:3]] + [1.0]
+    floats["_CullMode"] = 0  # a garment is a single shell: both sides show
+    if any(material.rim_color):
+        vectors["_RimColor"] = [*(float(c) for c in material.rim_color), 1.0]
+        floats.update({"_RimFresnelPower": float(material.rim_power), "_RimLift": float(material.rim_lift),
+                       "_RimLightingMix": 1.0})
+    if "matcap" in textures:
+        slots["_SphereAdd"] = textures["matcap"]
+    if "baseColor" in textures:
+        slots["_MainTex"] = textures["baseColor"]
+        slots["_ShadeTexture"] = textures["baseColor"]
+        vectors["_MainTex"] = [0.0, 0.0, 1.0, 1.0]
+
+    if material.alpha_mode == "mask":
+        floats.update({"_BlendMode": 1, "_SrcBlend": 1, "_DstBlend": 0, "_ZWrite": 1})
+        floats["_Cutoff"] = float(material.alpha_cutoff)
+        keywords["_ALPHATEST_ON"] = True
+        entry["renderQueue"] = 2450
+        entry["tagMap"] = {"RenderType": "TransparentCutout"}
+    elif material.alpha_mode == "blend":
+        floats.update({"_BlendMode": 2, "_SrcBlend": 5, "_DstBlend": 10, "_ZWrite": 0})
+        keywords["_ALPHABLEND_ON"] = True
+        entry["renderQueue"] = 3000
+        entry["tagMap"] = {"RenderType": "Transparent"}
+    if see_through:
+        floats["_OutlineWidthMode"] = 0
+        for keyword in [k for k in keywords if k.startswith("MTOON_OUTLINE_")]:
+            keywords.pop(keyword)
+        keywords["MTOON_OUTLINE_NONE"] = True
+
+
 def _register_first_person(document: GltfDocument, info: VrmInfo, node_index: int, mesh_index: int) -> None:
     """Annotate the garment so first-person rendering does not hide it."""
     if info.spec is VrmSpec.VRM1:
@@ -315,4 +475,13 @@ def tag_derived(document: GltfDocument, *, source_hash: str | None, look_id: str
     asset["generator"] = generator
 
 
-__all__ = ["GarmentMaterial", "AttachResult", "AttachError", "attach_garment", "set_title", "tag_derived"]
+__all__ = [
+    "AttachError",
+    "AttachResult",
+    "GarmentMaterial",
+    "apply_toon_finish",
+    "attach_garment",
+    "borrow_toon_shading",
+    "set_title",
+    "tag_derived",
+]

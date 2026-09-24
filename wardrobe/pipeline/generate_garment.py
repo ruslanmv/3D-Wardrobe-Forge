@@ -23,10 +23,14 @@ async def plan(context: PipelineContext) -> None:
 
     # Checked here, after planning, because only the plan knows the category — and
     # before anything is taken off or built, so a refusal changes nothing.
+    # The gate follows what will render: an intimate category, a template that
+    # says so, or fabric the body shows through (the plan's requiresAdult).
     decision = intimate.evaluate(
         outfit_plan.category,
         context.info.license if context.info is not None else None,
         depicts_adult=context.record.request.avatar.depicts_adult,
+        requires_adult=outfit_plan.requires_adult,
+        reason=intimate.gate_reason(outfit_plan.category, see_through=outfit_plan.material.exposes_body),
     )
     if not decision.allowed:
         error = (
@@ -34,7 +38,10 @@ async def plan(context: PipelineContext) -> None:
             if decision.reason is FailureReason.INTIMATE_NOT_PERMITTED
             else AdultDeclarationRequired
         )
-        raise error(decision.message, detail={"category": outfit_plan.category})
+        raise error(
+            decision.message,
+            detail={"category": outfit_plan.category, "seeThrough": outfit_plan.material.exposes_body},
+        )
 
     await context.emit(
         JobState.PLANNING,
