@@ -1,4 +1,4 @@
-.PHONY: help install dev api worker test test-unit test-e2e test-blender lint fmt fixtures templates assets assets-demo validate-assets docker clean
+.PHONY: help install dev api worker test test-unit test-e2e test-blender lint fmt fixtures templates library studio assets assets-demo validate-assets docker clean
 
 PYTHON ?= python
 PORT ?= 8080
@@ -16,6 +16,8 @@ help:
 	@echo "fmt           ruff format + autofix"
 	@echo "fixtures      regenerate the calibration avatars"
 	@echo "templates     list and validate the garment library"
+	@echo "library       fetch and verify the Studio's avatar library (FROM=dir to copy locally)"
+	@echo "studio        fetch the library, then run the API with the Studio at /studio/"
 	@echo "assets        build a yourfriend.online bundle (AVATAR=... PROMPT=...)"
 	@echo "assets-demo   build a demo yourfriend.online bundle from a generated fixture"
 	@echo "validate-assets validate the default static bundle manifests"
@@ -56,6 +58,13 @@ fixtures:
 
 templates:
 	$(PYTHON) -m apps.cli templates
+
+library:
+	$(PYTHON) tools/fetch_library.py $(if $(FROM),--from "$(FROM)")
+
+studio: library
+	@echo "Wardrobe Studio: http://127.0.0.1:$(PORT)/studio/"
+	uvicorn apps.api.main:app --reload --host 0.0.0.0 --port $(PORT)
 
 assets:
 	@test -n "$(AVATAR)" || (echo "AVATAR is required" && exit 2)
