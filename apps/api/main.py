@@ -5,10 +5,12 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from apps.api.dependencies import require_api_key
 from apps.api.routes.avatars import router as avatars_router
+from apps.api.routes.generate import router as generate_router
 from apps.api.routes.jobs import router as jobs_router
 from apps.api.routes.looks import router as looks_router
 from apps.api.routes.wardrobes import router as wardrobes_router
@@ -23,6 +25,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+    settings.validate_deployment()
     logging.basicConfig(level=settings.app_log_level.upper())
 
     orchestrator = get_orchestrator()
@@ -45,18 +48,21 @@ app = FastAPI(
 )
 
 # The browser client is served from a different origin to the forge.
+settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.wardrobe_allowed_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
-app.include_router(jobs_router, prefix="/v1")
-app.include_router(avatars_router, prefix="/v1")
-app.include_router(looks_router, prefix="/v1")
-app.include_router(wardrobes_router, prefix="/v1")
+api_dependencies = [Depends(require_api_key)]
+app.include_router(jobs_router, prefix="/v1", dependencies=api_dependencies)
+app.include_router(avatars_router, prefix="/v1", dependencies=api_dependencies)
+app.include_router(looks_router, prefix="/v1", dependencies=api_dependencies)
+app.include_router(wardrobes_router, prefix="/v1", dependencies=api_dependencies)
+app.include_router(generate_router, prefix="/v1", dependencies=api_dependencies)
 
 
 @app.get("/health", tags=["service"])

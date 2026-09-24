@@ -31,6 +31,32 @@ What *this* deployment can do, so the client can adapt rather than guess.
 }
 ```
 
+## Product generation facade
+
+### `POST /v1/generate` → `202`
+
+A compact facade for browser and partner integrations. It creates the same underlying job as `POST /v1/jobs`; there is no second generation pipeline.
+
+```json
+{
+  "avatar": {"storageKey": "sources/abc123/mira.vrm", "avatarId": "mira"},
+  "prompt": "elegant burgundy evening dress",
+  "mode": "auto",
+  "options": {"renderPreview": true, "engine": "auto", "wardrobeId": "mira"}
+}
+```
+
+```json
+{
+  "jobId": "job_01J…",
+  "status": "queued",
+  "statusUrl": "/v1/jobs/job_01J…",
+  "eventsUrl": "/v1/jobs/job_01J…/events"
+}
+```
+
+Hosted deployments can protect all `/v1` routes with bearer authentication by setting `WARDROBE_AUTH_MODE=api_key` and `WARDROBE_API_KEY`. Health remains public.
+
 ## Avatars
 
 ### `POST /v1/avatars/inspect`

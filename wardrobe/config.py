@@ -21,6 +21,15 @@ class Settings(BaseSettings):
     app_log_level: str = "INFO"
     #: Public base URL used when minting artifact URLs. Empty = relative paths.
     public_base_url: str = ""
+    #: local | space | production. Production rejects unsafe ephemeral settings.
+    wardrobe_profile: str = "local"
+    #: Static delivery target used by the CLI.
+    wardrobe_target: str = "yourfriend"
+    #: Browser origins allowed to call the API. Keep wildcard only for local/demo use.
+    wardrobe_allowed_origins: list[str] = Field(default_factory=lambda: ["*"])
+    #: none | api_key. Hosted production deployments should use api_key or an upstream gateway.
+    wardrobe_auth_mode: str = "none"
+    wardrobe_api_key: str = ""
 
     # -- pipeline --------------------------------------------------------
     #: auto picks blender when available and falls back to the native engine.
@@ -85,6 +94,30 @@ class Settings(BaseSettings):
     def artifact_url(self, key: str) -> str:
         base = self.public_base_url.rstrip("/")
         return f"{base}/v1/assets/{key}" if base else f"/v1/assets/{key}"
+
+    def validate_deployment(self) -> None:
+        """Fail fast when a named deployment profile is internally unsafe."""
+        profile = self.wardrobe_profile.lower()
+        if profile not in {"local", "space", "production"}:
+            raise ValueError(f"unknown WARDROBE_PROFILE: {self.wardrobe_profile!r}")
+
+        if self.wardrobe_auth_mode not in {"none", "api_key"}:
+            raise ValueError(f"unknown WARDROBE_AUTH_MODE: {self.wardrobe_auth_mode!r}")
+        if self.wardrobe_auth_mode == "api_key" and not self.wardrobe_api_key:
+            raise ValueError("WARDROBE_API_KEY is required when WARDROBE_AUTH_MODE=api_key")
+
+        if profile == "production":
+            problems: list[str] = []
+            if self.wardrobe_job_backend.lower() in {"memory", "asyncio"}:
+                problems.append("production requires Redis-backed jobs")
+            if self.wardrobe_storage_backend.lower() == "local":
+                problems.append("production requires durable object storage")
+            if self.wardrobe_auth_mode == "none":
+                problems.append("production requires API authentication or a configured gateway")
+            if "*" in self.wardrobe_allowed_origins:
+                problems.append("production CORS must not allow every origin")
+            if problems:
+                raise ValueError("; ".join(problems))
 
 
 @lru_cache(maxsize=1)
