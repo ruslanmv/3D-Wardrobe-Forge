@@ -14,6 +14,7 @@ as a validated VRM, with a preview, a fit report and wardrobe metadata.
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 [Wardrobe Studio](#wardrobe-studio) ·
+[Styling & layers](#styling-and-layered-outfits) ·
 [Quick start](#quick-start) ·
 [API](#as-a-service) ·
 [How it works](#how-it-works) ·
@@ -24,7 +25,7 @@ as a validated VRM, with a preview, a fit report and wardrobe metadata.
 
 <br />
 
-![Wardrobe Studio — the original avatar and a generated look side by side, with the garment designer and the wardrobe shelf](docs/images/studio-desktop.webp)
+![Wardrobe Studio — AvatarSample A in her own outfit beside a three-layer look (white tee, navy plaid pleated mini skirt, black cropped cardigan) built in one job; the plan report on the right says what comes off and that there is a body under it](docs/images/studio-layers.webp)
 
 ---
 
@@ -39,6 +40,8 @@ renders here renders there.
 | | |
 | --- | --- |
 | **Design** | Category, template, silhouette, length and colour controls built from `/v1/vocabulary` — the editor cannot offer a value the planner would ignore. Fabric and sleeve chips edit the prompt in plain sight, because that is the only place the planner reads them. |
+| **Style** | Finish (matte, satin, gloss, latex, metallic, sequin), pattern (lace, fishnet, stripes, dots, gingham, plaid), see-through level, coverage (full → micro), straps and neckline — each an override the planner honours, and each gated before the server would refuse it. |
+| **Layer** | Write an outfit with `+` — *white tee + plaid pleated mini skirt + black cropped cardigan* — and it is built inner first, in one job, as one VRM. **Check plan** says, before anything runs, which layers will be built, what of her own outfit comes off, whether there is a body under it, and whether the adult gate lets each garment through. **Build on the look on stage** adds a garment to a look she already has. |
 | **Generate** | Jobs run through the real pipeline and the progress list is its state machine — queued, measuring, planning, fitting, binding, clearance, export, validation, preview — not a timer. |
 | **Judge** | The same body in two outfits under the same light, side by side. Toggle the rest pose to see clearance under the arms, spin it on a turntable, and read the fit report beside it. |
 | **Export** | One click packs the avatar's wardrobe as a static bundle. Unzip it into [3D-Avatar-Chatbot](https://github.com/ruslanmv/3D-Avatar-Chatbot)'s `vendor/wardrobe/` or yourfriend.online's wardrobe and the Try-On Haul drawer lists every look — no configuration. |
@@ -68,6 +71,68 @@ them is refused. The Studio posts to `POST /v1/library/{slug}/jobs`, where the
 *server* fills in the avatar and the terms its provenance manifest grants (CC0 →
 modification and redistribution allowed). An embedded prohibition is still
 checked first and still wins.
+
+---
+
+## Styling and layered outfits
+
+### Materials that survive a toon shader
+
+The avatars this project dresses are cel-shaded MToon, and a garment borrows the
+avatar's own MToon so it shades like her clothes. MToon has no roughness and no
+metalness, so "latex" used to render as flat colour. A finish is now written in
+the terms a toon shader *has*: a parametric rim and an additive **matcap**
+(crisp-edged, the anime convention for latex and gloss), with deeper shade for
+shine to read against. See-through fabric is alpha blending; lace and fishnet are
+alpha-masked holes; stripes, dots, gingham and plaid are colour baked into a
+tiling texture. Textures are **generated** — numpy and a 60-line PNG writer, no
+image assets, byte-identical every run — and UVs are metres of fabric, so a
+fishnet diamond is 1.4 cm on a stocking or a bodysuit, on any avatar, with the
+seam at her back. Both engines are handed the same resolved material.
+
+### Cut, coverage and straps as parameters
+
+"Micro" is a coverage, not a category: a micro bikini is a bikini at 0.58. Edges
+need not be horizontal — V, plunge and sweetheart necklines, low backs, high-cut
+and thong leg lines, triangle cups on a string band — and straps are networks:
+halter, string ties, cross-back, garter belt with suspenders, harness. New shapes:
+catsuit and leggings, fitted round each leg's own bones.
+
+### Base Body Prep: undress once, dress in layers
+
+A VRoid avatar arrives dressed. One job now takes off what the new outfit
+replaces and puts the whole outfit on, inner first:
+
+```text
+garment inventory ─► strip plan for the whole outfit ─► is there a body under it?
+   (Forge tag > Forge marker > VRoid name;          no → keep it on, or refuse the job
+    anything unrecognised is never removed)               — nothing is generated in its place
+        ─► measure once ─► foundation ─► legwear ─► main ─► one-piece ─► outer ─► one VRM
+```
+
+- **The whole outfit decides.** A bra alone never takes off a one-piece dress; a
+  bra, briefs and a dress together do.
+- **Layers stay layers.** Each fitted layer joins what the next must clear, so the
+  dress goes over the underwear, and the underwear is still there — visible under
+  a sheer dress. Forge garments are tagged, so a later outer layer leaves them on.
+- **Modes:** `preserve` layers over her outfit, `replace-outer` (default) takes
+  off what the outfit covers, `underwear-base` also puts a neutral foundation on
+  first. **No mode outputs her with nothing on**, the stripped state is never
+  stored, and the stored source is byte-identical after every job.
+- **Provenance:** the look records the base-body mode, which of her garments came
+  off and the layers put on; the fit report has an entry — and a design sheet —
+  per layer.
+
+### What is gated, and by whom
+
+Swimwear, underwear and **anything the body shows through** — a sheer dress,
+unlined lace, fishnet — need both the model's own terms to allow it and an
+operator's declaration that the avatar depicts an adult. The gate follows what
+will render, not the category name: an opaque bodycon dress is a dress; the same
+dress sheer is gated. The declaration lives in `assets/library/policy.json`,
+shipped empty — it is the operator's decision, recorded by them, never the
+browser's. The engine models garments on the authored body; it never adds or
+reconstructs anatomy.
 
 ---
 
@@ -205,16 +270,17 @@ Two engines implement the same interface and share the same shell:
 | Needs | Python only | Blender + VRM add-on |
 | Skin weights | analytic binding to humanoid bones | transferred from the body mesh |
 | Clipping | radial push-out, guaranteed outside the body | BVH test and repair |
-| Body masking | ✗ (reports coverage) | ✓ hides covered polygons |
+| Replacing clothes | removes the avatar's own clothing primitives (Base Body Prep) | the same, plus masking of covered body polygons |
+| Layered outfits | ✓ inner first, one VRM | one garment per job (layered outfits use native) |
 | AI-generated meshes | ✗ | ✓ cleanup and retopology |
 | Preview | software rasteriser | EEVEE render |
 
 `WARDROBE_ENGINE=auto` uses Blender when it is installed and native otherwise.
 
-> **What body masking means in practice.** The native engine cannot hide what the
-> avatar was already wearing, so garments that *layer* over the outfit — skirts,
-> jackets, coats — fit best, while one that *replaces* a garment shows the old one
-> through. The Studio says so beside every fit report where it applies.
+> **Replacing, not just layering.** VRoid exports keep each clothing slot as its
+> own primitive over a complete body, so the native engine can take her top off
+> before a new one goes on — after checking there is a body under it. A model
+> whose clothing it cannot recognise is layered over, never guessed at.
 
 ### The bar for "it works"
 
@@ -247,9 +313,10 @@ chatbot's VRM Manager already stores. See [docs/LICENSING.md](docs/LICENSING.md)
 
 ### Garment library
 
-17 templates across dresses, tops, skirts, trousers, jackets and shoes, every one
-procedural — the shell is generated at each avatar's measurements, so the
-repository needs no binary garment assets. Adding a garment is usually a single
+53 templates across dresses, tops, skirts, shorts, trousers and leggings, jumpsuits,
+jackets, swimwear, underwear, nightwear, legwear and shoes, every one procedural —
+the shell is generated at each avatar's measurements, so the repository needs no
+binary garment assets. Adding a garment is usually a single
 JSON file; see [docs/GARMENT_TEMPLATE_SPEC.md](docs/GARMENT_TEMPLATE_SPEC.md).
 
 ```bash

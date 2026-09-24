@@ -194,7 +194,7 @@ function renderCaps() {
             engines.bodyMasking ? 'on' : 'off',
             engines.bodyMasking
                 ? 'Covered body polygons are removed under the garment.'
-                : 'The native engine cannot hide the body under a garment. Layered garments fit best.',
+                : 'The native engine cannot hide body polygons, but it takes off the avatar\'s own clothes where it can recognise them.',
         ],
         [`${templates} templates`, 'on'],
         [strictLicensing ? 'Strict licensing' : 'Licensing relaxed', strictLicensing ? 'on' : 'off'],
@@ -726,7 +726,7 @@ function renderReport(report) {
         lines.push(
             el('p', {
                 class: 'report-line warn',
-                text: 'This engine cannot hide the body under a garment, so what she was already wearing shows through. Garments that layer over the outfit — skirts, jackets — fit best here; replacing a garment needs the Blender engine.',
+                text: 'Something under the garment still shows through. If it is her own clothing, this model does not mark it in a way the Forge recognises, so it was layered over rather than taken off.',
             })
         );
     }
