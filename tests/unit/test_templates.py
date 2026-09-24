@@ -46,9 +46,10 @@ def test_floor_length_garments_hang_from_the_hips(template_catalog: TemplateCata
 
     Binding a floor-length hem to the lower legs tears it apart the moment the
     legs swing in opposite directions; real long skirts hang from the pelvis.
+    Garments with legs of their own — trousers, a catsuit — follow the legs.
     """
     for template in template_catalog:
-        if template.hem not in {"floor", "ankle"} or template.category == "trousers":
+        if template.hem not in {"floor", "ankle"} or template.category in {"trousers", "jumpsuit"}:
             continue
         assert "lowerLegs" not in template.anchors, (
             f"{template.id} is {template.hem}-length and anchored to lowerLegs"

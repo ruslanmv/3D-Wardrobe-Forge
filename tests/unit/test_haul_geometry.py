@@ -159,3 +159,87 @@ def test_smoothing_leaves_a_hem_where_it_is():
     before = radii(mesh)[hem].copy()
     smooth_radial(mesh, index, CLEARANCE)
     np.testing.assert_allclose(radii(mesh)[hem], before, atol=2e-3)
+
+
+def test_body_points_and_bounds_ignore_what_no_primitive_draws(vrm_bytes):
+    """VRoid primitives share one vertex buffer; a removed skirt's vertices must not count as her."""
+    from tests.vroid_support import dress_like_vroid
+    from wardrobe.vrm.garments import remove_slots
+
+    document = GltfDocument.from_bytes(dress_like_vroid(vrm_bytes, slots=("Bottoms",)))
+    body = [m for m in document.meshes if len(m["primitives"]) > 1][0]
+    accessor = body["primitives"][0]["attributes"]["POSITION"]
+    positions = document.read_accessor(accessor)
+    # Point the Bottoms primitive at a far-away copy of the buffer's first triangle.
+    bottoms = body["primitives"][-1]
+    far = np.vstack([positions, positions[:3] + np.array([0.0, 0.0, 2.0], dtype=positions.dtype)])
+    moved = document.add_accessor(far.astype(np.float32), include_bounds=True)
+    triangle = document.add_accessor(np.arange(far.shape[0] - 3, far.shape[0], dtype=np.uint32).reshape(-1, 1))
+    for primitive in body["primitives"]:
+        primitive["attributes"]["POSITION"] = moved
+    bottoms["indices"] = triangle
+    assert body_points(document, spacing=0)[:, 2].max() > 1.5
+    assert document.primitive_bounds()[1][2] > 1.5
+
+    remove_slots(document, ["bottoms"])
+    assert body_points(document, spacing=0)[:, 2].max() < 0.5
+    assert document.primitive_bounds()[1][2] < 0.5
+
+
+def leg_bones() -> dict:
+    return {
+        "leftUpperLeg": np.array([0.1, 0.9, 0.0]), "leftLowerLeg": np.array([0.1, 0.5, 0.0]),
+        "leftFoot": np.array([0.1, 0.08, 0.0]),
+        "rightUpperLeg": np.array([-0.1, 0.9, 0.0]), "rightLowerLeg": np.array([-0.1, 0.5, 0.0]),
+        "rightFoot": np.array([-0.1, 0.08, 0.0]),
+    }
+
+
+def leg_surface(radius: float = 0.05) -> np.ndarray:
+    rng = np.random.default_rng(5)
+    count = 6000
+    side = np.where(rng.random(count) < 0.5, 0.1, -0.1)
+    angle = rng.uniform(-np.pi, np.pi, count)
+    y = rng.uniform(0.1, 0.88, count)
+    return np.stack([side + np.cos(angle) * radius, y, np.sin(angle) * radius], axis=1)
+
+
+def leg_tube(radius: float):
+    from wardrobe.geometry.procedural import sweep
+
+    return sweep(np.array([[0.1, 0.85, 0.0], [0.1, 0.5, 0.0], [0.1, 0.15, 0.0]]), [radius] * 3, segments=16)
+
+
+def tube_radius(mesh) -> np.ndarray:
+    return np.hypot(mesh.positions[:, 0] - 0.1, mesh.positions[:, 2])
+
+
+@pytest.mark.parametrize("strength", [0.0, 1.0])
+def test_a_tube_inside_the_leg_is_always_pushed_out(strength):
+    from wardrobe.engines.geometry_checks import conform_limbs
+
+    mesh = leg_tube(0.03)
+    conform_limbs(mesh, np.ones(mesh.vertex_count, bool), leg_surface(), leg_bones(), CLEARANCE, strength=strength)
+    assert tube_radius(mesh).min() >= 0.05 + CLEARANCE - 0.004
+
+
+def test_a_loose_tube_is_drawn_in_only_as_far_as_asked():
+    from wardrobe.engines.geometry_checks import conform_limbs
+
+    tight, loose = leg_tube(0.12), leg_tube(0.12)
+    mask = np.ones(tight.vertex_count, bool)
+    conform_limbs(tight, mask, leg_surface(), leg_bones(), CLEARANCE, strength=1.0)
+    conform_limbs(loose, mask, leg_surface(), leg_bones(), CLEARANCE, strength=0.0)
+    assert np.median(tube_radius(tight)) == pytest.approx(0.05 + CLEARANCE, abs=0.006)  # leggings
+    assert np.median(tube_radius(loose)) == pytest.approx(0.12, abs=1e-3)  # trousers keep their cut
+
+
+def test_stray_points_do_not_flare_a_leg():
+    """A garment's hidden vertices well off the leg must not become the leg's radius."""
+    from wardrobe.engines.geometry_checks import conform_limbs
+
+    stray = leg_surface(radius=0.18)[:600]
+    body = np.vstack([leg_surface(), stray])
+    mesh = leg_tube(0.12)
+    conform_limbs(mesh, np.ones(mesh.vertex_count, bool), body, leg_bones(), CLEARANCE, strength=1.0)
+    assert tube_radius(mesh).max() < 0.05 * 1.4 + CLEARANCE + 0.01

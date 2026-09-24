@@ -19,7 +19,8 @@
     "allowLengthScale": true,
     "allowWidthScale": true,
     "minLengthScale": 0.7,
-    "maxLengthScale": 1.3
+    "maxLengthScale": 1.3,
+    "conform": 1.0
   },
   "materials": {
     "supportsBaseColor": true,

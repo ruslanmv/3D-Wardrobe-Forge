@@ -322,10 +322,13 @@ class GltfDocument:
         return [i for i, node in enumerate(self.nodes) if "mesh" in node]
 
     def primitive_bounds(self) -> tuple[np.ndarray, np.ndarray] | None:
-        """Rest-pose bounding box derived from POSITION accessor min/max.
+        """Rest-pose bounding box of what is drawn.
 
-        Accessor bounds are mandatory for POSITION in glTF, so this is cheap and
-        does not require decoding vertex data.
+        Accessor min/max would be cheaper, but it bounds the whole buffer, and
+        a VRoid Body mesh's primitives share one: after garment replacement
+        takes her skirt off, the skirt's vertices are still in the buffer and
+        still set her depth. So the vertices the primitives reference are read
+        instead, falling back to min/max only where there are no indices.
         """
         accessors = self.gltf.get("accessors") or []
         lo = np.full(3, np.inf)
@@ -341,10 +344,20 @@ class GltfDocument:
                 if position is None or position >= len(accessors):
                     continue
                 accessor = accessors[position]
-                if "min" not in accessor or "max" not in accessor:
+                index_accessor = primitive.get("indices")
+                if index_accessor is not None:
+                    points = self.read_accessor(position)[:, :3].astype(np.float64)
+                    used = self.read_accessor(index_accessor).astype(np.int64).reshape(-1)
+                    used = used[used < points.shape[0]]
+                    if used.size == 0:
+                        continue
+                    local_lo = points[used].min(axis=0)
+                    local_hi = points[used].max(axis=0)
+                elif "min" in accessor and "max" in accessor:
+                    local_lo = np.array(accessor["min"][:3], dtype=np.float64)
+                    local_hi = np.array(accessor["max"][:3], dtype=np.float64)
+                else:
                     continue
-                local_lo = np.array(accessor["min"][:3], dtype=np.float64)
-                local_hi = np.array(accessor["max"][:3], dtype=np.float64)
                 if skinned:
                     # Skinned positions live in skin space; the node transform
                     # is not applied to them at render time.

@@ -23,6 +23,7 @@ from wardrobe.engines.geometry_checks import (
     ClearanceReport,
     apply_pleats,
     body_points,
+    conform_limbs,
     conform_to_body,
     coverage_report,
     measure_clearance,
@@ -82,9 +83,9 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     mesh = build_garment(kind, params, silhouette=context.plan.silhouette, hem=context.plan.hem)
 
     region_bones = set(bones_for_coverage(artifact.coverage)) - CLEARANCE_EXCLUDED_BONES
-    body = body_points(context.document)
-    body = _restrict_to_covered_region(context, body, region_bones)
-    index = BodyRadialIndex(body)
+    whole = body_points(context.document)
+    body = _restrict_to_covered_region(context, whole, region_bones)
+    index = BodyRadialIndex(body, surroundings=_torso(context, whole))
 
     axis_mask = on_axis_mask(mesh, context.measurements)
 
@@ -93,6 +94,15 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         below_hips = bool(artifact.metadata.get("conformBelowHips"))
         conform_to_body(mesh, index, clearance, axis_mask, strength=conform,
                         min_y=None if below_hips else params.hip_y)
+
+    # Leg-worn pieces (stocking and legging tubes, trouser and catsuit legs) are
+    # off the body axis; fit them round each leg's own bones instead.
+    leg_worn = ~axis_mask & (mesh.positions[:, 1] < params.hip_y + params.height * 0.03)
+    if leg_worn.any():
+        legs = _skinned_to(context, whole, LEG_BONES)
+        conform_limbs(mesh, leg_worn, legs if legs is not None else whole,
+                      context.measurements.bone_positions, clearance,
+                      strength=conform, forward=params.forward)
 
     before = measure_clearance(mesh, index, clearance, axis_mask)
     pushed = resolve_clearance(mesh, index, clearance, axis_mask)
@@ -232,6 +242,47 @@ def _restrict_to_covered_region(
         "clearance was measured against the whole torso and legs"
     )
     return fallback if fallback.shape[0] >= MIN_REGION_POINTS else body
+
+
+#: Never part of the body's outline for a torso garment: they share height bands
+#: with it (a T-pose arm, the head above a collar) without being under it.
+OUTLINE_EXCLUDED_BONES = frozenset(
+    {
+        "leftUpperArm", "rightUpperArm", "leftLowerArm", "rightLowerArm",
+        "leftHand", "rightHand", "neck", "head",
+    }
+)
+
+
+#: What a leg is, for fitting leg-worn pieces: the pelvis beside the hip joint is not.
+LEG_BONES = frozenset({"leftUpperLeg", "rightUpperLeg", "leftLowerLeg", "rightLowerLeg"})
+
+
+def _skinned_to(context: PipelineContext, body: np.ndarray, bones: frozenset[str]) -> np.ndarray | None:
+    if body.shape[0] == 0 or context.info is None or context.measurements is None:
+        return None
+    all_bones = list(context.info.humanoid_bones)
+    segments = build_bone_segments(context.info.humanoid_bones, context.measurements, all_bones)
+    if not segments:
+        return None
+    selected = body[select_region_points(body, segments, set(bones))]
+    return selected if selected.shape[0] >= MIN_REGION_POINTS else None
+
+
+def _torso(context: PipelineContext, body: np.ndarray) -> np.ndarray | None:
+    """The whole torso and legs, shoulders included: what the hull outline is taken from.
+
+    Wider than the covered region on purpose — see ``BodyRadialIndex``'s
+    ``surroundings``: the sides of her chest may be weighted to the shoulders.
+    """
+    if body.shape[0] == 0 or context.info is None or context.measurements is None:
+        return None
+    all_bones = list(context.info.humanoid_bones)
+    segments = build_bone_segments(context.info.humanoid_bones, context.measurements, all_bones)
+    if not segments:
+        return None
+    keep = {bone for bone in context.info.humanoid_bones if bone not in OUTLINE_EXCLUDED_BONES}
+    return body[select_region_points(body, segments, keep)]
 
 
 def shell_coverage(result: ShellResult, artifact_coverage: list[str]) -> dict:

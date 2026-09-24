@@ -32,6 +32,8 @@ CATEGORIES = {
     "dress", "skirt", "top", "trousers", "jacket", "shoes",
     # try-on haul
     "shorts", "swimwear", "underwear", "nightwear", "legwear",
+    # one garment, top to ankle: catsuits, unitards, jumpsuits
+    "jumpsuit",
 }
 
 #: Shapes ``build_garment`` can make. A test holds this equal to the builder's own list,
@@ -39,7 +41,7 @@ CATEGORIES = {
 PROCEDURAL_KINDS = {
     "dress", "skirt", "top", "trousers", "jacket", "shoes",
     "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
-    "slip-dress", "shorts", "cropped-jacket", "legwear",
+    "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit",
 }
 
 #: Categories that only dress an avatar declared to depict an adult. See wardrobe.policy.intimate.

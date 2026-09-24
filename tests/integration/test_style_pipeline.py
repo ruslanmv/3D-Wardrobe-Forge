@@ -105,3 +105,25 @@ async def test_a_pattern_tile_has_the_same_physical_size_on_any_garment(orchestr
     span_v = uv[:, 1].max() - uv[:, 1].min()
     span_y = position[:, 1].max() - position[:, 1].min()
     assert span_v / span_y == pytest.approx(record.plan.material.texture_scale, rel=0.35)
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "red micro bikini",
+        "black string bikini",
+        "black high-cut one-piece swimsuit",
+        "black lace garter set",
+        "black harness bralette",
+        "red plunging bodysuit",
+        "red v-neck cocktail dress",
+        "black backless satin slip dress",
+        "navy plaid micro mini skirt",
+        "neon green pvc leggings",
+        "black latex catsuit",
+    ],
+)
+async def test_every_cut_and_strap_network_completes_and_passes(orchestrator, store, toon_avatar, prompt):
+    record, output = await dress(orchestrator, store, toon_avatar, prompt)
+    assert record.state == "completed", record.error
+    assert record.fit_report.passed and record.fit_report.humanoid_valid, record.fit_report

@@ -48,6 +48,7 @@ KIND_REGIONS: dict[str, frozenset[str]] = {
     "bra": frozenset({"upper"}),
     "skirt": frozenset({"lower"}),
     "trousers": frozenset({"lower"}),
+    "leggings": frozenset({"lower"}),
     "shorts": frozenset({"lower"}),
     "briefs": frozenset({"lower"}),
     "dress": frozenset({"upper", "lower"}),
@@ -55,6 +56,7 @@ KIND_REGIONS: dict[str, frozenset[str]] = {
     "bikini": frozenset({"upper", "lower"}),
     "one-piece": frozenset({"upper", "lower"}),
     "swim-dress": frozenset({"upper", "lower"}),
+    "catsuit": frozenset({"upper", "lower"}),
     "shoes": frozenset({"feet"}),
 }
 

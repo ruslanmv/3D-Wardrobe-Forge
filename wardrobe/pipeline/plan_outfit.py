@@ -127,7 +127,9 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     ),
     "underwear": (
         "underwear", "lingerie", "bra", "bralette", "panties", "briefs", "knickers", "bodysuit", "teddy",
+        "garter belt", "suspender belt", "garter", "garters", "garter set",
     ),
+    "jumpsuit": ("jumpsuit", "catsuit", "unitard", "boilersuit"),
     "nightwear": (
         "nightwear", "nightgown", "nightdress", "nightie", "chemise", "pajamas", "pyjamas", "pajama",
         "pyjama", "sleepwear",
