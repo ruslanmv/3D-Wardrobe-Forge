@@ -37,7 +37,8 @@
     "knit",
     "knitwear",
     "cropped",
-    "belted"
+    "belted",
+    "cropped jacket"
   ],
   "description": "Cropped knit cardigan."
 }

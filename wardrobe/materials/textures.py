@@ -69,7 +69,8 @@ def _fishnet(size: int = 64) -> bytes:
     return _rgba(_grey(shade), thread)
 
 
-def _lace(size: int = 256, *, lined: bool = False) -> bytes:
+def _lace(size: int = 256, *, lined: bool = False, base: Colour = (1.0, 1.0, 1.0),
+          lining: Colour = (0.8, 0.8, 0.8)) -> bytes:
     """A rosette on a fine net: the motif opaque, the net threads opaque, the rest holes."""
     u, v = _grid(size)
     # Ground: a net eight cells across the tile.
@@ -96,7 +97,11 @@ def _lace(size: int = 256, *, lined: bool = False) -> bytes:
         shade = np.where(petals > 0.5, 1.0, shade)
     alpha = np.maximum(net, motif)
     if lined:
-        return _rgba(_grey(shade * alpha + 0.8 * (1.0 - alpha)))
+        # Coloured, not tinted: black lace on a black lining is black on black. The
+        # lace is ``base``; the lining is its own tone, so the motif still reads.
+        lace = np.asarray(base)[None, None, :] * shade[..., None]
+        rgb = lace * alpha[..., None] + np.asarray(lining)[None, None, :] * (1.0 - alpha[..., None])
+        return _rgba(rgb)
     return _rgba(_grey(shade), alpha)
 
 
@@ -177,7 +182,7 @@ def pattern_texture(
     if name == "fishnet":
         return _fishnet()
     if name == "lace":
-        return _lace(lined=lined)
+        return _lace(lined=True, base=base, lining=other) if lined else _lace()
     if name == "sequin":
         return _sequin()
     if name == "stripes":

@@ -56,6 +56,8 @@ COLORS: dict[str, str] = {
     "wine": "#6b1f34",
     "pink": "#e59ab8",
     "neon pink": "#ff2fa0",
+    "champagne": "#e6d2ae",
+    "nude": "#d9b39a",
     "neon green": "#39ff14",
     "neon yellow": "#e8ff1a",
     "neon orange": "#ff6a13",
@@ -408,6 +410,14 @@ def score_template(template: GarmentTemplate, parsed: ParsedPrompt, text: str) -
     for tag in template.tags:
         if re.search(rf"(?<!\w){re.escape(tag.lower())}(?!\w)", text):
             score += 1.0
+    # A garment named outright beats one that only shares a word with the prompt:
+    # "lace bodysuit" is the Bodysuit, not the Lingerie Set tagged "lace". Ties
+    # used to fall to the template id's alphabetical order.
+    name = template.name.lower()
+    if re.search(rf"(?<!\w){re.escape(name)}(?!\w)", text) or re.search(
+        rf"(?<!\w){re.escape(name.split()[-1])}(?!\w)", text
+    ):
+        score += 1.5
     if parsed.formality and parsed.formality in template.tags:
         score += 1.5
     return score

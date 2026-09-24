@@ -144,7 +144,7 @@ class BodyRadialIndex:
         shoulders, the chest band's covered points are its front and back only,
         and their hull is a chord straight through her sides: conform pulled a
         swimsuit inside the body there. Surrounding points within reach of the
-        covered ones (1.6x their farthest, per band) join the hull. The caller
+        covered ones (2.5x their farthest, per band) join the hull. The caller
         passes the torso without arms or head, so an arm out in a T-pose never
         does; the reach limit is a second guard, not the first.
         """
@@ -170,7 +170,7 @@ class BodyRadialIndex:
         np.maximum.at(self.radii, (band_index, sector_index), radius)
         self._points = points
         self._surroundings = surroundings
-        self._hull = self._build_hull()
+        self._hull = self._fill_empty_bands(self._build_hull())
         self._hull_bands = self._hull.max(axis=1) > 0
 
     def _bucket(self, points: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -239,6 +239,25 @@ class BodyRadialIndex:
         t = position - np.floor(position)
         return self._hull[band, lo] * (1.0 - t) + self._hull[band, hi] * t
 
+    @staticmethod
+    def _fill_empty_bands(hull: np.ndarray, reach: int = 3) -> np.ndarray:
+        """A band with no body points in it takes the wider of its nearest neighbours.
+
+        Bands split the covered height range 64 ways: over a crop top's 35 cm that
+        is 5.5 mm, finer than the 12 mm the body is sampled at, so some bands hold
+        no points. Empty, a band had no hull and a garment row in it no clearance —
+        a top's upper edge sat 1 cm inside her chest. Only gaps a few bands wide are
+        filled; beyond the body's ends stays empty.
+        """
+        filled = hull.copy()
+        present = hull.max(axis=1) > 0
+        for band in np.flatnonzero(~present):
+            below = [b for b in range(band - 1, max(band - reach, 0) - 1, -1) if present[b]]
+            above = [b for b in range(band + 1, min(band + reach, len(hull) - 1) + 1) if present[b]]
+            if below and above:
+                filled[band] = np.maximum(hull[below[0]], hull[above[0]])
+        return filled
+
     def _build_hull(self) -> np.ndarray:
         samples = self.HULL_SAMPLES
         hull = np.zeros((self.bands, samples))
@@ -248,7 +267,11 @@ class BodyRadialIndex:
             reach = np.zeros(self.bands)
             np.maximum.at(reach, own_band, own_radius)
             near_band, _, near_radius = self._bucket(self._surroundings)
-            near = (reach[near_band] > 0) & (near_radius <= reach[near_band] * 1.6)
+            # A band with no covered points at all — on some rigs every point at the
+            # top of the chest is nearest a shoulder bone — takes the torso as it
+            # is; without this it had no hull and no clearance, and a top sat
+            # 1 cm inside her there.
+            near = (reach[near_band] == 0) | (near_radius <= reach[near_band] * 2.5)
             points = np.vstack([points, self._surroundings[near]])
         band, _, radius = self._bucket(points)
         dx = points[:, 0] - self.axis_x
@@ -609,6 +632,23 @@ def conform_limbs(
         reach[capped] = np.minimum(reach[capped], typical[capped, None] * 1.4)
         # Smooth over neighbouring sectors and bins: a leg is round, samples are not.
         reach = np.maximum.reduce([reach, np.roll(reach, 1, axis=1), np.roll(reach, -1, axis=1)])
+        # A cell with no body sample in it is not a hole in her leg. Left empty, a
+        # vertex there kept its formula radius — inside a leg wider than the
+        # formula — and a row of such cells showed as windows of skin down a
+        # legging. Fill from the neighbours round and along the leg; failing that,
+        # the leg's typical radius there.
+        for _ in range(4):
+            empty = reach == 0
+            if not empty.any():
+                break
+            neighbours = np.maximum.reduce([
+                np.roll(reach, 1, axis=1), np.roll(reach, -1, axis=1),
+                np.roll(reach, 2, axis=1), np.roll(reach, -2, axis=1),
+                np.vstack([reach[1:], np.zeros((1, LIMB_SECTORS))]),
+                np.vstack([np.zeros((1, LIMB_SECTORS)), reach[:-1]]),
+            ])
+            reach = np.where(empty, neighbours, reach)
+        reach = np.where((reach == 0) & (typical[:, None] > 0), typical[:, None] * 1.15, reach)
 
         distance, along, angle, clipped = _project(points, segments)
         mine = limb_mask & ~clipped & (owner == leg_index)

@@ -16,7 +16,7 @@ import numpy as np
 from wardrobe.config import Settings
 from wardrobe.engines.base import FittingEngine
 from wardrobe.engines.geometry_checks import pose_stress_test
-from wardrobe.engines.shell import build_fitted_shell, shell_coverage
+from wardrobe.engines.shell import build_fitted_shell, on_axis_mask, shell_coverage
 from wardrobe.errors import FittingError
 from wardrobe.geometry.procedural import trim_triangles
 from wardrobe.geometry.raster import RenderLayer, render
@@ -68,7 +68,9 @@ class NativeEngine(FittingEngine):
             raise FittingError(
                 "none of the garment's anchor bones exist on this avatar: " + ", ".join(candidates)
             )
-        bind_mesh(mesh, segments)
+        # The garment's body binds to the torso; only pieces off the body's axis
+        # (sleeves, stocking legs) may follow the limbs.
+        bind_mesh(mesh, segments, torso=on_axis_mask(mesh, context.measurements))
 
         issues = mesh.validate()
         if issues:

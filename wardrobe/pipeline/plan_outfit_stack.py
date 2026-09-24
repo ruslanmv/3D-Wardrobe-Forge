@@ -24,7 +24,7 @@ import re
 
 from wardrobe.domain.garments import GarmentTemplate, TemplateCatalog
 from wardrobe.domain.looks import OutfitPlan, OutfitRequest
-from wardrobe.materials.finishes import PATTERN_KEYWORDS
+from wardrobe.materials.finishes import FINISH_KEYWORDS, OPACITY_KEYWORDS, PATTERN_KEYWORDS
 from wardrobe.pipeline.plan_outfit import parse_prompt, plan_outfit
 from wardrobe.vrm.garments import KIND_REGIONS
 
@@ -87,8 +87,14 @@ def _carry_matching(pieces: list[str]) -> list[str]:
             words = []
             if source.color_name and parse_prompt(piece).color_name is None:
                 words.append(source.color_name)
-            if source.pattern and parse_prompt(piece).pattern is None:
+            target = parse_prompt(piece)
+            if source.pattern and target.pattern is None:
                 words.append(PATTERN_KEYWORDS[source.pattern][0])
+            # The fabric too: "burgundy mesh bralette + matching briefs" are both mesh.
+            if source.opacity is not None and target.opacity is None:
+                words.append(_word_for(OPACITY_KEYWORDS, source.opacity, carried[-1]))
+            if source.finish and target.finish is None:
+                words.append(_word_for(FINISH_KEYWORDS, source.finish, carried[-1]))
             # The word has done its job; left in, it matches the "matching set"
             # template and turns a pair of briefs into a whole lingerie set.
             piece = re.sub(r"\bmatching\s*", "", piece, flags=re.IGNORECASE).strip()
@@ -96,6 +102,14 @@ def _carry_matching(pieces: list[str]) -> list[str]:
                 piece = f"{' '.join(words)} {piece}"
         carried.append(piece)
     return carried
+
+
+def _word_for(table: dict, key, text: str) -> str:
+    """The word from ``table[key]`` that ``text`` actually used, so the carried word is the same one."""
+    for word in sorted(table[key], key=len, reverse=True):
+        if re.search(rf"(?<!\w){re.escape(word)}(?!\w)", text, re.IGNORECASE):
+            return word
+    return table[key][0]
 
 
 def plan_outfit_stack(request: OutfitRequest, catalog: TemplateCatalog) -> OutfitPlan:

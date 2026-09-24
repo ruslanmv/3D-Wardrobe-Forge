@@ -60,10 +60,16 @@ class GarmentMaterial:
         other = tuple(_linear_to_srgb(c) for c in (plan.pattern_color or (1.0, 1.0, 1.0, 1.0))[:3])
         opacity = float(plan.opacity)
 
+        lined_lace = pattern.name == "lace" and plan.lined
+        if lined_lace:
+            # The lining a step lighter than a dark lace, a step darker than a pale one.
+            luminance = 0.2126 * colour[0] + 0.7152 * colour[1] + 0.0722 * colour[2]
+            lighter = tuple(c + (1.0 - c) * 0.3 for c in colour)
+            other = lighter if luminance < 0.4 else tuple(c * 0.72 for c in colour)
         texture = (
             pattern_texture(pattern.name, colour, other, lined=plan.lined) if pattern.name != "none" else None
         )
-        coloured = texture is not None and pattern.coloured
+        coloured = texture is not None and (pattern.coloured or lined_lace)
         factor = (1.0, 1.0, 1.0, opacity) if coloured else (*plan.base_color[:3], opacity)
 
         tint = tuple(0.65 * c + 0.35 for c in colour) if finish.tinted else (1.0, 1.0, 1.0)

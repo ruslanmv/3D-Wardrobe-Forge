@@ -142,6 +142,20 @@ shipped empty — it is the operator's decision, recorded by them, never the
 browser's. The engine models garments on the authored body; it never adds or
 reconstructs anatomy.
 
+### Verification gallery
+
+[`assets/gallery`](assets/gallery/README.md) shows 21 looks from everyday
+basics, through lace, mesh, fishnet, micro coverage and latex, to a five-layer
+outfit and a replacement of the avatar's own clothes. Each was made through the
+real pipeline on one faceless adult mannequin and rendered by the Studio's
+viewer. Each is captioned with the plan and fit report it came from, and the
+index lists the limitations the pictures show. `tools/gallery` regenerates it.
+
+<p align="center">
+  <img src="assets/gallery/19-layered-complete-outfit.webp" width="46%" alt="Five layers in one VRM: lace bralette, briefs, stockings, sheer skater dress, cropped cardigan">
+  <img src="assets/gallery/20-source-clothing-replacement.webp" width="52%" alt="Her own top and trousers replaced by underwear and an opaque dress">
+</p>
+
 ---
 
 ## Quick start

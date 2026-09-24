@@ -166,5 +166,11 @@ def test_trim_sections_are_marked_for_their_own_material(measurements):
     _, bra = build(measurements, "bra", straps="harness")
     mask = trim_triangles(bra)
     assert mask.any() and not mask.all()
-    _, plain = build(measurements, "briefs")
-    assert not trim_triangles(plain).any()
+    _, briefs = build(measurements, "briefs")
+    edges = trim_triangles(briefs)
+    assert edges.any() and not edges.all()  # waistband and leg openings are elastic; the panel is not
+    _, stocking = build(measurements, "legwear")
+    band = trim_triangles(stocking)
+    assert band.any() and band.mean() < 0.5  # a top band on each leg, not the whole stocking
+    _, dress = build(measurements, "dress")
+    assert not trim_triangles(dress).any()

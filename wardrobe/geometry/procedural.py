@@ -137,8 +137,45 @@ def _ellipse_perimeter(a: float, b: float) -> float:
     return math.pi * (3.0 * (a + b) - math.sqrt(max((3.0 * a + b) * (a + 3.0 * b), 0.0)))
 
 
+#: The most a garment shell's rows may be apart. Clearance is enforced at vertices;
+#: between two rows a face is flat, and with rows 10–30 cm apart it cut into
+#: whatever bulged between them — her thigh through a legging, a bra's elastic
+#: through a dress. At 3 cm the flat stretch is too short for that.
+GARMENT_ROW_SPACING_M = 0.03
+
+
+def _interpolate_rings(rings: list[Ring], spacing: float) -> list[Ring]:
+    out = [rings[0]]
+    for a, b in zip(rings, rings[1:], strict=False):
+        steps = max(int(np.ceil(abs(b.y - a.y) / spacing)), 1)
+        for k in range(1, steps + 1):
+            t = k / steps
+            out.append(Ring(
+                a.y + (b.y - a.y) * t,
+                a.half_width + (b.half_width - a.half_width) * t,
+                a.half_depth + (b.half_depth - a.half_depth) * t,
+                a.center_x + (b.center_x - a.center_x) * t,
+                a.center_z + (b.center_z - a.center_z) * t,
+            ))
+    return out
+
+
+def _interpolate_path(
+    points: np.ndarray, radii: list[float], spacing: float
+) -> tuple[np.ndarray, list[float]]:
+    out_points, out_radii = [points[0]], [radii[0]]
+    for i in range(len(points) - 1):
+        steps = max(int(np.ceil(np.linalg.norm(points[i + 1] - points[i]) / spacing)), 1)
+        for k in range(1, steps + 1):
+            t = k / steps
+            out_points.append(points[i] + (points[i + 1] - points[i]) * t)
+            out_radii.append(radii[i] + (radii[i + 1] - radii[i]) * t)
+    return np.array(out_points), out_radii
+
+
 def loft(rings: list[Ring], *, segments: int = DEFAULT_SEGMENTS, cap_top: bool = False,
-         cap_bottom: bool = False, name: str = "loft", front: float = 1.0) -> Mesh:
+         cap_bottom: bool = False, name: str = "loft", front: float = 1.0,
+         max_spacing: float | None = None) -> Mesh:
     """Build a closed tube through ``rings`` (ordered bottom to top).
 
     UVs are in metres of fabric: u runs round the ring (its perimeter), v down
@@ -153,6 +190,8 @@ def loft(rings: list[Ring], *, segments: int = DEFAULT_SEGMENTS, cap_top: bool =
     """
     if len(rings) < 2:
         raise ValueError("a loft needs at least two rings")
+    if max_spacing:
+        rings = _interpolate_rings(rings, max_spacing)
 
     ring_vertex_count = segments + 1  # duplicated seam vertex for clean UVs
     # x = sin, z = cos: angle 0 is +Z. Start (and end) the ring at her back.
@@ -219,9 +258,12 @@ def loft(rings: list[Ring], *, segments: int = DEFAULT_SEGMENTS, cap_top: bool =
     return mesh.compute_normals()
 
 
-def sweep(points: np.ndarray, radii: list[float], *, segments: int = 12, name: str = "sweep") -> Mesh:
+def sweep(points: np.ndarray, radii: list[float], *, segments: int = 12, name: str = "sweep",
+          max_spacing: float | None = None) -> Mesh:
     """Build a tube following a polyline (used for sleeves and trouser legs)."""
     points = np.asarray(points, dtype=np.float64)
+    if max_spacing and points.shape[0] >= 2 and len(radii) == points.shape[0]:
+        points, radii = _interpolate_path(points, list(radii), max_spacing)
     if points.shape[0] < 2:
         raise ValueError("a sweep needs at least two points")
     if len(radii) != points.shape[0]:
@@ -293,7 +335,8 @@ def build_bodice(params: FitParameters, *, y_top: float | None = None, y_bottom:
         Ring(bottom + (top - bottom) * 0.72, chest_w * looseness, chest_d * looseness),
         Ring(top, chest_w * looseness * 0.98, chest_d * looseness * 0.98),
     ]
-    return loft(rings, segments=params.segments, name=name, front=params.forward)
+    return loft(rings, segments=params.segments, name=name, front=params.forward,
+                max_spacing=GARMENT_ROW_SPACING_M)
 
 
 def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: float = 1.0,
@@ -314,7 +357,8 @@ def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: 
         width = hip_w * taper if fraction < 0.9 else top_w * 1.01
         depth = hip_d * taper if fraction < 0.9 else top_d * 1.01
         rings.append(Ring(y_bottom + span * fraction, width, depth))
-    return loft(rings, segments=params.segments, name=name, front=params.forward)
+    return loft(rings, segments=params.segments, name=name, front=params.forward,
+                max_spacing=GARMENT_ROW_SPACING_M)
 
 
 def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25,
@@ -341,16 +385,23 @@ def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25
             path = np.array([path[0], path[1], path[1] + (path[2] - path[1]) * 0.9])
             radii = [radius * 1.2, radius * 1.0, radius * 0.85]
 
-        meshes.append(sweep(path, radii, segments=max(params.segments // 2, 8), name=f"{name}-{side}"))
+        meshes.append(sweep(path, radii, segments=max(params.segments // 2, 8), name=f"{name}-{side}",
+                            max_spacing=GARMENT_ROW_SPACING_M))
     return meshes
 
 
 def build_trousers(params: FitParameters, *, hem_y: float, flare: float = 1.0,
                    name: str = "trousers") -> list[Mesh]:
+    rise_style = str(params.metadata.get("rise") or "")
+    waist_band = {"high": 0.32, "low": -0.25}.get(rise_style, 0.15)  # fraction of waist→chest
+    if waist_band >= 0:
+        y_top = params.waist_y + (params.chest_y - params.waist_y) * waist_band
+    else:
+        y_top = params.waist_y + (params.waist_y - params.hip_y) * waist_band
     meshes: list[Mesh] = [
         build_bodice(
             params,
-            y_top=params.waist_y + (params.chest_y - params.waist_y) * 0.15,
+            y_top=y_top,
             y_bottom=params.hip_y - (params.hip_y - params.knee_y) * 0.18,
             looseness=1.03,
             name=f"{name}-yoke",
@@ -372,7 +423,8 @@ def build_trousers(params: FitParameters, *, hem_y: float, flare: float = 1.0,
         path = np.array([hip_point + np.array([0.0, (hip_point[1] - knee_point[1]) * 0.08, 0.0]),
                          knee_point, hem_point])
         radii = [thigh_radius, thigh_radius * 0.82, ankle_radius]
-        meshes.append(sweep(path, radii, segments=max(params.segments // 2, 8), name=f"{name}-{side}"))
+        meshes.append(sweep(path, radii, segments=max(params.segments // 2, 8), name=f"{name}-{side}",
+                            max_spacing=GARMENT_ROW_SPACING_M))
     return meshes
 
 
@@ -411,7 +463,8 @@ def build_band(params: FitParameters, *, y_bottom: float, y_top: float, loosenes
         y = y_bottom + (y_top - y_bottom) * row / (rows - 1)
         half_w, half_d = half_at(params, y)
         rings.append(Ring(y, half_w * looseness, half_d * looseness))
-    return loft(rings, segments=params.segments, name=name, front=params.forward)
+    return loft(rings, segments=params.segments, name=name, front=params.forward,
+                max_spacing=GARMENT_ROW_SPACING_M)
 
 
 def build_straps(params: FitParameters, *, top_y: float, style: str = "shoulder",
@@ -473,9 +526,21 @@ def build_legwear(params: FitParameters, *, top_y: float, name: str = "legwear",
         top = hip_p + (knee_p - hip_p) * float(np.clip(t, 0.0, 1.0))
         thigh = max(params.measurements.hip_width_m * 0.2, 0.04) + params.clearance_m
         end = foot_p + np.array([0.0, params.height * (0.045 if ankle else 0.02), 0.0])
-        path = np.array([top, knee_p, end])
-        meshes.append(sweep(path, [thigh, thigh * 0.7, thigh * 0.5], segments=max(params.segments // 2, 8),
-                            name=f"{name}-{side}"))
+        # A point 3.5 cm down the thigh, so the first ring of the tube is the
+        # stocking's top band: elastic, and opaque on a fishnet or sheer stocking.
+        down = (knee_p - top) / max(float(np.linalg.norm(knee_p - top)), 1e-6)
+        band = top + down * 0.035
+        radius_band = thigh * (1.0 - 0.3 * 0.035 / max(float(np.linalg.norm(knee_p - top)), 0.035))
+        path = np.array([top, band, knee_p, end])
+        segments = max(params.segments // 2, 8)
+        tube = sweep(path, [thigh, radius_band, thigh * 0.7, thigh * 0.5], segments=segments,
+                     name=f"{name}-{side}", max_spacing=GARMENT_ROW_SPACING_M)
+        band_rows = max(int(np.ceil(0.035 / GARMENT_ROW_SPACING_M)), 1)  # the rows of that first 3.5 cm
+        tube.metadata["sections"] = [
+            (f"elastic-{name}-{side}", 0, 2 * segments * band_rows),
+            (f"{name}-{side}", 2 * segments * band_rows, tube.triangle_count - 2 * segments * band_rows),
+        ]
+        meshes.append(tube)
     return meshes
 
 
@@ -652,7 +717,33 @@ def briefs_profile(coverage: str, leg_cut: str, span: float):
 # strap networks
 # ----------------------------------------------------------------------
 #: Sections that are trim — elastic, straps, ties — not the garment's fabric.
-TRIM_SECTIONS = ("strap", "tie", "garter", "harness")
+TRIM_SECTIONS = ("strap", "tie", "garter", "harness", "elastic")
+
+
+def with_elastic(mesh: Mesh, *, segments: int, bottom: bool = False, top: bool = False) -> Mesh:
+    """Mark a lofted band's edge rows as elastic: opaque trim on a see-through garment.
+
+    A mesh bra's underbust band, the waistband and leg openings of briefs — the
+    parts that are elastic, not mesh. Only the triangle *sections* change; the
+    geometry does not, so an opaque garment is untouched.
+    """
+    per_row = 2 * segments
+    total = mesh.triangle_count
+    name = str(mesh.metadata.get("section", "band"))
+    if total < per_row * 3:
+        return mesh
+    sections: list[tuple[str, int, int]] = []
+    start, end = 0, total
+    if bottom:
+        sections.append(("elastic-" + name, 0, per_row))
+        start = per_row
+    if top:
+        end = total - per_row
+    sections.append((name, start, end - start))
+    if top:
+        sections.append(("elastic-" + name, end, per_row))
+    mesh.metadata["sections"] = sections
+    return mesh
 
 
 def trim_triangles(mesh: Mesh) -> np.ndarray:
@@ -819,13 +910,19 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
             middle = (top_y + bottom_y) / 2
             top_y = middle + max((top_y - middle) * scale, MIN_SPAN_M)
             bottom_y = middle - max((middle - bottom_y) * scale, MIN_SPAN_M / 2)
-        band = build_band(params, y_bottom=bottom_y, y_top=top_y, rows=6, name="bra")
+        band = with_elastic(build_band(params, y_bottom=bottom_y, y_top=top_y, rows=6, name="bra"),
+                            segments=params.segments, bottom=True)
         if neckline == "triangle":
             band = trim(band, params, y_bottom=bottom_y, y_top=top_y,
                         top=cups_profile(params, top_y - bottom_y, scale))
         else:
             band = cut_top(band, bottom_y, top_y)
-        return [band, *top_straps(params, top_y=top_y, style=straps or "shoulder", underbust_y=bottom_y)]
+        # Straps start where the garment's top edge actually is: on triangle cups
+        # that is the cup peak, well below where a full bra's top would be.
+        strap_y = top_y
+        if neckline == "triangle":
+            strap_y = bottom_y + MIN_SPAN_M + (top_y - bottom_y - MIN_SPAN_M) * min(scale * 1.15, 1.0)
+        return [band, *top_straps(params, top_y=strap_y, style=straps or "shoulder", underbust_y=bottom_y)]
 
     def briefs() -> list[Mesh]:
         top_y = low_rise if scale >= 1.0 else leg_opening + (low_rise - leg_opening) * max(scale + 0.25, 0.7)
@@ -834,7 +931,8 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
             top_y = params.waist_y + rise * 0.1  # at or just above the natural waist
         elif rise_style == "low":
             top_y = leg_opening + (top_y - leg_opening) * 0.75
-        band = build_band(params, y_bottom=leg_opening, y_top=top_y, rows=6, name="briefs")
+        band = with_elastic(build_band(params, y_bottom=leg_opening, y_top=top_y, rows=6, name="briefs"),
+                            segments=params.segments, bottom=True, top=True)
         profile = briefs_profile(coverage, leg_cut, top_y - leg_opening)
         if profile is not None:
             band = trim(band, params, y_bottom=leg_opening, y_top=top_y, bottom=profile)
@@ -916,8 +1014,11 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         # Leggings' shape, down over the feet, and a layer rather than a garment
         # of its own: KIND_REGIONS leaves tights out, so they go under her skirt
         # or shorts and never take them off.
-        waistband = build_band(params, y_bottom=params.hip_y - thigh * 0.12, y_top=low_rise + rise * 0.3,
-                               rows=5, name="tights-waist")
+        waistband = with_elastic(
+            build_band(params, y_bottom=params.hip_y - thigh * 0.12, y_top=low_rise + rise * 0.3, rows=5,
+                       name="tights-waist"),
+            segments=params.segments, top=True,
+        )
         return [waistband, *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="tights")]
     if kind == "catsuit":
         top_y = params.chest_y + (params.shoulder_y - params.chest_y) * 0.62
