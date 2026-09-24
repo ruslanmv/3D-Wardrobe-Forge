@@ -20,6 +20,7 @@ from wardrobe.engines.shell import build_fitted_shell, shell_coverage
 from wardrobe.errors import FittingError
 from wardrobe.geometry.raster import RenderLayer, render
 from wardrobe.pipeline.context import PipelineContext
+from wardrobe.vrm.garments import garment_material_name
 from wardrobe.vrm.merge import GarmentMaterial, attach_garment, set_title, tag_derived
 from wardrobe.vrm.skinning import bind_mesh, bones_for_coverage, build_bone_segments, weight_report
 
@@ -98,8 +99,10 @@ class NativeEngine(FittingEngine):
             raise FittingError("nothing to assemble; fitting did not complete")
 
         plan = context.plan
+        artifact_kind = context.artifact.procedural_kind if context.artifact else None
+        kind = artifact_kind or (plan.category if plan else "")
         material = GarmentMaterial(
-            name=plan.name if plan else "Garment",
+            name=garment_material_name(plan.name, kind) if plan else "Garment",
             base_color=tuple(plan.material.base_color) if plan else (0.6, 0.6, 0.6, 1.0),
             metallic=plan.material.metallic if plan else 0.0,
             roughness=plan.material.roughness if plan else 0.7,

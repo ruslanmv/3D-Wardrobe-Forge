@@ -46,11 +46,13 @@ def wait_for(client: TestClient, job_id: str, timeout: float = 60.0) -> dict:
     raise AssertionError(f"job {job_id} did not finish: {job['state']}")
 
 
-def dress(client: TestClient, slug: str = "mira", **outfit) -> dict:
+def dress(client: TestClient, slug: str = "mira", base_look_id: str | None = None, **outfit) -> dict:
     body = {
         "outfit": {"prompt": "black pencil skirt", "mode": "template", **outfit},
         "options": {"renderPreview": False, "engine": "native"},
     }
+    if base_look_id:
+        body["baseLookId"] = base_look_id
     response = client.post(f"/v1/library/{slug}/jobs", json=body)
     assert response.status_code == 202, response.text
     return wait_for(client, response.json()["id"])
@@ -230,3 +232,32 @@ def test_a_declared_library_avatar_can_and_the_body_cannot_declare_it(orchestrat
         # What the server wrote into the job is the whole point; that the gate then
         # refuses an undeclared avatar is test_an_undeclared_library_avatar_cannot_be_put_in_swimwear.
         assert response.json()["request"]["avatar"]["depictsAdult"] is False
+
+
+# ----------------------------------------------------------------------
+# outfit sets: building on a look already in the wardrobe
+# ----------------------------------------------------------------------
+def test_a_set_is_built_on_a_previous_look_and_a_second_top_replaces_the_first(client: TestClient, orchestrator):
+    from tests.vroid_support import primitive_materials
+
+    top = dress(client, prompt="white crop top")
+    assert top["state"] == "completed", top.get("error")
+    skirt = dress(client, prompt="navy pleated mini skirt", base_look_id=top["look"]["id"])
+    assert skirt["state"] == "completed", skirt.get("error")
+    assert skirt["request"]["avatar"]["storageKey"] == f"looks/{top['look']['id']}/look.vrm"
+
+    swap = dress(client, prompt="black tube top", base_look_id=skirt["look"]["id"])
+    worn = primitive_materials(asyncio.run(orchestrator.store.get(f"looks/{swap['look']['id']}/look.vrm")))
+    tops = [name for name in worn if "[Forge_Tops_" in name]
+    assert len(tops) == 1 and tops[0].startswith(swap["plan"]["name"])
+    assert any("[Forge_Bottoms_" in name for name in worn)  # the skirt stays
+
+
+def test_a_set_cannot_be_built_on_another_avatars_look(orchestrator, monkeypatch, tmp_path, vrm_bytes):
+    library = AvatarLibrary.from_directory(write_library(tmp_path / "two", {"Mira.vrm": vrm_bytes, "Nia.vrm": vrm_bytes}))
+    with make_client(orchestrator, monkeypatch, library) as client:
+        mira = dress(client, "mira", prompt="white crop top")
+        body = {"outfit": {"prompt": "navy skirt", "mode": "template"}, "baseLookId": mira["look"]["id"]}
+        assert client.post("/v1/library/nia/jobs", json=body).status_code == 404
+        body["baseLookId"] = "look_does_not_exist"
+        assert client.post("/v1/library/mira/jobs", json=body).status_code == 404

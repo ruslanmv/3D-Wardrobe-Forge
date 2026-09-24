@@ -64,8 +64,8 @@ def assign(obj, material) -> None:
     obj.data.materials.append(material)
 
 
-def setup(garment, plan: dict) -> dict:
-    material = build_material(plan, name=plan.get("name", "Garment"))
+def setup(garment, plan: dict, *, name: str | None = None) -> dict:
+    material = build_material(plan, name=name or plan.get("name", "Garment"))
     assign(garment, material)
     return {"material": material.name, "mtoon": getattr(material, "vrm_addon_extension", None) is not None}
 

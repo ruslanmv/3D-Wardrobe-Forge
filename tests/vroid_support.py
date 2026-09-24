@@ -77,7 +77,11 @@ def dress_like_vroid(vrm_bytes: bytes, *, slots: tuple[str, ...] = ("Tops", "Bot
 def primitive_materials(vrm_bytes: bytes) -> list[str]:
     document = GltfDocument.from_bytes(vrm_bytes)
     names = [m.get("name", "") for m in document.materials]
-    return [names[p["material"]] for mesh in document.meshes for p in mesh["primitives"] if "material" in p]
+    # What she is wearing is what is drawn: a garment taken off earlier in an
+    # outfit set stays in the file as a mesh no node references.
+    drawn = sorted({node["mesh"] for node in document.nodes if "mesh" in node})
+    meshes = [document.meshes[i] for i in drawn]
+    return [names[p["material"]] for mesh in meshes for p in mesh["primitives"] if "material" in p]
 
 
 __all__ = ["dress_like_vroid", "primitive_materials"]

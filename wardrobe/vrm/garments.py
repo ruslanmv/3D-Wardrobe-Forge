@@ -59,6 +59,29 @@ KIND_REGIONS: dict[str, frozenset[str]] = {
 }
 
 
+#: A shape's regions -> the VRoid slot a garment of that shape fills.
+_SLOT_FOR_REGIONS: dict[frozenset[str], str] = {
+    frozenset({"upper"}): "Tops",
+    frozenset({"lower"}): "Bottoms",
+    frozenset({"upper", "lower"}): "Onepiece",
+    frozenset({"feet"}): "Shoes",
+}
+
+
+def garment_material_name(look_name: str, kind: str) -> str:
+    """Name a generated garment's material so the *next* garment can replace it.
+
+    Outfit sets are built by generating onto a previous look: a crop top, then a
+    skirt on that. The skirt replaces the avatar's own bottoms because VRoid
+    marks them; without a marker of our own, a second top on that look would be
+    layered over the first instead of replacing it. So a garment that fills a
+    slot says which, in the same form VRoid uses. Layers (jackets, legwear) get
+    no marker and are never taken off by another garment.
+    """
+    slot = _SLOT_FOR_REGIONS.get(KIND_REGIONS.get(kind.lower(), frozenset()))
+    return f"{look_name} [Forge_{slot}_01_CLOTH]" if slot else look_name
+
+
 @dataclass(frozen=True)
 class WornGarment:
     slot: str
@@ -70,8 +93,13 @@ class WornGarment:
 def worn_garments(document: GltfDocument) -> list[WornGarment]:
     """Every primitive that is recognisably one of the avatar's clothing slots."""
     materials = document.materials
+    # Worn means drawn: a mesh no node references (a garment taken off earlier in
+    # an outfit set) is not on her, whatever its material says.
+    drawn = {node["mesh"] for node in document.nodes if "mesh" in node}
     found: list[WornGarment] = []
     for mesh_index, mesh in enumerate(document.meshes):
+        if mesh_index not in drawn:
+            continue
         for primitive_index, primitive in enumerate(mesh.get("primitives", [])):
             material_index = primitive.get("material")
             if material_index is None or material_index >= len(materials):
@@ -111,17 +139,25 @@ def remove_slots(document: GltfDocument, slots: list[str]) -> list[str]:
 
     for mesh_index, primitives in doomed.items():
         mesh = document.meshes[mesh_index]
-        mesh["primitives"] = [p for i, p in enumerate(mesh["primitives"]) if i not in primitives]
-        # A mesh with no primitives is invalid glTF; this never happens for a VRoid
-        # body (the skin shares the mesh), but a rig built another way might.
-        if not mesh["primitives"]:
-            raise ValueError(f"removing {sorted(wanted)} would empty mesh {mesh.get('name')!r}")
+        kept = [p for i, p in enumerate(mesh["primitives"]) if i not in primitives]
+        if kept:
+            mesh["primitives"] = kept
+            continue
+        # The slot is a whole mesh — a garment this pipeline generated earlier (an
+        # outfit set is built look on look), or an export that splits by material.
+        # A mesh may not be empty, so leave it be and take it off the nodes that
+        # draw it: an unreferenced mesh is valid glTF and draws nothing.
+        for node in document.nodes:
+            if node.get("mesh") == mesh_index:
+                node.pop("mesh", None)
+                node.pop("skin", None)
     document.invalidate_cache()
     return removed
 
 
 __all__ = [
     "KIND_REGIONS",
+    "garment_material_name",
     "SLOT_REGIONS",
     "WornGarment",
     "remove_slots",

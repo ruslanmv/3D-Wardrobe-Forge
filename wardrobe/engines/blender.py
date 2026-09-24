@@ -25,6 +25,7 @@ from wardrobe.engines.shell import build_fitted_shell, shell_coverage
 from wardrobe.errors import FittingError
 from wardrobe.pipeline.context import PipelineContext
 from wardrobe.vrm.export import mesh_to_glb
+from wardrobe.vrm.garments import garment_material_name
 from wardrobe.vrm.merge import GarmentMaterial
 
 logger = logging.getLogger(__name__)
@@ -66,13 +67,18 @@ class BlenderEngine(FittingEngine):
         # Build the same measured shell the native engine would, and let
         # Blender refine it against the real body surface.
         shell = build_fitted_shell(context)
+        # The same slot marker the native engine writes, so a look built by either
+        # engine can have its garment replaced by the next one in an outfit set.
+        material_name = garment_material_name(
+            context.plan.name, context.artifact.procedural_kind or context.plan.category
+        )
         garment_path = workdir / "garment.glb"
         garment_path.write_bytes(
             mesh_to_glb(
                 shell.mesh,
                 name=context.plan.name,
                 material=GarmentMaterial(
-                    name=context.plan.name,
+                    name=material_name,
                     base_color=tuple(context.plan.material.base_color),
                     metallic=context.plan.material.metallic,
                     roughness=context.plan.material.roughness,
@@ -93,6 +99,7 @@ class BlenderEngine(FittingEngine):
             "previewImage": str(preview_path),
             "reportPath": str(report_path),
             "generator": GENERATOR,
+            "materialName": material_name,
             "options": {
                 "outputVersion": context.record.request.options.output_version,
                 "renderPreview": context.record.request.options.render_preview,

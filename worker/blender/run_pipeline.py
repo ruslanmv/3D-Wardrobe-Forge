@@ -123,7 +123,7 @@ def run(spec: dict) -> dict:
     log(f"masked {coverage.get('coveredVertices', 0)} body vertices")
 
     # ---- 11. materials ---------------------------------------------------
-    report["materials"] = setup_materials.setup(garment, spec["plan"])
+    report["materials"] = setup_materials.setup(garment, spec["plan"], name=spec.get("materialName"))
 
     # ---- 12. validate before exporting -----------------------------------
     issues = validate_scene.check_scene(armature, body, garment)

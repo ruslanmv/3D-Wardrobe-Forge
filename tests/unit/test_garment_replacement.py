@@ -6,7 +6,14 @@ import pytest
 
 from tests.vroid_support import dress_like_vroid
 from wardrobe.vrm.document import GltfDocument
-from wardrobe.vrm.garments import KIND_REGIONS, SLOT_REGIONS, remove_slots, slots_replaced_by, worn_garments
+from wardrobe.vrm.garments import (
+    KIND_REGIONS,
+    SLOT_REGIONS,
+    garment_material_name,
+    remove_slots,
+    slots_replaced_by,
+    worn_garments,
+)
 from wardrobe.vrm.inspect import inspect_document
 from wardrobe.vrm.measure import measure_body
 
@@ -70,11 +77,18 @@ def test_removal_drops_the_slot_and_keeps_the_body(vrm_bytes):
     assert document.meshes[0]["primitives"][0]["material"] == 0  # the body is untouched
 
 
-def test_removal_never_empties_a_mesh(vrm_bytes):
+def test_a_slot_that_is_a_whole_mesh_is_taken_off_its_node(vrm_bytes):
+    """A generated garment is its own mesh; emptying it would be invalid, so it is detached."""
     document = GltfDocument.from_bytes(dress_like_vroid(vrm_bytes, slots=("Tops",)))
-    document.meshes[0]["primitives"] = document.meshes[0]["primitives"][1:]  # only the cloth left
-    with pytest.raises(ValueError, match="empty"):
-        remove_slots(document, ["tops"])
+    body = document.meshes[0]
+    cloth = body["primitives"].pop()
+    garment_mesh = document.add_mesh([cloth], "Red Crop Top")
+    document.add_node({"name": "Red Crop Top", "mesh": garment_mesh})
+
+    remove_slots(document, ["tops"])
+    assert document.meshes[garment_mesh]["primitives"]  # still a valid mesh
+    assert not any(node.get("mesh") == garment_mesh for node in document.nodes)
+    assert worn_garments(document) == []  # taken off means no longer worn
 
 
 def test_measurements_after_removal_describe_the_bare_body(vrm_bytes):
@@ -86,3 +100,22 @@ def test_measurements_after_removal_describe_the_bare_body(vrm_bytes):
     bare = measure_body(document, info)
     assert bare.depth_m <= clothed.depth_m
     assert bare.height_m == pytest.approx(clothed.height_m)
+
+
+@pytest.mark.parametrize(
+    ("kind", "marker"),
+    [("crop-top", "Tops"), ("skirt", "Bottoms"), ("dress", "Onepiece"), ("bikini", "Onepiece"), ("shoes", "Shoes")],
+)
+def test_a_generated_garment_is_marked_so_the_next_one_can_replace_it(vrm_bytes, kind, marker):
+    name = garment_material_name("Red Look", kind)
+    assert name.startswith("Red Look") and f"_{marker}_01_CLOTH" in name
+    document = GltfDocument.from_bytes(vrm_bytes)
+    document.add_material({"name": name})
+    body = document.meshes[0]
+    body["primitives"].append({**body["primitives"][0], "material": len(document.materials) - 1})
+    assert [g.slot for g in worn_garments(document)] == [marker.lower()]
+
+
+def test_layers_carry_no_marker_and_are_never_replaced():
+    assert garment_material_name("Tan Trench", "jacket") == "Tan Trench"
+    assert garment_material_name("Thigh-Highs", "legwear") == "Thigh-Highs"

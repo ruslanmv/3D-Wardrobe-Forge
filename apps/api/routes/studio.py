@@ -64,6 +64,8 @@ class LibraryJobRequest(BaseModel):
 
     outfit: OutfitRequest
     options: JobOptions = Field(default_factory=JobOptions)
+    #: Build on a look already in this avatar's wardrobe — a top onto a skirt is a set.
+    base_look_id: str | None = Field(default=None, alias="baseLookId")
 
 
 @router.post("/library/{slug}/jobs", response_model=JobRecord, status_code=status.HTTP_202_ACCEPTED)
@@ -81,15 +83,39 @@ async def create_library_job(
     if avatar is None or not avatar.available:
         raise HTTPException(status_code=404, detail="avatar not in the library")
 
+    avatar_input = avatar.avatar_input()
+    if body.base_look_id:
+        avatar_input = await _base_look_input(orchestrator, avatar.slug, body.base_look_id, avatar_input)
+
     options = body.options.model_copy(update={"wardrobe_id": avatar.slug})
     job = CreateJobRequest.model_validate(
         {
-            "avatar": avatar.avatar_input(),
+            "avatar": avatar_input,
             "outfit": body.outfit.model_dump(by_alias=True, exclude_none=True),
             "options": options.model_dump(by_alias=True),
         }
     )
     return await orchestrator.submit(job)
+
+
+async def _base_look_input(orchestrator, slug: str, look_id: str, avatar_input: dict) -> dict:
+    """Swap the source for a look this avatar already has; keep everything else.
+
+    The look is found in *this* avatar's wardrobe, never taken as a storage key,
+    so a caller cannot build on another avatar's look or on arbitrary bytes. The
+    licence and the adult declaration carry over unchanged: a look is the same
+    CC0 avatar, derived. The hash pin is dropped — the look has its own bytes —
+    and the pipeline still re-verifies the licence against the look's own meta.
+    """
+    manifest = await orchestrator.wardrobes.get(slug)
+    look = manifest.get(look_id) if manifest is not None else None
+    if look is None or look.type == "source":
+        raise HTTPException(status_code=404, detail="no such look in this avatar's wardrobe")
+    key = f"looks/{look.id}/look.vrm"
+    if not await orchestrator.store.exists(key):
+        raise HTTPException(status_code=409, detail="that look's file is no longer stored")
+    base = {k: v for k, v in avatar_input.items() if k != "sha256"}
+    return {**base, "storageKey": key}
 
 
 @router.get("/library/{slug}/avatar.vrm")
