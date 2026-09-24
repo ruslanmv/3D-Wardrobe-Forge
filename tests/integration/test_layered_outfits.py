@@ -174,7 +174,8 @@ async def test_the_underwear_survives_under_a_sheer_or_an_opaque_dress(orchestra
     names = [m.get("name", "") for m in document.materials]
     outer = next(m for m in document.materials if m.get("name", "").startswith(record.plan.garments[-1].name))
     assert outer.get("alphaMode", "OPAQUE") == alpha
-    assert sum(name.startswith("Black Lace") for name in names) == 2  # bralette and briefs, both there
+    fabric = [name for name in names if name.startswith("Black Lace") and " Trim " not in name]
+    assert len(fabric) == 2  # bralette and briefs, both there
 
 
 async def test_the_dress_clears_the_underwear_not_just_the_body(orchestrator, store, body):
@@ -227,3 +228,36 @@ async def test_the_stored_source_is_never_touched(orchestrator, store, body):
     for prompt, adult in ((LINGERIE_DRESS, True), (LINGERIE_DRESS, False)):  # one completes, one is refused
         await dress(orchestrator, store, source, prompt, adult=adult)
         assert hashlib.sha256(await store.get("sources/layered.vrm")).hexdigest() == before
+
+
+# ----------------------------------------------------------------------
+# the designers' worked example, end to end
+# ----------------------------------------------------------------------
+DESIGNER_EXAMPLE = (
+    "black sheer lace bralette and matching high-leg briefs under a translucent satin mini dress"
+)
+
+
+async def test_the_designers_example_builds_as_specified(orchestrator, store, body):
+    record, output = await dress(orchestrator, store, dress_like_vroid(body), DESIGNER_EXAMPLE)
+    assert record.state is JobState.COMPLETED, record.error
+    bralette, briefs, mini = record.plan.garments
+    for piece in (bralette, briefs):
+        assert (piece.material.pattern, piece.material.alpha_mode, piece.material.lined) == ("lace", "mask", False)
+        assert piece.requires_adult
+    assert briefs.style.leg_cut == "high"
+    assert (mini.material.finish, mini.material.alpha_mode) == ("satin", "blend")
+    assert 0.55 <= mini.material.opacity <= 0.85
+
+    document = GltfDocument.from_bytes(output)
+    materials = {m.get("name", ""): m for m in document.materials}
+    # The lace is cut out, its straps are opaque trim, and the dress is translucent over both.
+    lace = next(m for n, m in materials.items() if n.startswith(bralette.name) and " Trim " not in n)
+    trim = next(m for n, m in materials.items() if n.startswith(f"{bralette.name} Trim"))
+    assert lace["alphaMode"] == "MASK" and trim.get("alphaMode", "OPAQUE") == "OPAQUE"
+    assert "baseColorTexture" not in trim["pbrMetallicRoughness"]
+    assert record.fit_report.passed
+    sheets = [layer["design"] for layer in record.fit_report.layers]
+    assert sheets[2]["innerLayersRetained"] == [bralette.name, briefs.name]
+    assert sheets[0]["adultGateReason"] == "underwear in see-through fabric"
+    assert sheets[2]["maskingPolicy"].startswith("none")

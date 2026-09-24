@@ -81,7 +81,7 @@ def dressed_with(spec: str, material: GarmentMaterial):
     return document, index
 
 
-def material_for(prompt: str) -> GarmentMaterial:
+def material_for(prompt: str, **overrides) -> GarmentMaterial:
     from pathlib import Path
 
     from wardrobe.domain.garments import TemplateCatalog
@@ -89,7 +89,7 @@ def material_for(prompt: str) -> GarmentMaterial:
     from wardrobe.pipeline.plan_outfit import plan_outfit
 
     catalog = TemplateCatalog.from_directory(Path(__file__).resolve().parents[2] / "assets/garment_templates")
-    return GarmentMaterial.from_plan("Garment", plan_outfit(OutfitRequest(prompt=prompt), catalog).material)
+    return GarmentMaterial.from_plan("Garment", plan_outfit(OutfitRequest(prompt=prompt, **overrides), catalog).material)
 
 
 def test_vrm0_latex_keeps_her_toon_ramp_and_gains_a_highlight():
@@ -102,14 +102,14 @@ def test_vrm0_latex_keeps_her_toon_ramp_and_gains_a_highlight():
     assert entry["vectorProperties"]["_RimColor"][0] > 0.3
 
 
-def test_vrm0_sheer_lace_blends_without_an_outline():
-    document, index = dressed_with("VRM0", material_for("sheer black lace bodysuit"))
+def test_vrm0_sheer_fabric_blends_without_an_outline():
+    document, index = dressed_with("VRM0", material_for("sheer black lace bodysuit, 0.55", opacity=0.55))
     entry = document.extension("VRM")["materialProperties"][index]
     floats, keywords = entry["floatProperties"], entry["keywordMap"]
     assert floats["_BlendMode"] == 2 and floats["_ZWrite"] == 0 and entry["renderQueue"] == 3000
     assert keywords["_ALPHABLEND_ON"] and keywords["MTOON_OUTLINE_NONE"]
     assert not any(k.startswith("MTOON_OUTLINE_WIDTH") for k in keywords)
-    assert entry["vectorProperties"]["_Color"][3] == pytest.approx(0.45)
+    assert entry["vectorProperties"]["_Color"][3] == pytest.approx(0.55)
     assert entry["textureProperties"]["_MainTex"] == entry["textureProperties"]["_ShadeTexture"]
     assert entry["tagMap"] == {"RenderType": "Transparent"} and floats["_CullMode"] == 0
 

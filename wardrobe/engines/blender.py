@@ -35,6 +35,11 @@ GENERATOR = "3D-Wardrobe-Forge (blender engine)"
 LOG_TAIL_CHARS = 4000
 
 
+def mask_policy(material) -> str:
+    """Whether Blender may hide the body under this garment: not if it is see-through."""
+    return "none" if material.exposes_body else "body-only"
+
+
 class BlenderEngine(FittingEngine):
     name = "blender"
     supports_raw_mesh = True
@@ -90,6 +95,7 @@ class BlenderEngine(FittingEngine):
             "reportPath": str(report_path),
             "generator": GENERATOR,
             "materialName": material_name,
+            "maskPolicy": mask_policy(context.plan.material),
             # The material resolved once, here, so Blender renders what the native
             # engine renders: the same factor, alpha, rim and texture images.
             "material": self._material_spec(material, workdir),

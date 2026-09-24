@@ -73,14 +73,26 @@ FINISH_KEYWORDS: dict[str, tuple[str, ...]] = {
 METAL_COLOURS = frozenset({"silver", "gold", "bronze", "copper", "rose gold", "champagne"})
 
 #: Words that make a fabric see-through, and how opaque it stays (0..1).
+#: The designers' scale: 0.85–0.99 subtle, 0.65–0.85 light sheer, 0.45–0.65 clearly sheer,
+#: 0.30–0.45 high transparency. 0.20–0.30 is reachable only as an explicit opacity value,
+#: never from a word. Longest phrase wins, so "very sheer" is not "sheer".
 OPACITY_KEYWORDS: dict[float, tuple[str, ...]] = {
-    0.3: ("transparent", "see-through", "see through"),
-    0.45: ("sheer", "mesh", "tulle", "organza", "voile"),
-    0.65: ("semi-sheer", "semi sheer", "semi-transparent", "translucent"),
+    0.8: ("slightly sheer", "lightly sheer", "subtly sheer", "slightly translucent"),
+    0.7: ("translucent", "semi-sheer", "semi sheer", "semi-transparent"),
+    0.55: ("sheer", "mesh", "tulle", "organza", "voile", "chiffon"),
+    0.45: ("transparent", "see-through", "see through"),
+    0.35: ("very sheer", "ultra sheer", "ultra-sheer", "extra sheer", "very transparent"),
 }
 
 #: Opacity names the Studio offers, highest first.
-OPACITY_LEVELS: dict[str, float] = {"opaque": 1.0, "semi-sheer": 0.65, "sheer": 0.45, "transparent": 0.3}
+OPACITY_LEVELS: dict[str, float] = {
+    "opaque": 1.0,
+    "slightly sheer": 0.8,
+    "translucent": 0.7,
+    "sheer": 0.55,
+    "transparent": 0.45,
+    "very sheer": 0.35,
+}
 
 #: Below this a garment never goes: fully clear fabric is not a garment.
 MIN_OPACITY = 0.2

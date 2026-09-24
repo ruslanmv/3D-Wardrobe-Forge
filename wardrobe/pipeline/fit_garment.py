@@ -94,7 +94,11 @@ def _entry(context: PipelineContext, garment) -> dict:
         "weightsValid": report.weights_valid,
         "bonesUsed": list(report.bones_used),
         "clearance": (report.coverage or {}).get("clearanceAfter", {}),
-        "design": garment.design_sheet(),
+        "design": garment.design_sheet(
+            context.catalog.get(garment.template_id) if garment.template_id else None,
+            removed=context.fit_report.base_body.get("removedMaterials", []),
+            inner=[layer.plan.name for layer in context.built],
+        ),
     }
 
 

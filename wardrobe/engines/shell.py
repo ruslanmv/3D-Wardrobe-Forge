@@ -77,6 +77,10 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     )
     if template is not None and not template.fit.allow_width_scale:
         params.width_scale = 1.0
+    if context.plan.material.exposes_body:
+        # Through a see-through fabric every clipping error is on show: build it
+        # finer, so clearance is checked at more points round the body.
+        params.segments = max(params.segments, SHEER_SEGMENTS)
     pleats = int(artifact.metadata.get("pleats") or 0)
     if pleats:
         # Four vertices a pleat, or the sawtooth aliases into noise.
@@ -256,6 +260,9 @@ def _restrict_to_covered_region(
     )
     return fallback if fallback.shape[0] >= MIN_REGION_POINTS else body
 
+
+#: Radial resolution of a see-through garment's shell (the default is 32).
+SHEER_SEGMENTS = 48
 
 #: Extra clearance for a garment going on over another one (see build_fitted_shell).
 INNER_LAYER_ALLOWANCE_M = 0.003

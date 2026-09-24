@@ -51,7 +51,8 @@ INTIMATE_CATEGORIES = frozenset({"swimwear", "underwear"})
 #: Style vocabularies a template's fit policy and a plan's StylePlan may use.
 COVERAGE_PRESETS: dict[str, float] = {"full": 1.12, "standard": 1.0, "minimal": 0.78, "micro": 0.58}
 STRAP_PRESETS = ("shoulder", "halter", "none", "string", "cross-back", "garter", "harness")
-NECKLINES = ("v", "plunge", "sweetheart", "triangle")
+NECKLINES = ("v", "plunge", "sweetheart", "triangle", "demi", "balconette")
+RISES = ("high", "low")
 BACKS = ("low",)
 LEG_CUTS = ("high",)
 

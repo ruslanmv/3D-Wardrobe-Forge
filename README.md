@@ -90,6 +90,14 @@ image assets, byte-identical every run — and UVs are metres of fabric, so a
 fishnet diamond is 1.4 cm on a stocking or a bodysuit, on any avatar, with the
 seam at her back. Both engines are handed the same resolved material.
 
+Opacity follows the designers' scale — *slightly sheer* 0.8, *translucent* 0.7,
+*sheer* or *chiffon* 0.55, *transparent* 0.45, *very sheer* 0.35; an explicit
+value can go to 0.2, and anything lower is clamped and reported. *Sheer lace* is
+unlined lace (open holes); *lined lace* is honoured even on lingerie. On a
+see-through garment the straps, ties and elastic stay opaque as their own
+material, the shell is built finer, and the Blender engine does not mask the body
+under it.
+
 ### Cut, coverage and straps as parameters
 
 "Micro" is a coverage, not a category: a micro bikini is a bikini at 0.58. Edges

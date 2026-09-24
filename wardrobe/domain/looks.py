@@ -30,8 +30,9 @@ class OutfitRequest(BaseModel):
     # Style overrides — the same words the prompt can carry, as explicit choices.
     finish: str | None = None
     pattern: str | None = None
-    #: 0.2..1; below 1 the fabric is see-through.
-    opacity: float | None = Field(default=None, ge=0.2, le=1.0)
+    #: 0..1; below 1 the fabric is see-through. Below the renderer's minimum (0.2)
+    #: it is clamped, and the plan says so, rather than refused.
+    opacity: float | None = Field(default=None, ge=0.0, le=1.0)
     coverage: str | None = None
     straps: str | None = None
     neckline: str | None = None
@@ -110,6 +111,8 @@ class StylePlan(BaseModel):
     back: str = ""
     #: "" | high
     leg_cut: str = Field(default="", alias="legCut")
+    #: "" | high | low — where briefs' waistband sits.
+    rise: str = ""
 
     def to_dict(self) -> dict:
         return self.model_dump(by_alias=True)
@@ -150,34 +153,77 @@ class OutfitPlan(BaseModel):
         """Every garment to build, inner first: the layers, or this plan alone."""
         return list(self.layers) if self.layers else [self]
 
-    def design_sheet(self) -> dict:
-        """The garment as a designer's specification: construction, material, fit, gate."""
+    def design_sheet(self, template=None, *, removed: list[str] | None = None,
+                     inner: list[str] | None = None) -> dict:
+        """The garment as a designer's specification: construction, material, fit, gate.
+
+        ``template`` adds what only it knows (body conformity, clearance);
+        ``removed`` and ``inner`` are the outfit's context — her garments taken
+        off, and the layers already under this one.
+        """
         material, style = self.material, self.style
+        fit = template.fit if template is not None else None
+        see_through = material.exposes_body
+        if self.category in {"swimwear", "underwear"} and see_through:
+            gate_reason = f"{self.category} in see-through fabric"
+        elif self.category in {"swimwear", "underwear"}:
+            gate_reason = self.category
+        elif see_through:
+            gate_reason = "see-through fabric: the body shows through"
+        else:
+            gate_reason = None
+        risks = []
+        if see_through:
+            risks.append("what is under see-through fabric shows: inner layers and clearance matter more")
+        if style.coverage in {"minimal", "micro"}:
+            risks.append("narrow panels: widths are held at a 12 mm minimum")
+        if fit is not None and fit.conform >= 0.9:
+            risks.append("skin-tight: sits at clearance on the body or the layer beneath")
+        if style.straps in {"string", "harness", "garter"}:
+            risks.append("strap networks are separate pieces; check them in motion")
         return {
             "garment": self.name,
             "category": self.category,
             "template": self.template_id,
             "layer": self.layer,
             "role": self.role,
-            "silhouette": self.silhouette,
+            "adultGateRequired": self.requires_adult,
+            "adultGateReason": gate_reason,
             "coverage": style.coverage,
+            "silhouette": self.silhouette,
             "hem": self.hem,
             "sleeve": self.sleeve,
             "neckline": style.neckline or "as cut",
             "back": style.back or "as cut",
             "legCut": style.leg_cut or "as cut",
+            "rise": style.rise or "as cut",
             "straps": style.straps or "as cut",
+            "baseColor": material.color_name,
+            "fabric": material.fabric,
             "finish": material.finish,
             "opacity": material.opacity,
             "alphaMode": material.alpha_mode,
-            "lining": "lined" if material.lined else "unlined" if material.exposes_body else "opaque fabric",
             "pattern": material.pattern,
+            "patternScale": material.texture_scale,
+            "lined": material.lined,
+            "lining": "lined" if material.lined else "unlined" if see_through else "opaque fabric",
+            "trim": "opaque straps and elastic" if see_through else "same as the fabric",
             "roughness": material.roughness,
             "metallic": material.metallic,
-            "colour": material.color_name,
-            "adultGateRequired": self.requires_adult,
+            "bodyConformity": fit.conform if fit is not None else None,
+            "clearanceMm": fit.body_clearance_mm if fit is not None else None,
+            "sourceGarmentsRemoved": list(removed or []),
+            "innerLayersRetained": list(inner or []),
+            "maskingPolicy": "none: the body under it stays visible" if see_through
+            else "body under covered regions (Blender engine)",
+            "fitRisks": risks,
+            "fallback": [
+                "no authored body under her clothes: that garment stays on, or the job is refused when "
+                "underwear must sit there; nothing is generated",
+                "a template that cannot be see-through renders opaque, and says so",
+                "an avatar without MToon gets the same alpha and textures as glTF PBR",
+            ],
         }
-
 
 class LookResult(BaseModel):
     """A finished, wearable derived VRM."""

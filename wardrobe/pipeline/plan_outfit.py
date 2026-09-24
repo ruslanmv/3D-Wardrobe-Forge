@@ -206,6 +206,13 @@ NECKLINE_KEYWORDS: dict[str, tuple[str, ...]] = {
     "plunge": ("plunge", "plunging", "deep v", "deep-v"),
     "sweetheart": ("sweetheart",),
     "triangle": ("triangle",),
+    "demi": ("demi", "demi-cup", "demi cup", "half-cup", "half cup"),
+    "balconette": ("balconette", "balcony", "balconnet"),
+}
+
+RISE_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "high": ("high-waisted", "high waisted", "high-rise", "high rise", "high-waist"),
+    "low": ("low-rise", "low rise", "hipster", "low-slung"),
 }
 
 BACK_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -236,6 +243,7 @@ class ParsedPrompt:
     neckline: str | None = None
     back: str | None = None
     leg_cut: str | None = None
+    rise: str | None = None
     matched: list[str] = None  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
@@ -303,6 +311,7 @@ def parse_prompt(prompt: str) -> ParsedPrompt:
         ("neckline", NECKLINE_KEYWORDS),
         ("back", BACK_KEYWORDS),
         ("leg_cut", LEG_CUT_KEYWORDS),
+        ("rise", RISE_KEYWORDS),
     ):
         value, matched = _find(text, table)
         setattr(parsed, attribute, value)
@@ -437,7 +446,9 @@ def _descriptor(parsed: ParsedPrompt) -> str | None:
     if parsed.coverage == "micro":
         return "Micro"
     if parsed.opacity is not None:
-        return "Sheer" if parsed.opacity >= 0.4 else "Transparent"
+        if parsed.opacity >= 0.65:
+            return "Translucent"
+        return "Sheer" if parsed.opacity >= 0.5 else "Transparent"
     if parsed.pattern and parsed.pattern != "none":
         return {"stripes": "Striped", "dots": "Polka Dot"}.get(parsed.pattern, parsed.pattern.title())
     return {"latex": "Latex", "metallic": "Metallic", "sequin": "Sequin", "gloss": "Glossy"}.get(
@@ -473,13 +484,14 @@ def plan_outfit(request: OutfitRequest, catalog: TemplateCatalog) -> OutfitPlan:
             parsed.category = "dress"  # the most common ask; recorded as a note
         template = select_template(catalog, parsed, text)
 
-    material = resolve_material(parsed, request, template, text)
+    adjustments: list[str] = []
+    material = resolve_material(parsed, request, template, text, adjustments)
     style = resolve_style(parsed, request, template)
     requires_adult = (
         template.category in INTIMATE_CATEGORIES or template.requires_adult or material.exposes_body
     )
 
-    notes: list[str] = []
+    notes: list[str] = list(adjustments)
     if request.category is None and parsed.matched and not any(
         m in sum(CATEGORY_KEYWORDS.values(), ()) for m in parsed.matched
     ):
@@ -521,9 +533,18 @@ def _luminance(rgba: tuple[float, ...]) -> float:
 
 
 def resolve_material(
-    parsed: ParsedPrompt, request: OutfitRequest, template: GarmentTemplate, text: str
+    parsed: ParsedPrompt,
+    request: OutfitRequest,
+    template: GarmentTemplate,
+    text: str,
+    notes: list[str] | None = None,
 ) -> MaterialPlan:
-    """Colour, finish, see-through and pattern — each limited by what the template supports."""
+    """Colour, finish, see-through and pattern — each limited by what the template supports.
+
+    ``notes`` collects what was adjusted (an opacity below the minimum, say), so the
+    plan reports it instead of silently changing the request.
+    """
+    notes = notes if notes is not None else []
     base_color = _colour(parsed.color_hex, text, "#6b6f76")
     policy = template.materials
 
@@ -541,18 +562,26 @@ def resolve_material(
         pattern_color = _colour(parsed.pattern_color_hex, "", fallback)
 
     opacity = request.opacity if request.opacity is not None else (parsed.opacity or 1.0)
-    opacity = max(float(opacity), MIN_OPACITY)
-    if not policy.supports_transparency:
+    if opacity < MIN_OPACITY:
+        notes.append(f"opacity {opacity:g} is below the renderer's minimum; clamped to {MIN_OPACITY:g}")
+        opacity = MIN_OPACITY
+    # "Sheer lace" and "see-through fishnet" describe the holes, not a second
+    # veil over them: a cut-out pattern at full opacity, its gaps open. Only an
+    # explicit opacity value makes the threads themselves translucent too.
+    if PATTERNS[pattern].alpha == "mask" and request.opacity is None and parsed.opacity is not None:
         opacity = 1.0
-    # A lace top or dress is lined; lace lingerie is not. Outside the intimate
-    # categories lace is laid over an opaque lining unless the prompt asks for
-    # the body to show ("sheer", "unlined") — so "lace crop cami" stays an
-    # everyday top and does not trip the adult gate by accident.
-    lined = (
-        pattern == "lace"
-        and opacity >= 0.999
-        and template.category not in INTIMATE_CATEGORIES
-        and not re.search(r"(?<!\w)unlined(?!\w)", text)
+    if not policy.supports_transparency:
+        if opacity < 1.0 or PATTERNS[pattern].alpha == "mask":
+            notes.append(f"{template.name} cannot be see-through; rendered opaque")
+        opacity = 1.0
+    # Lining. Asked for, it is honoured: "lined lace" is lined, lingerie included.
+    # Unasked, lace outside the intimate categories is lined (a lace top or dress
+    # is), and lace lingerie is not; "sheer" or "unlined" always unlines it. That
+    # keeps "lace crop cami" an everyday top rather than tripping the adult gate.
+    unlined = bool(re.search(r"(?<!\w)unlined(?!\w)", text)) or parsed.opacity is not None
+    asked_lined = bool(re.search(r"(?<!\w)lined(?!\w)", text)) and not unlined
+    lined = pattern == "lace" and opacity >= 0.999 and not unlined and (
+        asked_lined or template.category not in INTIMATE_CATEGORIES
     )
     if lined or not policy.supports_transparency:
         alpha_mode = "opaque"
@@ -597,6 +626,7 @@ def resolve_style(parsed: ParsedPrompt, request: OutfitRequest, template: Garmen
         neckline=neckline,
         back=parsed.back or fit.back,
         legCut=parsed.leg_cut or fit.leg_cut,
+        rise=parsed.rise or "",
     )
 
 

@@ -148,8 +148,10 @@ def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, dep
             requires_adult=garment.requires_adult,
             reason=intimate.gate_reason(garment.category, see_through=garment.material.exposes_body),
         )
-        garments.append({**garment.design_sheet(), "allowed": decision.allowed, "refusal": decision.message
-                         if not decision.allowed else None})
+        template = catalog.get(garment.template_id) if garment.template_id else None
+        inner = [g["garment"] for g in garments]
+        garments.append({**garment.design_sheet(template, inner=inner), "allowed": decision.allowed,
+                         "refusal": decision.message if not decision.allowed else None})
 
     inventory = garment_inventory(document)
     kinds = []
@@ -163,6 +165,8 @@ def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, dep
                    also_without={(g.mesh, g.primitive) for g in strip.retain})
         if strip.remove else None
     )
+    for sheet in garments:
+        sheet["sourceGarmentsRemoved"] = [g.material for g in strip.remove]
     return {
         "name": plan.name,
         "mode": mode,

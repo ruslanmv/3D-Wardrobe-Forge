@@ -18,6 +18,7 @@ from wardrobe.engines.base import FittingEngine
 from wardrobe.engines.geometry_checks import pose_stress_test
 from wardrobe.engines.shell import build_fitted_shell, shell_coverage
 from wardrobe.errors import FittingError
+from wardrobe.geometry.procedural import trim_triangles
 from wardrobe.geometry.raster import RenderLayer, render
 from wardrobe.pipeline.context import BuiltLayer, PipelineContext
 from wardrobe.vrm.garments import garment_material_name, garment_slot
@@ -104,15 +105,24 @@ class NativeEngine(FittingEngine):
         layers = context.built or [BuiltLayer(plan, context.artifact, context.mesh, context.segments)]
         for layer in layers:
             kind = layer.artifact.procedural_kind or layer.plan.category
+            material = layer.plan.material
+            # A see-through garment's straps and elastic stay opaque: its own colour
+            # and finish, no pattern, no alpha — a second material on the same mesh.
+            trim_plan = material.model_copy(
+                update={"opacity": 1.0, "alpha_mode": "opaque", "pattern": "none", "texture_scale": 0.0,
+                        "lined": False}
+            ) if material.exposes_body else None
             attached = attach_garment(
                 context.document,
                 context.info,
                 layer.mesh,
                 layer.segments,
-                material=GarmentMaterial.from_plan(
-                    garment_material_name(layer.plan.name, kind), layer.plan.material
-                ),
+                material=GarmentMaterial.from_plan(garment_material_name(layer.plan.name, kind), material),
                 name=layer.plan.name,
+                trim=trim_triangles(layer.mesh) if trim_plan else None,
+                trim_material=GarmentMaterial.from_plan(
+                    garment_material_name(f"{layer.plan.name} Trim", kind), trim_plan
+                ) if trim_plan else None,
             )
             # What this garment is, for the next job that meets it: an outer layer
             # made later knows not to take this underwear off (garment_inventory).

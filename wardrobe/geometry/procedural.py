@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from wardrobe.geometry.mesh import Mesh, concatenate
+from wardrobe.geometry.mesh import Mesh, concatenate, section_ranges
 from wardrobe.vrm.measure import BodyMeasurements
 
 #: Radial resolution of every lofted shell. 32 keeps a dress silhouette smooth
@@ -592,6 +592,11 @@ def neckline_profile(style: str, params: FitParameters, span: float):
     if style == "plunge":
         depth, width = min(0.12 * h, span * 0.85), 0.55
         return lambda phi: -depth * _plateau(phi, 0.0, width)
+    if style in {"demi", "balconette"}:
+        # Cups cut lower across the front: a balconette straight and wide-set, a
+        # demi lower still with a dip at the centre gore.
+        drop, dip = (0.3, 0.12) if style == "balconette" else (0.45, 0.2)
+        return lambda phi: -span * (drop * _plateau(phi, 0.9, 0.5) + dip * _plateau(phi, 0.0, 0.3))
     if style == "sweetheart":
         dip, side = min(0.03 * h, span * 0.4), min(0.035 * h, span * 0.5)
         return lambda phi: -dip * _plateau(phi, 0.0, 0.32) - side * (1.0 - _plateau(phi, 0.9, 0.7))
@@ -646,6 +651,23 @@ def briefs_profile(coverage: str, leg_cut: str, span: float):
 # ----------------------------------------------------------------------
 # strap networks
 # ----------------------------------------------------------------------
+#: Sections that are trim — elastic, straps, ties — not the garment's fabric.
+TRIM_SECTIONS = ("strap", "tie", "garter", "harness")
+
+
+def trim_triangles(mesh: Mesh) -> np.ndarray:
+    """One bool per triangle: True where it belongs to a trim section.
+
+    On a see-through garment the trim stays opaque — straps and elastic are not
+    made of the lace — so assembly gives these triangles their own material.
+    """
+    mask = np.zeros(mesh.triangle_count, dtype=bool)
+    for name, first, count in section_ranges(mesh):
+        if name.startswith(TRIM_SECTIONS):
+            mask[first : first + count] = True
+    return mask
+
+
 def _strap_radius(params: FitParameters) -> float:
     return max(params.height * 0.004, 0.004)
 
@@ -807,6 +829,11 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
 
     def briefs() -> list[Mesh]:
         top_y = low_rise if scale >= 1.0 else leg_opening + (low_rise - leg_opening) * max(scale + 0.25, 0.7)
+        rise_style = str(meta.get("rise") or "")
+        if rise_style == "high":
+            top_y = params.waist_y + rise * 0.1  # at or just above the natural waist
+        elif rise_style == "low":
+            top_y = leg_opening + (top_y - leg_opening) * 0.75
         band = build_band(params, y_bottom=leg_opening, y_top=top_y, rows=6, name="briefs")
         profile = briefs_profile(coverage, leg_cut, top_y - leg_opening)
         if profile is not None:

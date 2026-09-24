@@ -139,8 +139,15 @@ def attach_garment(
     *,
     material: GarmentMaterial | None = None,
     name: str = "Garment",
+    trim: np.ndarray | None = None,
+    trim_material: GarmentMaterial | None = None,
 ) -> AttachResult:
-    """Insert ``mesh`` into ``document`` as a skinned VRM garment."""
+    """Insert ``mesh`` into ``document`` as a skinned VRM garment.
+
+    ``trim`` marks triangles (one bool per triangle) drawn with ``trim_material``
+    instead: a lace bodysuit's straps stay opaque elastic while its panels are
+    see-through. Both primitives share the garment's vertices and skin.
+    """
     issues = mesh.validate()
     if issues:
         raise AttachError("; ".join(issues))
@@ -185,9 +192,10 @@ def attach_garment(
         "JOINTS_0": document.add_accessor(joints, target=ARRAY_BUFFER),
         "WEIGHTS_0": document.add_accessor(mesh.weights.astype(np.float32), target=ARRAY_BUFFER),
     }
-    indices_accessor = document.add_accessor(
-        mesh.indices.astype(np.uint32).reshape(-1, 1), target=ELEMENT_ARRAY_BUFFER
-    )
+    triangles = mesh.indices.astype(np.uint32).reshape(-1, 3)
+    split = trim is not None and trim_material is not None and trim.any() and not trim.all()
+    fabric = triangles[~trim] if split else triangles
+    indices_accessor = document.add_accessor(fabric.reshape(-1, 1), target=ELEMENT_ARRAY_BUFFER)
     ibm_accessor = document.add_accessor(ibm)
 
     # ---- material, mesh, skin, node --------------------------------------
@@ -197,13 +205,19 @@ def attach_garment(
     if borrow_toon_shading(document, info, material_index, material.base_color) is not None:
         apply_toon_finish(document, info, material_index, material)
 
-    primitive = {
-        "attributes": attributes,
-        "indices": indices_accessor,
-        "material": material_index,
-        "mode": 4,
-    }
-    mesh_index = document.add_mesh([primitive], name=name)
+    primitives = [
+        {"attributes": attributes, "indices": indices_accessor, "material": material_index, "mode": 4}
+    ]
+    if split:
+        trim_index = trim_material.add_to(document)
+        _register_vrm0_material(document, info, trim_index)
+        if borrow_toon_shading(document, info, trim_index, trim_material.base_color) is not None:
+            apply_toon_finish(document, info, trim_index, trim_material)
+        trim_accessor = document.add_accessor(triangles[trim].reshape(-1, 1), target=ELEMENT_ARRAY_BUFFER)
+        primitives.append(
+            {"attributes": attributes, "indices": trim_accessor, "material": trim_index, "mode": 4}
+        )
+    mesh_index = document.add_mesh(primitives, name=name)
     skin_index = document.add_skin(joint_nodes, ibm_accessor, skeleton=info.humanoid_bones.get("hips"))
     node_index = document.add_node({"name": name, "mesh": mesh_index, "skin": skin_index})
 

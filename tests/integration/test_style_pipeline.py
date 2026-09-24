@@ -42,7 +42,7 @@ ACCEPTANCE = [
     # prompt, finish, pattern, alpha mode, template
     ("red micro bikini", "matte", "none", "OPAQUE", "swim-bikini-triangle-v1"),
     ("black latex bodycon mini dress", "latex", "none", "OPAQUE", "dress-mini-bodycon-v1"),
-    ("sheer black lace bodysuit", "matte", "lace", "BLEND", "under-bodysuit-v1"),
+    ("sheer black lace bodysuit", "matte", "lace", "MASK", "under-bodysuit-v1"),  # unlined lace
     ("black fishnet thigh-highs", "matte", "fishnet", "MASK", "legwear-thigh-highs-v1"),
     ("pink sequin bodysuit", "sequin", "sequin", "OPAQUE", "under-bodysuit-v1"),
 ]

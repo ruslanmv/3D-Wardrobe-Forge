@@ -77,6 +77,14 @@ class Mesh:
         return issues
 
 
+def section_ranges(mesh: Mesh) -> list[tuple[str, int, int]]:
+    """(section name, first triangle, triangle count) for every part of ``mesh``."""
+    recorded = mesh.metadata.get("sections")
+    if recorded:
+        return [tuple(entry) for entry in recorded]
+    return [(str(mesh.metadata.get("section", "garment")), 0, mesh.triangle_count)]
+
+
 def concatenate(meshes: list[Mesh]) -> Mesh:
     """Merge meshes into one, offsetting indices. Attributes must be uniform."""
     meshes = [m for m in meshes if m.vertex_count]
@@ -102,6 +110,15 @@ def concatenate(meshes: list[Mesh]) -> Mesh:
     metadata: dict = {}
     for mesh in meshes:
         metadata.update(mesh.metadata)
+    # Which triangles came from which section (a bodice, a strap, a garter), so a
+    # merged garment can still give its trim its own material.
+    sections: list[tuple[str, int, int]] = []
+    start = 0
+    for mesh in meshes:
+        for name, first, count in section_ranges(mesh):
+            sections.append((name, start + first, count))
+        start += mesh.triangle_count
+    metadata["sections"] = sections
 
     return Mesh(
         positions=positions,

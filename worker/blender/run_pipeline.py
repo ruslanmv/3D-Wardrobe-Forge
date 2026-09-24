@@ -118,9 +118,17 @@ def run(spec: dict) -> dict:
     report["clipping"] = detection
     report["clippingCheck"] = resolve_clipping.verdict(detection)
 
-    coverage = generate_body_mask.apply_mask(body, garment, margin_m=max(clearance_m * 2.5, 0.015))
+    # Masking hides the body under the garment so it cannot poke through. Under a
+    # see-through garment that would hide exactly what the fabric is meant to
+    # show — the body between fishnet threads, through sheer chiffon — so the
+    # engine sends "none" there and clearance alone keeps the body inside.
+    if spec.get("maskPolicy", "body-only") == "none":
+        coverage = {"masked": False, "reason": "see-through garment: the body under it stays visible"}
+        log("body masking skipped: see-through garment")
+    else:
+        coverage = generate_body_mask.apply_mask(body, garment, margin_m=max(clearance_m * 2.5, 0.015))
+        log(f"masked {coverage.get('coveredVertices', 0)} body vertices")
     report["coverage"] = coverage
-    log(f"masked {coverage.get('coveredVertices', 0)} body vertices")
 
     # ---- 11. materials ---------------------------------------------------
     report["materials"] = setup_materials.setup(

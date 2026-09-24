@@ -116,8 +116,11 @@ def test_navy_blue_is_one_colour_not_two(template_catalog):
     ("prompt", "opacity", "alpha", "requires_adult"),
     [
         ("black bodycon mini dress", 1.0, "opaque", False),
-        ("sheer black bodycon mini dress", 0.45, "blend", True),
-        ("transparent white mini dress", 0.3, "blend", True),
+        ("sheer black bodycon mini dress", 0.55, "blend", True),
+        ("transparent white mini dress", 0.45, "blend", True),
+        ("slightly sheer black thigh-high stockings", 0.8, "blend", True),
+        ("very sheer chiffon dress", 0.35, "blend", True),
+        ("black sheer lace bodysuit", 1.0, "mask", True),  # sheer lace: open holes, not a veil
         ("white lace crop cami", 1.0, "opaque", False),  # lined
         ("white unlined lace crop cami", 1.0, "mask", True),
         ("black lace bralette", 1.0, "mask", True),  # lingerie is not lined, and is gated anyway
@@ -179,7 +182,7 @@ def test_a_coloured_pattern_leaves_the_factor_white_and_keeps_opacity(template_c
     assert material.texture is not None and material.texture_coloured
     assert material.base_color == (1.0, 1.0, 1.0, 1.0)
     sheer = GarmentMaterial.from_plan("Look", plan("sheer red mini dress", template_catalog).material)
-    assert sheer.base_color[3] == pytest.approx(0.45) and sheer.alpha_mode == "blend"
+    assert sheer.base_color[3] == pytest.approx(0.55) and sheer.alpha_mode == "blend"
 
 
 def test_without_mtoon_the_pbr_material_carries_alpha_and_texture(template_catalog):
@@ -196,8 +199,47 @@ def test_without_mtoon_the_pbr_material_carries_alpha_and_texture(template_catal
 def test_blender_is_handed_the_same_resolved_material(template_catalog, tmp_path):
     from wardrobe.engines.blender import BlenderEngine
 
-    material = GarmentMaterial.from_plan("Look", plan("sheer black lace bodysuit", template_catalog).material)
+    material = GarmentMaterial.from_plan("Look", plan("black lace bodysuit", template_catalog, opacity=0.6).material)
     spec = BlenderEngine._material_spec(material, tmp_path)
-    assert spec["alphaMode"] == "blend" and spec["baseColorFactor"][3] == pytest.approx(0.45)
+    assert spec["alphaMode"] == "blend" and spec["baseColorFactor"][3] == pytest.approx(0.6)
     assert set(spec["textures"]) == {"baseColor"}
     assert (tmp_path / "baseColor.png").read_bytes() == material.texture
+
+
+def test_an_opacity_below_the_minimum_is_clamped_and_reported(template_catalog):
+    result = plan("black mini dress", template_catalog, opacity=0.05)
+    assert result.material.opacity == 0.2
+    assert any("clamped to 0.2" in note for note in result.notes)
+
+
+@pytest.mark.parametrize(
+    ("prompt", "lined", "alpha"),
+    [
+        ("black lined lace bralette", True, "opaque"),  # asked for: honoured, lingerie included
+        ("black lace bralette", False, "mask"),
+        ("black sheer lace bralette", False, "mask"),  # sheer lace: open holes
+        ("white lace crop cami", True, "opaque"),
+        ("white unlined lace crop cami", False, "mask"),
+    ],
+)
+def test_lining(template_catalog, prompt, lined, alpha):
+    material = plan(prompt, template_catalog).material
+    assert (material.lined, material.alpha_mode) == (lined, alpha)
+
+
+def test_a_see_through_garment_tells_blender_not_to_mask_the_body(template_catalog):
+    from wardrobe.engines.blender import mask_policy
+
+    assert mask_policy(plan("black fishnet thigh-highs", template_catalog).material) == "none"
+    assert mask_policy(plan("sheer red mini dress", template_catalog).material) == "none"
+    assert mask_policy(plan("red mini dress", template_catalog).material) == "body-only"
+
+
+@pytest.mark.parametrize(("prompt", "field", "value"), [
+    ("black balconette bra", "neckline", "balconette"),
+    ("black demi-cup bra", "neckline", "demi"),
+    ("black high-waisted briefs", "rise", "high"),
+    ("black low-rise briefs", "rise", "low"),
+])
+def test_cup_and_rise_words(template_catalog, prompt, field, value):
+    assert getattr(plan(prompt, template_catalog).style, field) == value

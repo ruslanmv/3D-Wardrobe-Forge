@@ -142,3 +142,29 @@ def test_a_catsuit_runs_from_the_chest_to_the_ankles_with_sleeves(measurements):
     assert catsuit.positions[:, 1].min() < params.knee_y - (params.knee_y - params.ankle_y) * 0.7
     assert catsuit.positions[:, 1].max() > params.chest_y
     assert np.abs(catsuit.positions[:, 0]).max() > measurements.shoulder_width_m  # the sleeves
+
+
+@pytest.mark.parametrize("cup", ["demi", "balconette"])
+def test_demi_and_balconette_cups_are_cut_lower_at_the_front(measurements, cup):
+    params, full = build(measurements, "bra")
+    _, cut = build(measurements, "bra", neckline=cup)
+    assert top_at(cut, params, 0.0, 0.3) < top_at(full, params, 0.0, 0.3) - 0.005
+    assert top_at(cut, params, np.pi) == pytest.approx(top_at(full, params, np.pi), abs=0.003)
+
+
+def test_rise_moves_the_waistband(measurements):
+    params, standard = build(measurements, "briefs")
+    _, high = build(measurements, "briefs", rise="high")
+    _, low = build(measurements, "briefs", rise="low")
+    top = lambda mesh: mesh.positions[:, 1].max()  # noqa: E731
+    assert top(high) > top(standard) > top(low)
+
+
+def test_trim_sections_are_marked_for_their_own_material(measurements):
+    from wardrobe.geometry.procedural import trim_triangles
+
+    _, bra = build(measurements, "bra", straps="harness")
+    mask = trim_triangles(bra)
+    assert mask.any() and not mask.all()
+    _, plain = build(measurements, "briefs")
+    assert not trim_triangles(plain).any()
