@@ -261,3 +261,30 @@ async def test_the_designers_example_builds_as_specified(orchestrator, store, bo
     assert sheets[2]["innerLayersRetained"] == [bralette.name, briefs.name]
     assert sheets[0]["adultGateReason"] == "underwear in see-through fabric"
     assert sheets[2]["maskingPolicy"].startswith("none")
+
+
+# ----------------------------------------------------------------------
+# tights and stockings are layers
+# ----------------------------------------------------------------------
+async def test_tights_go_under_her_clothes_and_never_take_them_off(orchestrator, store, body):
+    record, output = await dress(orchestrator, store, dress_like_vroid(body), "black fishnet tights")
+    assert record.state is JobState.COMPLETED, record.error
+    assert record.fit_report.replaced_garments == []
+    assert TOPS in primitive_materials(output) and BOTTOMS in primitive_materials(output)
+
+
+async def test_fishnet_tights_under_a_mini_skirt(orchestrator, store, body):
+    record, output = await dress(orchestrator, store, dress_like_vroid(body),
+                                 "black fishnet tights + red latex pleated mini skirt")
+    assert record.state is JobState.COMPLETED, record.error
+    tights, skirt = record.plan.garments
+    assert (tights.template_id, tights.material.pattern, tights.layer) == ("legwear-tights-v1", "fishnet", 2)
+    assert skirt.layer == 3 and record.fit_report.replaced_garments == ["bottoms"]
+    assert record.fit_report.passed
+
+
+async def test_fishnet_legwear_is_gated_like_any_see_through_garment(orchestrator, store, body):
+    record, _ = await dress(orchestrator, store, dress_like_vroid(body), "calze a rete nere", adult=False)
+    assert record.reason is FailureReason.ADULT_DECLARATION_REQUIRED
+    record, _ = await dress(orchestrator, store, dress_like_vroid(body), "black opaque tights", adult=False)
+    assert record.state is JobState.COMPLETED, record.error

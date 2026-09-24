@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "trousers-leggings-v1",
-  "name": "Leggings",
-  "category": "trousers",
-  "mesh": "procedural:leggings",
+  "id": "legwear-tights-v1",
+  "name": "Tights",
+  "category": "legwear",
+  "mesh": "procedural:tights",
   "coverage": [
     "waist",
     "hips",
@@ -19,7 +19,7 @@
   "hem": "ankle",
   "sleeve": "none",
   "fit": {
-    "bodyClearanceMm": 2.5,
+    "bodyClearanceMm": 1.5,
     "allowLengthScale": true,
     "allowWidthScale": true,
     "minLengthScale": 0.7,
@@ -30,13 +30,16 @@
   "materials": {
     "supportsBaseColor": true,
     "supportsPattern": true,
-    "supportsMetallic": true
+    "supportsMetallic": false
   },
   "tags": [
-    "leggings",
-    "yoga pants",
-    "skin-tight",
-    "second skin"
+    "tights",
+    "pantyhose",
+    "hosiery",
+    "collant",
+    "fishnet tights",
+    "full-length",
+    "collant a rete"
   ],
-  "description": "Skin-tight leggings, waist to ankle. Latex, PVC or wet-look by finish."
+  "description": "Waist-to-toe tights or pantyhose. A layer: worn under skirts and shorts, never replacing them."
 }

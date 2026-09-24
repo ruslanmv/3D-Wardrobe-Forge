@@ -321,7 +321,7 @@ chatbot's VRM Manager already stores. See [docs/LICENSING.md](docs/LICENSING.md)
 
 ### Garment library
 
-53 templates across dresses, tops, skirts, shorts, trousers and leggings, jumpsuits,
+54 templates across dresses, tops, skirts, shorts, trousers and leggings, jumpsuits,
 jackets, swimwear, underwear, nightwear, legwear and shoes, every one procedural —
 the shell is generated at each avatar's measurements, so the repository needs no
 binary garment assets. Adding a garment is usually a single

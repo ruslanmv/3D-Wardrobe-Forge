@@ -41,7 +41,7 @@ CATEGORIES = {
 PROCEDURAL_KINDS = {
     "dress", "skirt", "top", "trousers", "jacket", "shoes",
     "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
-    "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit",
+    "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
 }
 
 #: Categories that only dress an avatar declared to depict an adult. See wardrobe.policy.intimate.

@@ -109,7 +109,7 @@ FABRICS: dict[str, tuple[float, float]] = {
 
 CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     "dress": ("dress", "gown", "frock", "sundress"),
-    "skirt": ("skirt",),
+    "skirt": ("skirt", "gonna", "minigonna"),
     "jacket": ("jacket", "blazer", "coat", "parka", "cardigan", "trench"),
     "trousers": ("trousers", "pants", "jeans", "slacks", "chinos", "leggings"),
     "top": (
@@ -134,7 +134,12 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
         "nightwear", "nightgown", "nightdress", "nightie", "chemise", "pajamas", "pyjamas", "pajama",
         "pyjama", "sleepwear",
     ),
-    "legwear": ("stockings", "thigh highs", "thigh-highs", "thigh-high socks", "over-the-knee socks"),
+    "legwear": (
+        "stockings", "thigh highs", "thigh-highs", "thigh-high socks", "over-the-knee socks",
+        "tights", "pantyhose", "hosiery", "hose",
+        # Italian, as designers write it
+        "calze", "calze a rete", "collant", "collant a rete", "autoreggenti",
+    ),
 }
 
 SILHOUETTE_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -151,7 +156,7 @@ SILHOUETTE_KEYWORDS: dict[str, tuple[str, ...]] = {
 }
 
 HEM_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "mini": ("mini", "short", "above the knee"),
+    "mini": ("mini", "short", "above the knee", "minigonna"),
     "knee": ("knee", "knee-length", "midi-short"),
     "midi": ("midi", "calf", "tea-length"),
     "ankle": ("ankle", "ankle-length"),
@@ -171,6 +176,15 @@ FORMALITY_KEYWORDS = {
     "sporty": ("sport", "sporty", "athletic", "gym", "running"),
 }
 
+
+#: Colour words in other languages designers write in, and the colour each one is.
+COLOR_ALIASES: dict[str, str] = {
+    **dict.fromkeys(("nero", "nera", "neri", "nere"), "black"),
+    **dict.fromkeys(("bianco", "bianca", "bianchi", "bianche"), "white"),
+    **dict.fromkeys(("rosso", "rossa", "rossi", "rosse"), "red"),
+    **dict.fromkeys(("rosa",), "pink"),
+    **dict.fromkeys(("blu",), "navy"),
+}
 
 #: What a fabric word implies about its finish when no finish word is given.
 FABRIC_FINISH: dict[str, str] = {
@@ -326,9 +340,9 @@ def parse_prompt(prompt: str) -> ParsedPrompt:
     # 'navy blue' is navy; 'blue denim jacket' is blue. A second, different colour
     # is the pattern's: "red and white striped" is red with white stripes.
     matches: list[tuple[int, int, str]] = []
-    for name in COLORS:
+    for name in [*COLORS, *COLOR_ALIASES]:
         for found in re.finditer(rf"(?<!\w){re.escape(name)}(?!\w)", text):
-            matches.append((found.start(), -len(name), name))
+            matches.append((found.start(), -len(name), COLOR_ALIASES.get(name, name)))
     matches.sort()
     chosen: list[tuple[int, int, str]] = []
     for start, negative_length, name in matches:

@@ -527,7 +527,7 @@ SILHOUETTES: dict[str, dict[str, float]] = {
 HAUL_KINDS = frozenset(
     {
         "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
-        "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit",
+        "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
     }
 )
 
@@ -912,6 +912,13 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
                                rows=5, name="leggings-waist")
         return [waistband, *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="leggings",
                                           ankle=True)]
+    if kind == "tights":
+        # Leggings' shape, down over the feet, and a layer rather than a garment
+        # of its own: KIND_REGIONS leaves tights out, so they go under her skirt
+        # or shorts and never take them off.
+        waistband = build_band(params, y_bottom=params.hip_y - thigh * 0.12, y_top=low_rise + rise * 0.3,
+                               rows=5, name="tights-waist")
+        return [waistband, *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="tights")]
     if kind == "catsuit":
         top_y = params.chest_y + (params.shoulder_y - params.chest_y) * 0.62
         bottom_y = params.hip_y - thigh * 0.12

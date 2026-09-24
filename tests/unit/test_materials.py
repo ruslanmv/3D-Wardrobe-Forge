@@ -243,3 +243,18 @@ def test_a_see_through_garment_tells_blender_not_to_mask_the_body(template_catal
 ])
 def test_cup_and_rise_words(template_catalog, prompt, field, value):
     assert getattr(plan(prompt, template_catalog).style, field) == value
+
+
+@pytest.mark.parametrize(
+    ("prompt", "template_id", "colour"),
+    [
+        ("calze a rete nere", "legwear-thigh-highs-v1", "black"),
+        ("collant a rete neri", "legwear-tights-v1", "black"),
+        ("black fishnet thigh-highs", "legwear-thigh-highs-v1", "black"),
+        ("black sheer pantyhose", "legwear-tights-v1", "black"),
+        ("minigonna rossa", "skirt-pleated-mini-v1", "red"),
+    ],
+)
+def test_legwear_and_italian_words(template_catalog, prompt, template_id, colour):
+    result = plan(prompt, template_catalog)
+    assert (result.template_id, result.material.color_name) == (template_id, colour)

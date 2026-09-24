@@ -122,7 +122,7 @@ PATTERNS: dict[str, Pattern] = {
 
 PATTERN_KEYWORDS: dict[str, tuple[str, ...]] = {
     "lace": ("lace", "lacy", "embroidered lace", "eyelash lace"),
-    "fishnet": ("fishnet", "fishnets", "fish-net", "fishnet stockings"),
+    "fishnet": ("fishnet", "fishnets", "fish-net", "fishnet stockings", "a rete", "retina"),
     "stripes": ("striped", "stripes", "stripe", "pinstripe", "pinstriped", "breton"),
     "dots": ("polka dot", "polka dots", "polka-dot", "dotted", "spotted"),
     "gingham": ("gingham", "checked", "checkered"),
