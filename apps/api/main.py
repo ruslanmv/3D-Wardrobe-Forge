@@ -4,19 +4,24 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from apps.api.dependencies import require_api_key
 from apps.api.routes.avatars import router as avatars_router
 from apps.api.routes.generate import router as generate_router
 from apps.api.routes.jobs import router as jobs_router
 from apps.api.routes.looks import router as looks_router
+from apps.api.routes.studio import router as studio_router
 from apps.api.routes.wardrobes import router as wardrobes_router
 from wardrobe import __version__
 from wardrobe.config import get_settings
 from wardrobe.engines import BlenderEngine
+from wardrobe.library import AvatarLibrary
 from wardrobe.pipeline.orchestrator import get_orchestrator
 
 logger = logging.getLogger(__name__)
@@ -31,6 +36,19 @@ async def lifespan(app: FastAPI):
     orchestrator = get_orchestrator()
     await orchestrator.start()
     app.state.orchestrator = orchestrator
+
+    # The Studio's avatars, verified against their pinned hashes and placed where
+    # a job finds any uploaded model. A missing library costs the Studio its
+    # avatars, never the API its startup — the library handles the cases it knows,
+    # and this catch is for the ones nobody has met yet.
+    try:
+        library = AvatarLibrary.from_directory(settings.wardrobe_library_root)
+        seeded = await library.seed(orchestrator.store)
+        logger.info("avatar library: %d available, %d newly seeded", len(library.available()), seeded)
+    except Exception as exc:
+        logger.exception("avatar library failed to load; the Studio will offer no avatars")
+        library = AvatarLibrary(root=settings.wardrobe_library_root, problem=f"library failed to load: {exc}")
+    app.state.library = library
     try:
         yield
     finally:
@@ -63,6 +81,17 @@ app.include_router(avatars_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(looks_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(wardrobes_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(generate_router, prefix="/v1", dependencies=api_dependencies)
+app.include_router(studio_router, prefix="/v1", dependencies=api_dependencies)
+
+# The Studio is a static, build-free editor. It is served unauthenticated because
+# it is only markup and scripts; every call it makes goes through /v1, which is not.
+STUDIO_ROOT = Path(__file__).resolve().parent.parent / "studio"
+if STUDIO_ROOT.is_dir():
+    app.mount("/studio", StaticFiles(directory=STUDIO_ROOT, html=True), name="studio")
+
+    @app.get("/", include_in_schema=False)
+    def root() -> RedirectResponse:
+        return RedirectResponse(url="/studio/")
 
 
 @app.get("/health", tags=["service"])
