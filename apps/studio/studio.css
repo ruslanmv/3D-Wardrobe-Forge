@@ -1,0 +1,1023 @@
+/*
+ * Wardrobe Studio.
+ *
+ * A dark atelier: the viewport is the room's only bright thing, so the garment is
+ * what the eye lands on. Every panel is a flex column that scrolls on its own, so
+ * a long template list never pushes the Generate button off screen.
+ */
+:root {
+    --bg: #110f12;
+    --panel: #19161a;
+    --panel-2: #221e23;
+    --panel-3: #2b262c;
+    --line: rgba(255, 238, 228, 0.08);
+    --line-strong: rgba(255, 238, 228, 0.16);
+    --text: #f4ede6;
+    --muted: #a99f9a;
+    --faint: #72686a;
+    --accent: #e8b9a4;
+    --accent-strong: #dc9580;
+    --accent-ink: #2a1712;
+    --ok: #93d3a8;
+    --warn: #e8c46e;
+    --bad: #ef8b80;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --display: 'Fraunces', Georgia, serif;
+    --ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color-scheme: dark;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.45 var(--ui);
+    -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+code {
+    font: 12px/1.3 ui-monospace, 'SF Mono', Menlo, monospace;
+    background: var(--panel-3);
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+/* ------------------------------------------------------------------ layout */
+.app {
+    display: grid;
+    height: 100dvh;
+    grid-template-columns: 276px minmax(0, 1fr) 376px;
+    grid-template-rows: auto minmax(0, 1fr) 244px;
+    grid-template-areas:
+        'top top top'
+        'lib stage design'
+        'lib shelf design';
+    gap: 1px;
+    background: var(--line);
+}
+
+.topbar {
+    grid-area: top;
+}
+.library {
+    grid-area: lib;
+}
+.stage {
+    grid-area: stage;
+}
+.designer {
+    grid-area: design;
+}
+.shelf {
+    grid-area: shelf;
+}
+.tabs {
+    display: none;
+}
+
+/* ------------------------------------------------------------------ topbar */
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
+    background: var(--panel);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: auto;
+}
+
+.brand-mark {
+    font-size: 24px;
+}
+
+.brand h1 {
+    margin: 0;
+    font: 650 19px/1.1 var(--display);
+    letter-spacing: 0.01em;
+}
+
+.brand-sub {
+    margin: 1px 0 0;
+    color: var(--muted);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.caps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.pill::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--faint);
+}
+
+.pill.on::before {
+    background: var(--ok);
+}
+.pill.off::before {
+    background: var(--warn);
+}
+.pill.bad::before {
+    background: var(--bad);
+}
+
+.icon-btn {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    background: transparent;
+}
+
+.icon-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--muted);
+}
+
+.icon-btn.has-key svg {
+    fill: var(--accent);
+}
+
+/* ------------------------------------------------------------------ panels */
+.panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--panel);
+}
+
+.panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px 10px;
+}
+
+.panel-head h2 {
+    margin: 0;
+    font: 650 16px/1.2 var(--display);
+}
+
+.panel-note,
+.count {
+    color: var(--muted);
+    font: 500 12px var(--ui);
+}
+
+/* ------------------------------------------------------------------ library */
+.avatar-list {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 0 10px 10px;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.avatar {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    margin-bottom: 4px;
+    padding: 9px 10px;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    background: transparent;
+    text-align: left;
+}
+
+.avatar:hover:not(:disabled) {
+    background: var(--panel-2);
+}
+
+.avatar[aria-current='true'] {
+    border-color: var(--line-strong);
+    background: var(--panel-2);
+}
+
+.avatar-glyph {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(145deg, var(--panel-3), var(--panel-2));
+    color: var(--accent);
+    font: 650 15px var(--display);
+}
+
+.avatar[aria-current='true'] .avatar-glyph {
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+
+.avatar-meta {
+    min-width: 0;
+}
+
+.avatar-name {
+    display: block;
+    font-weight: 600;
+}
+
+.avatar-sub {
+    display: block;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.avatar-badge {
+    margin-left: auto;
+    padding: 1px 6px;
+    border-radius: 5px;
+    background: rgba(147, 211, 168, 0.12);
+    color: var(--ok);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+.avatar-badge.missing {
+    background: rgba(239, 139, 128, 0.12);
+    color: var(--bad);
+}
+
+.provenance {
+    margin: 0;
+    padding: 10px 16px 14px;
+    border-top: 1px solid var(--line);
+    color: var(--faint);
+    font-size: 11.5px;
+}
+
+/* ------------------------------------------------------------------ stage */
+.stage {
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse 60% 55% at 50% 42%, #3a3033 0%, #231d20 45%, #151215 100%),
+        var(--bg);
+}
+
+.stage-canvas,
+.stage-canvas canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+}
+
+.stage-empty {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+    pointer-events: none;
+}
+
+.stage-empty[hidden] {
+    display: none;
+}
+
+.stage-top {
+    position: absolute;
+    inset: 12px 12px auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.stage-top > * {
+    pointer-events: auto;
+}
+
+.stage-title strong {
+    display: block;
+    font: 650 20px/1.15 var(--display);
+}
+
+.stage-title span {
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.seg {
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: rgba(17, 15, 18, 0.72);
+    backdrop-filter: blur(8px);
+}
+
+.seg button {
+    padding: 5px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.seg button[aria-checked='true'] {
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+
+.seg .short {
+    display: none;
+}
+
+.stage-tools {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    display: flex;
+    gap: 6px;
+}
+
+.tool {
+    padding: 6px 11px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: rgba(17, 15, 18, 0.72);
+    backdrop-filter: blur(8px);
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.tool[aria-pressed='true'] {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.stage-status {
+    position: absolute;
+    right: 12px;
+    bottom: 14px;
+    max-width: 60%;
+    color: var(--muted);
+    font-size: 12.5px;
+    text-align: right;
+}
+
+.stage-status.error {
+    color: var(--bad);
+}
+
+/* ------------------------------------------------------------------ designer */
+.designer {
+    overflow-y: auto;
+}
+
+#design-form {
+    padding: 0 16px 16px;
+}
+
+fieldset {
+    margin: 0 0 14px;
+    padding: 0;
+    border: 0;
+}
+
+legend {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 7px;
+    padding: 0;
+    color: var(--muted);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.legend-value {
+    margin-left: auto;
+    color: var(--text);
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.legend-hint {
+    color: var(--faint);
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 9px;
+}
+
+.chip {
+    padding: 5px 11px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    text-transform: capitalize;
+}
+
+.chips.small .chip {
+    padding: 3px 9px;
+    font-size: 12px;
+}
+
+.chip:hover {
+    border-color: var(--accent);
+}
+
+.chip[aria-checked='true'],
+.chip[aria-pressed='true'] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.field {
+    display: block;
+}
+
+.field > span {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--faint);
+    font-size: 12px;
+}
+
+select,
+textarea,
+dialog input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--panel-2);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 64px;
+}
+
+.swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(24px, 1fr));
+    gap: 6px;
+}
+
+.swatch {
+    aspect-ratio: 1;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: var(--swatch);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.swatch.auto {
+    background: conic-gradient(#b3202b, #e3c341, #3f7a4f, #2f5fa8, #6b3f9e, #b3202b);
+}
+
+.swatch[aria-checked='true'] {
+    border-color: var(--text);
+    box-shadow: 0 0 0 2px var(--bg) inset;
+}
+
+.request-preview {
+    margin: 6px 0 0;
+    color: var(--faint);
+    font: 11.5px/1.45 ui-monospace, 'SF Mono', Menlo, monospace;
+    word-break: break-word;
+}
+
+.primary,
+.secondary,
+.ghost {
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.primary {
+    width: 100%;
+    border: 0;
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+
+.primary:hover:not(:disabled) {
+    background: var(--accent-strong);
+}
+
+.secondary {
+    padding: 7px 14px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-size: 13px;
+}
+
+.ghost {
+    border: 1px solid var(--line-strong);
+    background: transparent;
+}
+
+/* ------------------------------------------------------------------ job */
+.job,
+.report {
+    margin: 0 16px 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel-2);
+}
+
+.job[hidden],
+.report[hidden] {
+    display: none;
+}
+
+.job-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.job-head span {
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.steps {
+    display: grid;
+    gap: 3px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12.5px;
+}
+
+.steps li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--faint);
+}
+
+.steps li::before {
+    content: '';
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid var(--faint);
+    border-radius: 50%;
+}
+
+.steps li.done {
+    color: var(--muted);
+}
+
+.steps li.done::before {
+    border-color: var(--ok);
+    background: var(--ok);
+}
+
+.steps li.active {
+    color: var(--text);
+}
+
+.steps li.active::before {
+    border-color: var(--accent);
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    50% {
+        background: var(--accent);
+    }
+}
+
+.job-message {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.job.failed .job-message {
+    color: var(--bad);
+}
+
+.report h3 {
+    margin: 0 0 8px;
+    font: 650 14.5px var(--display);
+}
+
+.checks {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+    margin: 0 0 8px;
+    padding: 0;
+    list-style: none;
+    font-size: 12.5px;
+}
+
+.checks li::before {
+    content: '✓ ';
+    color: var(--ok);
+}
+
+.checks li.no::before {
+    content: '✕ ';
+    color: var(--bad);
+}
+
+.report-line {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.report-line.warn {
+    color: var(--warn);
+}
+
+.report-line.bad {
+    color: var(--bad);
+}
+
+/* ------------------------------------------------------------------ shelf */
+.export {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 12.5px;
+    white-space: nowrap;
+}
+
+.check input {
+    accent-color: var(--accent);
+}
+
+.looks {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: 10px;
+    padding: 0 16px 4px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+}
+
+.looks-empty {
+    align-self: center;
+    margin: 0 auto;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.look {
+    position: relative;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    width: 128px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel-2);
+    scroll-snap-align: start;
+}
+
+.look[aria-current='true'] {
+    border-color: var(--accent);
+}
+
+.look-open {
+    display: block;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+}
+
+.look img,
+.look-ph {
+    display: block;
+    width: 100%;
+    height: 82px;
+    object-fit: cover;
+    object-position: 50% 30%;
+    background: #3a3136;
+}
+
+.look-ph {
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+}
+
+.look-body {
+    display: block;
+    padding: 5px 9px 7px;
+}
+
+.look-name {
+    display: block;
+    overflow: hidden;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.look-fit {
+    display: block;
+    font-size: 11px;
+    color: var(--ok);
+}
+
+.look-fit.failed {
+    color: var(--warn);
+}
+
+.look-del {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(17, 15, 18, 0.72);
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.look:hover .look-del,
+.look:focus-within .look-del {
+    opacity: 1;
+}
+
+.export-hint {
+    margin: 0;
+    padding: 4px 16px 8px;
+    color: var(--faint);
+    font-size: 11.5px;
+}
+
+/* ------------------------------------------------------------------ dialog */
+dialog {
+    width: min(420px, calc(100vw - 32px));
+    padding: 20px;
+    border: 1px solid var(--line-strong);
+    border-radius: 16px;
+    background: var(--panel);
+    color: var(--text);
+}
+
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+dialog h2 {
+    margin: 0 0 6px;
+    font: 650 18px var(--display);
+}
+
+dialog p {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+dialog menu {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 14px 0 0;
+    padding: 0;
+}
+
+dialog .primary {
+    width: auto;
+}
+
+/* ------------------------------------------------------------------ phone */
+@media (max-width: 900px) {
+    .app {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto 44dvh auto minmax(0, 1fr);
+        grid-template-areas:
+            'top'
+            'stage'
+            'tabs'
+            'panel';
+    }
+
+    .library,
+    .designer,
+    .shelf {
+        display: none;
+        grid-area: panel;
+    }
+
+    .app[data-tab='library'] .library,
+    .app[data-tab='design'] .designer,
+    .app[data-tab='wardrobe'] .shelf {
+        display: flex;
+    }
+
+    .tabs {
+        display: flex;
+        grid-area: tabs;
+        gap: 4px;
+        padding: 6px 10px;
+        background: var(--panel);
+    }
+
+    .tabs button {
+        flex: 1;
+        padding: 8px 0;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--muted);
+        font-weight: 600;
+    }
+
+    .tabs button[aria-selected='true'] {
+        background: var(--panel-3);
+        color: var(--text);
+    }
+
+    .topbar {
+        padding: 8px 12px;
+    }
+
+    .caps {
+        display: none;
+    }
+
+    /* One row, so the view control sits beside the name and never over her face. */
+    .stage-top {
+        align-items: center;
+    }
+
+    .stage-title {
+        min-width: 0;
+    }
+
+    .stage-title strong {
+        overflow: hidden;
+        font-size: 16px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .stage-title span {
+        display: none;
+    }
+
+    .seg button {
+        padding: 4px 9px;
+        font-size: 12px;
+    }
+
+    .seg .long {
+        display: none;
+    }
+
+    .seg .short {
+        display: inline;
+    }
+
+    /* Above the toolbar, not beside it: a phone is too narrow for both on one line. */
+    .stage-status {
+        bottom: 52px;
+        max-width: calc(100% - 24px);
+        font-size: 11.5px;
+    }
+
+    .shelf .panel-head {
+        flex-wrap: wrap;
+    }
+
+    .looks {
+        flex-wrap: wrap;
+        align-content: flex-start;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .look {
+        width: calc(50% - 5px);
+    }
+
+    .look img,
+    .look-ph {
+        height: 128px;
+    }
+
+    .look-del {
+        opacity: 1;
+    }
+}
