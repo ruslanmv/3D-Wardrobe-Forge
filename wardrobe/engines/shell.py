@@ -42,7 +42,6 @@ from wardrobe.errors import FittingError
 from wardrobe.geometry.mesh import Mesh
 from wardrobe.geometry.procedural import FitParameters, build_garment
 from wardrobe.lingerie import LINGERIE_KINDS
-from wardrobe.lingerie.landmarks import measure_landmarks
 from wardrobe.pipeline.context import PipelineContext
 from wardrobe.vrm.inspect import VrmSpec
 from wardrobe.vrm.skinning import bones_for_coverage, build_bone_segments, connected_components
@@ -117,6 +116,8 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         if profile is not None:
             metadata["torsoProfile"] = profile
     if kind in LINGERIE_KINDS:
+        from wardrobe.lingerie.landmarks import measure_landmarks  # it imports this package
+
         # A pattern block is placed on her landmarks (wardrobe.lingerie.landmarks):
         # bust points, the fold under the bust, sternum, waist, hips, crotch.
         torso = _torso(context, whole)

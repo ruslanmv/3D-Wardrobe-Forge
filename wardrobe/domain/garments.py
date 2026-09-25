@@ -12,6 +12,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wardrobe.lingerie import LINGERIE_KINDS
+
 SCHEMA_VERSION = 1
 
 #: Body regions a template may declare coverage over.
@@ -43,7 +45,10 @@ PROCEDURAL_KINDS = {
     "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
     "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
     "suspender-belt", "waspie", "guepiere",
-}
+} | set(LINGERIE_KINDS)
+
+#: The template schema that carries a ``lingerie`` block (pattern blocks, wardrobe.lingerie).
+LINGERIE_SCHEMA_VERSION = 2
 
 #: Categories that only dress an avatar declared to depict an adult. See wardrobe.policy.intimate.
 #: Not the whole gate: see-through fabric in any category needs the same declaration.
@@ -136,6 +141,9 @@ class GarmentTemplate(BaseModel):
     #: templates that overlap older ones use it, so a prompt that planned the older
     #: template still does: "suspender belt" is still the Garter Set.
     opt_in: bool = Field(default=False, alias="optIn")
+    #: Schema 2 only: the pattern block a lingerie kind is built from — its spec
+    #: (wardrobe.lingerie.specs), strap and elastic choices. Absent everywhere else.
+    lingerie: dict | None = None
 
     @property
     def is_procedural(self) -> bool:
@@ -176,6 +184,16 @@ class GarmentTemplate(BaseModel):
             issues.append(f"{self.id}: {sleeves} sleeves need anchors {sorted(needed - set(self.anchors))}")
         if self.fit.flare_start and self.fit.flare_start not in FLARE_STARTS:
             issues.append(f"{self.id}: unknown flareStart {self.fit.flare_start!r}")
+        if self.procedural_kind in LINGERIE_KINDS or self.lingerie is not None:
+            if self.schema_version != LINGERIE_SCHEMA_VERSION:
+                issues.append(f"{self.id}: a lingerie block needs schemaVersion {LINGERIE_SCHEMA_VERSION}")
+            if self.procedural_kind in LINGERIE_KINDS and not self.lingerie:
+                issues.append(f"{self.id}: {self.procedural_kind} needs a lingerie block")
+            if self.lingerie is not None:
+                from wardrobe.lingerie.specs import validate_block  # the spec lives with its builder
+
+                found = validate_block(self.procedural_kind, self.lingerie)
+                issues += [f"{self.id}: {issue}" for issue in found]
         if self.fit.min_length_scale > self.fit.max_length_scale:
             issues.append(f"{self.id}: minLengthScale exceeds maxLengthScale")
         return issues

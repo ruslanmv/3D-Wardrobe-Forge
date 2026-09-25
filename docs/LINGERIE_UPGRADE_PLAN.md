@@ -1,6 +1,8 @@
 # Lingerie quality upgrade plan
 
-> Status: in progress. **L1 done**: the fashion-fit forms
+> Status: in progress. **L2 done**: flat ribbon straps between anchors
+> (`wardrobe/lingerie/straps.py`, `contract.py`, `specs.py`; the ribbon moved to
+> `wardrobe/geometry/ribbon.py`). **L1 done**: the fashion-fit forms
 > (`wardrobe/vrm/fashion_body.py`, declared adult in
 > `assets/calibration/policy.json`) and the landmarks
 > (`wardrobe/lingerie/landmarks.py`), tested in `tests/unit/test_fashion_form.py`.

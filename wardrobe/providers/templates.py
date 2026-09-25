@@ -95,6 +95,9 @@ class TemplateGarmentProvider(GarmentProvider):
         if fit.drape_folds and fit.hem_drape:
             artifact.metadata["drapeFolds"] = fit.drape_folds
             artifact.metadata["hemDrape"] = fit.hem_drape
+        if template.lingerie is not None:
+            # The pattern block's spec, for wardrobe.lingerie to build from.
+            artifact.metadata["lingerie"] = dict(template.lingerie)
         if template.id in BELT_STYLE_OF_TEMPLATE:
             artifact.metadata["beltStyle"] = BELT_STYLE_OF_TEMPLATE[template.id]
         return artifact

@@ -211,14 +211,31 @@ def measure_landmarks(torso: np.ndarray, bones: dict, *, forward: float = 1.0, l
     )
 
 
-def landmarks_for_document(document) -> BodyLandmarks | None:
-    """The same measurement the fitter makes, from a VRM alone: for tools, previews and tests."""
+@dataclass
+class MeasuredBody:
+    """What the fitter measures on a body before it builds a garment (``shell.build_fitted_shell``)."""
+
+    measurements: object
+    metadata: dict
+    points: np.ndarray  # everything that is her
+    torso: np.ndarray  # without arms and head
+    landmarks: BodyLandmarks | None
+
+
+def measure_document(document) -> MeasuredBody:
+    """The shell's body measurements, from a VRM alone: for tools, previews and tests.
+
+    The same functions in the same order as ``build_fitted_shell``, so a block
+    built from this metadata is the block the pipeline builds.
+    """
     # Imported here: the shell imports this module, and these live beside it.
     from wardrobe.engines.geometry_checks import (
+        arm_profile,
         armpit_height,
         body_points,
         lower_body_profile,
         select_region_points,
+        upper_body_surface,
     )
     from wardrobe.engines.shell import LEG_BONES, OUTLINE_EXCLUDED_BONES
     from wardrobe.vrm.inspect import VrmSpec, inspect_document
@@ -227,17 +244,43 @@ def landmarks_for_document(document) -> BodyLandmarks | None:
 
     info = inspect_document(document)
     measurements = measure_body(document, info)
+    forward = -1.0 if info.spec is VrmSpec.VRM0 else 1.0
+    metadata: dict = {"forward": forward}
     whole = body_points(document)
     segments = build_bone_segments(info.humanoid_bones, measurements, list(info.humanoid_bones))
-    if not segments:
-        return None
     keep = {bone for bone in info.humanoid_bones if bone not in OUTLINE_EXCLUDED_BONES}
     torso = whole[select_region_points(whole, segments, keep)]
     legs = whole[select_region_points(whole, segments, set(LEG_BONES))]
     lower = lower_body_profile(whole, legs, measurements.bone_positions)
-    forward = -1.0 if info.spec is VrmSpec.VRM0 else 1.0
-    return measure_landmarks(torso, measurements.bone_positions, forward=forward, lower=lower,
-                             armpit_y=armpit_height(whole, segments))
+    if lower is not None:
+        metadata["lowerBody"] = lower
+    armpit = armpit_height(whole, segments)
+    if armpit is not None:
+        metadata["armpitY"] = armpit
+    arms = arm_profile(whole, segments)
+    if arms is not None:
+        metadata["armProfile"] = arms
+    upper_keep = set(info.humanoid_bones) - (OUTLINE_EXCLUDED_BONES - {"neck"})
+    upper = whole[select_region_points(whole, segments, upper_keep)]
+    surface = upper_body_surface(upper, measurements.bone_positions, forward, shoulders=torso)
+    if surface is not None:
+        metadata["upperBody"] = surface
+    bone_y = {name: float(p[1]) for name, p in measurements.bone_positions.items()}
+    profile = torso_profile(torso, bone_y.get("neck", 1.4), bone_y.get("leftLowerLeg", 0.4))
+    if profile is not None:
+        metadata["torsoProfile"] = profile
+    marks = measure_landmarks(torso, measurements.bone_positions, forward=forward, lower=lower,
+                              armpit_y=armpit)
+    if marks is not None:
+        metadata["lingerieLandmarks"] = marks.to_dict()
+    return MeasuredBody(measurements=measurements, metadata=metadata, points=whole, torso=torso,
+                        landmarks=marks)
 
 
-__all__ = ["BodyLandmarks", "MIN_BUST_PROJECTION_M", "landmarks_for_document", "measure_landmarks"]
+def landmarks_for_document(document) -> BodyLandmarks | None:
+    """The landmarks the fitter would measure on this VRM."""
+    return measure_document(document).landmarks
+
+
+__all__ = ["BodyLandmarks", "MIN_BUST_PROJECTION_M", "MeasuredBody", "landmarks_for_document",
+           "measure_document", "measure_landmarks"]
