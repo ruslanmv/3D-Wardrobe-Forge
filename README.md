@@ -95,6 +95,14 @@ set for materials: lace, mesh, fishnet, sequin, latex and layering.
 Details: [docs/STYLING.md](docs/STYLING.md) for materials, cuts and layers;
 [docs/FIT_QUALITY.md](docs/FIT_QUALITY.md) for how garments meet a real body.
 
+**Designed next: hosiery and suspender styling.** Suspender belts, waspies and
+guêpières whose straps clip onto the fitted stocking tops, with strap tension
+checked in walking and seated poses. Seamed and lace-top stockings. A **reveal**
+control that sets a skirt's hem against the stockings: hidden, a glimpse when she
+sits, or on show. It is additive and behind the existing adult gate, and nothing it
+adds changes a look made today. The design is in
+[docs/HOSIERY_STYLING.md](docs/HOSIERY_STYLING.md); it is not built yet.
+
 ---
 
 ## Wardrobe Studio
@@ -416,6 +424,7 @@ Stated plainly, because the gallery shows them:
 | --- | --- |
 | [STYLING](docs/STYLING.md) | materials, cuts, straps, Base Body Prep and layered outfits, the adult gate |
 | [FIT_QUALITY](docs/FIT_QUALITY.md) | fitting a real avatar: what broke on the library avatars, and what the fitter does now |
+| [HOSIERY_STYLING](docs/HOSIERY_STYLING.md) | *design, not built*: suspender belts, stockings and the reveal control |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | components, layers, extension points |
 | [PIPELINE](docs/PIPELINE.md) | the ten stages and the failure model |
 | [API](docs/API.md) | HTTP reference |
