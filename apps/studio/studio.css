@@ -1127,11 +1127,7 @@ table.tension td.slack { opacity: 0.6; }
     width: 252px;
 }
 
-.account[hidden] {
-    display: none;
-}
-
-body:has(.account:not([hidden])) .library {
+.library {
     padding-bottom: 68px;
 }
 
@@ -1214,20 +1210,25 @@ body:has(.account:not([hidden])) .library {
 }
 
 .account-menu-head {
-    padding: 8px 10px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 8px 10px;
     border-bottom: 1px solid var(--line);
     margin-bottom: 4px;
-    color: var(--muted);
-    font-size: 12px;
 }
 
-.account-menu-head strong {
-    display: block;
-    color: var(--text);
-    font-size: 13px;
+.account-menu hr {
+    width: 100%;
+    margin: 4px 0;
+    border: 0;
+    border-top: 1px solid var(--line);
 }
 
 .account-menu button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     padding: 9px 10px;
     border: 0;
     border-radius: 8px;
@@ -1235,8 +1236,35 @@ body:has(.account:not([hidden])) .library {
     text-align: left;
 }
 
-.account-menu button:hover {
+.account-menu button svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    opacity: 0.85;
+}
+
+.account-menu button small {
+    display: block;
+    color: var(--faint);
+    font-size: 11px;
+}
+
+.account-menu button:hover:not(:disabled),
+.account-menu button:focus-visible {
     background: var(--panel-3);
+}
+
+.account-caret {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-left: auto;
+    fill: var(--muted);
+}
+
+.account-btn[aria-expanded='true'] .account-caret {
+    transform: rotate(180deg);
 }
 
 .account-menu button[hidden] {
@@ -1257,7 +1285,7 @@ body:has(.account:not([hidden])) .library {
         border-radius: 50%;
     }
 
-    .account-label {
+    .account-btn .account-label {
         display: none;
     }
 
@@ -1265,12 +1293,16 @@ body:has(.account:not([hidden])) .library {
         min-width: 240px;
     }
 
-    body:has(.account:not([hidden])) .library {
+    .library {
         padding-bottom: 0;
     }
 
-    body:has(.account:not([hidden])) .panel {
+    .panel {
         padding-bottom: 60px;
+    }
+
+    .account-caret {
+        display: none;
     }
 }
 
@@ -1279,8 +1311,140 @@ body:has(.account:not([hidden])) .library {
     color: var(--bad);
 }
 
+/* Settings: a section list beside the section, as a chat app lays it out; tabs on a phone. */
 dialog.settings {
-    width: min(480px, calc(100vw - 32px));
+    width: min(680px, calc(100vw - 32px));
+    max-height: min(640px, calc(100dvh - 32px));
+    padding: 0;
+    overflow: hidden;
+}
+
+dialog.settings[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+}
+
+.settings-head h2 {
+    margin: 0;
+}
+
+.settings-close {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--muted);
+    font-size: 22px;
+    line-height: 1;
+}
+
+.settings-close:hover {
+    background: var(--panel-3);
+    color: var(--text);
+}
+
+.settings-body {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    min-height: 0;
+    flex: 1;
+}
+
+.settings-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px;
+    border-right: 1px solid var(--line);
+}
+
+.settings-nav button {
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    text-align: left;
+    font-weight: 500;
+}
+
+.settings-nav button[aria-selected='true'] {
+    background: var(--panel-3);
+    color: var(--text);
+}
+
+.settings-section {
+    padding: 8px 20px 20px;
+    overflow-y: auto;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.settings-row strong {
+    display: block;
+}
+
+.settings-row small {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.settings-row .secondary {
+    flex: none;
+}
+
+.settings-locked {
+    padding: 12px;
+    border: 1px dashed var(--line-strong);
+    border-radius: 10px;
+}
+
+.settings-locked p {
+    margin: 0 0 10px;
+}
+
+dialog.settings > .form-error {
+    margin: 0;
+    padding: 0 20px 14px;
+}
+
+@media (max-width: 640px) {
+    .settings-body {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .settings-nav {
+        flex-direction: row;
+        padding: 8px 12px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        overflow-x: auto;
+    }
+
+    .settings-nav button {
+        white-space: nowrap;
+    }
+
+    .settings-row {
+        flex-wrap: wrap;
+    }
 }
 
 dialog.settings h3 {
@@ -1382,15 +1546,6 @@ dialog .tag {
     border-radius: 10px;
 }
 
-.settings menu {
-    align-items: center;
-}
-
-.settings-session {
-    flex: 1;
-    color: var(--faint);
-    font-size: 12px;
-}
 
 /* On the picture's corner, opposite the remove button: the card's text rows are full. */
 .look-private {

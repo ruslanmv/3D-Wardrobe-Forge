@@ -283,17 +283,33 @@
         </dialog>
 
         <!--
-            The account menu, bottom-left like a chat app's. Shown only when the server
-            has an admin (WARDROBE_ADMIN_PASSWORD); an admin session lets the operator
-            declare, per avatar and for this session only, that an avatar depicts an
-            adult. apps/api/admin.py has the rules; nothing here decides them.
+            The account menu, bottom-left as in a chat app: always there, "Guest" until
+            someone signs in. Settings is open to everyone; signing in as admin needs
+            the server's WARDROBE_ADMIN_PASSWORD, and what an admin session may do is
+            decided in apps/api/admin.py, never here.
         -->
-        <div class="account" id="account" hidden>
-            <div class="account-menu" id="account-menu" role="menu" hidden>
-                <div class="account-menu-head" id="account-menu-head"></div>
-                <button type="button" role="menuitem" id="account-settings">Settings</button>
-                <button type="button" role="menuitem" id="account-signin">Sign in as admin…</button>
-                <button type="button" role="menuitem" id="account-signout" class="danger">Sign out</button>
+        <div class="account" id="account">
+            <div class="account-menu" id="account-menu" role="menu" aria-labelledby="account-btn" hidden>
+                <div class="account-menu-head">
+                    <span class="account-glyph" data-glyph aria-hidden="true"></span>
+                    <span class="account-label">
+                        <span class="account-name" data-account-name>Guest</span>
+                        <span class="account-sub" id="account-menu-sub">Not signed in</span>
+                    </span>
+                </div>
+                <button type="button" role="menuitem" id="account-settings">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)" /></svg>
+                    Settings
+                </button>
+                <hr />
+                <button type="button" role="menuitem" id="account-signin">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l1.4-1.4-2.6-2.6H20v-2H8.8l2.6-2.6L10 7l-5 5 5 5ZM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4V5Z" transform="matrix(-1 0 0 1 24 0)" /></svg>
+                    <span>Log in as admin<small id="account-signin-hint"></small></span>
+                </button>
+                <button type="button" role="menuitem" id="account-signout" class="danger" hidden>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 17l-1.4-1.4 2.6-2.6H8v-2h9.2l-2.6-2.6L16 7l5 5-5 5ZM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4V5Z" /></svg>
+                    Log out
+                </button>
             </div>
             <button
                 type="button"
@@ -303,50 +319,85 @@
                 aria-expanded="false"
                 aria-controls="account-menu"
             >
-                <span class="account-glyph" id="account-glyph" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5Z" /></svg>
-                </span>
+                <span class="account-glyph" data-glyph aria-hidden="true"></span>
                 <span class="account-label">
-                    <span class="account-name" id="account-name">Sign in</span>
-                    <span class="account-sub" id="account-sub">Admin</span>
+                    <span class="account-name" data-account-name>Guest</span>
+                    <span class="account-sub" id="account-sub">Not signed in</span>
                 </span>
+                <svg class="account-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14l5-5 5 5H7Z" /></svg>
             </button>
         </div>
 
         <dialog id="signin-dialog">
             <form id="signin-form" method="dialog">
-                <h2>Sign in as admin</h2>
+                <h2>Log in as admin</h2>
                 <p>For the operator of this Space. The password is the Space secret <code>WARDROBE_ADMIN_PASSWORD</code>.</p>
                 <input id="signin-password" type="password" autocomplete="current-password" placeholder="Password" required />
                 <p class="form-error" id="signin-error" role="alert" hidden></p>
                 <menu>
                     <button value="cancel" type="button" class="ghost" id="signin-cancel">Cancel</button>
-                    <button value="signin" type="submit" class="primary" id="signin-submit">Sign in</button>
+                    <button value="signin" type="submit" class="primary" id="signin-submit">Log in</button>
                 </menu>
             </form>
         </dialog>
 
-        <dialog id="settings-dialog" class="settings">
-            <form method="dialog">
-                <h2>Settings</h2>
-                <h3>Adult declarations <span class="tag">this session only</span></h3>
-                <p>
-                    Swimwear, underwear, see-through fabric and stockings need the avatar declared as depicting an
-                    adult. Turn this on only for an avatar you have decided depicts an adult; nothing is inferred
-                    from how a model looks. The model's own terms are still checked first, and still win.
-                </p>
-                <ul class="declarations" id="declarations"></ul>
-                <p class="settings-note">
-                    Looks made while an avatar is declared here are <strong>private</strong>: only an admin session
-                    sees them, in the wardrobe, the export and their files. Signing out, or the session ending,
-                    withdraws every declaration; nothing is saved to the Space.
-                </p>
-                <p class="form-error" id="settings-error" role="alert" hidden></p>
-                <menu>
-                    <span class="settings-session" id="settings-session"></span>
-                    <button value="close" type="submit" class="primary">Done</button>
-                </menu>
-            </form>
+        <dialog id="settings-dialog" class="settings" aria-labelledby="settings-title">
+            <div class="settings-head">
+                <h2 id="settings-title">Settings</h2>
+                <button type="button" class="settings-close" id="settings-close" aria-label="Close settings">×</button>
+            </div>
+            <div class="settings-body">
+                <nav class="settings-nav" role="tablist" aria-label="Settings sections">
+                    <button type="button" role="tab" data-section="general" aria-selected="true">General</button>
+                    <button type="button" role="tab" data-section="declarations" aria-selected="false">
+                        Adult declarations
+                    </button>
+                </nav>
+
+                <section class="settings-section" data-section="general" role="tabpanel">
+                    <div class="settings-row">
+                        <div>
+                            <strong>Account</strong>
+                            <small id="settings-account"></small>
+                        </div>
+                        <button type="button" class="secondary" id="settings-account-action"></button>
+                    </div>
+                    <div class="settings-row">
+                        <div>
+                            <strong>API key</strong>
+                            <small id="settings-key"></small>
+                        </div>
+                        <button type="button" class="secondary" id="settings-key-action">Change…</button>
+                    </div>
+                    <div class="settings-row">
+                        <div>
+                            <strong>Admin log-in</strong>
+                            <small id="settings-admin"></small>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-section" data-section="declarations" role="tabpanel" hidden>
+                    <h3>Adult declarations <span class="tag">this session only</span></h3>
+                    <p>
+                        Swimwear, underwear, see-through fabric and stockings need the avatar declared as depicting
+                        an adult. Turn this on only for an avatar you have decided depicts an adult; nothing is
+                        inferred from how a model looks. The model's own terms are still checked first, and still
+                        win.
+                    </p>
+                    <div class="settings-locked" id="declarations-locked">
+                        <p>Log in as admin to make declarations. As a guest, only avatars the operator has declared for everyone are unlocked:</p>
+                        <button type="button" class="secondary" id="declarations-signin">Log in as admin</button>
+                    </div>
+                    <ul class="declarations" id="declarations"></ul>
+                    <p class="settings-note">
+                        Looks made while an avatar is declared here are <strong>private</strong>: only an admin
+                        session sees them, in the wardrobe, the export and their files. Logging out, or the session
+                        ending, withdraws every declaration; nothing is saved to the Space.
+                    </p>
+                </section>
+            </div>
+            <p class="form-error" id="settings-error" role="alert" hidden></p>
         </dialog>
 
         <noscript>Wardrobe Studio needs JavaScript and WebGL.</noscript>

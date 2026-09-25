@@ -126,6 +126,7 @@ async function boot() {
         setStatus(describe(error), true);
         $('library-note').textContent = 'unavailable';
         if (error instanceof ApiError && error.status === 401) $('key-dialog').showModal();
+        initAccount();
         return;
     }
     const [caps, vocab, library] = loaded;
@@ -324,25 +325,24 @@ async function selectAvatar(slug) {
 }
 
 // ---------------------------------------------------------------- account
-// The bottom-left account menu. An admin session changes nothing by itself: the
-// operator declares, per avatar, in Settings, and the server decides everything
-// (apps/api/admin.py). This code only asks, shows and refreshes.
+// The bottom-left account menu, always present: "Guest" until the operator logs
+// in as admin. An admin session changes nothing by itself: the operator declares,
+// per avatar, in Settings, and the server decides everything (apps/api/admin.py).
+// This code only asks, shows and refreshes.
 const account = { enabled: false, session: null, timer: null };
 const PERSON_ICON =
     '<svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5Z" /></svg>';
 
 async function initAccount() {
-    let status;
+    let status = null;
     try {
         status = await api.adminStatus();
     } catch (_) {
-        return; // an older server without an admin: no menu
+        status = null; // an older server, or a keyed Space without its key: a guest with no admin
     }
-    account.enabled = Boolean(status.enabled);
-    $('account').hidden = !account.enabled;
-    if (!account.enabled) return;
-    if (admin.token && !status.signedIn) admin.token = '';
-    setSession(status.signedIn ? status.session : null);
+    account.enabled = Boolean(status && status.enabled);
+    if (admin.token && !(status && status.signedIn)) admin.token = '';
+    setSession(status && status.signedIn ? status.session : null);
 }
 
 function setSession(session) {
@@ -351,57 +351,86 @@ function setSession(session) {
     const signedIn = Boolean(session);
     $('account').classList.toggle('signed-in', signedIn);
     // A fixed icon, not user text: innerHTML is safe here, and el() cannot make SVG.
-    if (signedIn) $('account-glyph').textContent = 'A';
-    else $('account-glyph').innerHTML = PERSON_ICON;
-    $('account-name').textContent = signedIn ? 'Admin' : 'Sign in';
+    document.querySelectorAll('[data-glyph]').forEach((node) => {
+        if (signedIn) node.textContent = 'A';
+        else node.innerHTML = PERSON_ICON;
+    });
+    document.querySelectorAll('[data-account-name]').forEach((node) => (node.textContent = signedIn ? 'Admin' : 'Guest'));
     const declared = signedIn ? session.declared.length : 0;
-    $('account-sub').textContent = signedIn
-        ? `${declared ? `${declared} declared` : 'nothing declared'} · until ${endsAt(session)}`
-        : 'Admin';
-    $('account-btn').title = signedIn ? 'Admin session' : 'Sign in as admin';
-    $('account-menu-head').replaceChildren(
-        el('strong', { text: signedIn ? 'Admin session' : 'Not signed in' }),
-        signedIn ? `Ends at ${endsAt(session)} · closes with this tab` : 'Settings are for the operator of this Space.'
-    );
-    $('account-settings').hidden = !signedIn;
+    const sub = signedIn ? `${declared ? `${declared} declared` : 'Nothing declared'} · until ${endsAt(session)}` : 'Not signed in';
+    $('account-sub').textContent = sub;
+    $('account-menu-sub').textContent = signedIn ? `Admin session · ends ${endsAt(session)}` : 'Guest · not signed in';
+    $('account-btn').title = signedIn ? 'Admin session' : 'Guest';
+
     $('account-signout').hidden = !signedIn;
     $('account-signin').hidden = signedIn;
+    $('account-signin').disabled = !account.enabled;
+    $('account-signin-hint').textContent = account.enabled ? '' : 'Not set up on this Space';
     if (signedIn) {
         const left = new Date(session.expiresAt).getTime() - Date.now();
         account.timer = setTimeout(() => endSession('Your admin session ended.'), Math.max(left, 0));
     }
+    if ($('settings-dialog').open) renderSettings();
 }
 
 function endsAt(session) {
     return new Date(session.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+function menuItems() {
+    return [...$('account-menu').querySelectorAll('button:not([hidden]):not(:disabled)')];
+}
+
 function toggleMenu(open) {
     const menu = $('account-menu');
     const show = open === undefined ? menu.hidden : open;
+    if (menu.hidden === !show) return;
     menu.hidden = !show;
     $('account-btn').setAttribute('aria-expanded', String(show));
-    if (show) (menu.querySelector('button:not([hidden])') || menu).focus();
+    if (show) (menuItems()[0] || menu).focus();
+}
+
+function openSignIn() {
+    toggleMenu(false);
+    if (!account.enabled) return openSettings('general');
+    $('signin-password').value = '';
+    $('signin-error').hidden = true;
+    $('signin-dialog').showModal();
 }
 
 function bindAccount() {
-    $('account-btn').addEventListener('click', () => toggleMenu());
+    setSession(null); // a guest until the server says otherwise
+
+    $('account-btn').addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleMenu();
+    });
     document.addEventListener('click', (event) => {
         if (!$('account').contains(event.target)) toggleMenu(false);
     });
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !$('account-menu').hidden) {
+    $('account-menu').addEventListener('keydown', (event) => {
+        const items = menuItems();
+        const at = items.indexOf(document.activeElement);
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            const step = event.key === 'ArrowDown' ? 1 : -1;
+            items[(at + step + items.length) % items.length].focus();
+        } else if (event.key === 'Escape' || event.key === 'Tab') {
             toggleMenu(false);
             $('account-btn').focus();
         }
     });
 
-    $('account-signin').addEventListener('click', () => {
+    $('account-settings').addEventListener('click', () => {
         toggleMenu(false);
-        $('signin-password').value = '';
-        $('signin-error').hidden = true;
-        $('signin-dialog').showModal();
+        openSettings('general');
     });
+    $('account-signin').addEventListener('click', openSignIn);
+    $('account-signout').addEventListener('click', () => {
+        toggleMenu(false);
+        signOut();
+    });
+
     $('signin-cancel').addEventListener('click', () => $('signin-dialog').close());
     $('signin-form').addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -412,7 +441,7 @@ function bindAccount() {
             $('signin-dialog').close();
             setSession({ expiresAt: result.expiresAt, declared: result.declared });
             await refreshForSession();
-            openSettings();
+            openSettings('declarations');
         } catch (error) {
             $('signin-error').textContent = error.status === 429 ? 'Too many attempts — wait a few minutes.' : describe(error);
             $('signin-error').hidden = false;
@@ -421,25 +450,37 @@ function bindAccount() {
         }
     });
 
-    $('account-settings').addEventListener('click', () => {
-        toggleMenu(false);
-        openSettings();
+    // Settings: a section list on the left (tabs on a phone), one section at a time.
+    $('settings-close').addEventListener('click', () => $('settings-dialog').close());
+    $('settings-dialog').addEventListener('click', (event) => {
+        if (event.target === $('settings-dialog')) $('settings-dialog').close(); // the backdrop
     });
-    $('account-signout').addEventListener('click', async () => {
-        toggleMenu(false);
-        try {
-            await api.adminSignOut();
-        } catch (_) {
-            /* already gone on the server: signing out here is what matters */
-        }
-        endSession('Signed out. Every declaration from that session is withdrawn.');
+    document.querySelectorAll('.settings-nav [data-section]').forEach((tab) =>
+        tab.addEventListener('click', () => showSection(tab.dataset.section))
+    );
+    $('settings-account-action').addEventListener('click', () => {
+        if (account.session) signOut();
+        else openSignIn();
     });
+    $('declarations-signin').addEventListener('click', openSignIn);
+    $('settings-key-action').addEventListener('click', () => {
+        $('key-input').value = auth.key;
+        $('key-dialog').showModal();
+    });
+}
+
+async function signOut() {
+    try {
+        await api.adminSignOut();
+    } catch (_) {
+        /* already gone on the server: logging out here is what matters */
+    }
+    endSession('Logged out. Every declaration from that session is withdrawn.');
 }
 
 async function endSession(message) {
     admin.token = '';
     setSession(null);
-    if ($('settings-dialog').open) $('settings-dialog').close();
     // A private look on the stage stays visible to nobody once the session is gone.
     const active = state.wardrobe && state.wardrobe.looks.find((look) => look.id === state.activeLookId);
     if (active && active.private) {
@@ -471,28 +512,51 @@ async function refreshForSession() {
     } catch (error) {
         setStatus(describe(error), true);
     }
+    if ($('settings-dialog').open) renderSettings();
 }
 
-function openSettings() {
-    renderSettings();
+function openSettings(section = 'general') {
     $('settings-error').hidden = true;
+    showSection(section);
     if (!$('settings-dialog').open) $('settings-dialog').showModal();
+}
+
+function showSection(section) {
+    document.querySelectorAll('.settings-nav [data-section]').forEach((tab) =>
+        tab.setAttribute('aria-selected', String(tab.dataset.section === section))
+    );
+    document.querySelectorAll('.settings-section').forEach((panel) => (panel.hidden = panel.dataset.section !== section));
+    renderSettings();
 }
 
 function renderSettings() {
     const session = account.session;
-    if (!session) return;
-    $('settings-session').textContent = `Session ends at ${endsAt(session)}`;
+    // General
+    $('settings-account').textContent = session
+        ? `Admin · session ends at ${endsAt(session)}, or when this tab closes`
+        : 'Guest · not signed in';
+    $('settings-account-action').textContent = session ? 'Log out' : 'Log in as admin';
+    $('settings-account-action').disabled = !session && !account.enabled;
+    $('settings-key').textContent = auth.key
+        ? 'Set in this browser'
+        : 'Not set · only needed when this Space runs WARDROBE_AUTH_MODE=api_key';
+    $('settings-admin').textContent = account.enabled
+        ? 'Available: the operator logs in with the Space secret WARDROBE_ADMIN_PASSWORD'
+        : 'Not set up on this Space: add a secret named WARDROBE_ADMIN_PASSWORD (12+ characters) and restart it';
+
+    // Adult declarations: read-only for a guest, switches for an admin.
+    $('declarations-locked').hidden = Boolean(session);
+    $('declarations-signin').disabled = !account.enabled;
     $('declarations').replaceChildren(
         ...state.library.map((avatar) => {
             const byOperator = avatar.declaredBy === 'operator';
-            const checked = byOperator || session.declared.includes(avatar.slug);
+            const checked = byOperator || Boolean(session && session.declared.includes(avatar.slug));
             const box = el('input', {
                 type: 'checkbox',
                 class: 'switch',
                 role: 'switch',
                 checked,
-                disabled: byOperator || !avatar.available,
+                disabled: !session || byOperator || !avatar.available,
                 'aria-label': `${avatar.name} depicts an adult`,
                 onchange: (event) => declareAvatar(avatar, event.currentTarget),
             });
@@ -537,7 +601,6 @@ async function declareAvatar(avatar, box) {
         $('settings-error').hidden = false;
         if (error.status === 401) return endSession('Your admin session ended.');
     } finally {
-        box.disabled = false;
         renderSettings();
     }
 }

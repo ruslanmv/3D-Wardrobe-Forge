@@ -91,15 +91,17 @@ production profile below.
 
 ## Admin sign-in
 
-The Studio has an account button at the bottom left. It appears only when the
-Space has an admin password.
+The Studio has an account button at the bottom left, as in a chat app. Everyone
+starts as **Guest**; the dropdown has **Settings** and **Log in as admin**, which
+works once the Space has an admin password (until then Settings says how to set
+it up).
 
 1. In the Space's **Settings → Variables and secrets**, add a **secret** named
    `WARDROBE_ADMIN_PASSWORD`, at least 12 characters long. A shorter one is
    refused, and a warning is logged.
 2. Restart the Space. Then open the Studio, click the account button and choose
-   **Sign in as admin…**.
-3. In **Settings**, turn on "depicts an adult" for each avatar you have decided
+   **Log in as admin**.
+3. In **Settings → Adult declarations**, turn on "depicts an adult" for each avatar you have decided
    depicts an adult. Swimwear, underwear, see-through fabric and stockings then
    open for that avatar, in that session.
 
