@@ -10,9 +10,32 @@ A Space is appropriate for demos and low/medium traffic. Production should use d
 
 ## Docker Space
 
-Create a Docker Space and copy `SPACE_README.md` to the Space repository as its root `README.md`. Mirror this repository's application files and Dockerfile, or configure your deployment automation to build from this repository.
+The Space is [ruslanmv/3D-Wardrobe-Forge](https://huggingface.co/spaces/ruslanmv/3D-Wardrobe-Forge). Deploy with:
 
-Recommended Space variables/secrets:
+```bash
+HF_TOKEN=hf_... make space                        # or: sh deploy/huggingface/deploy.sh
+HF_TOKEN=hf_... HF_SPACE_REPO=you/your-space make space
+DRY_RUN=1 make space                              # stage only, and list what would go
+```
+
+`deploy.sh` uploads the **committed HEAD**, not the working tree: a `git archive` of
+exactly what the Dockerfile copies (`Dockerfile`, `pyproject.toml`, `LICENSE`,
+`apps`, `wardrobe`, `worker`, `tools`, `assets`), with `SPACE_README.md` as the
+Space's root `README.md` — its front matter is what makes it a Docker Space on
+port 8080. The upload mirrors, so files removed here are removed there, and the
+Space commit names the source commit. It then sets the Space variables
+`WARDROBE_PROFILE=space`, `WARDROBE_JOB_CONCURRENCY=1` and `PUBLIC_BASE_URL` (read
+from the Space's domain). Use a write token, and prefer a fine-grained one scoped
+to the Space.
+
+The Space builds the image itself; the first build takes a few minutes, most of
+it `pip install` and fetching the avatar library.
+
+Out of the box the Space is an open demo (`WARDROBE_AUTH_MODE=none`). To require
+a key, add `WARDROBE_AUTH_MODE=api_key` as a variable and `WARDROBE_API_KEY` as a
+**secret** in the Space settings; the Studio's key button then asks for it.
+
+Variables for a keyed or cross-origin Space:
 
 ```text
 WARDROBE_PROFILE=space
