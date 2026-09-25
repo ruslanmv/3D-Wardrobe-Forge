@@ -13,6 +13,15 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# Nothing in this image runs these; Hugging Face does. A Docker Space with Dev
+# Mode appends its own build steps to this image (`git config --global ...`, an
+# OpenVSCode server, an init process), and on a slim base with no git the Space's
+# build failed with "git: not found" after every one of our own steps had passed.
+# These are the tools its Dev Mode documents as required in the image.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends bash git git-lfs wget curl procps ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml README.md ./
 COPY apps ./apps
 COPY wardrobe ./wardrobe
