@@ -15,6 +15,17 @@ const box = new THREE.Box3().setFromObject(v.slots.original.vrm.scene);
 const height = Math.max(box.max.y, 0.5), fov = THREE.MathUtils.degToRad(v.camera.fov);
 const distance = (height * 0.56) / Math.tan(fov / 2);
 const yaw = Number(q.get('yaw') || 0) * Math.PI / 180;
+// ?focus=y0,y1 frames that band of heights instead (the hem close-up): its height fills the frame.
+const focus = (q.get('focus') || '').split(',').map(Number).filter((n) => Number.isFinite(n));
+if (focus.length === 2) {
+  const span = Math.max(focus[1] - focus[0], 0.05), mid = (focus[0] + focus[1]) / 2;
+  const near = (span * 0.56) / Math.tan(fov / 2);
+  v.controls.target.set(0, mid, 0);
+  v.camera.position.set(Math.sin(yaw) * near, mid, Math.cos(yaw) * near);
+  v.camera.near = 0.02; v.camera.far = near * 10; v.camera.updateProjectionMatrix();
+  v.controls.update();
+  return;
+}
 v.controls.target.set(0, height * 0.5, 0);
 v.camera.position.set(Math.sin(yaw) * distance, height * 0.55, Math.cos(yaw) * distance);
 v.camera.near = 0.05; v.camera.far = distance * 10; v.camera.updateProjectionMatrix();

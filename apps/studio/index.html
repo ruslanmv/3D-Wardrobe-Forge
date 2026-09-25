@@ -147,6 +147,58 @@
                         </div>
                     </fieldset>
 
+                    <fieldset class="style hosiery" id="hosiery-fieldset">
+                        <legend>Hosiery &amp; Suspenders <span class="legend-hint" id="hosiery-hint"></span></legend>
+                        <label class="check">
+                            <input type="checkbox" id="hosiery-on" />
+                            <span>Stockings with a suspender belt, clipped to the fitted tops</span>
+                        </label>
+                        <div id="hosiery-controls" hidden>
+                            <div class="style-row">
+                                <span class="style-label">Look</span>
+                                <div class="chips small" id="hosiery-presets" role="radiogroup" aria-label="Preset"></div>
+                            </div>
+                            <div class="style-row">
+                                <span class="style-label">Reveal</span>
+                                <div class="chips small" id="reveal-chips" role="radiogroup" aria-label="Reveal"></div>
+                            </div>
+                            <p class="legend-hint" id="reveal-hint"></p>
+                            <div class="row">
+                                <label class="field">
+                                    <span>Stockings</span>
+                                    <select id="hosiery-type"></select>
+                                </label>
+                                <label class="field">
+                                    <span>Denier</span>
+                                    <select id="hosiery-denier"></select>
+                                </label>
+                            </div>
+                            <div class="style-row">
+                                <span class="style-label">Top</span>
+                                <div class="chips small" id="top-chips" role="radiogroup" aria-label="Stocking top"></div>
+                            </div>
+                            <details class="more">
+                                <summary>Belt, straps and hardware</summary>
+                                <div class="row">
+                                    <label class="field">
+                                        <span>Belt</span>
+                                        <select id="belt-style"></select>
+                                    </label>
+                                    <label class="field">
+                                        <span>Straps</span>
+                                        <select id="strap-count"></select>
+                                    </label>
+                                </div>
+                                <div class="style-row">
+                                    <span class="style-label">Clips</span>
+                                    <div class="chips small" id="hardware-chips" role="radiogroup" aria-label="Hardware"></div>
+                                </div>
+                                <label class="check"><input type="checkbox" id="rolled-edge" checked /><span>Darker rolled edge</span></label>
+                                <label class="check"><input type="checkbox" id="back-seam" /><span>Back seam</span></label>
+                            </details>
+                        </div>
+                    </fieldset>
+
                     <fieldset>
                         <legend>Colour <span class="legend-value" id="color-value">Planner chooses</span></legend>
                         <div class="swatches" id="swatches" role="radiogroup" aria-label="Colour"></div>

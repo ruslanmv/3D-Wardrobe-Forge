@@ -305,3 +305,16 @@ def test_the_plan_preview_reports_layers_gate_and_strip_plan_and_changes_nothing
 def test_the_plan_preview_for_an_everyday_outfit_is_allowed(client: TestClient):
     report = client.post("/v1/library/mira/plan", json={"outfit": {"prompt": "white tee + black cropped cardigan"}}).json()
     assert report["allowed"] is True and [g["layer"] for g in report["garments"]] == [3, 5]
+
+
+def test_the_studio_offers_hosiery_and_its_plan_is_gated_as_underwear(client: TestClient):
+    vocabulary = client.get("/v1/vocabulary").json()["hosiery"]
+    assert {"discreet", "glimpse", "statement"} == set(vocabulary["revealLevels"])
+    assert "classic_black_mini_dress" in [p["id"] for p in vocabulary["presets"]]
+    outfit = {"prompt": "classic_black_mini_dress", "preset": "classic_black_mini_dress"}
+    report = client.post("/v1/library/mira/plan", json={"outfit": outfit}).json()
+    roles = [g["role"] for g in report["garments"]]
+    assert roles == ["foundation", "legwear", "connector", "one-piece"]
+    assert report["allowed"] is False  # not declared adult: belt, straps and sheer stockings refused
+    refused = {g["role"] for g in report["garments"] if not g["allowed"]}
+    assert refused == {"foundation", "legwear", "connector"}

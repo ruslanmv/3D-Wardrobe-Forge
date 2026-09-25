@@ -51,6 +51,45 @@ Across the four library avatars × fifteen looks, every job completes and every
 fit report passes. The stocking look reports `clearance-only`, because a garment
 worn only on the legs has nothing for the torso check to measure.
 
+## Skirts: cut from her waist and hips, then flared
+
+![Fitted skirts on the library avatars: a lavender A-line midi, a navy pleated mini and a red skater skirt, each from the front, the side and close on the waist and hips](images/skirts.webp)
+
+A skirt used to be a cone. Every ring was her hip width times a taper, and only
+the top ring was her real width, so it stepped out from her waist and ran
+straight to a hem 55% (A-line) or 70% (fit-and-flare) wider than her hips.
+Pleats were bumps that only ever pushed outward, and the smooth normals hid
+them. `tools/gallery/skirts.py` renders the sheet above from the real pipeline.
+
+| What it looked like | Cause | Now |
+| --- | --- | --- |
+| A trapezoid from the waist down | Rings scaled from one hip width, flared linearly | Her torso is measured every 1.5 cm from chest to knee (`torsoProfile`, arms excluded). Above the flare start the skirt is her outline plus ease. Below, it hangs from her full hip and widens as `progress ** flarePower` |
+| The hip searched in the wrong place | Below the crotch, A-pose legs spread apart and read as hips | The full hip is searched between the crotch and the waist |
+| Hems far too wide | `SILHOUETTES` flare 1.55 and 1.70 applied to the whole skirt | The hem is a ratio of her full hip, per silhouette (`SKIRT_SHAPES`), overridable per template |
+| Pleats as a bell, or invisible | Outward-only offsets on a few segments, smooth-shaded | Zero-mean folds, six segments per pleat, phased by the loft's own U. Folds are clamped to body plus clearance, never inside her. On plain fabric they get a pleat-shading texture |
+| A skater skirt as a stiff lampshade | No drape | A soft sinusoidal hem drape (`drapeFolds`, `hemDrape`), zero-mean, growing toward the hem |
+
+The template fields are `hemFlareRatio`, `flareStart`
+(`waist` / `high-hip` / `hip` / `below-hip`), `flarePower`, `waistEaseMm`,
+`hipEaseMm`, `pleatDepth`, `drapeFolds` and `hemDrape`
+([GARMENT_TEMPLATE_SPEC.md](GARMENT_TEMPLATE_SPEC.md)). A template that sets
+none of them still gets its silhouette's defaults. Dress skirts use the same
+builder, blended into the bodice over the top 4 cm.
+
+That is why 48 of the 81 gallery looks have new geometry hashes: those with a
+dress or skirt, plus the tops, cardigans and coats layered with one. No bra,
+brief, stocking or trouser moved. The baseline in
+`tests/fixtures/gallery_geometry_hashes.json` was regenerated to match.
+[`tests/unit/test_skirt_fit.py`](../tests/unit/test_skirt_fit.py)
+holds the silhouette to numbers:
+
+- hem ratio per silhouette
+- fitted waist
+- monotonic below the hip
+- progressive flare
+- no skirt template over 1.9× her hip
+- zero-mean pleats and drape that never enter the body
+
 ## What is still true
 
 - **Clothes painted onto the skin stay.** VRoid often paints an inner layer onto

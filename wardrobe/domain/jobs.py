@@ -76,6 +76,8 @@ class JobOptions(BaseModel):
 
     output_version: Literal["VRM0", "VRM1", "source"] = Field(default="source", alias="outputVersion")
     render_preview: bool = Field(default=True, alias="renderPreview")
+    #: native | web | auto for a hosiery look's previews; absent, the server's WARDROBE_PREVIEW_BACKEND.
+    preview_backend: Literal["native", "web", "auto"] | None = Field(default=None, alias="previewBackend")
     engine: Literal["auto", "native", "blender"] = "auto"
     keep_source: bool = Field(default=False, alias="keepSource")
     wardrobe_id: str | None = Field(default=None, alias="wardrobeId")

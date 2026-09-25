@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "skirt-skater-mini-v1",
+  "name": "Skater Skirt",
+  "category": "skirt",
+  "mesh": "procedural:skirt",
+  "coverage": [
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "anchors": [
+    "waist",
+    "hips"
+  ],
+  "silhouette": "fit-and-flare",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 6.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 0.85,
+    "hemFlareRatio": 1.75,
+    "flareStart": "high-hip",
+    "flarePower": 0.8,
+    "drapeFolds": 8,
+    "hemDrape": 0.05
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "skater skirt",
+    "skater",
+    "circle skirt",
+    "flared",
+    "flirty"
+  ],
+  "description": "Fitted at the waist and hips, with a soft, curved flare to a mini hem.",
+  "optIn": true
+}

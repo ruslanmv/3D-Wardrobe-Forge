@@ -147,12 +147,17 @@ def attach_garment(
     name: str = "Garment",
     trim: np.ndarray | None = None,
     trim_material: GarmentMaterial | None = None,
+    extra: list[tuple[np.ndarray, GarmentMaterial]] | None = None,
 ) -> AttachResult:
     """Insert ``mesh`` into ``document`` as a skinned VRM garment.
 
     ``trim`` marks triangles (one bool per triangle) drawn with ``trim_material``
     instead: a lace bodysuit's straps stay opaque elastic while its panels are
     see-through. Both primitives share the garment's vertices and skin.
+
+    ``extra`` adds more such primitives, each a triangle mask and its material:
+    a stocking's band, rolled edge and seam are three. Without it, nothing here
+    changes.
     """
     issues = mesh.validate()
     if issues:
@@ -201,6 +206,14 @@ def attach_garment(
     triangles = mesh.indices.astype(np.uint32).reshape(-1, 3)
     split = trim is not None and trim_material is not None and trim.any() and not trim.all()
     fabric = triangles[~trim] if split else triangles
+    extra = [(mask, m) for mask, m in (extra or []) if mask.any()]
+    if extra:
+        taken = np.zeros(triangles.shape[0], dtype=bool)
+        if split:
+            taken |= trim
+        for mask, _ in extra:
+            taken |= mask
+        fabric = triangles[~taken]
     indices_accessor = document.add_accessor(fabric.reshape(-1, 1), target=ELEMENT_ARRAY_BUFFER)
     ibm_accessor = document.add_accessor(ibm)
 
@@ -222,6 +235,15 @@ def attach_garment(
         trim_accessor = document.add_accessor(triangles[trim].reshape(-1, 1), target=ELEMENT_ARRAY_BUFFER)
         primitives.append(
             {"attributes": attributes, "indices": trim_accessor, "material": trim_index, "mode": 4}
+        )
+    for mask, extra_material in extra:
+        extra_index = extra_material.add_to(document)
+        _register_vrm0_material(document, info, extra_index)
+        if borrow_toon_shading(document, info, extra_index, extra_material.base_color) is not None:
+            apply_toon_finish(document, info, extra_index, extra_material)
+        extra_accessor = document.add_accessor(triangles[mask].reshape(-1, 1), target=ELEMENT_ARRAY_BUFFER)
+        primitives.append(
+            {"attributes": attributes, "indices": extra_accessor, "material": extra_index, "mode": 4}
         )
     mesh_index = document.add_mesh(primitives, name=name)
     skin_index = document.add_skin(joint_nodes, ibm_accessor, skeleton=info.humanoid_bones.get("hips"))

@@ -21,6 +21,7 @@ from wardrobe.domain.looks import ClippingCheck
 from wardrobe.engines.geometry_checks import (
     BodyRadialIndex,
     ClearanceReport,
+    apply_drape,
     apply_pleats,
     arm_profile,
     armpit_height,
@@ -34,6 +35,7 @@ from wardrobe.engines.geometry_checks import (
     select_region_points,
     settle_faces,
     smooth_radial,
+    torso_profile,
     upper_body_surface,
 )
 from wardrobe.errors import FittingError
@@ -97,6 +99,21 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
                                      shoulders=_torso(context, whole))
         if surface is not None:
             metadata["upperBody"] = surface
+    kind = artifact.procedural_kind or context.plan.category
+    folds = int(artifact.metadata.get("drapeFolds") or 0)
+    if folds and kind in SKIRTED_KINDS:
+        # Six vertices a fold, or the drape aliases into facets.
+        params_segments_floor = folds * 6
+    else:
+        params_segments_floor = 0
+    if kind in SKIRTED_KINDS:
+        # Her outline, chest to knee, for the skirt to be cut from (procedural.build_skirt).
+        bone_y = {name: float(p[1]) for name, p in context.measurements.bone_positions.items()}
+        top = bone_y.get("chest", bone_y.get("spine", 1.0) + 0.1)
+        knee = bone_y.get("leftLowerLeg", top - 0.6)
+        profile = torso_profile(_torso(context, whole), top, knee)
+        if profile is not None:
+            metadata["torsoProfile"] = profile
     params = FitParameters(
         measurements=context.measurements,
         clearance_m=clearance,
@@ -109,14 +126,14 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # Through a see-through fabric every clipping error is on show: build it
         # finer, so clearance is checked at more points round the body.
         params.segments = max(params.segments, SHEER_SEGMENTS)
+    params.segments = max(params.segments, params_segments_floor)
     pleats = int(artifact.metadata.get("pleats") or 0)
     if pleats:
         # Four vertices a pleat, or the sawtooth aliases into noise.
-        params.segments = max(params.segments, pleats * 4)
+        params.segments = max(params.segments, pleats * 6)
 
     # Build the template's own shape. The original five templates share their
     # category's name as their shape; a bikini and a crop top do not.
-    kind = artifact.procedural_kind or context.plan.category
     mesh = build_garment(kind, params, silhouette=context.plan.silhouette, hem=context.plan.hem)
 
     region_bones = set(bones_for_coverage(artifact.coverage)) - CLEARANCE_EXCLUDED_BONES
@@ -167,7 +184,15 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     smooth_radial(mesh, index, clearance, axis_mask)
     settle_faces(mesh, index, clearance, axis_mask)
     if pleats:
-        apply_pleats(mesh, index, count=pleats, from_y=params.hip_y, mask=axis_mask)
+        # Set from just below the waistband on a skirt, from the hips on a dress.
+        pleat_from = params.waist_y - 0.03 if kind == "skirt" else params.hip_y
+        apply_pleats(mesh, index, count=pleats, from_y=pleat_from, mask=axis_mask, clearance_m=clearance,
+                     amplitude=float(artifact.metadata.get("pleatDepth") or 0.03),
+                     retexture=context.plan.material.pattern == "none")
+    drape = int(artifact.metadata.get("drapeFolds") or 0)
+    if drape and kind in SKIRTED_KINDS:
+        apply_drape(mesh, index, folds=drape, amplitude=float(artifact.metadata.get("hemDrape") or 0.0),
+                    from_y=params.hip_y, mask=axis_mask, clearance_m=clearance)
     after = measure_clearance(mesh, index, clearance, axis_mask)
     after.resolved = pushed
 
@@ -326,6 +351,9 @@ OUTLINE_EXCLUDED_BONES = frozenset(
     }
 )
 
+
+#: Garment shapes with a skirt: cut from her measured outline (see ``torso_profile``).
+SKIRTED_KINDS = frozenset({"skirt", "dress", "slip-dress", "swim-dress"})
 
 #: Garment shapes with a yoke over the hips and a leg per leg.
 TROUSER_KINDS = frozenset({"trousers", "pants", "jeans", "shorts"})

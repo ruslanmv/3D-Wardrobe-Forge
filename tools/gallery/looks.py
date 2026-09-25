@@ -9,8 +9,10 @@ render.mjs and compose.py.
 
 Without ``--avatar`` the avatar is the calibration mannequin "calibration-c-tall":
 generated, faceless, adult proportions, VRM 1.0, given an MToon material so
-toon transparency is what gets tested. Its jobs carry depictsAdult=true, as an
-operator's declaration would for a real avatar; nothing in a prompt can.
+toon transparency is what gets tested. Its jobs carry depictsAdult=true, read
+from assets/calibration/policy.json, the repository's own declaration for its
+calibration bodies, as an operator's would be for a real avatar; nothing in a
+prompt can.
 
 With ``--avatar`` the looks are EVERYDAY_LOOKS on that real VRM, as it arrives:
 dressed, VRM 0.x or 1.0, its own body and skeleton. No declaration is made for
@@ -35,6 +37,7 @@ from wardrobe.domain.garments import TemplateCatalog  # noqa: E402
 from wardrobe.domain.jobs import CreateJobRequest  # noqa: E402
 from wardrobe.library import AvatarLibrary  # noqa: E402
 from wardrobe.pipeline.orchestrator import Orchestrator  # noqa: E402
+from wardrobe.policy.calibration import declared_adult  # noqa: E402
 from wardrobe.queue.jobs import AsyncioJobQueue  # noqa: E402
 from wardrobe.storage.database import InMemoryJobRepository, InMemoryWardrobeRepository  # noqa: E402
 from wardrobe.storage.object_store import LocalObjectStore  # noqa: E402
@@ -188,7 +191,7 @@ async def main(out: Path, avatar: Path | None, only: set[int]) -> None:
     )
     if avatar is None:
         looks, sources = LOOKS, {"plain": toon_mannequin().to_bytes(), "dressed": dressed_mannequin()}
-        declared = {"depictsAdult": True}
+        declared = {"depictsAdult": declared_adult(BODY.name)}  # assets/calibration/policy.json
     else:
         looks = [(n, t, p, {"dressed": True}) for n, t, p, _ in EVERYDAY_LOOKS]
         sources, declared = {"dressed": avatar.read_bytes()}, {"avatarId": avatar.stem}

@@ -37,6 +37,15 @@ exercise the same fitting code as the rest, on bodies nobody generated.
 `showcase.py` builds the README's pictures from those renders. Which looks
 appear is a list in the script, so a change of selection shows in a diff.
 
+Two sheets are built directly, each through the real pipeline and the Studio
+viewer:
+
+- `skirts.py` writes `docs/images/skirts.webp`: an A-line, a pleated and a
+  skater skirt on the library avatars, from the front, the side and the waist.
+- `red_dress.py` writes `docs/images/red-dress.webp`: the red bodycon reference
+  look. The full look is on the mannequin declared adult. For AvatarSample A
+  it prints her refusal and renders the look the policy permits.
+
 ## What it needs
 
 - The Forge's Python environment (`pip install -e .[dev]`) plus Pillow for

@@ -24,6 +24,8 @@ import re
 
 from wardrobe.domain.garments import GarmentTemplate, TemplateCatalog
 from wardrobe.domain.looks import OutfitPlan, OutfitRequest
+from wardrobe.hosiery import planning as hosiery_planning
+from wardrobe.hosiery import presets as hosiery_presets
 from wardrobe.materials.finishes import FINISH_KEYWORDS, OPACITY_KEYWORDS, PATTERN_KEYWORDS
 from wardrobe.pipeline.plan_outfit import parse_prompt, plan_outfit
 from wardrobe.vrm.garments import KIND_REGIONS
@@ -114,6 +116,11 @@ def _word_for(table: dict, key, text: str) -> str:
 
 def plan_outfit_stack(request: OutfitRequest, catalog: TemplateCatalog) -> OutfitPlan:
     """One plan, or a layered plan whose ``layers`` are its garments, inner first."""
+    request = hosiery_presets.expand(request)
+    return hosiery_planning.apply(_plan_stack(request, catalog), request, catalog)
+
+
+def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog) -> OutfitPlan:
     if request.layers:
         requests = [layer.model_copy(update={"layers": None}) for layer in request.layers]
     else:

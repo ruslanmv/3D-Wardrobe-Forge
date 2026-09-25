@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     wardrobe_job_backend: str = "memory"
     wardrobe_job_concurrency: int = 2
     wardrobe_job_timeout_s: int = 900
+    #: native | web | auto — how hosiery looks' previews are rendered (wardrobe.hosiery.previews).
+    #: Every other look keeps the native preview it always had.
+    wardrobe_preview_backend: str = "native"
 
     # -- storage ---------------------------------------------------------
     wardrobe_storage_backend: str = "local"

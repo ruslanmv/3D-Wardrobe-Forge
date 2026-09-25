@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "about": "Operator declarations for the calibration bodies (wardrobe/vrm/build.py:CALIBRATION_BODIES). They are generated, faceless mannequins built to adult proportions (1.48-1.83 m, adult shoulder and hip spans) and depict no one. depictsAdult: true is what lets the verification gallery and the hosiery golden previews dress them in intimate wear through the ordinary gate. It is read by the tools, never by a request: a job still carries the declaration in its avatar block, exactly as an operator's upload would.",
+  "bodies": {
+    "calibration-a-petite": {"depictsAdult": true},
+    "calibration-b-medium": {"depictsAdult": true},
+    "calibration-c-tall": {"depictsAdult": true},
+    "calibration-d-broad": {"depictsAdult": true}
+  }
+}
