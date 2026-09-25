@@ -47,6 +47,10 @@ class AvatarInput(BaseModel):
     avatar_id: str | None = Field(default=None, alias="avatarId")
     name: str | None = None
     license: LicenseAttestation = Field(default_factory=LicenseAttestation)
+    #: The caller's declaration that the avatar depicts an adult. Required for swimwear
+    #: and underwear (see wardrobe.policy.intimate); like a licence attestation, it is
+    #: the caller taking responsibility for something the file cannot tell us.
+    depicts_adult: bool = Field(default=False, alias="depictsAdult")
 
     @model_validator(mode="after")
     def _require_a_source(self) -> AvatarInput:

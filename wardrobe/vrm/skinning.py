@@ -211,6 +211,12 @@ def distance_to_segments(points: np.ndarray, segments: list[BoneSegment]) -> np.
     return np.linalg.norm(points[:, None, :] - closest, axis=2)
 
 
+#: Bones a garment's torso never follows (see ``bind_mesh``'s ``torso``).
+ARM_BONES = frozenset(
+    {"leftUpperArm", "rightUpperArm", "leftLowerArm", "rightLowerArm", "leftHand", "rightHand"}
+)
+
+
 def bind_mesh(
     mesh: Mesh,
     segments: list[BoneSegment],
@@ -218,8 +224,14 @@ def bind_mesh(
     falloff: float = 2.5,
     max_influences: int = MAX_INFLUENCES,
     max_distance_ratio: float = 2.2,
+    torso: np.ndarray | None = None,
 ) -> Mesh:
     """Assign ``joints``/``weights`` on ``mesh`` in place and return it.
+
+    ``torso`` marks vertices of the garment's body (not its sleeves): they never
+    take arm bones. A crop tee's anchors include the upper arms for its sleeves,
+    and its side panels, nearest those bones, followed them — lower the arms and
+    the tee collapsed off her chest.
 
     Joint values index into ``segments``; :func:`wardrobe.vrm.merge.attach_garment`
     turns those into glTF skin joint indices.
@@ -239,6 +251,10 @@ def bind_mesh(
     epsilon = max(float(np.median(distances)) * 0.05, 1e-4)
     strength = 1.0 / np.power(distances + epsilon, falloff)
     _apply_lateral_mask(strength, points, segments, mesh)
+    if torso is not None and torso.any():
+        arm = np.array([segment.name in ARM_BONES for segment in segments])
+        if arm.any() and not arm.all():
+            strength[np.ix_(torso, arm)] = 0.0
 
     influences = min(max_influences, len(segments))
     order = np.argsort(-strength, axis=1)[:, :influences]

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "night-nightgown-v1",
+  "name": "Satin Nightgown",
+  "category": "nightwear",
+  "mesh": "procedural:slip-dress",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs",
+    "lowerLegs"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips"
+  ],
+  "silhouette": "slim",
+  "hem": "midi",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 4.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 0.6,
+    "straps": "shoulder"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "nightgown",
+    "nightdress",
+    "nightie",
+    "chemise",
+    "satin",
+    "slip"
+  ],
+  "description": "Satin midi nightgown on thin straps."
+}

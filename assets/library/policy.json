@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "about": "Operator declarations about library avatars that their files cannot carry. depictsAdult: true allows swimwear and underwear for that avatar (wardrobe/policy/intimate.py). Shipped empty on purpose: set it only for an avatar you have decided depicts an adult. The model's own sexual-usage terms are still checked first.",
+  "avatars": {}
+}

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "skirt-wrap-v1",
+  "name": "Wrap Skirt",
+  "category": "skirt",
+  "mesh": "procedural:skirt",
+  "coverage": [
+    "waist",
+    "hips",
+    "upperLegs",
+    "lowerLegs"
+  ],
+  "anchors": [
+    "waist",
+    "hips"
+  ],
+  "silhouette": "a-line",
+  "hem": "knee",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 6.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "wrap",
+    "scarf",
+    "tie"
+  ],
+  "description": "Knee-length wrap skirt."
+}

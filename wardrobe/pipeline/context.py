@@ -6,6 +6,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import numpy as np
+
 from wardrobe.config import Settings
 from wardrobe.domain.garments import GarmentArtifact, TemplateCatalog
 from wardrobe.domain.jobs import JobRecord, JobState
@@ -18,6 +20,17 @@ from wardrobe.vrm.measure import BodyMeasurements
 from wardrobe.vrm.skinning import BoneSegment
 
 EventEmitter = Callable[[JobState, str, dict], Awaitable[None]]
+
+
+@dataclass
+class BuiltLayer:
+    """One fitted, skin-bound garment of an outfit."""
+
+    plan: OutfitPlan
+    artifact: GarmentArtifact
+    mesh: Mesh
+    segments: list[BoneSegment]
+    report: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -40,10 +53,20 @@ class PipelineContext:
     measurements: BodyMeasurements | None = None
 
     # -- garment ---------------------------------------------------------
+    # The garment being built. For a layered outfit the fit stage points these
+    # at each layer in turn, and ``plan`` is the whole outfit again afterwards.
     plan: OutfitPlan | None = None
     artifact: GarmentArtifact | None = None
     mesh: Mesh | None = None
     segments: list[BoneSegment] = field(default_factory=list)
+
+    # -- layered outfit ----------------------------------------------------
+    #: One artifact per garment of ``plan.garments``, inner first.
+    artifacts: list[GarmentArtifact] = field(default_factory=list)
+    #: Every garment fitted so far, inner first; assembly attaches all of them.
+    built: list[BuiltLayer] = field(default_factory=list)
+    #: Surface points of the layers already fitted: what the next layer must clear.
+    collision_points: np.ndarray | None = None
 
     # -- output ----------------------------------------------------------
     output_bytes: bytes | None = None
@@ -78,4 +101,4 @@ class PipelineContext:
             self.fit_report.warnings.append(message)
 
 
-__all__ = ["PipelineContext", "EventEmitter"]
+__all__ = ["BuiltLayer", "PipelineContext", "EventEmitter"]

@@ -25,6 +25,7 @@ from wardrobe.engines.shell import build_fitted_shell, shell_coverage
 from wardrobe.errors import FittingError
 from wardrobe.pipeline.context import PipelineContext
 from wardrobe.vrm.export import mesh_to_glb
+from wardrobe.vrm.garments import garment_material_name
 from wardrobe.vrm.merge import GarmentMaterial
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,11 @@ logger = logging.getLogger(__name__)
 GENERATOR = "3D-Wardrobe-Forge (blender engine)"
 #: Tail of Blender's output kept when a run fails, for the job's error message.
 LOG_TAIL_CHARS = 4000
+
+
+def mask_policy(material) -> str:
+    """Whether Blender may hide the body under this garment: not if it is see-through."""
+    return "none" if material.exposes_body else "body-only"
 
 
 class BlenderEngine(FittingEngine):
@@ -66,19 +72,14 @@ class BlenderEngine(FittingEngine):
         # Build the same measured shell the native engine would, and let
         # Blender refine it against the real body surface.
         shell = build_fitted_shell(context)
-        garment_path = workdir / "garment.glb"
-        garment_path.write_bytes(
-            mesh_to_glb(
-                shell.mesh,
-                name=context.plan.name,
-                material=GarmentMaterial(
-                    name=context.plan.name,
-                    base_color=tuple(context.plan.material.base_color),
-                    metallic=context.plan.material.metallic,
-                    roughness=context.plan.material.roughness,
-                ),
-            )
+        # The same slot marker the native engine writes, so a look built by either
+        # engine can have its garment replaced by the next one in an outfit set.
+        material_name = garment_material_name(
+            context.plan.name, context.artifact.procedural_kind or context.plan.category
         )
+        material = GarmentMaterial.from_plan(material_name, context.plan.material)
+        garment_path = workdir / "garment.glb"
+        garment_path.write_bytes(mesh_to_glb(shell.mesh, name=context.plan.name, material=material))
 
         template = context.catalog.get(context.artifact.template_id) if context.artifact.template_id else None
         spec = {
@@ -93,6 +94,11 @@ class BlenderEngine(FittingEngine):
             "previewImage": str(preview_path),
             "reportPath": str(report_path),
             "generator": GENERATOR,
+            "materialName": material_name,
+            "maskPolicy": mask_policy(context.plan.material),
+            # The material resolved once, here, so Blender renders what the native
+            # engine renders: the same factor, alpha, rim and texture images.
+            "material": self._material_spec(material, workdir),
             "options": {
                 "outputVersion": context.record.request.options.output_version,
                 "renderPreview": context.record.request.options.render_preview,
@@ -128,6 +134,28 @@ class BlenderEngine(FittingEngine):
             self._merge_report(context, json.loads(report_path.read_text(encoding="utf-8")))
         else:
             context.warn("Blender produced no fit report; output validation is the only evidence")
+
+    @staticmethod
+    def _material_spec(material: GarmentMaterial, workdir: Path) -> dict:
+        textures: dict[str, str] = {}
+        for slot, data in (("baseColor", material.texture), ("matcap", material.matcap)):
+            if data is not None:
+                path = workdir / f"{slot}.png"
+                path.write_bytes(data)
+                textures[slot] = str(path)
+        return {
+            "name": material.name,
+            "finish": material.finish,
+            "baseColorFactor": [float(c) for c in material.base_color],
+            "metallic": float(material.metallic),
+            "roughness": float(material.roughness),
+            "alphaMode": material.alpha_mode,
+            "alphaCutoff": float(material.alpha_cutoff),
+            "rimColor": [float(c) for c in material.rim_color],
+            "rimPower": float(material.rim_power),
+            "rimLift": float(material.rim_lift),
+            "textures": textures,
+        }
 
     @staticmethod
     def _bone_names(context: PipelineContext) -> dict[str, str]:

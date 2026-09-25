@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "swim-bikini-triangle-v1",
+  "name": "Triangle Bikini",
+  "category": "swimwear",
+  "mesh": "procedural:bikini",
+  "coverage": [
+    "chest",
+    "hips"
+  ],
+  "anchors": [
+    "chest",
+    "hips"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 3.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true,
+    "straps": "halter",
+    "neckline": "triangle"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "bikini",
+    "two-piece",
+    "triangle",
+    "beach",
+    "halter"
+  ],
+  "description": "Halter-neck triangle bikini."
+}

@@ -1,0 +1,704 @@
+[
+  {
+    "number": 1,
+    "image": "01-crop-top-and-jeans.webp",
+    "title": "Crop top and jeans",
+    "prompt": "black fitted crop top + blue straight jeans",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Black Cropped Tee [Forge_Tops_01_CLOTH]": "OPAQUE",
+      "Blue Straight Jeans [Forge_Bottoms_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Black Cropped Tee",
+        "template": "top-crop-tee-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      },
+      {
+        "name": "Blue Straight Jeans",
+        "template": "jeans-straight-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 2,
+    "image": "02-bodycon-mini-dress.webp",
+    "title": "Bodycon mini dress",
+    "prompt": "red bodycon mini dress",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Red Bodycon Mini Dress [Forge_Onepiece_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Red Bodycon Mini Dress",
+        "template": "dress-mini-bodycon-v1",
+        "layer": 4,
+        "role": "one-piece",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 3,
+    "image": "03-sequin-mini-dress.webp",
+    "title": "Sequin mini dress",
+    "prompt": "pink sequin bodycon mini dress",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Pink Sequin Bodycon Mini Dress [Forge_Onepiece_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Pink Sequin Bodycon Mini Dress",
+        "template": "dress-mini-bodycon-v1",
+        "layer": 4,
+        "role": "one-piece",
+        "adult": false,
+        "pattern": "sequin",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "sequin",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 4,
+    "image": "04-metallic-mini-dress.webp",
+    "title": "Metallic mini dress",
+    "prompt": "shiny silver bodycon mini dress",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Silver Metallic Bodycon Mini Dress [Forge_Onepiece_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Silver Metallic Bodycon Mini Dress",
+        "template": "dress-mini-bodycon-v1",
+        "layer": 4,
+        "role": "one-piece",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "metallic",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 5,
+    "image": "05-lined-lace-dress.webp",
+    "title": "Lined lace dress",
+    "prompt": "black lined lace bodycon mini dress",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Black Lace Bodycon Mini Dress [Forge_Onepiece_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Black Lace Bodycon Mini Dress",
+        "template": "dress-mini-bodycon-v1",
+        "layer": 4,
+        "role": "one-piece",
+        "adult": false,
+        "pattern": "lace",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": true,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 6,
+    "image": "06-satin-slip-dress.webp",
+    "title": "Satin slip dress",
+    "prompt": "champagne satin slip dress with spaghetti straps",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Champagne Slip Dress [Forge_Onepiece_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Champagne Slip Dress",
+        "template": "dress-slip-midi-v1",
+        "layer": 4,
+        "role": "one-piece",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "satin",
+        "coverage": "standard",
+        "straps": "shoulder",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 7,
+    "image": "07-denim-shorts.webp",
+    "title": "Denim shorts",
+    "prompt": "blue high-waisted denim shorts + white crop top",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Blue Denim Shorts [Forge_Bottoms_01_CLOTH]": "OPAQUE",
+      "White Cropped Tee [Forge_Tops_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Blue Denim Shorts",
+        "template": "shorts-denim-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": "high"
+      },
+      {
+        "name": "White Cropped Tee",
+        "template": "top-crop-tee-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 8,
+    "image": "08-latex-leggings.webp",
+    "title": "Latex leggings",
+    "prompt": "neon green latex leggings + black crop top",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Neon Green Latex Leggings [Forge_Bottoms_01_CLOTH]": "OPAQUE",
+      "Black Cropped Tee [Forge_Tops_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Neon Green Latex Leggings",
+        "template": "trousers-leggings-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "latex",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      },
+      {
+        "name": "Black Cropped Tee",
+        "template": "top-crop-tee-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 9,
+    "image": "09-catsuit.webp",
+    "title": "Catsuit",
+    "prompt": "glossy black catsuit",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Black Glossy Catsuit [Forge_Onepiece_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Black Glossy Catsuit",
+        "template": "jumpsuit-catsuit-v1",
+        "layer": 4,
+        "role": "one-piece",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "gloss",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 10,
+    "image": "10-pleated-skirt-and-halter.webp",
+    "title": "Pleated skirt and halter",
+    "prompt": "navy pleated mini skirt + white halter top",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Navy Pleated Mini Skirt [Forge_Bottoms_01_CLOTH]": "OPAQUE",
+      "White Halter Crop Top [Forge_Tops_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Navy Pleated Mini Skirt",
+        "template": "skirt-pleated-mini-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      },
+      {
+        "name": "White Halter Crop Top",
+        "template": "top-halter-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "halter",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 11,
+    "image": "11-layered-stockings-skater-dress-jacket.webp",
+    "title": "Layered: stockings, skater dress, jacket",
+    "prompt": "black thigh-high stockings + red skater mini dress + black cropped jacket",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Black Thigh-High Stockings": "OPAQUE",
+      "Red Skater Mini Dress [Forge_Onepiece_01_CLOTH]": "OPAQUE",
+      "Black Cropped Cardigan": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "clearance-only",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Black Thigh-High Stockings",
+        "template": "legwear-thigh-highs-v1",
+        "layer": 2,
+        "role": "legwear",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      },
+      {
+        "name": "Red Skater Mini Dress",
+        "template": "dress-mini-skater-v1",
+        "layer": 4,
+        "role": "one-piece",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      },
+      {
+        "name": "Black Cropped Cardigan",
+        "template": "jacket-cropped-cardigan-v1",
+        "layer": 5,
+        "role": "outer",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 12,
+    "image": "12-maxi-sundress.webp",
+    "title": "Maxi sundress",
+    "prompt": "yellow maxi sundress",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Yellow Maxi Sundress [Forge_Onepiece_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Yellow Maxi Sundress",
+        "template": "dress-maxi-sundress-v1",
+        "layer": 4,
+        "role": "one-piece",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "shoulder",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 13,
+    "image": "13-baggy-jeans-and-tube-top.webp",
+    "title": "Baggy jeans and tube top",
+    "prompt": "light blue baggy jeans + white tube top",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Blue Baggy Jeans [Forge_Bottoms_01_CLOTH]": "OPAQUE",
+      "White Tube Top [Forge_Tops_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Blue Baggy Jeans",
+        "template": "jeans-baggy-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      },
+      {
+        "name": "White Tube Top",
+        "template": "top-tube-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 14,
+    "image": "14-trench-over-a-dress.webp",
+    "title": "Trench over a dress",
+    "prompt": "black bodycon mini dress + beige lightweight trench",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "Black Bodycon Mini Dress [Forge_Onepiece_01_CLOTH]": "OPAQUE",
+      "Beige Lightweight Trench": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "Black Bodycon Mini Dress",
+        "template": "dress-mini-bodycon-v1",
+        "layer": 4,
+        "role": "one-piece",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      },
+      {
+        "name": "Beige Lightweight Trench",
+        "template": "jacket-trench-v1",
+        "layer": 5,
+        "role": "outer",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  },
+  {
+    "number": 15,
+    "image": "15-tiered-maxi-skirt-and-tee.webp",
+    "title": "Tiered maxi skirt and tee",
+    "prompt": "white tiered maxi skirt + black crop top",
+    "dressed": true,
+    "state": "completed",
+    "error": null,
+    "materials": {
+      "White Tiered Maxi Skirt [Forge_Bottoms_01_CLOTH]": "OPAQUE",
+      "Black Cropped Tee [Forge_Tops_01_CLOTH]": "OPAQUE"
+    },
+    "passed": true,
+    "clipping": "passed",
+    "removed": [],
+    "baseBody": "replace-outer",
+    "warnings": [],
+    "garments": [
+      {
+        "name": "White Tiered Maxi Skirt",
+        "template": "skirt-tiered-maxi-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      },
+      {
+        "name": "Black Cropped Tee",
+        "template": "top-crop-tee-v1",
+        "layer": 3,
+        "role": "main",
+        "adult": false,
+        "pattern": "none",
+        "alpha": "opaque",
+        "opacity": 1.0,
+        "lined": false,
+        "finish": "matte",
+        "coverage": "standard",
+        "straps": "",
+        "neckline": "",
+        "legCut": "",
+        "rise": ""
+      }
+    ]
+  }
+]

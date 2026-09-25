@@ -40,6 +40,12 @@ SIZE_TYPES = {1: "SCALAR", 2: "VEC2", 3: "VEC3", 4: "VEC4", 16: "MAT4"}
 ARRAY_BUFFER = 34962
 ELEMENT_ARRAY_BUFFER = 34963
 
+# Sampler constants.
+LINEAR = 9729
+LINEAR_MIPMAP_LINEAR = 9987
+REPEAT = 10497
+CLAMP_TO_EDGE = 33071
+
 
 class UnsupportedAsset(ValueError):
     """The document is valid glTF but uses a feature this engine will not touch."""
@@ -316,10 +322,13 @@ class GltfDocument:
         return [i for i, node in enumerate(self.nodes) if "mesh" in node]
 
     def primitive_bounds(self) -> tuple[np.ndarray, np.ndarray] | None:
-        """Rest-pose bounding box derived from POSITION accessor min/max.
+        """Rest-pose bounding box of what is drawn.
 
-        Accessor bounds are mandatory for POSITION in glTF, so this is cheap and
-        does not require decoding vertex data.
+        Accessor min/max would be cheaper, but it bounds the whole buffer, and
+        a VRoid Body mesh's primitives share one: after garment replacement
+        takes her skirt off, the skirt's vertices are still in the buffer and
+        still set her depth. So the vertices the primitives reference are read
+        instead, falling back to min/max only where there are no indices.
         """
         accessors = self.gltf.get("accessors") or []
         lo = np.full(3, np.inf)
@@ -335,10 +344,20 @@ class GltfDocument:
                 if position is None or position >= len(accessors):
                     continue
                 accessor = accessors[position]
-                if "min" not in accessor or "max" not in accessor:
+                index_accessor = primitive.get("indices")
+                if index_accessor is not None:
+                    points = self.read_accessor(position)[:, :3].astype(np.float64)
+                    used = self.read_accessor(index_accessor).astype(np.int64).reshape(-1)
+                    used = used[used < points.shape[0]]
+                    if used.size == 0:
+                        continue
+                    local_lo = points[used].min(axis=0)
+                    local_hi = points[used].max(axis=0)
+                elif "min" in accessor and "max" in accessor:
+                    local_lo = np.array(accessor["min"][:3], dtype=np.float64)
+                    local_hi = np.array(accessor["max"][:3], dtype=np.float64)
+                else:
                     continue
-                local_lo = np.array(accessor["min"][:3], dtype=np.float64)
-                local_hi = np.array(accessor["max"][:3], dtype=np.float64)
                 if skinned:
                     # Skinned positions live in skin space; the node transform
                     # is not applied to them at render time.
@@ -390,6 +409,26 @@ class GltfDocument:
         materials = self.materials
         materials.append(material)
         return len(materials) - 1
+
+    def add_image(self, data: bytes, *, mime_type: str = "image/png", name: str | None = None) -> int:
+        """Embed an image in the binary chunk. Returns the image index."""
+        image: dict[str, Any] = {"bufferView": self.add_buffer_view(data), "mimeType": mime_type}
+        if name:
+            image["name"] = name
+        images = self.list("images")
+        images.append(image)
+        return len(images) - 1
+
+    def add_texture(self, image: int, *, repeat: bool = True) -> int:
+        """A texture over ``image`` with its own sampler: tiling, or clamped (a matcap)."""
+        wrap = REPEAT if repeat else CLAMP_TO_EDGE
+        samplers = self.list("samplers")
+        samplers.append(
+            {"magFilter": LINEAR, "minFilter": LINEAR_MIPMAP_LINEAR, "wrapS": wrap, "wrapT": wrap}
+        )
+        textures = self.list("textures")
+        textures.append({"source": image, "sampler": len(samplers) - 1})
+        return len(textures) - 1
 
 
 # ----------------------------------------------------------------------

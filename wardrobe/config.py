@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     # -- assets ----------------------------------------------------------
     wardrobe_template_root: str = str(REPO_ROOT / "assets" / "garment_templates")
     wardrobe_fixture_root: str = str(REPO_ROOT / "assets" / "fixtures")
+    #: The Studio's avatar library: models.json plus the VRMs tools/fetch_library.py verified.
+    wardrobe_library_root: str = str(REPO_ROOT / "assets" / "library")
 
     # -- safety ----------------------------------------------------------
     max_avatar_bytes: int = 128 * 1024 * 1024

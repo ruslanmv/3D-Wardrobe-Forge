@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "legwear-tights-v1",
+  "name": "Tights",
+  "category": "legwear",
+  "mesh": "procedural:tights",
+  "coverage": [
+    "waist",
+    "hips",
+    "upperLegs",
+    "lowerLegs"
+  ],
+  "anchors": [
+    "hips",
+    "upperLegs",
+    "lowerLegs"
+  ],
+  "silhouette": "slim",
+  "hem": "ankle",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 1.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "tights",
+    "pantyhose",
+    "hosiery",
+    "collant",
+    "fishnet tights",
+    "full-length",
+    "collant a rete"
+  ],
+  "description": "Waist-to-toe tights or pantyhose. A layer: worn under skirts and shorts, never replacing them."
+}

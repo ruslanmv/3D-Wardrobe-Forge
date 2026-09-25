@@ -68,8 +68,24 @@ def import_vrm(filepath: str) -> dict:
 
 
 def largest_mesh(meshes: list) -> object:
-    """The body mesh: the one with the most vertices."""
+    """The mesh with the most vertices: the body only when nothing better is known (see ``body_mesh``)."""
     return max(meshes, key=lambda obj: len(obj.data.vertices))
 
 
-__all__ = ["import_vrm", "ensure_vrm_addon", "clear_scene", "largest_mesh", "VrmAddonMissing"]
+def body_mesh(meshes: list, humanoid: dict[str, str]) -> object:
+    """The body: the mesh her torso and legs drive, by skin weights (see ``body_select``)."""
+    from worker.blender.body_select import Candidate, choose_body
+
+    candidates, by_name = [], {}
+    for obj in meshes:
+        groups = {group.index: group.name for group in obj.vertex_groups}
+        dominant = []
+        for vertex in obj.data.vertices:
+            best = max(vertex.groups, key=lambda g: g.weight, default=None)
+            dominant.append(groups.get(best.group) if best is not None and best.weight > 0 else None)
+        candidates.append(Candidate(obj.name, len(obj.data.vertices), dominant))
+        by_name[obj.name] = obj
+    return by_name[choose_body(candidates, humanoid).name]
+
+
+__all__ = ["import_vrm", "ensure_vrm_addon", "clear_scene", "largest_mesh", "body_mesh", "VrmAddonMissing"]

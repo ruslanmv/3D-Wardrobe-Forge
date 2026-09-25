@@ -44,7 +44,7 @@ def mesh_to_glb(mesh: Mesh, *, name: str = "Garment", material: GarmentMaterial 
         mesh.indices.astype(np.uint32).reshape(-1, 1), target=ELEMENT_ARRAY_BUFFER
     )
 
-    material_index = document.add_material((material or GarmentMaterial(name=name)).to_gltf())
+    material_index = (material or GarmentMaterial(name=name)).add_to(document)
     mesh_index = document.add_mesh(
         [{"attributes": attributes, "indices": indices, "material": material_index, "mode": 4}], name=name
     )

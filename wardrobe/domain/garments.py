@@ -28,7 +28,33 @@ COVERAGE_REGIONS = {
     "feet",
 }
 
-CATEGORIES = {"dress", "skirt", "top", "trousers", "jacket", "shoes"}
+CATEGORIES = {
+    "dress", "skirt", "top", "trousers", "jacket", "shoes",
+    # try-on haul
+    "shorts", "swimwear", "underwear", "nightwear", "legwear",
+    # one garment, top to ankle: catsuits, unitards, jumpsuits
+    "jumpsuit",
+}
+
+#: Shapes ``build_garment`` can make. A test holds this equal to the builder's own list,
+#: so a template naming a shape that does not exist fails validation, not a job.
+PROCEDURAL_KINDS = {
+    "dress", "skirt", "top", "trousers", "jacket", "shoes",
+    "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
+    "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
+}
+
+#: Categories that only dress an avatar declared to depict an adult. See wardrobe.policy.intimate.
+#: Not the whole gate: see-through fabric in any category needs the same declaration.
+INTIMATE_CATEGORIES = frozenset({"swimwear", "underwear"})
+
+#: Style vocabularies a template's fit policy and a plan's StylePlan may use.
+COVERAGE_PRESETS: dict[str, float] = {"full": 1.12, "standard": 1.0, "minimal": 0.78, "micro": 0.58}
+STRAP_PRESETS = ("shoulder", "halter", "none", "string", "cross-back", "garter", "harness")
+NECKLINES = ("v", "plunge", "sweetheart", "triangle", "demi", "balconette")
+RISES = ("high", "low")
+BACKS = ("low",)
+LEG_CUTS = ("high",)
 
 
 class FitPolicy(BaseModel):
@@ -39,6 +65,20 @@ class FitPolicy(BaseModel):
     allow_width_scale: bool = Field(default=True, alias="allowWidthScale")
     min_length_scale: float = Field(default=0.7, alias="minLengthScale", gt=0)
     max_length_scale: float = Field(default=1.3, alias="maxLengthScale", gt=0)
+    #: 0..1 — how far the shell is drawn onto the body's actual surface after it is
+    #: built. 0 keeps the measured shape; 1 is skin-tight (swimwear, underwear).
+    conform: float = Field(default=0.0, ge=0.0, le=1.0)
+    #: Conform below the hip joint too. Off, a flared skirt keeps its flare.
+    conform_below_hips: bool = Field(default=False, alias="conformBelowHips")
+    #: One of STRAP_PRESETS; empty lets the shape choose.
+    straps: str = ""
+    #: Knife pleats round the skirt, 0 for none.
+    pleats: int = Field(default=0, ge=0, le=32)
+    #: Edge profiles the template is cut with by default; a plan may override each.
+    neckline: str = ""
+    back: str = ""
+    leg_cut: str = Field(default="", alias="legCut")
+    coverage: str = "standard"
 
 
 class MaterialPolicy(BaseModel):
@@ -47,6 +87,10 @@ class MaterialPolicy(BaseModel):
     supports_base_color: bool = Field(default=True, alias="supportsBaseColor")
     supports_pattern: bool = Field(default=True, alias="supportsPattern")
     supports_metallic: bool = Field(default=False, alias="supportsMetallic")
+    #: Gloss, latex, satin, sequin: the toon highlight. Off, the garment stays matte.
+    supports_finish: bool = Field(default=True, alias="supportsFinish")
+    #: Sheer fabric and holed patterns (lace, fishnet). Off, the garment stays opaque.
+    supports_transparency: bool = Field(default=True, alias="supportsTransparency")
 
 
 class GarmentTemplate(BaseModel):
@@ -70,6 +114,8 @@ class GarmentTemplate(BaseModel):
     materials: MaterialPolicy = Field(default_factory=MaterialPolicy)
     tags: list[str] = Field(default_factory=list)
     description: str | None = None
+    #: Needs an adult declaration whatever its category or material.
+    requires_adult: bool = Field(default=False, alias="requiresAdult")
 
     @property
     def is_procedural(self) -> bool:
@@ -88,6 +134,26 @@ class GarmentTemplate(BaseModel):
             issues.append(f"{self.id}: unknown coverage regions {unknown_coverage}")
         if not self.coverage:
             issues.append(f"{self.id}: template declares no coverage")
+        if self.is_procedural and self.procedural_kind not in PROCEDURAL_KINDS:
+            issues.append(f"{self.id}: unknown procedural shape {self.procedural_kind!r}")
+        if self.fit.straps and self.fit.straps not in STRAP_PRESETS:
+            issues.append(f"{self.id}: unknown strap style {self.fit.straps!r}")
+        for field, value, allowed in (
+            ("neckline", self.fit.neckline, NECKLINES),
+            ("back", self.fit.back, BACKS),
+            ("legCut", self.fit.leg_cut, LEG_CUTS),
+        ):
+            if value and value not in allowed:
+                issues.append(f"{self.id}: unknown {field} {value!r}")
+        if self.fit.coverage not in COVERAGE_PRESETS:
+            issues.append(f"{self.id}: unknown coverage {self.fit.coverage!r}")
+        # Sleeves are skinned to the bones the anchors name. Anchor a sleeved garment
+        # to the chest alone and its sleeves bind to the torso: the avatar lowers her
+        # arms and the sleeves stay out in a T. Jacket shapes always have long sleeves.
+        sleeves = "long" if self.procedural_kind in {"jacket", "cropped-jacket"} else self.sleeve
+        needed = {"short": {"upperArms"}, "long": {"upperArms", "lowerArms"}}.get(sleeves, set())
+        if needed - set(self.anchors):
+            issues.append(f"{self.id}: {sleeves} sleeves need anchors {sorted(needed - set(self.anchors))}")
         if self.fit.min_length_scale > self.fit.max_length_scale:
             issues.append(f"{self.id}: minLengthScale exceeds maxLengthScale")
         return issues

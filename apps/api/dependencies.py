@@ -28,6 +28,8 @@ _STATUS_FOR_REASON = {
     FailureReason.UNSUPPORTED_ASSET: 422,
     FailureReason.NO_TEMPLATE_MATCH: 422,
     FailureReason.PROVIDER_ERROR: 502,
+    FailureReason.INTIMATE_NOT_PERMITTED: 451,
+    FailureReason.ADULT_DECLARATION_REQUIRED: 428,
 }
 
 

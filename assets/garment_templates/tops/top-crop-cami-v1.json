@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "top-crop-cami-v1",
+  "name": "Lace Crop Cami",
+  "category": "top",
+  "mesh": "procedural:crop-top",
+  "coverage": [
+    "chest"
+  ],
+  "anchors": [
+    "chest"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 4.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 0.7,
+    "straps": "shoulder"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "crop cami",
+    "lace",
+    "lace top",
+    "cropped",
+    "cami"
+  ],
+  "description": "Cropped lace camisole on thin straps."
+}
