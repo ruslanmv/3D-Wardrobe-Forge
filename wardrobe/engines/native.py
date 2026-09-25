@@ -14,12 +14,15 @@ import logging
 import numpy as np
 
 from wardrobe.config import Settings
+from wardrobe.domain.looks import ClippingCheck
 from wardrobe.engines.base import FittingEngine
 from wardrobe.engines.geometry_checks import pose_stress_test
 from wardrobe.engines.shell import build_fitted_shell, on_axis_mask, shell_coverage
 from wardrobe.errors import FittingError
 from wardrobe.geometry.procedural import trim_triangles
 from wardrobe.geometry.raster import RenderLayer, render
+from wardrobe.hosiery import assembly as hosiery_assembly
+from wardrobe.hosiery import fit as hosiery_fit
 from wardrobe.pipeline.context import BuiltLayer, PipelineContext
 from wardrobe.vrm.garments import garment_material_name, garment_slot
 from wardrobe.vrm.merge import GarmentMaterial, attach_garment, set_title, tag_derived
@@ -54,8 +57,12 @@ class NativeEngine(FittingEngine):
                 "outfit.mode='auto'"
             )
 
+        if hosiery_fit.role(context) == "connector":
+            await self._fit_connector(context)
+            return
+        hosiery_fit.before_shell(context)
         shell = build_fitted_shell(context)
-        mesh = shell.mesh
+        mesh = hosiery_fit.after_shell(context, shell.mesh)
 
         # ---- skin binding ----------------------------------------------
         regions = artifact.anchors or artifact.coverage
@@ -71,6 +78,7 @@ class NativeEngine(FittingEngine):
         # The garment's body binds to the torso; only pieces off the body's axis
         # (sleeves, stocking legs) may follow the limbs.
         bind_mesh(mesh, segments, torso=on_axis_mask(mesh, context.measurements))
+        hosiery_fit.after_bind(context, mesh, segments)
 
         issues = mesh.validate()
         if issues:
@@ -96,6 +104,27 @@ class NativeEngine(FittingEngine):
         if not report.weights_valid:
             context.warn(f"skin weights failed validation: {weights}")
 
+    async def _fit_connector(self, context: PipelineContext) -> None:
+        """Suspender straps and hardware: built from the fitted belt and stocking tops, not a shell."""
+        mesh, segments = hosiery_fit.fit_connector(context)
+        issues = mesh.validate()
+        if issues:
+            raise FittingError("; ".join(issues))
+        context.mesh, context.segments = mesh, segments
+        report = context.fit_report
+        report.engine = self.name
+        report.garment_vertices = mesh.vertex_count
+        report.garment_triangles = mesh.triangle_count
+        # Nothing to push out of the body: each strap was laid on it, a gap above what is under it.
+        report.clipping_check = ClippingCheck.CLEARANCE_ONLY
+        report.coverage = {"regions": ["hips", "upperLegs"]}
+        report.pose_tests = pose_stress_test(
+            mesh, segments, {k: np.array(v) for k, v in context.measurements.bone_positions.items()}
+        )
+        weights = weight_report(mesh, segments)
+        report.weights_valid = bool(weights.get("valid"))
+        report.bones_used = list(weights.get("bonesUsed", []))
+
     # ------------------------------------------------------------------
     async def assemble(self, context: PipelineContext) -> None:
         if context.document is None or context.info is None or context.mesh is None:
@@ -114,18 +143,29 @@ class NativeEngine(FittingEngine):
                 update={"opacity": 1.0, "alpha_mode": "opaque", "pattern": "none", "texture_scale": 0.0,
                         "lined": False}
             ) if material.exposes_body else None
-            attached = attach_garment(
-                context.document,
-                context.info,
-                layer.mesh,
-                layer.segments,
-                material=GarmentMaterial.from_plan(garment_material_name(layer.plan.name, kind), material),
-                name=layer.plan.name,
-                trim=trim_triangles(layer.mesh) if trim_plan else None,
-                trim_material=GarmentMaterial.from_plan(
-                    garment_material_name(f"{layer.plan.name} Trim", kind), trim_plan
-                ) if trim_plan else None,
-            )
+            hosiery_parts = hosiery_assembly.primitives(layer, kind)
+            if hosiery_parts is not None:
+                fabric_material, trim_mask, trim_mat, extra = hosiery_parts
+                attached = attach_garment(
+                    context.document, context.info, layer.mesh, layer.segments,
+                    material=fabric_material, name=layer.plan.name,
+                    trim=trim_mask, trim_material=trim_mat, extra=extra,
+                )
+            else:
+                attached = attach_garment(
+                    context.document,
+                    context.info,
+                    layer.mesh,
+                    layer.segments,
+                    material=GarmentMaterial.from_plan(
+                        garment_material_name(layer.plan.name, kind), material
+                    ),
+                    name=layer.plan.name,
+                    trim=trim_triangles(layer.mesh) if trim_plan else None,
+                    trim_material=GarmentMaterial.from_plan(
+                        garment_material_name(f"{layer.plan.name} Trim", kind), trim_plan
+                    ) if trim_plan else None,
+                )
             # What this garment is, for the next job that meets it: an outer layer
             # made later knows not to take this underwear off (garment_inventory).
             slot = garment_slot(kind)
@@ -137,6 +177,9 @@ class NativeEngine(FittingEngine):
                 "templateId": layer.plan.template_id,
                 "lookId": context.look_id,
             }
+            if layer.plan.set_id:  # a coordinated set: only then, so no other garment's extras change
+                forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
+                forge["setId"] = layer.plan.set_id
 
         title = f"{context.info.title or 'Avatar'} — {plan.name}" if plan else context.info.title
         if title:

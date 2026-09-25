@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from wardrobe.geometry.mesh import Mesh, concatenate, section_ranges
+from wardrobe.hosiery.garter_belt import BELT_KINDS, build_belt
+from wardrobe.hosiery.stockings import build_stockings
 from wardrobe.vrm.measure import BodyMeasurements
 
 #: Radial resolution of every lofted shell. 32 keeps a dress silhouette smooth
@@ -868,6 +870,8 @@ HAUL_KINDS = frozenset(
     {
         "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
         "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
+        # hosiery foundations (wardrobe.hosiery.garter_belt)
+        "suspender-belt", "waspie", "guepiere",
     }
 )
 
@@ -1275,6 +1279,12 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
                             y_top=params.chest_y + (params.shoulder_y - params.chest_y) * 0.68,
                             looseness=1.06 + (flare - 1.0) * 0.3, name="cropped-jacket")
         return [jacket, *build_sleeves(params, length="long", thickness=1.4)]
+    if kind in BELT_KINDS:
+        return build_belt(params, kind=kind)
+    hosiery = meta.get("hosiery") if isinstance(meta.get("hosiery"), dict) else None
+    if kind == "legwear" and hosiery and hosiery.get("stockings"):
+        # Stockings that publish their fitted top for the straps and the hem to use.
+        return build_stockings(params, top_y=stocking_top, plan=hosiery["stockings"])
     if kind == "legwear":
         sections = build_legwear(params, top_y=stocking_top)
         if straps == "garter":
@@ -1337,6 +1347,9 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
     thigh_fraction = (params.hip_y - params.knee_y) / max(params.hip_y - params.ankle_y, 1e-6)
     fraction = max(fraction, thigh_fraction * 0.2)
     hem_y = params.hip_y - (params.hip_y - params.ankle_y) * fraction
+    if params.metadata.get("hemY") is not None:
+        # Solved for a reveal level against the stocking tops (wardrobe.hosiery.reveal).
+        hem_y = float(params.metadata["hemY"])
 
     category = category.lower()
     sections: list[Mesh]

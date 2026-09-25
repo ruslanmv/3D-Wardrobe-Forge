@@ -13,6 +13,7 @@ from wardrobe.domain.avatars import AvatarAnalysis
 from wardrobe.domain.garments import GarmentArtifact, GarmentTemplate, TemplateCatalog
 from wardrobe.domain.looks import OutfitPlan
 from wardrobe.errors import PlanningError
+from wardrobe.hosiery.options import BELT_TEMPLATES
 from wardrobe.providers.base import GarmentProvider
 
 
@@ -38,13 +39,16 @@ class TemplateGarmentProvider(GarmentProvider):
             template = candidates[0]
 
         style = plan.style
-        digest = sha1(
+        key = (
             f"{template.id}|{plan.silhouette}|{plan.hem}|{plan.sleeve}|{plan.material.color_name}|"
             f"{plan.material.finish}|{plan.material.pattern}|{plan.material.opacity}|"
-            f"{style.coverage}|{style.straps}|{style.neckline}|{style.back}|{style.leg_cut}|{style.rise}".encode()
-        ).hexdigest()[:12]
+            f"{style.coverage}|{style.straps}|{style.neckline}|{style.back}|{style.leg_cut}|{style.rise}"
+        )
+        if plan.hosiery is not None:  # only then: every other garment keeps the id it always had
+            key += "|" + plan.hosiery.model_dump_json(by_alias=True, exclude_none=True)
+        digest = sha1(key.encode()).hexdigest()[:12]
 
-        return GarmentArtifact(
+        artifact = GarmentArtifact(
             id=f"garment_{digest}",
             source=self.name,
             templateId=template.id,
@@ -72,6 +76,17 @@ class TemplateGarmentProvider(GarmentProvider):
                 "rise": style.rise,
             },
         )
+        # Hosiery: the outfit's design, and the belt's style, for the builders that read them.
+        # Absent for every other garment, so their metadata is exactly what it was.
+        if plan.hosiery is not None:
+            artifact.metadata["hosiery"] = plan.hosiery.to_metadata()
+            artifact.metadata["hosieryRole"] = plan.role
+        if template.id in BELT_STYLE_OF_TEMPLATE:
+            artifact.metadata["beltStyle"] = BELT_STYLE_OF_TEMPLATE[template.id]
+        return artifact
 
+
+#: Which belt style each hosiery belt template builds (wardrobe.hosiery.garter_belt).
+BELT_STYLE_OF_TEMPLATE = {template: style for style, template in BELT_TEMPLATES.items()}
 
 __all__ = ["TemplateGarmentProvider"]

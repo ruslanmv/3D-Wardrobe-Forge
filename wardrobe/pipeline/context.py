@@ -68,6 +68,18 @@ class PipelineContext:
     #: Surface points of the layers already fitted: what the next layer must clear.
     collision_points: np.ndarray | None = None
 
+    # -- hosiery (wardrobe.hosiery) -------------------------------------------
+    #: Published by the fitted stockings, per leg: the one authority on where their tops are.
+    stocking_tops: dict = field(default_factory=dict)
+    #: Published by the fitted belt: its lower edge, where the straps' tabs are.
+    belt: object | None = None
+    #: The fitted straps and hardware, for the report.
+    connector: object | None = None
+    #: The reveal the outer hem was solved for, and what it achieved.
+    reveal: dict = field(default_factory=dict)
+    #: Her body posed standing, walking and seated, measured once and shared by straps and hem.
+    hosiery_bodies: dict | None = None
+
     # -- output ----------------------------------------------------------
     output_bytes: bytes | None = None
     preview_bytes: bytes | None = None

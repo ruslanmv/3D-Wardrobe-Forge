@@ -130,6 +130,8 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     "underwear": (
         "underwear", "lingerie", "bra", "bralette", "panties", "briefs", "knickers", "bodysuit", "teddy",
         "garter belt", "suspender belt", "garter", "garters", "garter set",
+        # hosiery foundations: words no other category claims (see wardrobe.hosiery)
+        "waspie", "waist cincher", "guêpière", "guepiere",
     ),
     "jumpsuit": ("jumpsuit", "catsuit", "unitard", "boilersuit"),
     "nightwear": (
@@ -427,6 +429,8 @@ def select_template(catalog: TemplateCatalog, parsed: ParsedPrompt, text: str) -
     candidates = catalog.by_category(parsed.category) if parsed.category else catalog.all()
     if not candidates:
         candidates = catalog.all()
+    candidates = [t for t in candidates if not t.opt_in or any(
+        re.search(rf"(?<!\w){re.escape(tag.lower())}(?!\w)", text) for tag in t.tags)] or candidates
     if not candidates:
         raise PlanningError("no garment templates are installed")
 

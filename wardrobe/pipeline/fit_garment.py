@@ -19,6 +19,7 @@ from wardrobe.domain.jobs import JobState
 from wardrobe.domain.looks import ClippingCheck
 from wardrobe.engines.base import FittingEngine
 from wardrobe.engines.geometry_checks import SURFACE_SPACING_M, _surface_samples
+from wardrobe.hosiery import report as hosiery_report
 from wardrobe.pipeline.context import BuiltLayer, PipelineContext
 
 #: Worst first: the outfit's verdict is its worst layer's.
@@ -58,6 +59,13 @@ async def run(context: PipelineContext, engine: FittingEngine) -> None:
         report.bones_used = sorted({bone for e in entries for bone in e["bonesUsed"]})
         worst = min((ClippingCheck(e["clippingCheck"]) for e in entries), key=_rank)
         report.clipping_check = worst
+
+    if outfit is not None and outfit.hosiery is not None:
+        report.hosiery = hosiery_report.build(context)
+        for message in (report.hosiery or {}).get("warnings", []):
+            context.warn(f"hosiery: {message}")
+        for message in (report.hosiery or {}).get("errors", []):
+            context.warn(f"hosiery: {message}")
 
     await context.emit(
         JobState.SKINNING,

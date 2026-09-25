@@ -42,6 +42,7 @@ PROCEDURAL_KINDS = {
     "dress", "skirt", "top", "trousers", "jacket", "shoes",
     "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
     "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
+    "suspender-belt", "waspie", "guepiere",
 }
 
 #: Categories that only dress an avatar declared to depict an adult. See wardrobe.policy.intimate.
@@ -116,6 +117,10 @@ class GarmentTemplate(BaseModel):
     description: str | None = None
     #: Needs an adult declaration whatever its category or material.
     requires_adult: bool = Field(default=False, alias="requiresAdult")
+    #: Chosen from a prompt only when the prompt names one of its tags outright. Newer
+    #: templates that overlap older ones use it, so a prompt that planned the older
+    #: template still does: "suspender belt" is still the Garter Set.
+    opt_in: bool = Field(default=False, alias="optIn")
 
     @property
     def is_procedural(self) -> bool:

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "under-suspender-belt-high-v1",
+  "name": "High-Waisted Suspender Belt",
+  "category": "underwear",
+  "mesh": "procedural:suspender-belt",
+  "coverage": [
+    "waist",
+    "hips"
+  ],
+  "anchors": [
+    "waist"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "optIn": true,
+  "tags": [
+    "high-waisted suspender belt",
+    "high waisted suspender belt",
+    "high-waist suspender belt",
+    "high-waisted garter belt"
+  ],
+  "description": "A deeper suspender belt up to the natural waist, with rings where the straps join it."
+}
