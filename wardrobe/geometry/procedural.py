@@ -20,6 +20,7 @@ import numpy as np
 from wardrobe.geometry.mesh import Mesh, concatenate, section_ranges
 from wardrobe.hosiery.garter_belt import BELT_KINDS, build_belt
 from wardrobe.hosiery.stockings import build_stockings
+from wardrobe.lingerie import LINGERIE_KINDS
 from wardrobe.vrm.measure import BodyMeasurements
 
 #: Radial resolution of every lofted shell. 32 keeps a dress silhouette smooth
@@ -1478,6 +1479,12 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
 
     category = category.lower()
     sections: list[Mesh]
+
+    if category in LINGERIE_KINDS:
+        # Pattern blocks (wardrobe.lingerie): drafted on her landmarks, not lofted bands.
+        from wardrobe.lingerie.blocks import build_block  # it builds on this module
+
+        return build_block(category, params)
 
     if category == "dress":
         top_y = params.top_edge(0.6)

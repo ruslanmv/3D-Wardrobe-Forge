@@ -130,6 +130,7 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     ),
     "underwear": (
         "underwear", "lingerie", "bra", "bralette", "panties", "briefs", "knickers", "bodysuit", "teddy",
+        "thong",
         "garter belt", "suspender belt", "garter", "garters", "garter set",
         # hosiery foundations: words no other category claims (see wardrobe.hosiery)
         "waspie", "waist cincher", "guêpière", "guepiere",
@@ -400,6 +401,10 @@ def _shade(rgba: tuple[float, float, float, float], text: str) -> tuple[float, f
 # ----------------------------------------------------------------------
 # template selection
 # ----------------------------------------------------------------------
+#: What naming an opt-in template's own tag adds to its score.
+OPT_IN_NAMED = 3.0
+
+
 def score_template(template: GarmentTemplate, parsed: ParsedPrompt, text: str) -> float:
     score = 0.0
     if parsed.category and template.category == parsed.category:
@@ -413,6 +418,11 @@ def score_template(template: GarmentTemplate, parsed: ParsedPrompt, text: str) -
     for tag in template.tags:
         if re.search(rf"(?<!\w){re.escape(tag.lower())}(?!\w)", text):
             score += 1.0
+            # An opt-in template is only ever chosen by name, so a prompt that names it
+            # meant it: "tailored high-leg briefs" is the tailored block, not the band
+            # brief that shares "high-leg briefs" and "briefs" with the prompt.
+            if template.opt_in:
+                score += OPT_IN_NAMED
     # A garment named outright beats one that only shares a word with the prompt:
     # "lace bodysuit" is the Bodysuit, not the Lingerie Set tagged "lace". Ties
     # used to fall to the template id's alphabetical order.

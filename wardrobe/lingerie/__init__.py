@@ -9,7 +9,8 @@ new procedural kinds, chosen only by templates that name them, and every v1
 garment keeps its code path byte for byte.
 """
 
-#: Procedural kinds built from pattern blocks rather than bands.
-LINGERIE_KINDS = frozenset({"brief-block", "bra-block", "bikini-block", "bodysuit-block"})
+#: Procedural kinds built from pattern blocks rather than bands. A kind joins this set
+#: when its builder does (wardrobe.lingerie.blocks.build_block), never before.
+LINGERIE_KINDS = frozenset({"brief-block", "bra-block"})
 
 __all__ = ["LINGERIE_KINDS"]

@@ -174,6 +174,11 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     index = BodyRadialIndex(body, surroundings=torso, y_range=heights)
 
     axis_mask = on_axis_mask(mesh, context.measurements)
+    # A pattern block marks what it places itself (a brief's gusset crosses under her,
+    # where pushing out from her vertical axis means nothing): the radial passes leave it.
+    placed = mesh.metadata.get("placed")
+    if placed is not None:
+        axis_mask = axis_mask & ~placed
 
     conform = float(artifact.metadata.get("conform") or 0.0)
     leg_conform = conform
@@ -190,6 +195,8 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     # Leg-worn pieces (stocking and legging tubes, trouser and catsuit legs) are
     # off the body axis; fit them round each leg's own bones instead.
     leg_worn = ~axis_mask & (mesh.positions[:, 1] < params.hip_y + params.height * 0.03)
+    if placed is not None:
+        leg_worn &= ~placed
     if leg_worn.any():
         conform_limbs(mesh, leg_worn, legs if legs is not None and legs.shape[0] else whole,
                       context.measurements.bone_positions, clearance,
@@ -200,6 +207,10 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     pushed = resolve_clearance(mesh, index, clearance, axis_mask)
     smooth_radial(mesh, index, clearance, axis_mask)
     settle_faces(mesh, index, clearance, axis_mask)
+    if kind in LINGERIE_KINDS:
+        from wardrobe.lingerie.fit import after_shell as seat_placed  # it imports this package
+
+        seat_placed(context, mesh, clearance)
     if pleats:
         # Set from just below the waistband on a skirt, from the hips on a dress.
         pleat_from = params.waist_y - 0.03 if kind == "skirt" else params.hip_y

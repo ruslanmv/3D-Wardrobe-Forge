@@ -8,8 +8,6 @@ length at rest and worn, and keep it off her body.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import numpy as np
 import pytest
 
@@ -20,10 +18,14 @@ from wardrobe.lingerie.contract import ElasticSpec, StrapSpec
 from wardrobe.lingerie.landmarks import measure_document
 from wardrobe.lingerie.specs import parse_block, validate_block
 from wardrobe.lingerie.straps import anchor_on, build_ribbon_strap
+from wardrobe.policy.calibration import declared_adult
+from wardrobe.vrm.build import CALIBRATION_BODIES, build_vrm
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.fashion_body import FASHION_FIT_BODIES, build_fit_form
 
-LIBRARY = Path(__file__).resolve().parents[2] / "assets" / "library"
+#: Lingerie geometry is only ever built on bodies the repository declares adult: the
+#: fit forms, and a calibration body (whose flat chest exercises the formula fallback).
+BODIES = [f.name for f in FASHION_FIT_BODIES] + ["calibration-c-tall"]
 
 
 def _measured(data: bytes):
@@ -31,13 +33,11 @@ def _measured(data: bytes):
     return measured, FitParameters(measurements=measured.measurements, metadata=measured.metadata)
 
 
-@pytest.fixture(scope="module", params=[f.name for f in FASHION_FIT_BODIES] + ["AvatarSample_A"])
+@pytest.fixture(scope="module", params=BODIES)
 def body(request):
-    if request.param == "AvatarSample_A":
-        path = LIBRARY / "AvatarSample_A.vrm"
-        if not path.exists():
-            pytest.skip("library avatars not fetched (make library)")
-        return _measured(path.read_bytes())
+    assert declared_adult(request.param)
+    if request.param.startswith("calibration"):
+        return _measured(build_vrm(next(b for b in CALIBRATION_BODIES if b.name == request.param)))
     form = next(f for f in FASHION_FIT_BODIES if f.name == request.param)
     return _measured(build_fit_form(form))
 

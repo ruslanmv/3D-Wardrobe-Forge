@@ -7,6 +7,7 @@ import pytest
 from wardrobe.domain.garments import PROCEDURAL_KINDS, GarmentTemplate, TemplateCatalog
 from wardrobe.domain.looks import OutfitRequest
 from wardrobe.geometry.procedural import HAUL_KINDS, FitParameters, build_garment
+from wardrobe.lingerie import LINGERIE_KINDS
 from wardrobe.pipeline.plan_outfit import plan_outfit
 from wardrobe.vrm.build import CALIBRATION_BODIES, build_vrm
 from wardrobe.vrm.document import GltfDocument
@@ -17,7 +18,7 @@ ORIGINAL_KINDS = {"dress", "skirt", "top", "trousers", "jacket", "shoes"}
 
 
 def test_the_domain_knows_every_shape_the_builder_makes():
-    assert PROCEDURAL_KINDS == ORIGINAL_KINDS | HAUL_KINDS
+    assert PROCEDURAL_KINDS == ORIGINAL_KINDS | HAUL_KINDS | LINGERIE_KINDS
 
 
 def test_the_library_covers_the_haul_categories(template_catalog: TemplateCatalog):

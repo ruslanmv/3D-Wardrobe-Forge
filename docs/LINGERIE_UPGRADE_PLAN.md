@@ -1,6 +1,10 @@
 # Lingerie quality upgrade plan
 
-> Status: in progress. **L2 done**: flat ribbon straps between anchors
+> Status: in progress. **L3 done**: the brief block — front and back panels, a
+> gusset across the crotch seated on her posed surface, three openings
+> (`wardrobe/lingerie/blocks/brief.py`, `fit.py`, `seams.py`), with tailored
+> brief, high-leg, string, thong and bikini-bottom templates (schemaVersion 2,
+> opt-in). **L2 done**: flat ribbon straps between anchors
 > (`wardrobe/lingerie/straps.py`, `contract.py`, `specs.py`; the ribbon moved to
 > `wardrobe/geometry/ribbon.py`). **L1 done**: the fashion-fit forms
 > (`wardrobe/vrm/fashion_body.py`, declared adult in

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 2,
+  "id": "under-briefs-string-v2",
+  "name": "Tailored String Briefs",
+  "category": "underwear",
+  "mesh": "procedural:brief-block",
+  "coverage": [
+    "hips"
+  ],
+  "anchors": [
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true
+  },
+  "lingerie": {
+    "block": "brief",
+    "brief": {
+      "rise": 0.62,
+      "backRise": 0.06,
+      "sideHeight": 0.05,
+      "frontScoop": 0.6,
+      "backCoverage": "cheeky",
+      "gussetFrontWidthMm": 60,
+      "gussetWidthMm": 45,
+      "gussetLengthMm": 150,
+      "waistElastic": "picot-10",
+      "legElastic": "picot-8"
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "tailored string briefs",
+    "tailored string brief"
+  ],
+  "description": "String briefs: the side is only its elastic, the back cut cheeky.",
+  "optIn": true
+}

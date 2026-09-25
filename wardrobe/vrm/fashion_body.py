@@ -78,7 +78,7 @@ FASHION_FIT_BODIES: tuple[FitFormProportions, ...] = (
         seat_projection=0.03, foot_length=0.24,
     ),
     FitFormProportions(
-        name="fit-form-b-curvy", height=1.66, shoulder_width=0.37, hip_width=0.40, chest_width=0.36,
+        name="fit-form-b-curvy", height=1.66, shoulder_width=0.37, hip_width=0.42, chest_width=0.36,
         depth=0.27, leg_ratio=0.51, arm_ratio=0.44,
         bust_girth=1.04, underbust_girth=0.85, waist_girth=0.84, high_hip_girth=1.00, full_hip_girth=1.12,
         thigh_girth=0.66, knee_girth=0.40, calf_girth=0.39, ankle_girth=0.235, neck_girth=0.35,
@@ -346,7 +346,10 @@ def _torso(form: FitFormProportions, marks: dict[str, float], forward: float) ->
         pair[:, 1] *= forward
         below.append(np.column_stack([pair[:, 0], np.full(pair.shape[0], heights[0] - depth), pair[:, 1]]))
     stack = np.stack(below[::-1] + rings)
-    centre = np.array([0.0, heights[0] - 0.032, 0.0])
+    # The pole under the centre of the last ring, not at z = 0: off-centre, the fan
+    # tilted and its normal pointed sideways, and a gusset read "outside" from it.
+    centre = stack[0].mean(axis=0)
+    centre[1] = heights[0] - 0.032
     return _grid(stack, name="torso", cap_bottom=centre)
 
 
