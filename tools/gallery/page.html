@@ -9,8 +9,10 @@ v.frame = () => place();
 await v.load('original', q.get('a'));
 v.setPose('relaxed');
 function place() {
-// Frame by height: the rest-pose bounds include arms out in a T, not the A-pose drawn.
-const height = 1.83, fov = THREE.MathUtils.degToRad(v.camera.fov);
+// Frame by height: the rest-pose bounds include arms out in a T, not the A-pose drawn,
+// but their height is hers whatever her arms do. A VRoid girl is 1.5 m, the mannequin 1.83.
+const box = new THREE.Box3().setFromObject(v.slots.original.vrm.scene);
+const height = Math.max(box.max.y, 0.5), fov = THREE.MathUtils.degToRad(v.camera.fov);
 const distance = (height * 0.56) / Math.tan(fov / 2);
 const yaw = Number(q.get('yaw') || 0) * Math.PI / 180;
 v.controls.target.set(0, height * 0.5, 0);

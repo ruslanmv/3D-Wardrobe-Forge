@@ -1,17 +1,24 @@
-"""Generate the verification gallery: 21 looks on one mannequin, through the real pipeline.
+"""Generate the verification gallery through the real pipeline.
 
     python tools/gallery/looks.py OUT_DIR [NUMBER ...]
+    python tools/gallery/looks.py OUT_DIR --avatar assets/library/AvatarSample_A.vrm [NUMBER ...]
 
-Writes OUT_DIR/g-NN.vrm for each look, the two sources (g-source-plain.vrm, and
-g-source-dressed.vrm for the replacement test), and OUT_DIR/g-records.json with
-what each look planned and how it fitted. Then render.mjs and compose.py.
+Writes OUT_DIR/g-NN.vrm for each look, the source it started from, and
+OUT_DIR/g-records.json with what each look planned and how it fitted. Then
+render.mjs and compose.py.
 
-The avatar is the calibration mannequin "calibration-c-tall": generated, faceless,
-adult proportions, VRM 1.0, given an MToon material so toon transparency is what
-gets tested. The job carries depictsAdult=true for it, as an operator's
-declaration would for a real avatar; nothing in a prompt can.
+Without ``--avatar`` the avatar is the calibration mannequin "calibration-c-tall":
+generated, faceless, adult proportions, VRM 1.0, given an MToon material so
+toon transparency is what gets tested. Its jobs carry depictsAdult=true, as an
+operator's declaration would for a real avatar; nothing in a prompt can.
+
+With ``--avatar`` the looks are EVERYDAY_LOOKS on that real VRM, as it arrives:
+dressed, VRM 0.x or 1.0, its own body and skeleton. No declaration is made for
+it — the tool is not the operator — so these are the looks no adult gate
+applies to, which exercise the same fitting code on a body nobody generated.
 """
 
+import argparse
 import asyncio
 import json
 import shutil
@@ -26,6 +33,7 @@ sys.path.insert(0, str(ROOT))
 from wardrobe.config import Settings  # noqa: E402
 from wardrobe.domain.garments import TemplateCatalog  # noqa: E402
 from wardrobe.domain.jobs import CreateJobRequest  # noqa: E402
+from wardrobe.library import AvatarLibrary  # noqa: E402
 from wardrobe.pipeline.orchestrator import Orchestrator  # noqa: E402
 from wardrobe.queue.jobs import AsyncioJobQueue  # noqa: E402
 from wardrobe.storage.database import InMemoryJobRepository, InMemoryWardrobeRepository  # noqa: E402
@@ -73,6 +81,27 @@ LOOKS = [
 ]
 
 
+#: Looks for a real avatar: every fitting path the haul uses, none of them gated.
+EVERYDAY_LOOKS = [
+    (1, "Crop top and jeans", "black fitted crop top + blue straight jeans", {}),
+    (2, "Bodycon mini dress", "red bodycon mini dress", {}),
+    (3, "Sequin mini dress", "pink sequin bodycon mini dress", {}),
+    (4, "Metallic mini dress", "shiny silver bodycon mini dress", {}),
+    (5, "Lined lace dress", "black lined lace bodycon mini dress", {}),
+    (6, "Satin slip dress", "champagne satin slip dress with spaghetti straps", {}),
+    (7, "Denim shorts", "blue high-waisted denim shorts + white crop top", {}),
+    (8, "Latex leggings", "neon green latex leggings + black crop top", {}),
+    (9, "Catsuit", "glossy black catsuit", {}),
+    (10, "Pleated skirt and halter", "navy pleated mini skirt + white halter top", {}),
+    (11, "Layered: stockings, skater dress, jacket",
+     "black thigh-high stockings + red skater mini dress + black cropped jacket", {}),
+    (12, "Maxi sundress", "yellow maxi sundress", {}),
+    (13, "Baggy jeans and tube top", "light blue baggy jeans + white tube top", {}),
+    (14, "Trench over a dress", "black bodycon mini dress + beige lightweight trench", {}),
+    (15, "Tiered maxi skirt and tee", "white tiered maxi skirt + black crop top", {}),
+]
+
+
 def toon_mannequin() -> GltfDocument:
     document = GltfDocument.from_bytes(build_vrm(BODY, spec="VRM1"))
     document.materials[0]["pbrMetallicRoughness"]["baseColorFactor"] = [0.8, 0.66, 0.6, 1.0]
@@ -117,8 +146,38 @@ def dressed_mannequin() -> bytes:
     return document.to_bytes()
 
 
-async def main() -> None:
-    OUT.mkdir(parents=True, exist_ok=True)
+def record(number: int, title: str, prompt: str, extra: dict, result, data: bytes | None) -> dict:
+    """What the look planned and how it fitted: the caption compose.py prints."""
+    entry = {
+        "number": number, "title": title, "prompt": prompt, "dressed": bool(extra.get("dressed")),
+        "state": str(result.state), "error": result.error,
+    }
+    if data is None:
+        return entry
+    doc = GltfDocument.from_bytes(data)
+    entry["materials"] = {
+        m.get("name"): m.get("alphaMode", "OPAQUE") for m in doc.materials
+        if any(m.get("name", "").startswith(g.name) for g in result.plan.garments)
+    }
+    report = result.fit_report
+    entry.update({
+        "passed": report.passed, "clipping": str(report.clipping_check),
+        "removed": report.replaced_garments, "baseBody": report.base_body.get("mode"),
+        "warnings": list(report.warnings),
+        "garments": [
+            {"name": g.name, "template": g.template_id, "layer": g.layer, "role": g.role,
+             "adult": g.requires_adult, "pattern": g.material.pattern, "alpha": g.material.alpha_mode,
+             "opacity": g.material.opacity, "lined": g.material.lined, "finish": g.material.finish,
+             "coverage": g.style.coverage, "straps": g.style.straps, "neckline": g.style.neckline,
+             "legCut": g.style.leg_cut, "rise": g.style.rise}
+            for g in result.plan.garments
+        ],
+    })
+    return entry
+
+
+async def main(out: Path, avatar: Path | None, only: set[int]) -> None:
+    out.mkdir(parents=True, exist_ok=True)
     tmp = Path(tempfile.mkdtemp())
     settings = Settings(wardrobe_storage_root=str(tmp), wardrobe_engine="native", strict_licensing=True)
     store = LocalObjectStore(settings.storage_root_path, settings)
@@ -127,64 +186,51 @@ async def main() -> None:
         settings=settings, store=store, jobs=InMemoryJobRepository(), wardrobes=InMemoryWardrobeRepository(),
         queue=AsyncioJobQueue(concurrency=1), catalog=catalog,
     )
-    plain = toon_mannequin().to_bytes()
-    dressed = dressed_mannequin()
-    (OUT / "g-source-plain.vrm").write_bytes(plain)
-    (OUT / "g-source-dressed.vrm").write_bytes(dressed)
-    await store.put("sources/plain.vrm", plain)
-    await store.put("sources/dressed.vrm", dressed)
+    if avatar is None:
+        looks, sources = LOOKS, {"plain": toon_mannequin().to_bytes(), "dressed": dressed_mannequin()}
+        declared = {"depictsAdult": True}
+    else:
+        looks = [(n, t, p, {"dressed": True}) for n, t, p, _ in EVERYDAY_LOOKS]
+        sources, declared = {"dressed": avatar.read_bytes()}, {"avatarId": avatar.stem}
+        # A library avatar goes in as the Studio sends it: licence from the
+        # provenance manifest, any declaration from policy.json — nothing added here.
+        library = AvatarLibrary.from_directory(ROOT / "assets" / "library")
+        entry = next((a for a in library.avatars if a.path and a.path.resolve() == avatar), None)
+        if entry is not None:
+            declared = {k: v for k, v in entry.avatar_input().items() if k not in ("storageKey", "sha256")}
+    for name, data in sources.items():
+        (out / f"g-source-{name}.vrm").write_bytes(data)
+        await store.put(f"sources/{name}.vrm", data)
+
     records = []
-    only = {int(a) for a in sys.argv[2:]}
-    for number, title, prompt, extra in LOOKS:
+    for number, title, prompt, extra in looks:
         if only and number not in only:
             continue
         key = "sources/dressed.vrm" if extra.get("dressed") else "sources/plain.vrm"
         request = CreateJobRequest.model_validate({
-            # The mannequin: the job carries the declaration an operator makes for an avatar.
-            "avatar": {"storageKey": key, "avatarId": "mannequin", "depictsAdult": True},
+            "avatar": {"storageKey": key, "avatarId": "mannequin", **declared},
             "outfit": {"prompt": prompt, "mode": "template"},
             "options": {"renderPreview": False, "engine": "native"},
         })
-        r = await orch.run_now(request)
-        entry = {
-            "number": number, "title": title, "prompt": prompt, "dressed": bool(extra.get("dressed")),
-            "state": str(r.state), "error": r.error,
-        }
-        if r.look:
-            data = await store.get(f"looks/{r.look.id}/look.vrm")
-            (OUT / f"g-{number:02d}.vrm").write_bytes(data)
-            doc = GltfDocument.from_bytes(data)
-            entry["materials"] = {
-                m.get("name"): m.get("alphaMode", "OPAQUE") for m in doc.materials
-                if any(m.get("name", "").startswith(g.name) for g in r.plan.garments)
-            }
-            report = r.fit_report
-            entry.update({
-                "passed": report.passed, "clipping": str(report.clipping_check),
-                "removed": report.replaced_garments, "baseBody": report.base_body.get("mode"),
-                "garments": [
-                    {"name": g.name, "template": g.template_id, "layer": g.layer, "role": g.role,
-                     "adult": g.requires_adult, "pattern": g.material.pattern, "alpha": g.material.alpha_mode,
-                     "opacity": g.material.opacity, "lined": g.material.lined, "finish": g.material.finish,
-                     "coverage": g.style.coverage, "straps": g.style.straps, "neckline": g.style.neckline,
-                     "legCut": g.style.leg_cut, "rise": g.style.rise}
-                    for g in r.plan.garments
-                ],
-            })
+        result = await orch.run_now(request)
+        data = await store.get(f"looks/{result.look.id}/look.vrm") if result.look else None
+        if data is not None:
+            (out / f"g-{number:02d}.vrm").write_bytes(data)
+        entry = record(number, title, prompt, extra, result, data)
         records.append(entry)
         print(number, entry["state"], entry.get("passed"), entry.get("clipping"), prompt, "->",
               [g["template"] for g in entry.get("garments", [])], entry.get("error") or "")
-    existing = {}
-    path = OUT / "g-records.json"
-    if path.exists():
-        existing = {e["number"]: e for e in json.loads(path.read_text())}
+    path = out / "g-records.json"
+    existing = {e["number"]: e for e in json.loads(path.read_text())} if path.exists() else {}
     existing.update({e["number"]: e for e in records})
     path.write_text(json.dumps([existing[k] for k in sorted(existing)], indent=2))
     shutil.rmtree(tmp, ignore_errors=True)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        raise SystemExit(__doc__)
-    OUT = Path(sys.argv[1]).resolve()
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("out", type=Path)
+    parser.add_argument("numbers", nargs="*", type=int)
+    parser.add_argument("--avatar", type=Path, help="a real VRM: runs EVERYDAY_LOOKS on it")
+    args = parser.parse_args()
+    asyncio.run(main(args.out.resolve(), args.avatar.resolve() if args.avatar else None, set(args.numbers)))

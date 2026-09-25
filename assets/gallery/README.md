@@ -9,7 +9,8 @@ and fit report. `gallery.json` has the full record per look. Regenerate with
 These are **quality evidence, not marketing**. The mannequin is deliberately
 low-poly and faceless; what to judge is the garment: whether it sits on her,
 whether its material reads as the prompt asked, and whether layers stay in
-order.
+order. The same fitting code on four real VRoid avatars is in
+[`real/`](real/README.md).
 
 | #   | Look                                                                     | Prompt                                                                                            | What it checks                                                                            |
 | --- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
@@ -51,14 +52,21 @@ ships empty.
 
 ## Known limitations visible here
 
-- **Sleeves are blocky** on this mannequin (#1, #14, #18, #19): short sleeves
-  stand off the upper arm and the catsuit's sleeves are wide.
-- **Trouser details stand proud**: the jeans' and shorts' side panels (#1, #14)
-  and the leggings' waistband (#12) sit out from the hip.
+- **Sleeves stand off this mannequin's arms** (#1, #14, #18, #19). Its arms are
+  thin, square prisms, and a sleeve is a round tube with ease over them. On the
+  real avatars, whose arms are measured, sleeves sit close: see
+  [`real/`](real/README.md).
 - **Lace trim is not its own region.** The lace sets (#3, #9) have an opaque
   elastic band, but no scalloped edge.
+- **A seam where a bodice meets its skirt** (#17), and where a yoke meets the
+  legs (#1, #12, #14, #18): the two pieces are separate meshes, and the join
+  shows as a line.
 - **A-pose only.** The gallery renders the viewer's relaxed pose; other poses
   are covered by the pose stress test, not by pictures.
 - **Layered outfits use the native engine only.** Blender does not yet attach
   more than one layer.
-- **Slip dress seam** (#17): a visible line where the bodice meets the skirt.
+
+Fixed since the first version of this gallery, by dressing the real avatars:
+jeans and shorts had side panels standing off the hips, and leggings a ledge at
+the waistband. Every torso band now ends at the measured crotch, and every leg
+starts there ([docs/FIT_QUALITY.md](../../docs/FIT_QUALITY.md)).

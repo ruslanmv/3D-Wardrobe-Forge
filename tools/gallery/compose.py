@@ -79,7 +79,7 @@ def compose(renders: Path, number: int, record: dict) -> Image.Image:
     labels = ["front 3/4 · A-pose", "front · A-pose"]
     if record.get("dressed"):
         panels.insert(0, panel(renders / "r-source-dressed-front.png"))
-        labels.insert(0, "source: wearing a top and trousers")
+        labels.insert(0, "source, as it arrives")
 
     height = max(p.height for p in panels)
     width = PANEL_W * len(panels) + GAP * (len(panels) + 1)

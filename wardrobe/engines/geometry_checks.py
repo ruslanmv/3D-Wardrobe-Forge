@@ -69,12 +69,54 @@ def _surface_samples(points: np.ndarray, triangles: np.ndarray, spacing: float) 
     return np.vstack(samples)
 
 
+def _head_attached_nodes(document: GltfDocument) -> set[int]:
+    """The head node and every node under it: what moves with her head."""
+    from wardrobe.vrm.inspect import inspect_document  # the inspector imports this module's neighbours
+
+    try:
+        head = inspect_document(document).humanoid_bones.get("head")
+    except Exception:  # noqa: BLE001 - not a VRM, or no humanoid: no head to leave out
+        return set()
+    if head is None:
+        return set()
+    attached, stack = set(), [head]
+    while stack:
+        index = stack.pop()
+        if index in attached:
+            continue
+        attached.add(index)
+        stack.extend(document.nodes[index].get("children") or [])
+    return attached
+
+
+def _moved_by(
+    document: GltfDocument, node: dict, primitive: dict, nodes: set[int], count: int
+) -> np.ndarray | None:
+    """Per vertex: is the joint with the largest weight one of ``nodes``?"""
+    attributes = primitive.get("attributes", {})
+    if "JOINTS_0" not in attributes or "WEIGHTS_0" not in attributes:
+        return None
+    skins = document.gltf.get("skins") or []
+    if node.get("skin") is None or node["skin"] >= len(skins):
+        return None
+    joint_nodes = np.asarray(skins[node["skin"]].get("joints") or [], dtype=np.int64)
+    joints = document.read_accessor(attributes["JOINTS_0"]).astype(np.int64)
+    weights = document.read_accessor(attributes["WEIGHTS_0"]).astype(np.float64)
+    if joints.shape[0] != count or joint_nodes.size == 0:
+        return None
+    dominant = joints[np.arange(count), np.argmax(weights, axis=1)]
+    dominant = np.clip(dominant, 0, joint_nodes.size - 1)
+    member = np.isin(joint_nodes, np.fromiter(nodes, dtype=np.int64))
+    return member[dominant]
+
+
 def body_points(
     document: GltfDocument,
     *,
     limit: int = MAX_BODY_POINTS,
     spacing: float = SURFACE_SPACING_M,
     skip: set[tuple[int, int]] | None = None,
+    include_head: bool = False,
 ) -> np.ndarray:
     """Rest-pose body surface — vertices plus samples across triangles — subsampled deterministically.
 
@@ -84,9 +126,18 @@ def body_points(
     had just taken off as part of her body — and read it once per primitive.
     ``skip`` leaves out (mesh, primitive) pairs: the body as it would be with
     those garments off, without taking them off.
+
+    Nothing that hangs from her head is body (``include_head`` keeps it). A
+    VRoid girl's hair reaches her thighs, 33 cm out from her axis at the hip,
+    and clearance read it as her hips: a mini dress flared into a bell round
+    it and a crop top grew wings. A vertex belongs to the head when the joint
+    that moves it most is the head or anything under it — hair, ribbons, ears,
+    eyes. Bust and skirt physics bones hang from the chest and hips, not the
+    head, so her figure stays.
     """
     collected: list[np.ndarray] = []
     accessors = document.gltf.get("accessors") or []
+    head_nodes = set() if include_head else _head_attached_nodes(document)
 
     for node_index in document.mesh_nodes():
         node = document.nodes[node_index]
@@ -115,9 +166,14 @@ def body_points(
                 continue
             indices = document.read_accessor(index_accessor).astype(np.int64).reshape(-1)
             indices = indices[indices < points.shape[0]]
+            triangles = indices[: indices.size // 3 * 3].reshape(-1, 3)
+            if skinned and head_nodes:
+                on_head = _moved_by(document, node, primitive, head_nodes, points.shape[0])
+                if on_head is not None and on_head.any():
+                    indices = indices[~on_head[indices]]
+                    triangles = triangles[~on_head[triangles].any(axis=1)]
             used.setdefault(position, []).append(np.unique(indices))
             if spacing > 0 and primitive.get("mode", 4) == 4:
-                triangles = indices[: indices.size // 3 * 3].reshape(-1, 3)
                 collected.append(_surface_samples(points, triangles, spacing))
         for position, parts in used.items():
             collected.append(cache[position][np.unique(np.concatenate(parts))])
@@ -136,7 +192,7 @@ class BodyRadialIndex:
     """Max body radius per (height band, angular sector)."""
 
     def __init__(self, points: np.ndarray, *, bands: int = DEFAULT_BANDS, sectors: int = DEFAULT_SECTORS,
-                 surroundings: np.ndarray | None = None):
+                 surroundings: np.ndarray | None = None, y_range: tuple[float, float] | None = None):
         """``surroundings``: the whole body, when ``points`` is only the part a garment covers.
 
         The hull must be the body's outline, and the covered region alone may
@@ -147,6 +203,13 @@ class BodyRadialIndex:
         covered ones (2.5x their farthest, per band) join the hull. The caller
         passes the torso without arms or head, so an arm out in a T-pose never
         does; the reach limit is a second guard, not the first.
+
+        ``y_range`` is the garment's own height. The index spans it as well as
+        the covered points, so a band the garment reaches but its coverage does
+        not name — the top of a trouser yoke at her waist, nearest the spine —
+        takes her torso outline from ``surroundings``. Without it that band had
+        no index, and the yoke kept a formula ring centred on her bones, 8 cm
+        behind a real avatar's back.
         """
         self.bands = bands
         self.sectors = sectors
@@ -160,6 +223,10 @@ class BodyRadialIndex:
 
         self.y_min = float(points[:, 1].min())
         self.y_max = float(points[:, 1].max())
+        if y_range is not None and surroundings is not None and surroundings.shape[0]:
+            low = max(float(y_range[0]), float(surroundings[:, 1].min()))
+            high = min(float(y_range[1]), float(surroundings[:, 1].max()))
+            self.y_min, self.y_max = min(self.y_min, low), max(self.y_max, high)
         # Use the median rather than the mean so outstretched arms do not drag
         # the vertical axis sideways.
         self.axis_x = float(np.median(points[:, 0]))
@@ -381,10 +448,87 @@ def select_region_points(
     if points.shape[0] == 0 or not segments:
         return np.ones(points.shape[0], dtype=bool)
 
+    nearest = nearest_body_bone(points, segments)
+    keep = np.array([canonical_bone(segments[i].name) in region_bones for i in range(len(segments))])
+    return keep[nearest]
+
+
+#: Bones whose points may really be the torso wall under them (see ``nearest_body_bone``).
+ARM_ROOT_BONES = frozenset({"leftShoulder", "rightShoulder", "leftUpperArm", "rightUpperArm"})
+
+#: A point further than this many times the arm's median radius from an arm bone is not arm.
+ARM_REACH = 1.8
+
+
+def nearest_body_bone(points: np.ndarray, segments: list[BoneSegment]) -> np.ndarray:
+    """Per point, the segment it belongs to: its nearest bone, except under the arm.
+
+    On a VRoid rig her chest is wider than her shoulder joints are apart, so the
+    side of her chest under the armpit is nearer the upper arm than the chest
+    bone. Classed as arm, it was left out of every torso garment's clearance,
+    and a bodycon dress let it through as dark slivers at her sides. A point is
+    arm only within ``ARM_REACH`` of the arm's median radius; further out it
+    belongs to the nearest bone that is not an arm.
+    """
     distances = distance_to_segments(points, segments)
     nearest = np.argmin(distances, axis=1)
-    keep = np.array([segments[i].name in region_bones for i in range(len(segments))])
-    return keep[nearest]
+    arm = np.array([segment.name in ARM_ROOT_BONES for segment in segments])
+    if not arm.any() or arm.all():
+        return nearest
+    on_arm = arm[nearest]
+    if not on_arm.any():
+        return nearest
+    own = distances[np.arange(points.shape[0]), nearest]
+    typical = float(np.median(own[on_arm]))
+    torso = on_arm & (own > typical * ARM_REACH)
+    if torso.any():
+        others = np.where(arm[None, :], np.inf, distances[torso])
+        nearest[torso] = np.argmin(others, axis=1)
+    return nearest
+
+
+def armpit_height(points: np.ndarray, segments: list[BoneSegment]) -> float | None:
+    """Where each arm leaves her body: the lowest arm point near the shoulder joint, averaged."""
+    nearest = nearest_body_bone(points, segments)
+    heights = []
+    for side in ("left", "right"):
+        index = next((i for i, s in enumerate(segments) if s.name == f"{side}UpperArm"), None)
+        if index is None:
+            continue
+        segment = segments[index]
+        axis = np.asarray(segment.tail, dtype=np.float64) - np.asarray(segment.head, dtype=np.float64)
+        length = float(np.linalg.norm(axis))
+        if length < 1e-6:
+            continue
+        mine = points[nearest == index]
+        along = (mine - np.asarray(segment.head, dtype=np.float64)) @ (axis / length)
+        root = mine[(along >= 0.0) & (along <= length * 0.25)]
+        if root.shape[0] >= 8:
+            heights.append(float(root[:, 1].min()))
+    return float(np.mean(heights)) if heights else None
+
+
+_FINGERS = ("Thumb", "Index", "Middle", "Ring", "Little")
+
+
+def canonical_bone(name: str) -> str:
+    """The bone a region list names for ``name``: a finger is its hand, a toe its foot.
+
+    Region and exclusion lists name hands, not the thirty finger bones a VRoid
+    rig maps. Unnamed, each finger was a bone of its own that no list excluded,
+    so her T-pose fingertips — 60 cm out at shoulder height — joined the torso
+    outline and a top grew wings out to them.
+    """
+    for side in ("left", "right"):
+        if name.startswith(side):
+            rest = name[len(side):]
+            if rest.startswith(_FINGERS):
+                return f"{side}Hand"
+            if rest == "Toes":
+                return f"{side}Foot"
+            if rest == "Eye":
+                return "head"
+    return "head" if name == "jaw" else name
 
 
 def measure_clearance(
@@ -513,6 +657,10 @@ def conform_to_body(
 #: Bins along a leg (metres) and sectors round it, for ``conform_limbs``.
 LIMB_BIN_M = 0.02
 LIMB_SECTORS = 24
+#: How far past a leg's typical radius the body may reach and still be leg (see conform_limbs).
+LIMB_REACH_CAP = 1.4
+#: The percentile of distance from the bone that is a leg's typical radius.
+LIMB_TYPICAL_PERCENTILE = 75
 
 
 def _leg_frames(bones: dict, forward: float):
@@ -561,6 +709,206 @@ def _project(points: np.ndarray, segments) -> tuple[np.ndarray, np.ndarray, np.n
         last = index == len(segments) - 1
         clipped = np.where(better, (t > length) if last else False, clipped)
     return best, along, angle, clipped
+
+
+#: Vertical spacing of the cross-sections a leg is measured at, in metres.
+LEG_SECTION_STEP_M = 0.03
+
+
+def lower_body_profile(body: np.ndarray, legs: np.ndarray, bones: dict) -> dict | None:
+    """Her legs as a tailor would take them: crotch height, and a cross-section every 3 cm.
+
+    Trouser legs were sized from her hip width, a formula for a body she may not
+    have. On a VRoid girl, whose legs stand 14 cm apart centre to centre, the
+    formula's 7 cm tubes met in the middle and a pair of jeans read as one
+    column; and every torso band (a yoke, a waistband, a catsuit's body) ran
+    down to a fixed fraction of the thigh, below her crotch, where it was a
+    tube round both legs standing off each thigh as a ledge.
+
+    Below the crotch each leg is measured as it is, not round its bone: a slice
+    of this side of her at each height, its centre and its radius (the 90th
+    percentile of distance from that centre). The shin bone runs down the front
+    of the leg; a tube round the bone had to be 7 cm to take in a calf that a
+    tube round the leg takes in at 5. ``legs`` are the points on her legs,
+    ``body`` everything that is her (for the crotch).
+    """
+    left, right = bones.get("leftUpperLeg"), bones.get("rightUpperLeg")
+    knee_l, knee_r = bones.get("leftLowerLeg"), bones.get("rightLowerLeg")
+    foot_l, foot_r = bones.get("leftFoot"), bones.get("rightFoot")
+    if None in (left, right, knee_l, knee_r, foot_l, foot_r) or legs.shape[0] < 50:
+        return None
+    centre = (float(left[0]) + float(right[0])) * 0.5
+    hip_y = (float(left[1]) + float(right[1])) * 0.5
+    knee_y = (float(knee_l[1]) + float(knee_r[1])) * 0.5
+    ankle_y = (float(foot_l[1]) + float(foot_r[1])) * 0.5
+
+    crotch = _crotch_height(body, centre, hip_y, knee_y)
+    if crotch is None:
+        crotch = hip_y - (hip_y - knee_y) * 0.12
+
+    sides: dict[str, list[list[float]]] = {}
+    for side, hip in (("left", left), ("right", right)):
+        sign = 1.0 if float(hip[0]) > centre else -1.0
+        # Leg only below the crotch: a blocky pelvis's flat underside sits at crotch
+        # height, is nearest the thigh bones, and measured as a leg ring as wide as
+        # the pelvis — the top of every trouser leg stood out as a flap.
+        mine = legs[((legs[:, 0] - centre) * sign > 0) & (legs[:, 1] < crotch - 0.01)]
+        rings = []
+        y = crotch - 0.015
+        while y > ankle_y:
+            slab = mine[np.abs(mine[:, 1] - y) < LEG_SECTION_STEP_M * 0.5]
+            if slab.shape[0] >= 12:
+                cx, cz = float(np.median(slab[:, 0])), float(np.median(slab[:, 2]))
+                radius = float(np.percentile(np.hypot(slab[:, 0] - cx, slab[:, 2] - cz), 90))
+                # How far the leg reaches outward, away from her midline: a thigh is
+                # deeper than it is wide, and a round tube sized for its depth stood
+                # out past her outer thigh where it met the yoke.
+                outward = float(np.percentile((slab[:, 0] - cx) * sign, 95))
+                if radius < 0.2:
+                    rings.append([y, cx, cz, radius, max(outward, 0.0)])
+            y -= LEG_SECTION_STEP_M
+        if len(rings) >= 4:
+            sides[side] = rings
+    if len(sides) < 2:
+        return None
+    return {"crotchY": crotch, "centreX": centre, "kneeY": knee_y, "ankleY": ankle_y, "legs": sides}
+
+
+#: Grid step of the upper-body surface map, in metres.
+UPPER_GRID_M = 0.01
+
+
+def upper_body_surface(
+    torso: np.ndarray, bones: dict, forward: float, shoulders: np.ndarray | None = None
+) -> dict | None:
+    """Her chest, shoulders and neck as a depth map: where a strap can lie.
+
+    Straps and halter ties were placed by formula: up to 4 cm above the shoulder
+    joint, then straight across, centred on her bones rather than her body. On
+    a VRoid girl that is a rectangle floating round her shoulders. Measured
+    instead: per 1 cm column across her (x) and 1 cm row up her (y), the
+    furthest-forward and furthest-back surface (z), and per column the top of
+    her shoulder. ``torso`` must be the torso without arms or head; the neck
+    may be in it (a halter goes round it). ``shoulders``, the torso without the
+    neck, gives the tops: taken with the neck, a strap near it climbed the
+    neck and stood up beside it like a collar.
+    """
+    chest = bones.get("upperChest") or bones.get("chest")
+    neck = bones.get("neck") or bones.get("head")
+    if chest is None or neck is None or torso.shape[0] < 100:
+        return None
+    y0 = float(chest[1]) - 0.15
+    y1 = float(neck[1]) + 0.06
+    region = torso[(torso[:, 1] >= y0) & (torso[:, 1] <= y1) & (np.abs(torso[:, 0]) <= 0.25)]
+    if region.shape[0] < 100:
+        return None
+    xs = np.arange(-0.25, 0.25 + 1e-9, UPPER_GRID_M)
+    ys = np.arange(y0, y1 + 1e-9, UPPER_GRID_M)
+    xi = np.clip(np.round((region[:, 0] + 0.25) / UPPER_GRID_M).astype(int), 0, xs.size - 1)
+    yi = np.clip(np.round((region[:, 1] - y0) / UPPER_GRID_M).astype(int), 0, ys.size - 1)
+    signed = region[:, 2] * forward  # larger is further forward, whichever way she faces
+    front = np.full((xs.size, ys.size), -np.inf)
+    back = np.full((xs.size, ys.size), np.inf)
+    np.maximum.at(front, (xi, yi), signed)
+    np.minimum.at(back, (xi, yi), signed)
+    top = np.full(xs.size, -np.inf)
+    tops = region
+    if shoulders is not None:
+        tops = shoulders[(shoulders[:, 1] >= y0) & (np.abs(shoulders[:, 0]) <= 0.25)]
+    ti = np.clip(np.round((tops[:, 0] + 0.25) / UPPER_GRID_M).astype(int), 0, xs.size - 1)
+    np.maximum.at(top, ti, tops[:, 1])
+    neck_top = np.full(xs.size, -np.inf)
+    np.maximum.at(neck_top, xi, region[:, 1])
+    known = np.isfinite(front)
+    return {
+        "x0": -0.25, "y0": y0, "step": UPPER_GRID_M, "forward": forward,
+        "front": np.where(known, front, np.nan).tolist(),
+        "back": np.where(known, back, np.nan).tolist(),
+        "top": np.where(np.isfinite(top), top, np.nan).tolist(),
+        "neckTop": np.where(np.isfinite(neck_top), neck_top, np.nan).tolist(),
+    }
+
+
+#: Where along an arm its radius is read: 0 the shoulder joint, 1 the elbow, 2 the wrist.
+ARM_STATIONS = (0.0, 0.2, 0.45, 0.7, 1.0, 1.3, 1.6, 1.9)
+
+
+def arm_profile(points: np.ndarray, segments: list[BoneSegment]) -> dict | None:
+    """Each arm's radius along it, measured: what a sleeve is cut from.
+
+    Sleeves were sized from arm length, 8.5% of it times a thickness, which on
+    a VRoid girl came to twice her arm: a tee's sleeves stood out as boxes and
+    a jacket's as bells. Per station along upper arm then forearm, the 85th
+    percentile of distance from the bone of the points that are that arm.
+    """
+    nearest = nearest_body_bone(points, segments)
+    by_name = {segment.name: i for i, segment in enumerate(segments)}
+    arms = {}
+    for side in ("left", "right"):
+        upper, lower = by_name.get(f"{side}UpperArm"), by_name.get(f"{side}LowerArm")
+        if upper is None or lower is None:
+            continue
+        radii = []
+        for station in ARM_STATIONS:
+            index = upper if station < 1.0 else lower
+            segment = segments[index]
+            head = np.asarray(segment.head, dtype=np.float64)
+            axis = np.asarray(segment.tail, dtype=np.float64) - head
+            length = float(np.linalg.norm(axis))
+            if length < 1e-6:
+                radii.append(0.0)
+                continue
+            axis /= length
+            mine = points[nearest == index]
+            along = (mine - head) @ axis
+            target = (station if station < 1.0 else station - 1.0) * length
+            slab = mine[np.abs(along - target) < 0.015]
+            if slab.shape[0] < 8:
+                radii.append(0.0)
+                continue
+            offset = slab - head - np.outer((slab - head) @ axis, axis)
+            radii.append(float(np.percentile(np.linalg.norm(offset, axis=1), 85)))
+        known = [(s, r) for s, r in zip(ARM_STATIONS, radii, strict=True) if r > 0]
+        if len(known) >= 3:
+            stations, values = zip(*known, strict=True)
+            arms[side] = [float(np.interp(s, stations, values)) for s in ARM_STATIONS]
+    return {"stations": list(ARM_STATIONS), **arms} if len(arms) == 2 else None
+
+
+def _crotch_height(body: np.ndarray, centre: float, hip_y: float, knee_y: float) -> float | None:
+    """The lowest height at which her midline is still pelvis, front to back.
+
+    Above the crotch a slice through her midline crosses belly and seat, some
+    15 cm of body. Below it the slice meets at most the inner thighs where
+    they touch, a centimetre. Walking down from the hip joints, the crotch is
+    where that depth collapses. The first gap between the legs is not it: a
+    figure whose thighs touch has no gap for 5 cm below her crotch.
+    """
+    midline = body[np.abs(body[:, 0] - centre) < 0.005]  # narrow: near-touching thighs have depth 1 cm out
+    step = 0.01
+
+    def depth(y: float) -> float | None:
+        """Front-to-back extent at ``y``; 0 with nothing there, None with too little to say."""
+        slab = midline[np.abs(midline[:, 1] - y) < step * 0.8]
+        if slab.shape[0] == 0:
+            return 0.0
+        return float(slab[:, 2].max() - slab[:, 2].min()) if slab.shape[0] >= 3 else None
+
+    # Walk down from above the hip joints, keeping the deepest pelvis slice seen
+    # as the reference: on a blocky mannequin the pelvis ends at the joints
+    # themselves, and a reference taken there found nothing and gave up.
+    reference = 0.0
+    y = hip_y + 0.06
+    while y > knee_y:
+        here = depth(y)
+        if here is not None:
+            reference = max(reference, here)
+        # Collapsed for two slices running: a low-poly body has empty slices mid-pelvis.
+        below = [depth(y - step), depth(y - 2 * step)]
+        if reference >= 0.03 and all(d is not None and d < reference * 0.25 for d in below):
+            return y
+        y -= step
+    return None
 
 
 def conform_limbs(
@@ -619,17 +967,20 @@ def conform_limbs(
         # outside that — pelvis points beside the hip joint, a garment's hidden
         # vertices (AvatarSample A's Bottoms has 270 of them 20 cm out round her
         # shins) — would flare the tube into a funnel. Cap each 2 cm of leg at
-        # 1.4x its typical radius, "typical" being the 30th percentile over it
-        # and its neighbours: on a roughly round leg nearly every surface point
-        # is at the radius, so a low percentile is the skin even when a third
-        # of the points are not. Local, so the top of the thigh keeps its width.
+        # LIMB_REACH_CAP times its typical radius over it and its neighbours.
+        # Local, so the top of the thigh keeps its width. "Typical" was the 30th
+        # percentile, which assumed a leg round its bone; a shin bone runs down
+        # the front of the leg, the 30th percentile is the shin, and the calf
+        # behind it (1.9x that) was cut off: leggings sat inside her calves.
+        # The 75th percentile is the calf when the calf is there, and still the
+        # skin when a minority of points are strays.
         typical = np.zeros(bins)
         for k in range(bins):
             window = near & (np.abs(b_bin - k) <= 1)
             if window.sum() >= 8:
-                typical[k] = np.percentile(body_distance[window], 30)
+                typical[k] = np.percentile(body_distance[window], LIMB_TYPICAL_PERCENTILE)
         capped = typical > 0
-        reach[capped] = np.minimum(reach[capped], typical[capped, None] * 1.4)
+        reach[capped] = np.minimum(reach[capped], typical[capped, None] * LIMB_REACH_CAP)
         # Smooth over neighbouring sectors and bins: a leg is round, samples are not.
         reach = np.maximum.reduce([reach, np.roll(reach, 1, axis=1), np.roll(reach, -1, axis=1)])
         # A cell with no body sample in it is not a hole in her leg. Left empty, a
@@ -674,6 +1025,60 @@ def conform_limbs(
         mesh.positions = points.astype(np.float32)
         mesh.compute_normals()
     return moved
+
+
+def settle_faces(
+    mesh: Mesh,
+    index: BodyRadialIndex,
+    clearance_m: float,
+    mask: np.ndarray | None = None,
+    *,
+    iterations: int = 3,
+) -> int:
+    """Push out faces that dip into the body between their vertices.
+
+    Clearance is checked at vertices. A face between two rows 3 cm apart is
+    flat, and over a curve — a bust, a hip — its middle can sit millimetres
+    inside a body every one of its corners clears: a skin-tight catsuit showed
+    her through it at the bust. Each face is sampled at its centre and edge
+    midpoints; where a sample is inside the body plus half the clearance, the
+    face's corners move out radially by the shortfall. Returns vertices moved.
+    """
+    if not index.valid or mesh.vertex_count == 0 or mesh.indices.size == 0:
+        return 0
+    triangles = mesh.indices.reshape(-1, 3).astype(np.int64)
+    if mask is not None:
+        triangles = triangles[mask[triangles].all(axis=1)]
+    if triangles.size == 0:
+        return 0
+    weights = np.array([[1 / 3, 1 / 3, 1 / 3], [0.5, 0.5, 0.0], [0.0, 0.5, 0.5], [0.5, 0.0, 0.5]])
+    moved = np.zeros(mesh.vertex_count, dtype=bool)
+    points = mesh.positions.astype(np.float64)
+    for _ in range(iterations):
+        corners = points[triangles]  # (T, 3, 3)
+        samples = np.einsum("sk,tkd->tsd", weights, corners).reshape(-1, 3)
+        body = index.body_radius_at(samples)
+        radius = index.point_radius(samples)
+        shortfall = np.where(body > 1e-6, body + clearance_m * 0.5 - radius, 0.0)
+        worst = shortfall.reshape(-1, 4).max(axis=1)
+        if not (worst > 1e-4).any():
+            break
+        push = np.zeros(mesh.vertex_count)
+        hit = worst > 1e-4
+        for corner in range(3):
+            np.maximum.at(push, triangles[hit, corner], worst[hit])
+        active = push > 0
+        dx = points[active, 0] - index.axis_x
+        dz = points[active, 2] - index.axis_z
+        current = np.maximum(np.sqrt(dx * dx + dz * dz), 1e-9)
+        scale = (current + push[active]) / current
+        points[active, 0] = index.axis_x + dx * scale
+        points[active, 2] = index.axis_z + dz * scale
+        moved |= active
+    if moved.any():
+        mesh.positions = points.astype(np.float32)
+        mesh.compute_normals()
+    return int(moved.sum())
 
 
 def smooth_radial(

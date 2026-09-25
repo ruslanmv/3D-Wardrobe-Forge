@@ -22,14 +22,19 @@ from wardrobe.engines.geometry_checks import (
     BodyRadialIndex,
     ClearanceReport,
     apply_pleats,
+    arm_profile,
+    armpit_height,
     body_points,
     conform_limbs,
     conform_to_body,
     coverage_report,
+    lower_body_profile,
     measure_clearance,
     resolve_clearance,
     select_region_points,
+    settle_faces,
     smooth_radial,
+    upper_body_surface,
 )
 from wardrobe.errors import FittingError
 from wardrobe.geometry.mesh import Mesh
@@ -69,6 +74,29 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     metadata = dict(artifact.metadata)
     # Which way she faces, for a rig without toes to say so: VRM 0.x faces -Z.
     metadata.setdefault("forward", -1.0 if context.info.spec is VrmSpec.VRM0 else 1.0)
+    whole = body_points(context.document)
+    legs = _skinned_to(context, whole, LEG_BONES)
+    if legs is not None:
+        # Her legs as measured, for anything with legs or a band that stops at the crotch.
+        profile = lower_body_profile(whole, legs, context.measurements.bone_positions)
+        if profile is not None:
+            metadata["lowerBody"] = profile
+            # What the leg fit reaches for is leg, below the crotch (see lower_body_profile).
+            legs = legs[legs[:, 1] < float(profile["crotchY"]) - 0.01]
+    bones = context.info.humanoid_bones
+    segments = build_bone_segments(bones, context.measurements, list(bones))
+    armpit = armpit_height(whole, segments) if segments else None
+    arms = arm_profile(whole, segments) if segments else None
+    if arms is not None:
+        metadata["armProfile"] = arms
+    if armpit is not None:
+        metadata["armpitY"] = armpit
+    upper = _skinned_to(context, whole, frozenset(bones) - (OUTLINE_EXCLUDED_BONES - {"neck"}))
+    if upper is not None:
+        surface = upper_body_surface(upper, context.measurements.bone_positions, metadata["forward"],
+                                     shoulders=_torso(context, whole))
+        if surface is not None:
+            metadata["upperBody"] = surface
     params = FitParameters(
         measurements=context.measurements,
         clearance_m=clearance,
@@ -92,7 +120,6 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     mesh = build_garment(kind, params, silhouette=context.plan.silhouette, hem=context.plan.hem)
 
     region_bones = set(bones_for_coverage(artifact.coverage)) - CLEARANCE_EXCLUDED_BONES
-    whole = body_points(context.document)
     body = _restrict_to_covered_region(context, whole, region_bones)
     torso = _torso(context, whole)
     inner = context.collision_points
@@ -102,13 +129,27 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         whole = np.vstack([whole, inner])
         body = np.vstack([body, inner])
         torso = inner if torso is None else np.vstack([torso, inner])
-    index = BodyRadialIndex(body, surroundings=torso)
+        # Stockings under trousers: their legs are what the trouser legs must clear.
+        inner_legs = _skinned_to(context, inner, LEG_BONES)
+        if inner_legs is not None:
+            profile = metadata.get("lowerBody")
+            if isinstance(profile, dict):
+                inner_legs = inner_legs[inner_legs[:, 1] < float(profile["crotchY"]) - 0.01]
+            legs = inner_legs if legs is None else np.vstack([legs, inner_legs])
+    heights = (float(mesh.positions[:, 1].min()), float(mesh.positions[:, 1].max()))
+    index = BodyRadialIndex(body, surroundings=torso, y_range=heights)
 
     axis_mask = on_axis_mask(mesh, context.measurements)
 
     conform = float(artifact.metadata.get("conform") or 0.0)
+    leg_conform = conform
+    below_hips = bool(artifact.metadata.get("conformBelowHips"))
+    if kind in TROUSER_KINDS and conform == 0.0:
+        # A trouser yoke sits on her hips like any waistband; its legs keep their
+        # cut. Unfitted, the yoke kept a formula's depth and stood 3 cm off her
+        # seat and belly on a real avatar.
+        conform, below_hips = YOKE_CONFORM, True
     if conform > 0.0:
-        below_hips = bool(artifact.metadata.get("conformBelowHips"))
         conform_to_body(mesh, index, clearance, axis_mask, strength=conform,
                         min_y=None if below_hips else params.hip_y)
 
@@ -116,14 +157,15 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     # off the body axis; fit them round each leg's own bones instead.
     leg_worn = ~axis_mask & (mesh.positions[:, 1] < params.hip_y + params.height * 0.03)
     if leg_worn.any():
-        legs = _skinned_to(context, whole, LEG_BONES)  # inner layers included: stockings under trousers
-        conform_limbs(mesh, leg_worn, legs if legs is not None else whole,
+        conform_limbs(mesh, leg_worn, legs if legs is not None and legs.shape[0] else whole,
                       context.measurements.bone_positions, clearance,
-                      strength=conform, forward=params.forward)
+                      strength=leg_conform, forward=params.forward)
+        _keep_legs_apart(mesh, leg_worn, context.measurements.bone_positions)
 
     before = measure_clearance(mesh, index, clearance, axis_mask)
     pushed = resolve_clearance(mesh, index, clearance, axis_mask)
     smooth_radial(mesh, index, clearance, axis_mask)
+    settle_faces(mesh, index, clearance, axis_mask)
     if pleats:
         apply_pleats(mesh, index, count=pleats, from_y=params.hip_y, mask=axis_mask)
     after = measure_clearance(mesh, index, clearance, axis_mask)
@@ -188,6 +230,8 @@ CLEARANCE_EXCLUDED_BONES = frozenset(
 #: A garment component whose centre sits further from the midline than this
 #: fraction of the leg separation is worn on one limb, not on the body.
 LIMB_OFFSET_FRACTION = 0.35
+#: ... or further off it than this fraction of its own half-width.
+LIMB_OFFSET_OF_WIDTH = 0.35
 
 
 def on_axis_mask(mesh: Mesh, measurements) -> np.ndarray:
@@ -222,7 +266,13 @@ def on_axis_mask(mesh: Mesh, measurements) -> np.ndarray:
 
     for label in np.unique(labels):
         member = labels == label
-        if abs(float(x[member].mean()) - centre) > tolerance:
+        offset = abs(float(x[member].mean()) - centre)
+        half_width = float(x[member].max() - x[member].min()) * 0.5
+        # Off the midline by a good part of its own width is a limb piece too. The
+        # spacing test alone called a pair of baggy legs torso on a knock-kneed
+        # avatar — 5.5 cm off a 4.8 cm tolerance, one wider cut from failing — and
+        # the torso fit pushed both legs out to one 36 cm bulge.
+        if offset > tolerance or offset > half_width * LIMB_OFFSET_OF_WIDTH:
             full[member] = False
     return full
 
@@ -275,6 +325,45 @@ OUTLINE_EXCLUDED_BONES = frozenset(
         "leftHand", "rightHand", "neck", "head",
     }
 )
+
+
+#: Garment shapes with a yoke over the hips and a leg per leg.
+TROUSER_KINDS = frozenset({"trousers", "pants", "jeans", "shorts"})
+
+#: How closely a trouser yoke is drawn onto her hips when the template says nothing.
+YOKE_CONFORM = 0.9
+
+#: The gap kept between two trouser legs at her midline, in metres.
+LEG_GAP_M = 0.003
+
+
+def _keep_legs_apart(mesh: Mesh, leg_worn: np.ndarray, bones: dict) -> None:
+    """Each leg-worn piece stays on its own side of her midline.
+
+    On a figure whose thighs touch, a leg's inner side — pushed out of her
+    inner thigh, or cut wider than it — crossed into the other leg. The two
+    interpenetrated and a pair of jeans read as one column. Held a few
+    millimetres short of the midline, the legs meet in a seam and read as two.
+    """
+    left, right = bones.get("leftUpperLeg"), bones.get("rightUpperLeg")
+    if left is None or right is None or not leg_worn.any():
+        return
+    centre = (float(left[0]) + float(right[0])) * 0.5
+    labels = connected_components(mesh)
+    x = mesh.positions[:, 0]
+    moved = False
+    for label in np.unique(labels[leg_worn]):
+        member = (labels == label) & leg_worn
+        side = np.sign(float(x[member].mean()) - centre)
+        if side == 0:
+            continue
+        crossing = member & ((x - centre) * side < LEG_GAP_M)
+        if crossing.any():
+            x[crossing] = centre + side * LEG_GAP_M
+            moved = True
+    if moved:
+        mesh.positions[:, 0] = x
+        mesh.compute_normals()
 
 
 #: What a leg is, for fitting leg-worn pieces: the pelvis beside the hip joint is not.

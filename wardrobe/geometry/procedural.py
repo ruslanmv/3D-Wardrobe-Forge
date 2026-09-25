@@ -93,6 +93,21 @@ class FitParameters:
     def shoulder_y(self) -> float:
         return self.bone_y("leftUpperArm", "rightUpperArm", default=self.chest_y + self.height * 0.05)
 
+    def top_edge(self, fraction: float) -> float:
+        """A torso garment's top edge, ``fraction`` of the way from chest to shoulder joint.
+
+        Without sleeves it never rises above her armpit (measured, ``armpitY``).
+        The shoulder joint is the arm's pivot, not where the arm leaves the
+        body: on a VRoid rig 60% of the way up is 1.5 cm above the armpit, and
+        a strapless dress's top edge ran through the root of each arm, which
+        showed through it. With sleeves the edge stays up: the sleeve meets it.
+        """
+        y = self.chest_y + (self.shoulder_y - self.chest_y) * fraction
+        armpit = self.metadata.get("armpitY")
+        if armpit is not None and not (self.sleeve_length and self.sleeve_length != "none"):
+            y = min(y, float(armpit) - 0.006)
+        return y
+
     @property
     def neck_y(self) -> float:
         return self.bone_y("neck", "head", default=self.shoulder_y + self.height * 0.04)
@@ -321,7 +336,7 @@ def sweep(points: np.ndarray, radii: list[float], *, segments: int = 12, name: s
 def build_bodice(params: FitParameters, *, y_top: float | None = None, y_bottom: float | None = None,
                  looseness: float = 1.0, name: str = "bodice") -> Mesh:
     """Torso shell from hip/waist up to the chest or shoulders."""
-    top = y_top if y_top is not None else params.chest_y + (params.shoulder_y - params.chest_y) * 0.55
+    top = y_top if y_top is not None else params.top_edge(0.55)
     bottom = y_bottom if y_bottom is not None else params.hip_y
 
     chest_w, chest_d = params.chest_half
@@ -369,6 +384,9 @@ def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25
 
     meshes: list[Mesh] = []
     radius = max(params.measurements.arm_length_m * 0.085, 0.02) * thickness + params.clearance_m
+    profile = params.metadata.get("armProfile")
+    # Ease over the measured arm: a catsuit (1.1) 1.1 cm, a tee (1.25) 1.9 cm, a jacket (1.45) 2.9 cm.
+    ease = params.clearance_m + max(thickness - 1.0, 0.0) * 0.05
 
     for side in ("left", "right"):
         chain = [f"{side}UpperArm", f"{side}LowerArm", f"{side}Hand"]
@@ -376,8 +394,13 @@ def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25
         if any(p is None for p in points):
             continue
         path = np.array(points, dtype=np.float64)
-
-        if length == "short":
+        measured = profile.get(side) if isinstance(profile, dict) else None
+        stations = (0.0, 0.2, 0.45) if length == "short" else (0.0, 0.45, 1.0, 1.45, 1.9)
+        if measured:
+            radii = [float(np.interp(s, profile["stations"], measured)) + ease for s in stations]
+            path = np.array([path[0] + (path[1] - path[0]) * s if s <= 1.0
+                             else path[1] + (path[2] - path[1]) * (s - 1.0) for s in stations])
+        elif length == "short":
             path = np.array([path[0], path[0] + (path[1] - path[0]) * 0.45])
             radii = [radius * 1.15, radius * 1.05]
         else:
@@ -390,40 +413,168 @@ def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25
     return meshes
 
 
+def crotch_y(params: FitParameters, default: float) -> float:
+    """Where her body divides into two legs, as measured; ``default`` without a measurement.
+
+    A torso band — a yoke, a waistband, a catsuit's body — must stop here. Below
+    it the body is two legs, and a band is a tube round both of them standing
+    off each thigh: the ledge real avatars showed at the hips of every pair of
+    trousers, leggings and catsuit.
+    """
+    profile = params.metadata.get("lowerBody")
+    if isinstance(profile, dict) and profile.get("crotchY") is not None:
+        return float(profile["crotchY"]) + 0.004
+    return default
+
+
+def leg_chain(params: FitParameters, side: str) -> np.ndarray | None:
+    """Hip joint, knee and ankle of one leg, or None when the rig does not say."""
+    names = (f"{side}UpperLeg", f"{side}LowerLeg", f"{side}Foot")
+    points = [params.measurements.bone_positions.get(name) for name in names]
+    if any(point is None for point in points):
+        return None
+    return np.array(points, dtype=np.float64)
+
+
+def _chain_point(chain: np.ndarray, station: float) -> np.ndarray:
+    """A point along hip → knee (0..1) → ankle (1..2)."""
+    if station <= 1.0:
+        return chain[0] + (chain[1] - chain[0]) * station
+    return chain[1] + (chain[2] - chain[1]) * min(station - 1.0, 1.0)
+
+
+def _station_at_y(chain: np.ndarray, y: float) -> float:
+    """The station whose height is ``y``, walking down the leg."""
+    if y >= chain[1][1]:
+        return float(np.clip((chain[0][1] - y) / max(chain[0][1] - chain[1][1], 1e-6), 0.0, 1.0))
+    return 1.0 + float(np.clip((chain[1][1] - y) / max(chain[1][1] - chain[2][1], 1e-6), 0.0, 1.0))
+
+
+def leg_radius(params: FitParameters, station: float) -> float:
+    """The formula leg radius at ``station`` (0 hip, 1 knee, 2 ankle), for a body nobody measured."""
+    thigh = max(params.measurements.hip_width_m * 0.24, 0.045)
+    if station <= 1.0:
+        return thigh * (1.0 - 0.3 * station)
+    return thigh * (0.7 - 0.25 * (station - 1.0))
+
+
+#: Where a formula trouser leg's rings are placed: 0 the hip joint, 1 the knee, 2 the ankle.
+TROUSER_STATIONS = (0.0, 0.15, 0.3, 0.45, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0)
+
+
+def trouser_ease(params: FitParameters, flare: float) -> float:
+    """Room between leg and fabric: 1.4 cm slim, 2.2 cm straight, 3.7 cm wide (with 6 mm clearance)."""
+    return params.clearance_m + 0.008 + max(flare - 0.95, 0.0) * 0.05
+
+
+def _measured_leg(params: FitParameters, rings: list, *, hem_y: float, flare: float,
+                  crotch: float, knee_y: float) -> tuple[np.ndarray, list[float]]:
+    """A trouser leg's path and radii from her measured cross-sections (see ``lower_body_profile``).
+
+    The path runs through each section's centre, so the tube is round her leg
+    and not round the bone at its front. Straight legs never narrow below the
+    knee's width; wide legs below the width high on the thigh. Holding the knee's
+    centre instead and taking in the calf from there put the calf's offset on
+    top of its radius, and a straight leg ballooned to 21 cm deep.
+    """
+    rings = [r for r in rings if r[0] > hem_y + 1e-3]
+    if not rings:
+        return np.zeros((0, 3)), []
+    ease = trouser_ease(params, flare)
+    depth = max(crotch - knee_y, 1e-3)
+    hang_from = knee_y if flare < 1.3 else crotch - depth * 0.3
+    points: list[np.ndarray] = []
+    radii: list[float] = []
+    floor = 0.0
+    # How far down the thigh the ease takes to arrive: a wide leg that reached its
+    # width in a hand's breadth stepped out from the fitted yoke like a ledge.
+    fade_over = depth * (0.3 if flare < 1.05 else 0.55 if flare < 1.3 else 0.9)
+    for ring in rings:
+        y, cx, cz, radius = ring[:4]
+        fade = float(np.clip((crotch - y) / fade_over, 0.0, 1.0))
+        fade = fade * fade * (3.0 - 2.0 * fade)
+        if len(ring) > 4 and ring[4] < radius:
+            # Near the yoke, no wider sideways than her thigh is, widening to the
+            # full radius as the ease arrives. The leg fit pushes out whatever of
+            # the tube this leaves inside her front or back.
+            radius = ring[4] + (radius - ring[4]) * fade
+        r = radius + params.clearance_m + (ease - params.clearance_m) * fade
+        if flare >= 1.05 and y <= hang_from:
+            floor = floor or r
+            r = max(r, floor)
+        points.append(np.array([cx, y, cz]))
+        radii.append(r)
+    # Cloth does not follow every 3 cm of a leg: two passes of a 3-tap average
+    # take out the knee and ankle knuckles the raw sections leave.
+    for _ in range(2):
+        if len(points) < 3:
+            break
+        centres = np.array(points)
+        widths = np.array(radii)
+        centres[1:-1, [0, 2]] = (centres[:-2, [0, 2]] + centres[1:-1, [0, 2]] + centres[2:, [0, 2]]) / 3.0
+        widths[1:-1] = (widths[:-2] + widths[1:-1] + widths[2:]) / 3.0
+        points, radii = list(centres), [float(w) for w in widths]
+    last = points[-1]
+    if hem_y < last[1] - 0.005:
+        points.append(np.array([last[0], hem_y, last[2]]))
+        radii.append(radii[-1])
+    # Up inside the yoke, so no gap opens between them.
+    first = points[0]
+    points.insert(0, np.array([first[0], crotch + 0.02, first[2]]))
+    radii.insert(0, radii[0])
+    return np.array(points), radii
+
+
 def build_trousers(params: FitParameters, *, hem_y: float, flare: float = 1.0,
                    name: str = "trousers") -> list[Mesh]:
+    """A yoke down to her crotch and a leg per leg, cut from her measured legs.
+
+    The cut is ease over the leg, read off ``flare``: slim follows the leg a
+    centimetre and a half out; straight hangs from the knee; wide from the
+    thigh. Ease fades to the body clearance over the top of the thigh, so a leg
+    meets the yoke without a step. A body nobody measured gets the old formula.
+    """
     rise_style = str(params.metadata.get("rise") or "")
     waist_band = {"high": 0.32, "low": -0.25}.get(rise_style, 0.15)  # fraction of waist→chest
     if waist_band >= 0:
         y_top = params.waist_y + (params.chest_y - params.waist_y) * waist_band
     else:
         y_top = params.waist_y + (params.waist_y - params.hip_y) * waist_band
+    profile = params.metadata.get("lowerBody")
+    measured = isinstance(profile, dict) and bool(profile.get("legs"))
+    crotch = crotch_y(params, params.hip_y - (params.hip_y - params.knee_y) * 0.18)
     meshes: list[Mesh] = [
         build_bodice(
             params,
             y_top=y_top,
-            y_bottom=params.hip_y - (params.hip_y - params.knee_y) * 0.18,
-            looseness=1.03,
+            y_bottom=crotch,
+            # Measured, the yoke starts a touch inside her and the fit takes it
+            # out to her hips; unmeasured, it keeps the old ease.
+            looseness=0.97 if measured else 1.03,
             name=f"{name}-yoke",
         )
     ]
-
-    thigh_radius = max(params.measurements.hip_width_m * 0.26, 0.05) * flare + params.clearance_m
-    ankle_radius = max(thigh_radius * 0.62 * flare, 0.035)
-
+    segments = max(params.segments // 2, 8)
     for side in ("left", "right"):
-        hip = params.measurements.bone_positions.get(f"{side}UpperLeg")
-        knee = params.measurements.bone_positions.get(f"{side}LowerLeg")
-        if hip is None or knee is None:
-            continue
-        hip_point = np.array(hip, dtype=np.float64)
-        knee_point = np.array(knee, dtype=np.float64)
-        hem_point = np.array([knee_point[0], hem_y, knee_point[2]], dtype=np.float64)
-
-        path = np.array([hip_point + np.array([0.0, (hip_point[1] - knee_point[1]) * 0.08, 0.0]),
-                         knee_point, hem_point])
-        radii = [thigh_radius, thigh_radius * 0.82, ankle_radius]
-        meshes.append(sweep(path, radii, segments=max(params.segments // 2, 8), name=f"{name}-{side}",
+        if measured:
+            rings = profile["legs"].get(side)
+            if not rings:
+                continue
+            path, radii = _measured_leg(params, rings, hem_y=hem_y, flare=flare,
+                                        crotch=float(profile["crotchY"]), knee_y=float(profile["kneeY"]))
+            if path.shape[0] < 2:
+                continue
+        else:
+            chain = leg_chain(params, side)
+            if chain is None:
+                continue
+            ease = trouser_ease(params, flare)
+            end = _station_at_y(chain, hem_y)
+            stations = [s for s in TROUSER_STATIONS if s < end - 0.02] + [end]
+            radii = [leg_radius(params, s) + ease for s in stations]
+            path = np.array([chain[0] + np.array([0.0, (chain[0][1] - chain[1][1]) * 0.08, 0.0])]
+                            + [_chain_point(chain, s) for s in stations[1:]])
+        meshes.append(sweep(path, list(radii), segments=segments, name=f"{name}-{side}",
                             max_spacing=GARMENT_ROW_SPACING_M))
     return meshes
 
@@ -467,45 +618,164 @@ def build_band(params: FitParameters, *, y_bottom: float, y_top: float, loosenes
                 max_spacing=GARMENT_ROW_SPACING_M)
 
 
+def _upper(params: FitParameters) -> dict | None:
+    surface = params.metadata.get("upperBody")
+    return surface if isinstance(surface, dict) and surface.get("front") else None
+
+
+def _grid_value(surface: dict, key: str, x: float, y: float) -> float | None:
+    """The depth map's ``key`` ("front"/"back", signed forward) at (x, y), from the nearest measured cell."""
+    grid = np.asarray(surface[key], dtype=np.float64)
+    step = float(surface["step"])
+    i = int(round((x - float(surface["x0"])) / step))
+    j = int(round((y - float(surface["y0"])) / step))
+    for reach in range(4):
+        cells = grid[max(i - reach, 0):i + reach + 1, max(j - reach, 0):j + reach + 1]
+        values = cells[np.isfinite(cells)]
+        if values.size:
+            return float(values.max() if key == "front" else values.min())
+    return None
+
+
+def surface_point(params: FitParameters, x: float, y: float, side: str, lift: float) -> np.ndarray | None:
+    """A point ``lift`` off her measured front or back surface at (x, y), in world space."""
+    surface = _upper(params)
+    if surface is None:
+        return None
+    value = _grid_value(surface, side, x, y)
+    if value is None:
+        return None
+    forward = float(surface["forward"])
+    signed = value + lift if side == "front" else value - lift
+    return np.array([x, y, signed * forward])
+
+
+def shoulder_top(params: FitParameters, x: float) -> float | None:
+    """The top of her shoulder at ``x``, measured."""
+    surface = _upper(params)
+    if surface is None:
+        return None
+    tops = np.asarray(surface["top"], dtype=np.float64)
+    i = int(round((x - float(surface["x0"])) / float(surface["step"])))
+    window = tops[max(i - 1, 0):i + 2]
+    window = window[np.isfinite(window)]
+    return float(window.max()) if window.size else None
+
+
+def _measured_strap(params: FitParameters, x_body: float, x_top: float, top_y: float, lift: float) -> list:
+    """Front at the garment's top edge, up her chest, over her shoulder, down her back."""
+    peak = shoulder_top(params, x_top)
+    if peak is None or peak <= top_y + 0.01:
+        return []
+    rows = 6
+    front, back = [], []
+    for k in range(rows):
+        t = k / (rows - 1)
+        x = x_body + (x_top - x_body) * t
+        y = top_y + (peak - 0.012 - top_y) * t
+        a, b = surface_point(params, x, y, "front", lift), surface_point(params, x, y, "back", lift)
+        if a is None or b is None:
+            return []
+        front.append(a)
+        back.append(b)
+    over = (front[-1] + back[-1]) * 0.5
+    over[1] = peak + lift
+    return front + [over] + back[::-1]
+
+
 def build_straps(params: FitParameters, *, top_y: float, style: str = "shoulder",
                  name: str = "strap") -> list[Mesh]:
     """Thin straps from a bodice's top edge over the shoulders, or round the neck.
 
     Each strap is its own mesh component off the midline, so the clearance pass
     treats it as limb-worn and leaves it as built — it has to be placed right
-    here: out to the front of the bust, over the top of the shoulder a little
-    above the joint, and down the back.
+    here. With her upper body measured (``upperBody``) a strap lies on it: up
+    her chest from the top edge, over the top of her shoulder, down her back,
+    a strap's width off the skin. Without, the old formula path.
     """
     if style == "none":
         return []
     half_w, half_d = half_at(params, top_y)
-    shoulder_top = params.shoulder_y + params.height * 0.03
+    shoulder_top_y = params.shoulder_y + params.height * 0.03
     radius = max(params.height * 0.004, 0.004)
+    # A strap rests on her: its own radius and a millimetre off the skin. Lifted by
+    # the body clearance too, its top stood 1.5 cm proud of her shoulder.
+    lift = radius + 0.001
     meshes: list[Mesh] = []
 
     front = params.forward  # a halter ties behind her neck, whichever way she faces
     if style == "halter":
         neck = params.neck_y - params.height * 0.01
         for side in (-1.0, 1.0):
-            path = np.array([
+            measured = _measured_halter(params, side, half_w, top_y, neck, lift)
+            path = measured if measured is not None else np.array([
                 [side * half_w * 0.42, top_y, front * half_d * 0.92],
                 [side * half_w * 0.2, (top_y + neck) * 0.5, front * half_d * 0.75],
                 [side * params.height * 0.035, neck, 0.0],
                 [side * params.height * 0.012, neck + params.height * 0.004, -front * params.height * 0.03],
             ])
-            meshes.append(sweep(path, [radius] * 4, segments=6, name=f"{name}-halter-{side:+.0f}"))
+            meshes.append(sweep(path, [radius] * len(path), segments=6, name=f"{name}-halter-{side:+.0f}"))
         return meshes
 
     shoulder_x = params.measurements.shoulder_width_m * 0.5 * 0.55
+    joint = params.measurements.bone_positions.get("leftUpperArm")
+    neck_half = _neck_half_width(params)
+    # Measured, the strap crosses her shoulder 60% of the way from neck to joint.
+    strap_x = shoulder_x
+    if joint is not None and neck_half:
+        strap_x = neck_half + (abs(float(joint[0])) - neck_half) * 0.6
     for side in (-1.0, 1.0):
-        path = np.array([
-            [side * half_w * 0.5, top_y, half_d * 0.9],
-            [side * shoulder_x, shoulder_top, half_d * 0.35],
-            [side * shoulder_x, shoulder_top, -half_d * 0.35],
-            [side * half_w * 0.5, top_y, -half_d * 0.9],
-        ])
-        meshes.append(sweep(path, [radius] * 4, segments=6, name=f"{name}-{side:+.0f}"))
+        path = _measured_strap(params, side * half_w * 0.5, side * strap_x, top_y, lift)
+        if not path:
+            path = [
+                [side * half_w * 0.5, top_y, half_d * 0.9],
+                [side * shoulder_x, shoulder_top_y, half_d * 0.35],
+                [side * shoulder_x, shoulder_top_y, -half_d * 0.35],
+                [side * half_w * 0.5, top_y, -half_d * 0.9],
+            ]
+        path = np.array(path, dtype=np.float64)
+        meshes.append(sweep(path, [radius] * len(path), segments=6, name=f"{name}-{side:+.0f}"))
     return meshes
+
+
+def _neck_half_width(params: FitParameters) -> float | None:
+    """Half her neck's width at its base, from the columns of the depth map that reach up it."""
+    surface = _upper(params)
+    if surface is None or not surface.get("neckTop"):
+        return None
+    tops = np.asarray(surface["neckTop"], dtype=np.float64)
+    xs = float(surface["x0"]) + np.arange(tops.size) * float(surface["step"])
+    tall = np.abs(xs[np.isfinite(tops) & (tops >= params.neck_y + 0.01)])
+    return float(tall.max()) if tall.size else None
+
+
+def _measured_halter(params: FitParameters, side: float, half_w: float, top_y: float, neck_y: float,
+                     lift: float) -> np.ndarray | None:
+    """A halter tie on her body: up her chest from the top edge, round the side of her neck, behind it."""
+    surface = _upper(params)
+    if surface is None:
+        return None
+    base = neck_y - 0.02
+    # Her neck's half-width at its base: the measured columns that reach that high.
+    tops = np.asarray(surface.get("neckTop") or surface["top"], dtype=np.float64)
+    xs = float(surface["x0"]) + np.arange(tops.size) * float(surface["step"])
+    tall = np.abs(xs[np.isfinite(tops) & (tops >= base + 0.02)])
+    neck_half = float(tall.max()) if tall.size else params.height * 0.03
+    points = []
+    for k in range(5):
+        t = k / 4
+        x = side * (half_w * 0.42 + (neck_half + lift - half_w * 0.42) * t)
+        y = top_y + (base - top_y) * t
+        point = surface_point(params, x, y, "front", lift)
+        if point is None:
+            return None
+        points.append(point)
+    behind = surface_point(params, side * neck_half * 0.35, base + 0.01, "back", lift)
+    if behind is None:
+        return None
+    side_of_neck = (points[-1] + behind) * 0.5
+    side_of_neck[0] = side * (neck_half + lift)
+    return np.array(points + [side_of_neck, behind])
 
 
 def build_legwear(params: FitParameters, *, top_y: float, name: str = "legwear",
@@ -513,7 +783,12 @@ def build_legwear(params: FitParameters, *, top_y: float, name: str = "legwear",
     """Thigh-high stockings: a close tube per leg, ankle to ``top_y``.
 
     ``ankle`` stops at the ankle rather than over the foot — leggings, a catsuit.
+
+    No tube starts above her crotch. Leggings and a catsuit asked for one at
+    the hip joint, where a leg is still pelvis: the top ring went round her
+    seat and stood out as a ledge beside each hip.
     """
+    top_y = min(top_y, crotch_y(params, top_y))
     meshes: list[Mesh] = []
     for side in ("left", "right"):
         hip = params.measurements.bone_positions.get(f"{side}UpperLeg")
@@ -882,7 +1157,7 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
     rise = params.waist_y - params.hip_y
     thigh = params.hip_y - params.knee_y
     torso = params.chest_y - params.waist_y
-    bust_top = params.chest_y + (params.shoulder_y - params.chest_y) * 0.3
+    bust_top = params.top_edge(0.3)
     underbust = params.chest_y - torso * 0.32
     low_rise = params.waist_y - rise * 0.35
     leg_opening = params.hip_y - thigh * 0.07
@@ -958,7 +1233,7 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
                                   underbust_y=underbust)]
 
     if kind == "crop-top":
-        top_y = params.chest_y + (params.shoulder_y - params.chest_y) * 0.6
+        top_y = params.top_edge(0.6)
         bottom_y = params.waist_y + torso * (0.38 + (1.0 - min(scale, 1.0)) * 0.6)
         bottom_y = min(bottom_y, underbust)
         top = build_band(params, y_bottom=bottom_y, y_top=top_y, looseness=1.0 + (flare - 1.0) * 0.2,
@@ -1006,8 +1281,8 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
             sections += build_garter(params, belt_y=params.waist_y, stocking_top_y=stocking_top)
         return sections
     if kind == "leggings":
-        waistband = build_band(params, y_bottom=params.hip_y - thigh * 0.12, y_top=low_rise + rise * 0.3,
-                               rows=5, name="leggings-waist")
+        waistband = build_band(params, y_bottom=crotch_y(params, params.hip_y - thigh * 0.12),
+                               y_top=low_rise + rise * 0.3, rows=5, name="leggings-waist")
         return [waistband, *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="leggings",
                                           ankle=True)]
     if kind == "tights":
@@ -1015,14 +1290,14 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         # of its own: KIND_REGIONS leaves tights out, so they go under her skirt
         # or shorts and never take them off.
         waistband = with_elastic(
-            build_band(params, y_bottom=params.hip_y - thigh * 0.12, y_top=low_rise + rise * 0.3, rows=5,
-                       name="tights-waist"),
+            build_band(params, y_bottom=crotch_y(params, params.hip_y - thigh * 0.12),
+                       y_top=low_rise + rise * 0.3, rows=5, name="tights-waist"),
             segments=params.segments, top=True,
         )
         return [waistband, *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="tights")]
     if kind == "catsuit":
         top_y = params.chest_y + (params.shoulder_y - params.chest_y) * 0.62
-        bottom_y = params.hip_y - thigh * 0.12
+        bottom_y = crotch_y(params, params.hip_y - thigh * 0.12)
         body = cut_top(build_band(params, y_bottom=bottom_y, y_top=top_y, rows=10, name="catsuit-body"),
                        bottom_y, top_y)
         legs = build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="catsuit", ankle=True)
@@ -1067,7 +1342,7 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
     sections: list[Mesh]
 
     if category == "dress":
-        top_y = params.chest_y + (params.shoulder_y - params.chest_y) * 0.6
+        top_y = params.top_edge(0.6)
         sections = [
             _cut_bodice(build_bodice(params, y_top=top_y, y_bottom=params.hip_y, name="dress-bodice"),
                         params, params.hip_y, top_y),
@@ -1079,7 +1354,7 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
         sections = [build_skirt(params, y_top=params.waist_y, y_bottom=hem_y, flare=flare)]
 
     elif category in {"top", "shirt", "blouse"}:
-        top_y = params.chest_y + (params.shoulder_y - params.chest_y) * 0.6
+        top_y = params.top_edge(0.6)
         bottom_y = params.hip_y - (params.hip_y - params.knee_y) * 0.12
         sections = [
             _cut_bodice(

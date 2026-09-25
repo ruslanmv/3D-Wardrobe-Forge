@@ -62,7 +62,6 @@ def run(spec: dict) -> dict:
     log(f"importing {spec['sourceVrm']}")
     scene = import_vrm.import_vrm(spec["sourceVrm"])
     armature = scene["armature"]
-    body = import_vrm.largest_mesh(scene["meshes"])
     if not scene["usedVrmAddon"]:
         report["warnings"].append(
             "the VRM add-on was unavailable on import; VRM metadata may be incomplete"
@@ -72,6 +71,9 @@ def run(spec: dict) -> dict:
     if humanoid["missing"]:
         raise RuntimeError("missing required humanoid bones: " + ", ".join(humanoid["missing"]))
     bones = humanoid["bones"]
+    # Chosen by what drives it, now that the humanoid is known: the largest mesh
+    # can be her hair (see worker/blender/body_select.py).
+    body = import_vrm.body_mesh(scene["meshes"], bones)
     log(f"resolved {len(bones)} humanoid bones")
 
     # ---- 3-4. normalise and measure ------------------------------------
