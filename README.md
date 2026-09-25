@@ -138,8 +138,6 @@ curl -X POST localhost:8080/v1/jobs -H 'content-type: application/json' -d '{
 
 ### Lingerie bottoms: one pattern grammar
 
-![Sixteen bottoms on the adult fashion-fit form, front, side and back, each captioned with its own pattern measurements](docs/images/lingerie-bottoms.webp)
-
 A brief is cut from three pieces: front and back panels, and a gusset that
 crosses under the crotch. That gives exactly three openings. Styles are not
 separate meshes. Each is a preset over independent pattern rules:
@@ -156,8 +154,8 @@ string bikini keeps a real back: 60% coverage, against a thong's 18%. Coverage
 is solved, not approximated: a Brazilian specified at 42% measures 42%. The
 presets are classic, high-leg, French-cut, hipster, boyshort, high-waist,
 cheeky, Brazilian, tanga, thong, high-waist thong, G-string, V-string, string,
-string bikini and bikini. `tools/gallery/bottoms.py` builds the sheet above
-through the real pipeline, on a fashion-fit form that
+string bikini and bikini. `tools/gallery/bottoms.py` renders every preset,
+front, side and back, through the real pipeline, on a fashion-fit form that
 `assets/calibration/policy.json` declares adult. It is intimate wear, so it goes
 through the adult gate like any request. The plan and progress are in
 [docs/LINGERIE_UPGRADE_PLAN.md](docs/LINGERIE_UPGRADE_PLAN.md).
