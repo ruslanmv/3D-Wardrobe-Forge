@@ -27,6 +27,7 @@ from wardrobe.geometry.mesh import Mesh
 from wardrobe.geometry.procedural import FitParameters, _neck_half_width, shoulder_top, surface_point
 from wardrobe.geometry.ribbon import ribbon
 from wardrobe.lingerie.contract import Anchor, FittedStrap, StrapSpec
+from wardrobe.lingerie.surface import DepthMap
 
 #: Gap between a ribbon's underside and her skin: over the depth map's 1 cm cells, a convex curve
 #: bulges past a chord by up to half a millimetre, so the gap allows for it.
@@ -35,9 +36,20 @@ GAP_M = 0.0012
 STEP_M = 0.01
 
 
+def _point(params: FitParameters, x: float, y: float, side: str, lift: float) -> np.ndarray | None:
+    """On her measured surface, ``lift`` off along her normal (``DepthMap``); nearest-cell without one."""
+    depth_map = DepthMap.of(params)
+    if depth_map is not None:
+        return depth_map.point(x, y, side, lift)
+    return surface_point(params, x, y, side, lift)
+
+
 def surface_normal(params: FitParameters, x: float, y: float, side: str,
                    h: float = 0.012) -> np.ndarray | None:
     """Her outward surface normal at (x, y) on the front or back of the depth map."""
+    depth_map = DepthMap.of(params)
+    if depth_map is not None:
+        return depth_map.normal(x, y, side)
     p = [surface_point(params, x + dx, y + dy, side, 0.0) for dx, dy in ((h, 0), (-h, 0), (0, h), (0, -h))]
     if any(q is None for q in p):
         return None
@@ -74,8 +86,8 @@ def route(params: FitParameters, front: np.ndarray, back: np.ndarray, side: floa
         for k in range(count + 1):
             t = k / count
             x = start[0] + (x_top - start[0]) * t
-            y = start[1] + (peak - 0.012 - start[1]) * t
-            p = surface_point(params, x, y, face, lift)
+            y = start[1] + (peak - 0.006 - start[1]) * t
+            p = _point(params, x, y, face, lift)
             n = surface_normal(params, x, y, face)
             if p is None or n is None:
                 return None
@@ -85,15 +97,19 @@ def route(params: FitParameters, front: np.ndarray, back: np.ndarray, side: floa
             leg_points, leg_normals = leg_points[::-1], leg_normals[::-1]
         points.append(leg_points)
         normals.append(leg_normals)
-    # Over the top: an arc from the front's last point to the back's first, lying on her shoulder.
+    # Over the top: across her shoulder at its crest, the ribbon's face tilted with the
+    # shoulder's slope down toward her arm. Laid level, a 10 mm ribbon's outer edge sat
+    # a millimetre and a half inside her on a shoulder falling away at 20°.
     a, b = points[0][-1], points[1][0]
+    slope = _shoulder_slope(params, x_top)
+    level = np.array([-slope * side, 1.0, 0.0])
+    level /= np.linalg.norm(level)
     over_points, over_normals = [], []
     for t in np.linspace(0.0, 1.0, 5)[1:-1]:
         q = a * (1 - t) + b * t
-        q[1] = peak + lift - (1 - np.sin(np.pi * t)) * 0.006
+        q[1] = peak + lift - (1 - np.sin(np.pi * t)) * 0.002
         crest = np.sin(np.pi * t)
-        n = (np.array([0.0, 1.0, 0.0]) * crest + normals[0][-1] * (1 - t) * (1 - crest)
-             + normals[1][0] * t * (1 - crest))
+        n = level * crest + normals[0][-1] * (1 - t) * (1 - crest) + normals[1][0] * t * (1 - crest)
         over_points.append(q)
         over_normals.append(n / np.linalg.norm(n))
     path = np.array(points[0] + over_points + points[1])
@@ -101,6 +117,14 @@ def route(params: FitParameters, front: np.ndarray, back: np.ndarray, side: floa
     # The ends are the anchors themselves: the strap is sewn there, not near there.
     path[0], path[-1] = front, back
     return _smooth(path), normal
+
+
+def _shoulder_slope(params: FitParameters, x: float, h: float = 0.012) -> float:
+    """How fast her shoulder falls away outward at ``x``: metres down per metre out (0 when unmeasured)."""
+    inner, outer = shoulder_top(params, x - np.sign(x) * h), shoulder_top(params, x + np.sign(x) * h)
+    if inner is None or outer is None:
+        return 0.0
+    return float(np.clip((inner - outer) / (2 * h), 0.0, 1.0))
 
 
 def _smooth(path: np.ndarray, passes: int = 2) -> np.ndarray:
@@ -135,7 +159,7 @@ def build_ribbon_strap(params: FitParameters, front: Anchor, back: Anchor, *, sp
 def anchor_on(params: FitParameters, name: str, side: str, x: float, y: float, face: str, *,
               source: str, lift: float = 0.0) -> Anchor | None:
     """An anchor on her measured front or back surface at (x, y)."""
-    p = surface_point(params, x, y, face, lift)
+    p = _point(params, x, y, face, lift)
     n = surface_normal(params, x, y, face)
     if p is None or n is None:
         return None

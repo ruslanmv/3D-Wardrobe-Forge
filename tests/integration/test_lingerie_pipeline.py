@@ -123,6 +123,39 @@ def test_every_vertex_is_outside_her(brief):
     assert signed.min() >= 0.0005, signed.min()
 
 
+@pytest.fixture(scope="module", params=sorted(FORMS))
+def bralette(request, tmp_path_factory):
+    record, data = run(tmp_path_factory.mktemp("bra"), request.param, "black tailored bralette")
+    source = GltfDocument.from_bytes(build_fit_form(FORMS[request.param]))
+    return request.param, record, data, source
+
+
+def test_the_tailored_bralette_is_built_and_fits(bralette):
+    _form, record, data, _source = bralette
+    assert record.look is not None, record.error
+    assert [g.template_id for g in record.plan.garments] == ["under-bralette-v2"]
+    assert record.fit_report.passed
+
+
+def test_delivered_it_is_the_bra_and_two_straps(bralette):
+    _form, _record, data, _source = bralette
+    (mesh,) = garment_meshes(data).values()
+    assert components(mesh) == 3
+    assert len(boundary_loops(mesh)) == 2
+
+
+def test_every_bra_vertex_is_outside_her(bralette):
+    _form, _record, data, source = bralette
+    (mesh,) = garment_meshes(data).values()
+    info = inspect_document(source)
+    measurements = measure_body(source, info)
+    points, normals = posed_body(source, info, "stand", 1.0, measurements.bone_positions, spacing=0.006)
+    garment = mesh.positions.astype(np.float64)
+    near = np.all((points >= garment.min(axis=0) - 0.05) & (points <= garment.max(axis=0) + 0.05), axis=1)
+    signed, _ = _depth(garment, points[near], normals[near])
+    assert signed.min() >= 0.0005, signed.min()
+
+
 def test_the_gate_refuses_it_without_a_declaration(tmp_path):
     record, data = run(tmp_path, "fit-form-a-misses", "black tailored briefs", adult=False)
     assert data is None

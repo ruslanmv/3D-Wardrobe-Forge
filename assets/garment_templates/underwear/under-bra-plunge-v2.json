@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "id": "under-bra-plunge-v2",
+  "name": "Tailored Plunge Bra",
+  "category": "underwear",
+  "mesh": "procedural:bra-block",
+  "coverage": [
+    "chest"
+  ],
+  "anchors": [
+    "chest"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0
+  },
+  "lingerie": {
+    "block": "bra",
+    "bra": {
+      "style": "plunge",
+      "cupHeight": 1.0,
+      "cupInner": 0.85,
+      "cupOuter": 1.0,
+      "cupEaseMm": 2.5,
+      "goreHeightMm": 14,
+      "goreWidthMm": 10,
+      "underbandWidthMm": 14,
+      "wingHeightMm": 38,
+      "closure": "back",
+      "bandElastic": "band-15"
+    },
+    "straps": {
+      "profile": "ribbon",
+      "widthMm": 12,
+      "thicknessMm": 1.3,
+      "elastic": "strap-12",
+      "adjustable": true,
+      "style": "shoulder"
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "tailored plunge bra",
+    "tailored plunge"
+  ],
+  "description": "A plunge: a low gore and a deep V between the cups.",
+  "optIn": true
+}

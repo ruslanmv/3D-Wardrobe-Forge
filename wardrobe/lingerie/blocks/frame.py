@@ -17,6 +17,7 @@ import numpy as np
 
 from wardrobe.geometry.procedural import FitParameters, crotch_y, half_at
 from wardrobe.lingerie.landmarks import BodyLandmarks
+from wardrobe.lingerie.surface import DepthMap
 
 
 @dataclass
@@ -24,52 +25,11 @@ class BodyFrame:
     params: FitParameters
     marks: BodyLandmarks
     table: np.ndarray | None  # [y, half-width, half-depth, cx, cz], ascending y
-    _grids: dict | None = None
 
     def surface(self, x: float, y: float, side: str, lift: float) -> np.ndarray | None:
-        """A point ``lift`` off her measured front or back at (x, y): smoothed and interpolated.
-
-        ``procedural.surface_point`` reads the nearest 1 cm cell of the depth map,
-        which is right for a strap's few points and draws a patch as a staircase.
-        A cup or a gore is a surface: the map is smoothed once (3x3, missing cells
-        ignored) and sampled bilinearly. The v1 straps keep the old reader.
-        """
-        grid = self._grid(side)
-        if grid is None:
-            return None
-        values, x0, y0, step, forward = grid
-        fx, fy = (x - x0) / step, (y - y0) / step
-        i, j = int(np.floor(fx)), int(np.floor(fy))
-        if i < 0 or j < 0 or i + 1 >= values.shape[0] or j + 1 >= values.shape[1]:
-            return None
-        tx, ty = fx - i, fy - j
-        corners = values[i:i + 2, j:j + 2]
-        weights = np.array([[(1 - tx) * (1 - ty), (1 - tx) * ty], [tx * (1 - ty), tx * ty]])
-        known = np.isfinite(corners)
-        if not known.any():
-            return None
-        depth = float((corners[known] * weights[known]).sum() / weights[known].sum())
-        signed = depth + lift if side == "front" else depth - lift
-        return np.array([x, y, signed * forward])
-
-    def _grid(self, side: str):
-        if self._grids is None:
-            self._grids = {}
-        if side not in self._grids:
-            surface = self.params.metadata.get("upperBody")
-            if not isinstance(surface, dict) or not surface.get(side):
-                self._grids[side] = None
-            else:
-                raw = np.asarray(surface[side], dtype=np.float64)
-                padded = np.pad(raw, 1, constant_values=np.nan)
-                stack = np.stack([padded[1 + di:1 + di + raw.shape[0], 1 + dj:1 + dj + raw.shape[1]]
-                                  for di in (-1, 0, 1) for dj in (-1, 0, 1)])
-                with np.errstate(invalid="ignore"):
-                    smooth = np.nanmean(np.where(np.isfinite(stack), stack, np.nan), axis=0)
-                smooth[~np.isfinite(raw)] = np.nan
-                self._grids[side] = (smooth, float(surface["x0"]), float(surface["y0"]),
-                                     float(surface["step"]), float(surface["forward"]))
-        return self._grids[side]
+        """A point ``lift`` off her measured front or back at (x, y), interpolated (``DepthMap``)."""
+        depth_map = DepthMap.of(self.params)
+        return depth_map.point(x, y, side, lift) if depth_map is not None else None
 
     @property
     def forward(self) -> float:

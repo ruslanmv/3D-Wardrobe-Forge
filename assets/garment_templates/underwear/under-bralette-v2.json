@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "id": "under-bralette-v2",
+  "name": "Tailored Triangle Bralette",
+  "category": "underwear",
+  "mesh": "procedural:bra-block",
+  "coverage": [
+    "chest"
+  ],
+  "anchors": [
+    "chest"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0
+  },
+  "lingerie": {
+    "block": "bra",
+    "bra": {
+      "style": "triangle",
+      "cupHeight": 1.1,
+      "cupInner": 0.8,
+      "cupOuter": 1.0,
+      "cupEaseMm": 2,
+      "goreHeightMm": 22,
+      "goreWidthMm": 14,
+      "underbandWidthMm": 12,
+      "wingHeightMm": 28,
+      "closure": "back",
+      "bandElastic": "band-12"
+    },
+    "straps": {
+      "profile": "ribbon",
+      "widthMm": 10,
+      "thicknessMm": 1.2,
+      "elastic": "strap-10",
+      "adjustable": true,
+      "style": "shoulder"
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "tailored bralette",
+    "tailored triangle bralette"
+  ],
+  "description": "A soft triangle bralette: two cups on her bust points, a gore on her sternum, a band under the fold, flat straps.",
+  "optIn": true
+}

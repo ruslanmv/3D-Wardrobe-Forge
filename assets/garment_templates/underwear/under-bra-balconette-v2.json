@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "id": "under-bra-balconette-v2",
+  "name": "Tailored Balconette Bra",
+  "category": "underwear",
+  "mesh": "procedural:bra-block",
+  "coverage": [
+    "chest"
+  ],
+  "anchors": [
+    "chest"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0
+  },
+  "lingerie": {
+    "block": "bra",
+    "bra": {
+      "style": "balconette",
+      "cupHeight": 1.0,
+      "cupInner": 0.75,
+      "cupOuter": 1.05,
+      "cupEaseMm": 2.5,
+      "goreHeightMm": 32,
+      "goreWidthMm": 16,
+      "underbandWidthMm": 15,
+      "wingHeightMm": 40,
+      "closure": "back",
+      "bandElastic": "band-15"
+    },
+    "straps": {
+      "profile": "ribbon",
+      "widthMm": 12,
+      "thicknessMm": 1.3,
+      "elastic": "strap-12",
+      "adjustable": true,
+      "style": "shoulder"
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "tailored balconette bra",
+    "tailored balconette"
+  ],
+  "description": "A balconette: a low straight neckline, wide-set straps at the cups' outer tops.",
+  "optIn": true
+}

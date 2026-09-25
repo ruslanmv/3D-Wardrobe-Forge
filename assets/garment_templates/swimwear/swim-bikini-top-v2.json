@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "id": "swim-bikini-top-v2",
+  "name": "Tailored Bikini Top",
+  "category": "swimwear",
+  "mesh": "procedural:bra-block",
+  "coverage": [
+    "chest"
+  ],
+  "anchors": [
+    "chest"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0
+  },
+  "lingerie": {
+    "block": "bra",
+    "bra": {
+      "style": "triangle",
+      "cupHeight": 1.15,
+      "cupInner": 0.8,
+      "cupOuter": 1.0,
+      "cupEaseMm": 1.5,
+      "goreHeightMm": 10,
+      "goreWidthMm": 10,
+      "underbandWidthMm": 8,
+      "wingHeightMm": 10,
+      "closure": "back",
+      "bandElastic": "swim-8"
+    },
+    "straps": {
+      "profile": "ribbon",
+      "widthMm": 8,
+      "thicknessMm": 1.0,
+      "elastic": "swim-8",
+      "adjustable": false,
+      "style": "shoulder"
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "tailored bikini top",
+    "tailored triangle bikini top"
+  ],
+  "description": "A triangle bikini top: cups on her bust points, a narrow swim-elastic band, thin flat straps.",
+  "optIn": true
+}

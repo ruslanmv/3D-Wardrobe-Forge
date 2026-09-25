@@ -110,20 +110,54 @@ def _depth(p: np.ndarray, pts: np.ndarray, nrm: np.ndarray) -> tuple[np.ndarray,
 
 
 def after_shell(context, mesh, clearance: float) -> None:
-    """Seat what the radial passes left (``placed``): a brief's gusset. No-op for anything else."""
-    record = mesh.metadata.get("lingerieBrief")
-    if not record:
+    """Seat what the radial passes left (``placed``), then make sure none of it is inside her.
+
+    A brief's gusset is seated between its seams (``seat_gusset``). Then every
+    placed vertex — cups, the band's front, straps, the gusset — is checked
+    against her posed surface and pushed out to the clearance where it is not
+    clear: a 1 cm depth map is a good guide on her chest and a poor one where
+    it turns into her armpit and shoulder, and a strap there read 15 mm inside.
+    """
+    placed = mesh.metadata.get("placed")
+    if placed is None or not np.any(placed):
         return
+    positions = mesh.positions.astype(np.float64)
+    record = mesh.metadata.get("lingerieBrief")
+    seam = None
+    if record:
+        # The side seam's two copies of each vertex were fitted one at a time and can
+        # have drifted apart by a fraction of a millimetre: sewn is sewn, rejoin them.
+        seam = record["sideSeam"]
+        joined = (positions[seam["a"]] + positions[seam["b"]]) / 2
+        positions[seam["a"]] = joined
+        positions[seam["b"]] = joined
+        _seat_brief_gusset(context, mesh, positions, record, clearance)
+    index = np.flatnonzero(placed)
+    lo, hi = positions[index].min(axis=0) - 0.04, positions[index].max(axis=0) + 0.04
+    points, normals = _surface(context, lo, hi)
+    if points.shape[0]:
+        for _ in range(ITERATIONS):
+            p = positions[index]
+            signed, normal = _depth(p, points, normals)
+            push = np.clip(clearance - signed, 0.0, None)
+            if push.max() < 1e-5:
+                break
+            positions[index] = p + normal * push[:, None]
+    mesh.positions = positions.astype(np.float32)
+    mesh.compute_normals()
+    if seam is not None:
+        n = mesh.normals.astype(np.float64)
+        avg = n[seam["a"]] + n[seam["b"]]
+        avg /= np.maximum(np.linalg.norm(avg, axis=1, keepdims=True), 1e-9)
+        n[seam["a"]] = avg
+        n[seam["b"]] = avg
+        mesh.normals = n.astype(np.float32)
+
+
+def _seat_brief_gusset(context, mesh, positions: np.ndarray, record: dict, clearance: float) -> None:
     from wardrobe.geometry.procedural import FitParameters
 
     grid = record["gusset"]
-    positions = mesh.positions.astype(np.float64)
-    # The side seam's two copies of each vertex were fitted one at a time and can
-    # have drifted apart by a fraction of a millimetre: sewn is sewn, rejoin them.
-    side = record["sideSeam"]
-    joined = (positions[side["a"]] + positions[side["b"]]) / 2
-    positions[side["a"]] = joined
-    positions[side["b"]] = joined
     params = FitParameters(measurements=context.measurements, clearance_m=clearance,
                            metadata={**(context.artifact.metadata or {}), **_frame_metadata(mesh)})
     frame = body_frame(params)
@@ -138,14 +172,16 @@ def after_shell(context, mesh, clearance: float) -> None:
     centre[1] = frame.marks.crotch_y
     points, normals = crotch_surface(context, centre)
     seat_gusset(positions, grid, points, normals, clearance, initial=initial)
-    mesh.positions = positions.astype(np.float32)
-    mesh.compute_normals()
-    n = mesh.normals.astype(np.float64)
-    avg = n[side["a"]] + n[side["b"]]
-    avg /= np.maximum(np.linalg.norm(avg, axis=1, keepdims=True), 1e-9)
-    n[side["a"]] = avg
-    n[side["b"]] = avg
-    mesh.normals = n.astype(np.float32)
+
+
+def _surface(context, lo: np.ndarray, hi: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Her surface in a box, rest pose, arms left out (an A-pose arm is not what a strap lies on)."""
+    from wardrobe.hosiery.poses import posed_body
+    from wardrobe.vrm.skinning import ARM_BONES
+
+    return posed_body(context.document, context.info, "stand", _forward(context),
+                      context.measurements.bone_positions, exclude_bones=frozenset(ARM_BONES),
+                      spacing=0.006, region=(lo, hi))
 
 
 def _frame_metadata(mesh) -> dict:

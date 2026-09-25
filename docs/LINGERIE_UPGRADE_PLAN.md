@@ -1,6 +1,11 @@
 # Lingerie quality upgrade plan
 
-> Status: in progress. **L3 done**: the brief block — front and back panels, a
+> Status: in progress. **L4 done**: the bra block — cups on her bust points
+> (triangle, balconette, plunge, full), a gore on her sternum, a level band
+> under the fold with wings, ribbon straps from the cups' published anchors
+> (`wardrobe/lingerie/blocks/bra.py`, `surface.py`); every placed vertex is
+> pushed clear of her posed surface after the shell (`fit.after_shell`).
+> **L3 done**: the brief block — front and back panels, a
 > gusset across the crotch seated on her posed surface, three openings
 > (`wardrobe/lingerie/blocks/brief.py`, `fit.py`, `seams.py`), with tailored
 > brief, high-leg, string, thong and bikini-bottom templates (schemaVersion 2,

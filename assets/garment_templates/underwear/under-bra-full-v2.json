@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "id": "under-bra-full-v2",
+  "name": "Tailored Full-Cup Bra",
+  "category": "underwear",
+  "mesh": "procedural:bra-block",
+  "coverage": [
+    "chest"
+  ],
+  "anchors": [
+    "chest"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0
+  },
+  "lingerie": {
+    "block": "bra",
+    "bra": {
+      "style": "full",
+      "cupHeight": 1.0,
+      "cupInner": 0.75,
+      "cupOuter": 1.1,
+      "cupEaseMm": 2.5,
+      "goreHeightMm": 55,
+      "goreWidthMm": 18,
+      "underbandWidthMm": 18,
+      "wingHeightMm": 45,
+      "closure": "back",
+      "bandElastic": "band-18"
+    },
+    "straps": {
+      "profile": "ribbon",
+      "widthMm": 14,
+      "thicknessMm": 1.4,
+      "elastic": "strap-14",
+      "adjustable": true,
+      "style": "shoulder"
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "tailored full-cup bra",
+    "tailored full cup bra"
+  ],
+  "description": "A full-cup bra: a high neckline, a deeper band and wings.",
+  "optIn": true
+}
