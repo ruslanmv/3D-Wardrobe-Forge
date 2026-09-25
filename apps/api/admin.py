@@ -86,10 +86,13 @@ class AdminSessions:
         username: str = "admin",
     ):
         self.problem: str | None = None
+        #: Why log-in is off, as a code the Studio can explain: not_configured | password_too_short.
+        self.reason: str | None = None
         if not password:
-            self.problem = "WARDROBE_ADMIN_PASSWORD is not set"
+            self.problem, self.reason = "WARDROBE_ADMIN_PASSWORD is not set", "not_configured"
         elif len(password) < MIN_PASSWORD_LENGTH:
             self.problem = f"WARDROBE_ADMIN_PASSWORD is shorter than {MIN_PASSWORD_LENGTH} characters"
+            self.reason = "password_too_short"
             logger.warning("admin sign-in disabled: %s", self.problem)
         self._password = password.encode("utf-8") if self.problem is None else b""
         self.username = (username or "admin").strip()

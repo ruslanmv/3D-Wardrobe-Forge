@@ -111,7 +111,9 @@ def test_without_a_password_there_is_no_admin(orchestrator, monkeypatch, tmp_pat
         app.dependency_overrides[admin_sessions_dependency] = lambda p=password: AdminSessions(p)
         try:
             with make_client(orchestrator, monkeypatch, library) as client:
-                assert client.get("/v1/admin").json()["enabled"] is False
+                status = client.get("/v1/admin").json()
+                assert status["enabled"] is False
+                assert status["unavailable"] == ("password_too_short" if password else "not_configured")
                 assert client.post("/v1/admin/session", json={"password": password or "x"}).status_code == 404
         finally:
             app.dependency_overrides.pop(admin_sessions_dependency, None)

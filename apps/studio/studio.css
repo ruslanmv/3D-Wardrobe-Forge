@@ -1610,6 +1610,17 @@ dialog.login h2 {
     box-shadow: 0 0 0 3px rgba(232, 185, 164, 0.18);
 }
 
+.login-off {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border: 1px solid rgba(232, 196, 110, 0.35);
+    border-radius: 10px;
+    background: rgba(232, 196, 110, 0.08);
+    color: var(--warn);
+    font-size: 13px;
+    text-align: left;
+}
+
 dialog.login .form-error {
     margin: 0 0 10px;
     text-align: left;

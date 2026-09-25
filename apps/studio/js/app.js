@@ -329,7 +329,7 @@ async function selectAvatar(slug) {
 // in as admin. An admin session changes nothing by itself: the operator declares,
 // per avatar, in Settings, and the server decides everything (apps/api/admin.py).
 // This code only asks, shows and refreshes.
-const account = { enabled: false, session: null, timer: null, username: 'admin' };
+const account = { enabled: false, unavailable: null, minLength: 12, session: null, timer: null, username: 'admin' };
 const PERSON_ICON =
     '<svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5Z" /></svg>';
 
@@ -341,6 +341,8 @@ async function initAccount() {
         status = null; // an older server, or a keyed Space without its key: a guest with no admin
     }
     account.enabled = Boolean(status && status.enabled);
+    account.unavailable = status ? status.unavailable || null : 'unreachable';
+    if (status && status.minPasswordLength) account.minLength = status.minPasswordLength;
     if (admin.token && !(status && status.signedIn)) admin.token = '';
     if (status && status.username) account.username = status.username;
     setSession(status && status.signedIn ? status.session : null);
@@ -367,8 +369,6 @@ function setSession(session) {
 
     $('account-signout').hidden = !signedIn;
     $('account-signin').hidden = signedIn;
-    $('account-signin').disabled = !account.enabled;
-    $('account-signin-hint').textContent = account.enabled ? '' : 'Not set up on this Space';
     if (signedIn) {
         const left = new Date(session.expiresAt).getTime() - Date.now();
         account.timer = setTimeout(() => endSession('Your admin session ended.'), Math.max(left, 0));
@@ -395,11 +395,27 @@ function toggleMenu(open) {
 
 function openSignIn() {
     toggleMenu(false);
-    if (!account.enabled) return openSettings('general');
+    if ($('settings-dialog').open) $('settings-dialog').close();
+    // Always opens. When the Space has log-in switched off, the card says why and how to fix it.
+    const off = offReason();
+    $('login-off').hidden = !off;
+    $('login-off').textContent = off || '';
+    for (const id of ['signin-username', 'signin-password', 'signin-submit']) $(id).disabled = Boolean(off);
     $('signin-password').value = '';
     $('signin-error').hidden = true;
     $('signin-dialog').showModal();
+    if (off) return;
     $($('signin-username').value ? 'signin-password' : 'signin-username').focus();
+}
+
+/** Why log-in is off on this Space, in words the operator can act on; null when it is on. */
+function offReason() {
+    if (account.enabled) return null;
+    if (account.unavailable === 'password_too_short')
+        return `Log-in is switched off on this Space: the WARDROBE_ADMIN_PASSWORD secret is shorter than ${account.minLength} characters. Set a longer one in the Space settings, then restart the Space.`;
+    if (account.unavailable === 'not_configured')
+        return 'Log-in is not set up on this Space yet: add a secret named WARDROBE_ADMIN_PASSWORD in the Space settings, then restart the Space.';
+    return 'Log-in is not available right now. Reload the page and try again.';
 }
 
 function bindAccount() {
@@ -543,17 +559,13 @@ function renderSettings() {
         ? `${account.username} · logged in until ${endsAt(session)}, or until this tab closes`
         : 'Guest · not logged in';
     $('settings-account-action').textContent = session ? 'Log out' : 'Log in';
-    $('settings-account-action').disabled = !session && !account.enabled;
     $('settings-key').textContent = auth.key
         ? 'Set in this browser'
         : 'Not set · only needed when this Space runs WARDROBE_AUTH_MODE=api_key';
-    $('settings-admin').textContent = account.enabled
-        ? 'Available on this Space'
-        : 'Not set up on this Space: add a secret named WARDROBE_ADMIN_PASSWORD (12+ characters) and restart it';
+    $('settings-admin').textContent = account.enabled ? 'Available on this Space' : offReason();
 
     // Adult declarations: read-only for a guest, switches for an admin.
     $('declarations-locked').hidden = Boolean(session);
-    $('declarations-signin').disabled = !account.enabled;
     $('declarations').replaceChildren(
         ...state.library.map((avatar) => {
             const byOperator = avatar.declaredBy === 'operator';

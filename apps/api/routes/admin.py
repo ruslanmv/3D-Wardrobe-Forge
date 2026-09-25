@@ -10,7 +10,7 @@ from typing import Annotated
 from fastapi import APIRouter, Header, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
-from apps.api.admin import AdminDep, AdminError, AdminSessionsDep
+from apps.api.admin import MIN_PASSWORD_LENGTH, AdminDep, AdminError, AdminSessionsDep
 
 router = APIRouter(tags=["admin"])
 
@@ -44,6 +44,10 @@ def admin_status(admins: AdminSessionsDep, admin: AdminDep) -> dict:
     """Whether this deployment has an admin, and whether this request is signed in."""
     return {
         "enabled": admins.enabled,
+        # Why it is off, so the Studio can say what to fix; never anything about the password itself
+        # beyond that it is too short, which is already true of every guess a caller could make.
+        "unavailable": admins.reason,
+        "minPasswordLength": MIN_PASSWORD_LENGTH,
         "signedIn": admin is not None,
         "username": admins.username if admin is not None else None,
         "session": admin.to_dict() if admin is not None else None,
