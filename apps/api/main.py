@@ -12,6 +12,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from apps.api.dependencies import require_api_key
+from apps.api.routes.admin import router as admin_router
 from apps.api.routes.avatars import router as avatars_router
 from apps.api.routes.generate import router as generate_router
 from apps.api.routes.jobs import router as jobs_router
@@ -71,7 +72,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.wardrobe_allowed_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -82,6 +83,7 @@ app.include_router(looks_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(wardrobes_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(generate_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(studio_router, prefix="/v1", dependencies=api_dependencies)
+app.include_router(admin_router, prefix="/v1", dependencies=api_dependencies)
 
 # The Studio is a static, build-free editor. It is served unauthenticated because
 # it is only markup and scripts; every call it makes goes through /v1, which is not.

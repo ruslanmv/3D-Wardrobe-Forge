@@ -10,7 +10,7 @@ import numpy as np
 
 from wardrobe.config import Settings
 from wardrobe.domain.garments import GarmentArtifact, TemplateCatalog
-from wardrobe.domain.jobs import JobRecord, JobState
+from wardrobe.domain.jobs import JobRecord, JobState, look_id_for
 from wardrobe.domain.looks import FitReport, LookResult, OutfitPlan
 from wardrobe.geometry.mesh import Mesh
 from wardrobe.storage.object_store import ObjectStore
@@ -97,7 +97,7 @@ class PipelineContext:
 
     @property
     def look_id(self) -> str:
-        return f"look_{self.record.id.removeprefix('job_')[:16]}"
+        return look_id_for(self.record.id)
 
     def key(self, filename: str) -> str:
         """Storage key for one of this job's artifacts."""

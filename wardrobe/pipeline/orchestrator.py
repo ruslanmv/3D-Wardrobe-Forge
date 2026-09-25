@@ -16,7 +16,14 @@ from pathlib import Path
 
 from wardrobe.config import Settings, get_settings
 from wardrobe.domain.garments import TemplateCatalog
-from wardrobe.domain.jobs import CreateJobRequest, FailureReason, JobRecord, JobState
+from wardrobe.domain.jobs import (
+    CreateJobRequest,
+    FailureReason,
+    JobRecord,
+    JobState,
+    look_id_for,
+    private_marker,
+)
 from wardrobe.domain.looks import LookResult
 from wardrobe.domain.manifests import WardrobeLook, WardrobeManifest
 from wardrobe.engines import select_engine
@@ -91,6 +98,7 @@ class Orchestrator:
     # ------------------------------------------------------------------
     async def submit(self, request: CreateJobRequest) -> JobRecord:
         record = JobRecord.queued(request)
+        await self._mark_private(record)
         await self.jobs.save(record)
         await self.broker.publish(record.id, record.events[-1])
         await self.queue.enqueue(record.id)
@@ -112,9 +120,22 @@ class Orchestrator:
     async def run_now(self, request: CreateJobRequest) -> JobRecord:
         """Run a job to completion in the caller's task (CLI and tests)."""
         record = JobRecord.queued(request)
+        await self._mark_private(record)
         await self.jobs.save(record)
         await self.execute(record)
         return record
+
+    async def _mark_private(self, record: JobRecord) -> None:
+        """Mark a private job's look before any of its files exist.
+
+        ``/v1/assets`` serves by key, and a look's files are written during the run.
+        The marker goes first, so there is no moment in which a private look's VRM
+        is stored and not yet known to be private; and it is a stored object, not
+        memory, so a restart with persistent storage does not make it public.
+        """
+        if record.request.options.private:
+            marker = private_marker(look_id_for(record.id))
+            await self.store.put(marker, b'{"private": true}\n', content_type="application/json")
 
     # ------------------------------------------------------------------
     async def execute(self, record: JobRecord) -> JobRecord:
@@ -256,13 +277,15 @@ class Orchestrator:
                 prompt=look.prompt,
                 createdAt=datetime.now(UTC),
                 fitPassed=context.fit_report.passed,
+                private=record.request.options.private,
             )
         )
         await self.wardrobes.save(manifest)
 
+        # The stored copy is servable through /v1/assets, so it lists only public looks.
         await self.store.put(
             f"wardrobes/{avatar_id}/wardrobe.json",
-            manifest.model_dump_json(by_alias=True, indent=2).encode("utf-8"),
+            manifest.public().model_dump_json(by_alias=True, indent=2).encode("utf-8"),
             content_type="application/json",
         )
 

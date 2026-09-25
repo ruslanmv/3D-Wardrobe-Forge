@@ -47,7 +47,8 @@ async def generate(request: GenerateRequest, orchestrator: OrchestratorDep) -> G
             mode=request.mode,
             templateId=request.template_id,
         ),
-        options=request.options,
+        # Privacy is the server's to decide (apps/api/admin.py), never a caller's.
+        options=request.options.model_copy(update={"private": False}),
     )
     record = await orchestrator.submit(job_request)
     return GenerateAccepted(

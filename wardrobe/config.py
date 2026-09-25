@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     #: none | api_key. Hosted production deployments should use api_key or an upstream gateway.
     wardrobe_auth_mode: str = "none"
     wardrobe_api_key: str = ""
+    #: Signs the operator in to the Studio's account menu (apps/api/admin.py), where
+    #: an adult declaration can be made per avatar for that session only. Empty: no
+    #: admin, and the Studio offers no sign-in. Set it as a secret, never in a file.
+    wardrobe_admin_password: str = ""
+    #: How long an admin session lasts before it signs itself out.
+    wardrobe_admin_session_hours: float = 8.0
 
     # -- pipeline --------------------------------------------------------
     #: auto picks blender when available and falls back to the native engine.

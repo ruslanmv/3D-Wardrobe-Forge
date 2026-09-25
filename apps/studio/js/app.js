@@ -9,7 +9,7 @@
  * pretending to be one.
  */
 
-import { api, auth, ApiError } from './api.js';
+import { admin, api, auth, ApiError } from './api.js';
 import { Viewer } from './viewer.js';
 
 const $ = (id) => document.getElementById(id);
@@ -104,7 +104,9 @@ function setStatus(message, isError = false) {
 }
 
 function describe(error) {
-    if (error instanceof ApiError && error.status === 401) return 'This Space needs an API key — use the key button.';
+    // Only the API key's 401 is about the key; the admin routes answer 401 for a wrong password.
+    const keyMissing = !error.detail || error.detail.reason === 'unauthorized';
+    if (error instanceof ApiError && error.status === 401 && keyMissing) return 'This Space needs an API key — use the key button.';
     return error && error.message ? error.message : String(error);
 }
 
@@ -134,6 +136,7 @@ async function boot() {
     renderCaps();
     renderLibrary(library);
     renderDesigner();
+    initAccount();
 
     const wanted = new URLSearchParams(location.search).get('avatar');
     const first =
@@ -195,6 +198,7 @@ function bindChrome() {
     $('export-btn').addEventListener('click', exportBundle);
     $('build-on').addEventListener('change', updatePreview);
     $('plan-btn').addEventListener('click', checkPlan);
+    bindAccount();
     $('base-body-select').addEventListener('change', () => ($('plan-report').hidden = true));
 }
 
@@ -319,6 +323,225 @@ async function selectAvatar(slug) {
     await loadWardrobe();
 }
 
+// ---------------------------------------------------------------- account
+// The bottom-left account menu. An admin session changes nothing by itself: the
+// operator declares, per avatar, in Settings, and the server decides everything
+// (apps/api/admin.py). This code only asks, shows and refreshes.
+const account = { enabled: false, session: null, timer: null };
+const PERSON_ICON =
+    '<svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5Z" /></svg>';
+
+async function initAccount() {
+    let status;
+    try {
+        status = await api.adminStatus();
+    } catch (_) {
+        return; // an older server without an admin: no menu
+    }
+    account.enabled = Boolean(status.enabled);
+    $('account').hidden = !account.enabled;
+    if (!account.enabled) return;
+    if (admin.token && !status.signedIn) admin.token = '';
+    setSession(status.signedIn ? status.session : null);
+}
+
+function setSession(session) {
+    account.session = session;
+    clearTimeout(account.timer);
+    const signedIn = Boolean(session);
+    $('account').classList.toggle('signed-in', signedIn);
+    // A fixed icon, not user text: innerHTML is safe here, and el() cannot make SVG.
+    if (signedIn) $('account-glyph').textContent = 'A';
+    else $('account-glyph').innerHTML = PERSON_ICON;
+    $('account-name').textContent = signedIn ? 'Admin' : 'Sign in';
+    const declared = signedIn ? session.declared.length : 0;
+    $('account-sub').textContent = signedIn
+        ? `${declared ? `${declared} declared` : 'nothing declared'} · until ${endsAt(session)}`
+        : 'Admin';
+    $('account-btn').title = signedIn ? 'Admin session' : 'Sign in as admin';
+    $('account-menu-head').replaceChildren(
+        el('strong', { text: signedIn ? 'Admin session' : 'Not signed in' }),
+        signedIn ? `Ends at ${endsAt(session)} · closes with this tab` : 'Settings are for the operator of this Space.'
+    );
+    $('account-settings').hidden = !signedIn;
+    $('account-signout').hidden = !signedIn;
+    $('account-signin').hidden = signedIn;
+    if (signedIn) {
+        const left = new Date(session.expiresAt).getTime() - Date.now();
+        account.timer = setTimeout(() => endSession('Your admin session ended.'), Math.max(left, 0));
+    }
+}
+
+function endsAt(session) {
+    return new Date(session.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function toggleMenu(open) {
+    const menu = $('account-menu');
+    const show = open === undefined ? menu.hidden : open;
+    menu.hidden = !show;
+    $('account-btn').setAttribute('aria-expanded', String(show));
+    if (show) (menu.querySelector('button:not([hidden])') || menu).focus();
+}
+
+function bindAccount() {
+    $('account-btn').addEventListener('click', () => toggleMenu());
+    document.addEventListener('click', (event) => {
+        if (!$('account').contains(event.target)) toggleMenu(false);
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !$('account-menu').hidden) {
+            toggleMenu(false);
+            $('account-btn').focus();
+        }
+    });
+
+    $('account-signin').addEventListener('click', () => {
+        toggleMenu(false);
+        $('signin-password').value = '';
+        $('signin-error').hidden = true;
+        $('signin-dialog').showModal();
+    });
+    $('signin-cancel').addEventListener('click', () => $('signin-dialog').close());
+    $('signin-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        $('signin-submit').disabled = true;
+        try {
+            const result = await api.adminSignIn($('signin-password').value);
+            admin.token = result.token;
+            $('signin-dialog').close();
+            setSession({ expiresAt: result.expiresAt, declared: result.declared });
+            await refreshForSession();
+            openSettings();
+        } catch (error) {
+            $('signin-error').textContent = error.status === 429 ? 'Too many attempts — wait a few minutes.' : describe(error);
+            $('signin-error').hidden = false;
+        } finally {
+            $('signin-submit').disabled = false;
+        }
+    });
+
+    $('account-settings').addEventListener('click', () => {
+        toggleMenu(false);
+        openSettings();
+    });
+    $('account-signout').addEventListener('click', async () => {
+        toggleMenu(false);
+        try {
+            await api.adminSignOut();
+        } catch (_) {
+            /* already gone on the server: signing out here is what matters */
+        }
+        endSession('Signed out. Every declaration from that session is withdrawn.');
+    });
+}
+
+async function endSession(message) {
+    admin.token = '';
+    setSession(null);
+    if ($('settings-dialog').open) $('settings-dialog').close();
+    // A private look on the stage stays visible to nobody once the session is gone.
+    const active = state.wardrobe && state.wardrobe.looks.find((look) => look.id === state.activeLookId);
+    if (active && active.private) {
+        viewer.clear('look');
+        revoke(state.urls.look);
+        state.urls.look = null;
+        state.activeLookId = null;
+        setViewMode('original');
+        $('report').hidden = true;
+    }
+    await refreshForSession();
+    setStatus(message);
+}
+
+/** The library and wardrobe as this session (or no session) is allowed to see them. */
+async function refreshForSession() {
+    try {
+        const library = await api.library();
+        state.library = library.avatars;
+        renderLibrary(library);
+        if (state.avatar) {
+            state.avatar = state.library.find((item) => item.slug === state.avatar.slug) || state.avatar;
+            document
+                .querySelectorAll('.avatar')
+                .forEach((node) => node.setAttribute('aria-current', String(node.dataset.slug === state.avatar.slug)));
+            renderDesigner();
+        }
+        await loadWardrobe();
+    } catch (error) {
+        setStatus(describe(error), true);
+    }
+}
+
+function openSettings() {
+    renderSettings();
+    $('settings-error').hidden = true;
+    if (!$('settings-dialog').open) $('settings-dialog').showModal();
+}
+
+function renderSettings() {
+    const session = account.session;
+    if (!session) return;
+    $('settings-session').textContent = `Session ends at ${endsAt(session)}`;
+    $('declarations').replaceChildren(
+        ...state.library.map((avatar) => {
+            const byOperator = avatar.declaredBy === 'operator';
+            const checked = byOperator || session.declared.includes(avatar.slug);
+            const box = el('input', {
+                type: 'checkbox',
+                class: 'switch',
+                role: 'switch',
+                checked,
+                disabled: byOperator || !avatar.available,
+                'aria-label': `${avatar.name} depicts an adult`,
+                onchange: (event) => declareAvatar(avatar, event.currentTarget),
+            });
+            return el(
+                'li',
+                {},
+                el(
+                    'label',
+                    {},
+                    el('span', { class: 'avatar-glyph', text: initials(avatar.name) }),
+                    el(
+                        'span',
+                        { class: 'who' },
+                        el('span', { text: avatar.name }),
+                        el('small', {
+                            text: byOperator
+                                ? 'Declared by the operator for everyone (policy.json)'
+                                : !avatar.available
+                                  ? 'Not available'
+                                  : checked
+                                    ? 'Declared as depicting an adult, this session only'
+                                    : 'Not declared',
+                        })
+                    ),
+                    box
+                )
+            );
+        })
+    );
+}
+
+async function declareAvatar(avatar, box) {
+    box.disabled = true;
+    $('settings-error').hidden = true;
+    try {
+        const session = await api.adminDeclare(avatar.slug, box.checked);
+        setSession(session);
+        await refreshForSession();
+    } catch (error) {
+        box.checked = !box.checked;
+        $('settings-error').textContent = describe(error);
+        $('settings-error').hidden = false;
+        if (error.status === 401) return endSession('Your admin session ended.');
+    } finally {
+        box.disabled = false;
+        renderSettings();
+    }
+}
+
 // ---------------------------------------------------------------- view modes
 function setViewMode(mode) {
     const hasLook = viewer.has('look');
@@ -346,7 +569,7 @@ function renderDesigner() {
             disabled: category && needsAdult(category) && !adult,
             title:
                 category && needsAdult(category) && !adult
-                    ? 'Needs this avatar declared as depicting an adult, by the operator, in assets/library/policy.json'
+                    ? 'Needs this avatar declared as depicting an adult: by the operator (assets/library/policy.json), or in an admin session (Settings)'
                     : undefined,
             onclick: () => {
                 state.design.category = category;
@@ -422,7 +645,7 @@ function renderDesigner() {
 function renderStyle(adult) {
     const { overrides } = state.vocab;
     const seeThrough = new Set(state.vocab.seeThroughPatterns || []);
-    const reason = 'Shows the body: needs this avatar declared as depicting an adult (assets/library/policy.json)';
+    const reason = 'Shows the body: needs this avatar declared as depicting an adult (policy.json, or an admin session)';
 
     const chips = (id, key, values, { label = (v) => v, value = (v) => v, gated = () => false } = {}) =>
         $(id).replaceChildren(
@@ -496,7 +719,7 @@ function renderHosiery(adult) {
     };
     $('hosiery-hint').textContent = adult
         ? 'stockings publish their tops; straps clip to them'
-        : 'needs this avatar declared as depicting an adult (assets/library/policy.json)';
+        : 'needs this avatar declared as depicting an adult (policy.json, or an admin session)';
     $('hosiery-controls').hidden = !h.on;
     if (!h.on) return;
 
@@ -953,6 +1176,13 @@ async function renderWardrobe() {
                         })
                     )
                 ),
+                look.private
+                    ? el('span', {
+                          class: 'look-private',
+                          text: 'private',
+                          title: "Made under an admin session's declaration: only an admin session sees it",
+                      })
+                    : null,
                 el('button', {
                     class: 'look-del',
                     type: 'button',

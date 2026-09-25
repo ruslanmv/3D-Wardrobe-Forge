@@ -15,17 +15,19 @@ Three things the editor needs that the rest of the API did not offer:
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
+from apps.api.admin import AdminDep
 from apps.api.dependencies import OrchestratorDep, SettingsDep, StoreDep
 from wardrobe import __version__
 from wardrobe.domain.garments import COVERAGE_PRESETS, INTIMATE_CATEGORIES, NECKLINES, STRAP_PRESETS
 from wardrobe.domain.jobs import TERMINAL_STATES, CreateJobRequest, JobOptions, JobRecord, JobState
 from wardrobe.domain.looks import OutfitRequest
-from wardrobe.library import AvatarLibrary
+from wardrobe.library import AvatarLibrary, LibraryAvatar
 from wardrobe.materials.finishes import FINISHES, OPACITY_LEVELS, PATTERNS
 from wardrobe.pipeline.generate_garment import with_foundation
 from wardrobe.pipeline.plan_outfit import (
@@ -60,10 +62,33 @@ def _library(request: Request) -> AvatarLibrary:
 # ----------------------------------------------------------------------
 # library
 # ----------------------------------------------------------------------
+def _dressable(request: Request, slug: str, admin) -> tuple[LibraryAvatar, bool]:
+    """The library avatar with this admin session's declaration applied, and whether it relied on one.
+
+    The operator's ``policy.json`` is read first; a session only adds a declaration
+    the file does not make. Whatever relied on a session is private (apps/api/admin.py).
+    """
+    avatar = _library(request).get(slug)
+    if avatar is None or not avatar.available:
+        raise HTTPException(status_code=404, detail="avatar not in the library")
+    if admin is not None and avatar.slug in admin.declared and not avatar.depicts_adult:
+        return replace(avatar, depicts_adult=True), True
+    return avatar, False
+
+
 @router.get("/library")
-def list_library(request: Request) -> dict:
-    """Every library avatar, with provenance and whether it can be used."""
-    return _library(request).to_dict()
+def list_library(request: Request, admin: AdminDep) -> dict:
+    """Every library avatar, with provenance and whether it can be used.
+
+    ``declaredBy`` says where an adult declaration came from: ``operator`` (the
+    deployment's policy file, for everyone) or ``session`` (this admin session only).
+    """
+    listing = _library(request).to_dict()
+    for entry in listing.get("avatars", []):
+        entry["declaredBy"] = "operator" if entry.get("depictsAdult") else None
+        if admin is not None and entry["slug"] in admin.declared and not entry.get("depictsAdult"):
+            entry["depictsAdult"], entry["declaredBy"] = True, "session"
+    return listing
 
 
 class LibraryJobRequest(BaseModel):
@@ -79,24 +104,27 @@ class LibraryJobRequest(BaseModel):
 
 @router.post("/library/{slug}/jobs", response_model=JobRecord, status_code=status.HTTP_202_ACCEPTED)
 async def create_library_job(
-    slug: str, body: LibraryJobRequest, request: Request, orchestrator: OrchestratorDep
+    slug: str, body: LibraryJobRequest, request: Request, orchestrator: OrchestratorDep, admin: AdminDep
 ) -> JobRecord:
     """Dress a library avatar.
 
     The server fills in ``avatar``: the storage key, the pinned hash, and the
     licence the provenance manifest grants. The body cannot carry one, so a caller
     of this route cannot claim a permission the library does not record. The
-    wardrobe id is the slug, which is how the Studio finds the look again.
+    wardrobe id is the slug, which is how the Studio finds the look again. The
+    body's ``options.private`` is ignored: privacy is decided here, from whether
+    the job relies on an admin session's declaration or builds on a private look.
     """
-    avatar = _library(request).get(slug)
-    if avatar is None or not avatar.available:
-        raise HTTPException(status_code=404, detail="avatar not in the library")
+    avatar, private = _dressable(request, slug, admin)
 
     avatar_input = avatar.avatar_input()
     if body.base_look_id:
-        avatar_input = await _base_look_input(orchestrator, avatar.slug, body.base_look_id, avatar_input)
+        avatar_input, base_private = await _base_look_input(
+            orchestrator, avatar.slug, body.base_look_id, avatar_input, admin
+        )
+        private = private or base_private
 
-    options = body.options.model_copy(update={"wardrobe_id": avatar.slug})
+    options = body.options.model_copy(update={"wardrobe_id": avatar.slug, "private": private})
     job = CreateJobRequest.model_validate(
         {
             "avatar": avatar_input,
@@ -109,7 +137,7 @@ async def create_library_job(
 
 @router.post("/library/{slug}/plan")
 async def preview_library_plan(
-    slug: str, body: LibraryJobRequest, request: Request, orchestrator: OrchestratorDep
+    slug: str, body: LibraryJobRequest, request: Request, orchestrator: OrchestratorDep, admin: AdminDep
 ) -> dict:
     """What a job would do, without doing it: the Studio's "before you generate" report.
 
@@ -117,12 +145,12 @@ async def preview_library_plan(
     of her garments would come off and which stay; and whether there is a body
     under what comes off. Read-only — nothing is stripped, built or stored.
     """
-    avatar = _library(request).get(slug)
-    if avatar is None or not avatar.available:
-        raise HTTPException(status_code=404, detail="avatar not in the library")
+    avatar, _ = _dressable(request, slug, admin)
     avatar_input = avatar.avatar_input()
     if body.base_look_id:
-        avatar_input = await _base_look_input(orchestrator, avatar.slug, body.base_look_id, avatar_input)
+        avatar_input, _ = await _base_look_input(
+            orchestrator, avatar.slug, body.base_look_id, avatar_input, admin
+        )
     source = await orchestrator.store.get(avatar_input["storageKey"])
     return plan_report(
         source,
@@ -180,7 +208,9 @@ def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, dep
     }
 
 
-async def _base_look_input(orchestrator, slug: str, look_id: str, avatar_input: dict) -> dict:
+async def _base_look_input(
+    orchestrator, slug: str, look_id: str, avatar_input: dict, admin
+) -> tuple[dict, bool]:
     """Swap the source for a look this avatar already has; keep everything else.
 
     The look is found in *this* avatar's wardrobe, never taken as a storage key,
@@ -188,16 +218,20 @@ async def _base_look_input(orchestrator, slug: str, look_id: str, avatar_input: 
     licence and the adult declaration carry over unchanged: a look is the same
     CC0 avatar, derived. The hash pin is dropped — the look has its own bytes —
     and the pipeline still re-verifies the licence against the look's own meta.
+    A private look is found only by an admin session, and what is built on it is
+    private too (the second value).
     """
     manifest = await orchestrator.wardrobes.get(slug)
     look = manifest.get(look_id) if manifest is not None else None
+    if look is not None and look.private and admin is None:
+        look = None
     if look is None or look.type == "source":
         raise HTTPException(status_code=404, detail="no such look in this avatar's wardrobe")
     key = f"looks/{look.id}/look.vrm"
     if not await orchestrator.store.exists(key):
         raise HTTPException(status_code=409, detail="that look's file is no longer stored")
     base = {k: v for k, v in avatar_input.items() if k != "sha256"}
-    return {**base, "storageKey": key}
+    return {**base, "storageKey": key}, look.private
 
 
 @router.get("/library/{slug}/avatar.vrm")
@@ -290,12 +324,15 @@ async def export_wardrobe_bundle(
     orchestrator: OrchestratorDep,
     store: StoreDep,
     settings: SettingsDep,
+    admin: AdminDep,
     passed_only: bool = Query(default=False, alias="passedOnly"),
 ) -> Response:
     """The wardrobe as a static bundle: unzip into the chatbot's ``vendor/wardrobe/``."""
     manifest = await orchestrator.wardrobes.get(avatar_id)
     if manifest is None:
         raise HTTPException(status_code=404, detail="wardrobe not found")
+    if admin is None:
+        manifest = manifest.public()
 
     files: dict[str, LookFiles] = {}
     for look_id in select_looks(manifest, passed_only=passed_only):

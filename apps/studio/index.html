@@ -282,6 +282,73 @@
             </form>
         </dialog>
 
+        <!--
+            The account menu, bottom-left like a chat app's. Shown only when the server
+            has an admin (WARDROBE_ADMIN_PASSWORD); an admin session lets the operator
+            declare, per avatar and for this session only, that an avatar depicts an
+            adult. apps/api/admin.py has the rules; nothing here decides them.
+        -->
+        <div class="account" id="account" hidden>
+            <div class="account-menu" id="account-menu" role="menu" hidden>
+                <div class="account-menu-head" id="account-menu-head"></div>
+                <button type="button" role="menuitem" id="account-settings">Settings</button>
+                <button type="button" role="menuitem" id="account-signin">Sign in as admin…</button>
+                <button type="button" role="menuitem" id="account-signout" class="danger">Sign out</button>
+            </div>
+            <button
+                type="button"
+                class="account-btn"
+                id="account-btn"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                aria-controls="account-menu"
+            >
+                <span class="account-glyph" id="account-glyph" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5Z" /></svg>
+                </span>
+                <span class="account-label">
+                    <span class="account-name" id="account-name">Sign in</span>
+                    <span class="account-sub" id="account-sub">Admin</span>
+                </span>
+            </button>
+        </div>
+
+        <dialog id="signin-dialog">
+            <form id="signin-form" method="dialog">
+                <h2>Sign in as admin</h2>
+                <p>For the operator of this Space. The password is the Space secret <code>WARDROBE_ADMIN_PASSWORD</code>.</p>
+                <input id="signin-password" type="password" autocomplete="current-password" placeholder="Password" required />
+                <p class="form-error" id="signin-error" role="alert" hidden></p>
+                <menu>
+                    <button value="cancel" type="button" class="ghost" id="signin-cancel">Cancel</button>
+                    <button value="signin" type="submit" class="primary" id="signin-submit">Sign in</button>
+                </menu>
+            </form>
+        </dialog>
+
+        <dialog id="settings-dialog" class="settings">
+            <form method="dialog">
+                <h2>Settings</h2>
+                <h3>Adult declarations <span class="tag">this session only</span></h3>
+                <p>
+                    Swimwear, underwear, see-through fabric and stockings need the avatar declared as depicting an
+                    adult. Turn this on only for an avatar you have decided depicts an adult; nothing is inferred
+                    from how a model looks. The model's own terms are still checked first, and still win.
+                </p>
+                <ul class="declarations" id="declarations"></ul>
+                <p class="settings-note">
+                    Looks made while an avatar is declared here are <strong>private</strong>: only an admin session
+                    sees them, in the wardrobe, the export and their files. Signing out, or the session ending,
+                    withdraws every declaration; nothing is saved to the Space.
+                </p>
+                <p class="form-error" id="settings-error" role="alert" hidden></p>
+                <menu>
+                    <span class="settings-session" id="settings-session"></span>
+                    <button value="close" type="submit" class="primary">Done</button>
+                </menu>
+            </form>
+        </dialog>
+
         <noscript>Wardrobe Studio needs JavaScript and WebGL.</noscript>
     </body>
 </html>

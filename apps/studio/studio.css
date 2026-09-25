@@ -1113,3 +1113,295 @@ table.tension td.error { color: #ef6b6b; }
 table.tension td.slack { opacity: 0.6; }
 .hosiery-previews { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
 .hosiery-previews img { width: calc(50% - 0.2rem); border-radius: 6px; }
+
+/* ------------------------------------------------------------------ account
+ * Bottom-left, where a chat app keeps its account: a row at the foot of the
+ * avatar column on a desktop, a single round button on a phone. The menu opens
+ * upwards so it never runs off the bottom of the screen.
+ */
+.account {
+    position: fixed;
+    left: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    z-index: 20;
+    width: 252px;
+}
+
+.account[hidden] {
+    display: none;
+}
+
+body:has(.account:not([hidden])) .library {
+    padding-bottom: 68px;
+}
+
+.account-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 10px 7px 7px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel-2);
+    text-align: left;
+}
+
+.account-btn:hover,
+.account-btn[aria-expanded='true'] {
+    background: var(--panel-3);
+    border-color: var(--line-strong);
+}
+
+.account-glyph {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--panel-3);
+    color: var(--muted);
+    font-weight: 650;
+}
+
+.account-glyph svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.account.signed-in .account-glyph {
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+
+.account-label {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.2;
+}
+
+.account-name {
+    font-weight: 600;
+}
+
+.account-sub {
+    color: var(--muted);
+    font-size: 11.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-menu {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 8px);
+    display: flex;
+    flex-direction: column;
+    min-width: 100%;
+    padding: 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    background: var(--panel-2);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.account-menu[hidden] {
+    display: none;
+}
+
+.account-menu-head {
+    padding: 8px 10px 10px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.account-menu-head strong {
+    display: block;
+    color: var(--text);
+    font-size: 13px;
+}
+
+.account-menu button {
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    text-align: left;
+}
+
+.account-menu button:hover {
+    background: var(--panel-3);
+}
+
+.account-menu button[hidden] {
+    display: none;
+}
+
+.account-menu .danger {
+    color: var(--bad);
+}
+
+@media (max-width: 900px) {
+    .account {
+        width: auto;
+    }
+
+    .account-btn {
+        padding: 4px;
+        border-radius: 50%;
+    }
+
+    .account-label {
+        display: none;
+    }
+
+    .account-menu {
+        min-width: 240px;
+    }
+
+    body:has(.account:not([hidden])) .library {
+        padding-bottom: 0;
+    }
+
+    body:has(.account:not([hidden])) .panel {
+        padding-bottom: 60px;
+    }
+}
+
+/* ------------------------------------------------------------------ settings */
+.form-error {
+    color: var(--bad);
+}
+
+dialog.settings {
+    width: min(480px, calc(100vw - 32px));
+}
+
+dialog.settings h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0 0;
+    font-size: 14px;
+}
+
+dialog .tag {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--panel-3);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.declarations {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.declarations label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.declarations label:hover {
+    background: var(--panel-2);
+}
+
+.declarations .who {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.declarations .who small {
+    color: var(--muted);
+    font-size: 11.5px;
+}
+
+/* A switch, from a checkbox, so it stays keyboard- and screen-reader-native. */
+.switch {
+    appearance: none;
+    position: relative;
+    flex: none;
+    width: 38px;
+    height: 22px;
+    margin: 0;
+    border-radius: 999px;
+    background: var(--panel-3);
+    border: 1px solid var(--line-strong);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: transform 0.15s;
+}
+
+.switch:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.switch:checked::after {
+    transform: translateX(16px);
+    background: var(--accent-ink);
+}
+
+.switch:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.settings-note {
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+
+.settings menu {
+    align-items: center;
+}
+
+.settings-session {
+    flex: 1;
+    color: var(--faint);
+    font-size: 12px;
+}
+
+/* On the picture's corner, opposite the remove button: the card's text rows are full. */
+.look-private {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 10.5px;
+    font-weight: 600;
+    pointer-events: none;
+}
