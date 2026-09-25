@@ -1,6 +1,6 @@
 # Hosiery preview: asset and render upgrades
 
-**Status: designed, not built.** This document extends
+**Status: built. See [HOSIERY](HOSIERY.md) for what ships and §11 there for where it departs from this design.** This document extends
 [HOSIERY_STYLING](HOSIERY_STYLING.md), which specifies the garments and the reveal
 control. It covers the assets and the rendering needed for a hosiery look's preview
 to reach the reference quality: a bodycon mini dress over sheer thigh-high

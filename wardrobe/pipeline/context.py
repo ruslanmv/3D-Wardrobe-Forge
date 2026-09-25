@@ -83,6 +83,8 @@ class PipelineContext:
     # -- output ----------------------------------------------------------
     output_bytes: bytes | None = None
     preview_bytes: bytes | None = None
+    #: A hosiery look's other views, by file name ("detail.webp", "preview-sit.webp", ...).
+    extra_previews: dict[str, bytes] = field(default_factory=dict)
     look: LookResult | None = None
     fit_report: FitReport = field(default_factory=FitReport)
     warnings: list[str] = field(default_factory=list)

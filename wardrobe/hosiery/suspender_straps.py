@@ -27,7 +27,7 @@ and is not a fault: a front suspender goes slack when she sits.
 joint's lateral axis, walking 28° each way. A strap end on the thigh moves
 toward or away from the belt by how far both ends sit from that axis *in the
 side view*. Straight above its clip, a rear strap's tab is a hand's breadth
-behind the axis, and it stretched 16–30% seated on the calibration mannequin.
+behind the axis, and it stretched 16% seated on the calibration mannequin.
 So the tab is chosen, not assumed (``choose_tab``): every point of the fitted
 belt's lower edge on that leg's side is tried and the one with the lowest worst
 stretch wins, within a 19° slant and 4 cm from the other tabs. The back clip
@@ -317,7 +317,7 @@ def choose_tab(belt: FittedBelt, clip, taken: list[int], judge: dict[str, dict[s
     """The belt-edge vertex this strap hangs from.
 
     Straight above the clip was the first rule, and a rear strap from there
-    stretched 16–30% seated. A strap's length changes in a pose by how far its
+    stretched 16% seated. A strap's length changes in a pose by how far its
     ends are from the hip's hinge line, seen from the side; the tab is the end
     that can move. So every vertex of the lower edge on this leg's side and
     face is tried, and the one whose worst stretch over the judged poses is

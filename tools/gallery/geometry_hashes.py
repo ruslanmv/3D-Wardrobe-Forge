@@ -34,6 +34,7 @@ from wardrobe.domain.garments import TemplateCatalog  # noqa: E402
 from wardrobe.domain.jobs import CreateJobRequest  # noqa: E402
 from wardrobe.library import AvatarLibrary  # noqa: E402
 from wardrobe.pipeline.orchestrator import Orchestrator  # noqa: E402
+from wardrobe.policy.calibration import declared_adult  # noqa: E402
 from wardrobe.queue.jobs import AsyncioJobQueue  # noqa: E402
 from wardrobe.storage.database import InMemoryJobRepository, InMemoryWardrobeRepository  # noqa: E402
 from wardrobe.storage.object_store import LocalObjectStore  # noqa: E402
@@ -92,7 +93,7 @@ async def main(out: Path, check: Path | None) -> int:
     hashes: dict[str, dict] = {}
     await store.put("sources/plain.vrm", toon_mannequin().to_bytes())
     await store.put("sources/dressed.vrm", dressed_mannequin())
-    hashes.update(await run(None, LOOKS, orch, store, {"depictsAdult": True}))
+    hashes.update(await run(None, LOOKS, orch, store, {"depictsAdult": declared_adult("calibration-c-tall")}))
     library = AvatarLibrary.from_directory(ROOT / "assets" / "library")
     for name in REAL_AVATARS:
         entry = next(a for a in library.avatars if a.path and a.path.stem == name)

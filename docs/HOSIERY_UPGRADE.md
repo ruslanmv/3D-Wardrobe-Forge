@@ -1,6 +1,6 @@
 # Hosiery upgrade: the complete plan
 
-**Status: designed, not built.** This document ties together
+**Status: built. See [HOSIERY](HOSIERY.md) for what ships and §11 there for where it departs from this design.** This document ties together
 [HOSIERY_STYLING](HOSIERY_STYLING.md) (the garments and the reveal control) and
 [HOSIERY_PREVIEW](HOSIERY_PREVIEW.md) (assets and rendering) into one upgrade. It
 analyses the 2D compositor `garter_belt.py`, written for the separate

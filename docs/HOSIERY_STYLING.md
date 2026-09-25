@@ -1,6 +1,6 @@
 # Hosiery and suspender styling: design
 
-**Status: designed, not built.** This document specifies an additive feature. Nothing
+**Status: built. See [HOSIERY](HOSIERY.md) for what ships and §11 there for where it departs from this design.** This document specifies an additive feature. Nothing
 in it changes a look the Forge makes today.
 The assets and rendering for its preview (flat straps, clip hardware, wide stocking
 tops, denier falloff and the web preview backend) are in

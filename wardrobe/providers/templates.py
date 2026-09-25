@@ -81,6 +81,10 @@ class TemplateGarmentProvider(GarmentProvider):
         if plan.hosiery is not None:
             artifact.metadata["hosiery"] = plan.hosiery.to_metadata()
             artifact.metadata["hosieryRole"] = plan.role
+            if template.procedural_kind == "legwear":
+                # Down the whole leg: bound to the thighs alone, a stocking's foot stayed
+                # out in front of her when she sat, carried by the thigh past a bent knee.
+                artifact.anchors = ["upperLegs", "lowerLegs", "feet"]
         if template.id in BELT_STYLE_OF_TEMPLATE:
             artifact.metadata["beltStyle"] = BELT_STYLE_OF_TEMPLATE[template.id]
         return artifact

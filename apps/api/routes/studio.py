@@ -254,8 +254,30 @@ def vocabulary() -> dict:
         "seeThroughPatterns": sorted(
             name for name, spec in PATTERNS.items() if spec.alpha == "mask" and name != "lace"
         ),
+        # Hosiery & suspenders (wardrobe.hosiery): every value the request blocks accept, and the presets.
+        "hosiery": hosiery_vocabulary(),
         "jobStates": [state.value for state in JobState if state not in TERMINAL_STATES],
         "terminalStates": sorted(state.value for state in TERMINAL_STATES),
+    }
+
+
+def hosiery_vocabulary() -> dict:
+    from typing import get_args
+
+    from wardrobe.hosiery import options
+    from wardrobe.hosiery.presets import catalogue
+
+    return {
+        "types": list(get_args(options.HosieryType)),
+        "deniers": list(options.DENIER_STEPS) + [60, 80],
+        "topStyles": list(get_args(options.TopStyle)),
+        "beltStyles": list(get_args(options.BeltStyle)),
+        "beltMaterials": list(get_args(options.BeltMaterial)),
+        "strapCounts": [4, 6],
+        "hardwareColors": list(get_args(options.HardwareColour)),
+        "visibility": list(get_args(options.Visibility)),
+        "revealLevels": list(get_args(options.RevealLevel)),
+        "presets": catalogue(),
     }
 
 

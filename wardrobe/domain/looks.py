@@ -253,6 +253,8 @@ class LookResult(BaseModel):
     prompt: str | None = None
     plan: OutfitPlan | None = None
     size_bytes: int | None = Field(default=None, alias="sizeBytes")
+    #: Extra views of a hosiery look (thumb, detail, sit, walk, back): name -> URL. Absent otherwise.
+    previews: dict[str, str] | None = None
 
 
 class ClippingCheck(StrEnum):

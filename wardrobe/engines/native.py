@@ -177,6 +177,9 @@ class NativeEngine(FittingEngine):
                 "templateId": layer.plan.template_id,
                 "lookId": context.look_id,
             }
+            if layer.plan.hosiery is not None:  # its part in a hosiery design, for posed previews
+                forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
+                forge["hosiery"] = layer.artifact.metadata.get("hosieryRole", layer.plan.role)
             if layer.plan.set_id:  # a coordinated set: only then, so no other garment's extras change
                 forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
                 forge["setId"] = layer.plan.set_id

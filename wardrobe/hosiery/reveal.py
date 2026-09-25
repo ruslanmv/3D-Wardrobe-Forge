@@ -307,7 +307,7 @@ def solve_hem(context, reveal: dict) -> dict:
         got, visible = achieved(states)
         if got != level:
             notes.append(f"kept {reason}; it gives {got}, not {level}")
-        return _result(level, got, visible, hem_y, states, notes, explicit=True, ease=ease)
+        return _result(level, got, visible, hem_y, states, notes, explicit=True, ease=ease, model=model)
 
     top_limit, bottom_limit = highest, lowest
     if prompt_hem in HEM_RANGES:
@@ -322,6 +322,14 @@ def solve_hem(context, reveal: dict) -> dict:
         chosen = next(((h, s) for h, s in reversed(evaluated) if _meets(level, s)), None)
     else:
         chosen = next(((h, s) for h, s in evaluated if _meets(level, s)), None)
+    if chosen is None and level == "glimpse":
+        # Some cuts show the band walking but cover it seated (a flared skirt falls over her lap):
+        # still a glimpse, and said so.
+        chosen = next(((h, s) for h, s in evaluated if achieved(s)[0] == "glimpse"), None)
+        if chosen is not None:
+            words = {"stand": "standing", "walk": "walking", "sit": "seated"}
+            shown = ", ".join(words[p] for p in achieved(chosen[1])[1])
+            notes.append(f"on this cut the band shows {shown}, not seated")
     if chosen is None:
         # Nothing in range gives it: the nearest the range allows, and say so.
         ranking = {"discreet": 0, "glimpse": 1, "statement": 2}
@@ -332,11 +340,15 @@ def solve_hem(context, reveal: dict) -> dict:
         notes.append(f"{what} cannot give {level} on this body; the nearest is {achieved(chosen[1])[0]}")
     hem_y, states = chosen
     got, visible = achieved(states)
-    return _result(level, got, visible, hem_y, states, notes, explicit=False, ease=ease)
+    return _result(level, got, visible, hem_y, states, notes, explicit=False, ease=ease, model=model)
 
 
-def _result(level, got, visible, hem_y, states, notes, *, explicit: bool, ease: float) -> dict:
+def _result(level, got, visible, hem_y, states, notes, *, explicit: bool, ease: float, model) -> dict:
+    # Where the hem ring sits down each thigh, per pose: what a posed preview drapes the skirt to.
+    rings = {pose: {leg["side"]: round(model.ring(leg, hem_y, pose), 4) for leg in model.legs}
+             for pose in POSES}
     return {
+        "ringM": rings,
         "requested": level, "achieved": got, "visibleIn": visible, "hemY": round(float(hem_y), 4),
         "explicitLength": explicit, "marginMm": MARGIN_M * 1000.0, "ease": ease,
         "perPose": states, "notes": notes,

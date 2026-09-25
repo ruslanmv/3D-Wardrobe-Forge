@@ -38,7 +38,7 @@ CLASSIC = {"prompt": "black bodycon mini dress", "hosiery": {"type": "sheer", "d
            "suspenderBelt": {"style": "classic"}}
 
 
-def run(tmp: Path, outfit: dict, *, adult: bool = True, spec: str = "VRM1"):
+def run(tmp: Path, outfit: dict, *, adult: bool = True, spec: str = "VRM1", preview: str | None = None):
     """One job; returns (record, output bytes, the pipeline context the connector saw)."""
     settings = Settings(wardrobe_storage_root=str(tmp), wardrobe_engine="native", strict_licensing=True)
     store = LocalObjectStore(settings.storage_root_path, settings)
@@ -56,10 +56,12 @@ def run(tmp: Path, outfit: dict, *, adult: bool = True, spec: str = "VRM1"):
         await store.put("sources/body.vrm", build_vrm(TALL, spec=spec))
         request = CreateJobRequest.model_validate({
             "avatar": {"storageKey": "sources/body.vrm", "avatarId": "mannequin", "depictsAdult": adult},
-            "outfit": outfit, "options": {"renderPreview": False, "engine": "native"},
+            "outfit": outfit, "options": {"renderPreview": preview is not None, "engine": "native",
+                                          **({"previewBackend": preview} if preview else {})},
         })
         record = await orchestrator.run_now(request)
         data = await store.get(f"looks/{record.look.id}/look.vrm") if record.look else None
+        seen["store"] = store
         return record, data
 
     hosiery_fit.fit_connector = spy
@@ -266,16 +268,60 @@ def test_the_gate_still_refuses_an_undeclared_avatar(tmp_path):
     assert record.reason is FailureReason.ADULT_DECLARATION_REQUIRED
 
 
-def test_a_vrm0_avatar_gets_the_same_design(tmp_path):
-    """VRM 0.x faces -Z: the poses, clips and seam all have to know."""
-    record, _data, context = run(tmp_path, {**CLASSIC, "reveal": {"level": "glimpse"}}, spec="VRM0")
-    if record.state is JobState.REJECTED:  # the VRM 0.x calibration body's terms disallow intimate wear
-        assert record.reason is FailureReason.INTIMATE_NOT_PERMITTED
-        return
-    assert record.fit_report.hosiery["reveal"]["achieved"] is not None
-    assert all(s.stretch["sit"] <= STRETCH_ERROR for s in context.connector.straps)
+def test_a_vrm0_avatar_gets_the_same_contract_and_reveal(tmp_path):
+    """The stocking frame, the clips and the poses face the way the rig says she faces.
+
+    That is read from her toes where the rig has them (a VRoid VRM 0.x avatar's
+    point to -Z; the generated calibration body's point to +Z in both specs), and
+    from the spec otherwise. The VRM 0.x calibration body's own terms disallow
+    intimate wear, so it gets the ungated form of the look: opaque stockings, no
+    belt. The stocking tops are still published and the hem still solved.
+    """
+    outfit = {"prompt": "black bodycon mini dress", "hosiery": {"type": "opaque"}, "reveal": {"level": "glimpse"}}
+    record, _data, _context = run(tmp_path, outfit, spec="VRM0", adult=False)
+    assert record.state is JobState.COMPLETED, record.error
+    hosiery = record.fit_report.hosiery
+    front = hosiery["stockingTop"]["left"]["clips"]["front"]
+    bones = record.fit_report.measurements["bonePositions"]
+    facing = np.sign(bones["leftToes"][2] - bones["leftFoot"][2])
+    assert front["normal"][2] * facing > 0.5  # on her front, whichever way that is
+    assert hosiery["reveal"]["achieved"] == "glimpse" and hosiery["reveal"]["visibleIn"] == ["sit"]
+    assert "straps" not in hosiery  # no belt, no straps
+
+
+def test_the_vrm0_calibration_body_refuses_the_gated_look(tmp_path):
+    record, _data, _context = run(tmp_path, {**CLASSIC, "reveal": {"level": "glimpse"}}, spec="VRM0")
+    assert record.state is JobState.REJECTED and record.reason is FailureReason.INTIMATE_NOT_PERMITTED
 
 
 def test_a_look_without_hosiery_has_no_hosiery_block(tmp_path):
     record, _data, _context = run(tmp_path, {"prompt": "red bodycon mini dress"})
     assert record.state is JobState.COMPLETED and record.fit_report.hosiery is None
+
+
+def test_previews_fall_back_to_native_and_say_so(tmp_path, monkeypatch):
+    from wardrobe.hosiery import previews
+
+    monkeypatch.setattr(previews, "web_available", lambda: False)
+    record, _data, context = run(tmp_path, {**CLASSIC, "reveal": {"level": "statement"}}, preview="web")
+    block = record.fit_report.hosiery["previews"]
+    assert block["requested"] == "web" and block["backend"] == "native" and block["note"]
+    assert set(record.look.previews) >= {"thumb", "detail", "preview-sit", "preview-walk"}
+    assert record.fit_report.preview_rendered
+
+
+def test_a_seated_preview_is_a_valid_vrm_with_her_knees_forward(looks):
+    from wardrobe.hosiery.previews import bake_pose
+    from wardrobe.vrm.inspect import inspect_document
+
+    record, data, context = looks["glimpse"]
+    facing = hosiery_fit.forward(context)
+    reveal = record.fit_report.hosiery["reveal"]
+    seated = bake_pose(data, "sit", forward=facing, pivots=context.measurements.bone_positions,
+                       rings=reveal["ringM"]["sit"], hem_d=reveal["ringM"]["stand"])
+    document = GltfDocument.from_bytes(seated)
+    inspect_document(document)  # still a VRM with its humanoid
+    stockings = next(mesh for node, mesh in _nodes(seated) if "Stockings" in node["name"])
+    points = document.read_accessor(stockings["primitives"][0]["attributes"]["POSITION"])
+    knee_z = context.measurements.bone_positions["leftLowerLeg"][2]
+    assert (points[:, 2] * facing).max() > knee_z * facing + 0.3  # thighs out in front of her

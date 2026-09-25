@@ -9,7 +9,12 @@ defaults to docs/images. Writes:
 * ``lookbook.webp`` — a strip of looks across the library avatars, front 3/4;
 * ``before-after.webp`` — avatars as they arrive, then in two new outfits;
 * ``features.webp`` — the feature map: one card per feature, with a render where
-  the feature can be seen and plain text where it is a property.
+  the feature can be seen and plain text where it is a property;
+* ``hosiery.webp`` — the hosiery golden previews (tools/gallery/hosiery.py), on the
+  calibration mannequin the repository declares adult.
+
+``--hosiery`` writes hosiery.webp and redraws only the hosiery card of an existing
+features.webp, so the gallery need not be re-rendered for it.
 
 Nothing is retouched: every panel is a render of a VRM the pipeline produced,
 cropped and scaled. Which looks appear is chosen below, by number, so the
@@ -81,7 +86,7 @@ def strip(panels: list[tuple[Image.Image, str]], gap: int = 8, caption_h: int = 
 FEATURES = [
     ("Words in, VRM out", ["A plain-language request becomes", "a validated VRM in one job."],
      ("render", "AvatarSample_A", 2)),
-    ("54-garment library", ["Procedural templates, generated at", "each avatar's own measurements."],
+    ("58-garment library", ["Procedural templates, generated at", "each avatar's own measurements."],
      ("render", "AvatarSample_B", 10)),
     ("Toon-true materials", ["6 finishes, 7 patterns and a sheer", "scale, all readable under MToon."],
      ("render", "fem_vroid", 3)),
@@ -103,12 +108,12 @@ FEATURES = [
      None),
     ("Static-bundle export", ["One call packs a wardrobe that", "3D-Avatar-Chatbot loads by unzipping."],
      None),
-    ("Runs on plain Python", ["Native engine: Python and numpy.", "Blender optional. 553 tests in CI."],
+    ("Runs on plain Python", ["Native engine: Python and numpy.", "Blender optional. 623 tests in CI."],
      None),
-    ("Designed next: Hosiery styling",
-     ["Suspenders clipped to fitted stocking tops, and a reveal control solved "
-      "in standing, walking and seated poses."],
-     ("sketch", "hosiery")),
+    ("Hosiery & suspenders",
+     ["Straps clipped to the fitted stocking tops, tension checked walking and seated, "
+      "a hem solved for the reveal. Gated; shown on the adult mannequin."],
+     ("golden", "assets/gallery/hosiery/hosiery_garter_statement_front-detail.webp")),
 ]
 
 CARD_W, CARD_H, THUMB_W = 520, 250, 170
@@ -127,6 +132,8 @@ def _thumb(real: Path, root: Path, picture) -> Image.Image | None:
         image = Image.new("RGB", (a.width + b.width, PANEL_H), BG)
         image.paste(a, (0, 0))
         image.paste(b, (a.width, 0))
+    elif kind == "golden":  # a hosiery golden preview: shown whole
+        image = Image.open(root / picture[1]).convert("RGB")
     elif kind == "image":
         image = Image.open(root / picture[1]).convert("RGB")
         w, h = image.size  # the viewport: her in two outfits, not the panels round it
@@ -175,6 +182,110 @@ def _wrap(text: str, width: int) -> list[str]:
     return lines + [line]
 
 
+def _card(sheet: Image.Image, d: ImageDraw.ImageDraw, i: int, thumb: Image.Image | None) -> None:
+    """Card ``i`` of the feature map, drawn in place."""
+    cols, gap, top = 3, 16, 96
+    title, lines, _picture = FEATURES[i]
+    x = gap + (i % cols) * (CARD_W + gap)
+    y = top + (i // cols) * (CARD_H + gap)
+    designed = title.startswith("Designed")
+    d.rectangle((x - 2, y - 2, x + CARD_W + 2, y + CARD_H + 2), fill=BG)
+    d.rounded_rectangle((x, y, x + CARD_W, y + CARD_H), radius=14, fill=CARD,
+                        outline=ACCENT if designed else LINE, width=2 if designed else 1)
+    text_x = x + 20
+    if thumb is not None:
+        sheet.paste(thumb, (x + CARD_W - thumb.width - 12, y + (CARD_H - thumb.height) // 2))
+    if designed:
+        d.text((text_x, y + 18), "DESIGNED \u00b7 NOT YET BUILT", font=TINY, fill=ACCENT)
+    name = title.replace("Designed next: ", "")
+    d.text((text_x, y + 40), name, font=TITLE, fill=ACCENT if designed else INK)
+    room = CARD_W - 40 - (thumb.width + 20 if thumb is not None else 0)
+    for k, line in enumerate(_wrap(" ".join(lines), room)):
+        d.text((text_x, y + 84 + k * 26), line, font=BODY_TEXT, fill=MUTED)
+
+
+def patch_card(path: Path, index: int, *, keep_picture: bool = False) -> None:
+    """Redraw one card of an existing feature map: what changed, without re-rendering the gallery.
+
+    ``keep_picture`` reuses the picture already on the card (a render from the real
+    gallery, which is not kept in the repository) and redraws only its words.
+    """
+    root = Path(__file__).resolve().parents[2]
+    sheet = Image.open(path).convert("RGB")
+    if keep_picture:
+        cols, gap, top = 3, 16, 96
+        x = gap + (index % cols) * (CARD_W + gap)
+        y = top + (index // cols) * (CARD_H + gap)
+        thumb = None
+        if FEATURES[index][2] is not None:
+            box = sheet.crop((x + CARD_W - THUMB_W - 12, y + 12, x + CARD_W - 12, y + CARD_H - 12))
+            # The picture alone: from the right, the columns that are not card, up to the first
+            # column of plain card (what lies left of it is the card's old words).
+            import numpy as np
+
+            pixels = np.asarray(box, dtype=np.int16)
+            # A render's own background is a shade off the card's, so the threshold is tight.
+            differs = np.abs(pixels - np.array(CARD)).max(axis=2) > 3
+            filled = differs.sum(axis=0) > 2
+            columns = np.nonzero(filled)[0]
+            if columns.size:
+                right = int(columns[-1])
+                left = right
+                while left > 0 and filled[left - 1]:
+                    left -= 1
+                rows = np.nonzero(differs[:, left:right + 1].sum(axis=1) > 2)[0]
+                thumb = box.crop((left, int(rows[0]), right + 1, int(rows[-1]) + 1))
+    else:
+        thumb = _thumb(Path("."), root, FEATURES[index][2])
+    _card(sheet, ImageDraw.Draw(sheet), index, thumb)
+    sheet.save(path, "WEBP", quality=88, method=6)
+
+
+#: The hosiery showcase: (golden image, caption), left to right.
+HOSIERY = [
+    ("hosiery_garter_glimpse_front.webp", "glimpse \u00b7 standing: covered"),
+    ("hosiery_garter_glimpse_seated.webp", "glimpse \u00b7 seated: the tops show"),
+    ("hosiery_garter_statement_front.webp", "statement \u00b7 below the hem"),
+    ("hosiery_garter_seamed_back.webp", "seamed \u00b7 six straps"),
+    ("hosiery_garter_fishnet_front.webp", "fishnet"),
+]
+HOSIERY_DETAILS = [
+    ("hosiery_garter_statement_front-detail.webp", "flat straps, silver clasps, wide tops, rolled edge"),
+    ("hosiery_garter_glimpse_front-detail.webp", "seated close-up: the glimpse"),
+]
+
+
+def hosiery(out: Path) -> None:
+    """docs/images/hosiery.webp: the reference look standing, seated and close up, and its variants."""
+    golden = Path(__file__).resolve().parents[2] / "assets" / "gallery" / "hosiery"
+    panels = []
+    for name, caption in HOSIERY:
+        image = Image.open(golden / name).convert("RGB")
+        w, h = image.size
+        image = image.crop((int(w * 0.18), int(h * 0.06), int(w * 0.82), int(h * 0.94)))
+        size = (int(image.width * PANEL_H / image.height), PANEL_H)
+        panels.append((image.resize(size, Image.LANCZOS), caption))
+    top = strip(panels)
+    details = []
+    for name, caption in HOSIERY_DETAILS:
+        image = Image.open(golden / name).convert("RGB")
+        width = (top.width - 24) // 2
+        size = (width, int(image.height * width / image.width))
+        details.append((image.resize(size, Image.LANCZOS), caption))
+    row_h = max(i.height for i, _ in details) + 48
+    sheet = Image.new("RGB", (top.width, top.height + row_h), BG)
+    sheet.paste(top, (0, 0))
+    d = ImageDraw.Draw(sheet)
+    x = 8
+    for image, caption in details:
+        sheet.paste(image, (x, top.height))
+        text_w = d.textlength(caption, font=SMALL)
+        d.text((x + (image.width - text_w) / 2, top.height + image.height + 10), caption, font=SMALL,
+               fill=MUTED)
+        x += image.width + 8
+    sheet.save(out / "hosiery.webp", "WEBP", quality=86, method=6)
+
+
 def features(real: Path, out: Path) -> None:
     root = Path(__file__).resolve().parents[2]
     cols, gap, top = 3, 16, 96
@@ -184,29 +295,24 @@ def features(real: Path, out: Path) -> None:
     d.text((gap + 4, 22), "3D Wardrobe Forge", font=HEAD, fill=INK)
     d.text((gap + 4 + d.textlength("3D Wardrobe Forge", font=HEAD) + 18, 36),
            "what it does, on real VRoid avatars", font=BODY_TEXT, fill=MUTED)
-    for i, (title, lines, picture) in enumerate(FEATURES):
-        x = gap + (i % cols) * (CARD_W + gap)
-        y = top + (i // cols) * (CARD_H + gap)
-        designed = title.startswith("Designed")
-        d.rounded_rectangle((x, y, x + CARD_W, y + CARD_H), radius=14, fill=CARD,
-                            outline=ACCENT if designed else LINE, width=2 if designed else 1)
-        thumb = _thumb(real, root, picture)
-        text_x = x + 20
-        if thumb is not None:
-            sheet.paste(thumb, (x + CARD_W - thumb.width - 12, y + (CARD_H - thumb.height) // 2))
-        if designed:
-            d.text((text_x, y + 18), "DESIGNED \u00b7 NOT YET BUILT", font=TINY, fill=ACCENT)
-        name = title.replace("Designed next: ", "")
-        d.text((text_x, y + 40), name, font=TITLE, fill=ACCENT if designed else INK)
-        room = CARD_W - 40 - (thumb.width + 20 if thumb is not None else 0)
-        for k, line in enumerate(_wrap(" ".join(lines), room)):
-            d.text((text_x, y + 84 + k * 26), line, font=BODY_TEXT, fill=MUTED)
+    for i in range(len(FEATURES)):
+        _card(sheet, d, i, _thumb(real, root, FEATURES[i][2]))
     sheet.save(out / "features.webp", "WEBP", quality=88, method=6)
 
 
 def main() -> None:
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
+    if sys.argv[1] == "--hosiery":
+        out = Path(__file__).resolve().parents[2] / "docs" / "images"
+        hosiery(out)
+        patch_card(out / "features.webp", len(FEATURES) - 1)
+        for index, (title, _lines, _picture) in enumerate(FEATURES):  # the counts hosiery changed
+            if title.startswith(("58-garment", "Runs on plain Python")):
+                patch_card(out / "features.webp", index, keep_picture=True)
+        for name in ("hosiery.webp", "features.webp"):
+            print(name, (out / name).stat().st_size // 1024, "KB")
+        return
     real = Path(sys.argv[1]).resolve()
     default = Path(__file__).resolve().parents[2] / "docs" / "images"
     out = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else default
@@ -229,7 +335,8 @@ def main() -> None:
         y += row.height
     sheet.save(out / "before-after.webp", "WEBP", quality=86, method=6)
     features(real, out)
-    for name in ("lookbook.webp", "before-after.webp", "features.webp"):
+    hosiery(out)
+    for name in ("lookbook.webp", "before-after.webp", "features.webp", "hosiery.webp"):
         print(name, (out / name).stat().st_size // 1024, "KB")
 
 

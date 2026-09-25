@@ -19,8 +19,6 @@ from wardrobe.errors import FittingError
 from wardrobe.hosiery import stockings as stocking_parts
 from wardrobe.hosiery.contract import CLIPS_FOR
 from wardrobe.hosiery.garter_belt import publish_belt
-from wardrobe.hosiery.poses import POSES, mirrored, transforms
-from wardrobe.hosiery.suspender_straps import build_connector, measure_tension
 from wardrobe.vrm.inspect import VrmSpec
 from wardrobe.vrm.skinning import build_bone_segments
 
@@ -86,6 +84,10 @@ def fit_connector(context):
     """The straps and hardware: mesh, bone segments and a strap-tension record."""
     from wardrobe.engines.geometry_checks import body_points
     from wardrobe.engines.shell import _torso
+
+    # Imported here: the engines package imports this module, and poses imports the engines' checks.
+    from wardrobe.hosiery.poses import POSES, mirrored, transforms
+    from wardrobe.hosiery.suspender_straps import build_connector, measure_tension
 
     if context.belt is None or not context.stocking_tops:
         raise FittingError("the suspender straps need a fitted belt and fitted stockings to clip to")

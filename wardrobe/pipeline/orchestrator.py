@@ -196,6 +196,12 @@ class Orchestrator:
                 context.key("preview.webp"), context.preview_bytes, content_type="image/webp"
             )
 
+        extra: dict[str, str] = {}
+        for name, data in sorted(context.extra_previews.items()):
+            extra[name.removesuffix(".webp")] = await self.store.put(
+                context.key(name), data, content_type="image/webp"
+            )
+
         report = context.fit_report
         record.fit_report = report
         await self.store.put(
@@ -213,6 +219,7 @@ class Orchestrator:
             prompt=record.request.outfit.prompt,
             plan=context.plan,
             sizeBytes=len(context.output_bytes),
+            previews=extra or None,
         )
         record.look = look
         context.look = look
