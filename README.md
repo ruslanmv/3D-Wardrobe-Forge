@@ -241,8 +241,8 @@ wins.
 avatar is unlocked for them only when someone has declared that it depicts an
 adult; nothing is inferred from how a model looks. The operator can declare an
 avatar for everyone in `assets/library/policy.json`. Alternatively, with
-`WARDROBE_ADMIN_PASSWORD` set, they can log in from the account button at the
-bottom left (everyone else is a Guest) and turn on **Private mode** for it in
+`WARDROBE_ADMIN_PASSWORD` set, they can log in (username `admin`) from the
+account button at the bottom left (everyone else is a Guest) and turn on **Private mode** for it in
 **Settings**, for that session only, after confirming they are 18 or older and
 that the avatar depicts an adult. Looks made
 under a session's declaration are private to admin sessions, and signing out

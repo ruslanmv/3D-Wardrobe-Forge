@@ -16,6 +16,7 @@ router = APIRouter(tags=["admin"])
 
 
 class SignIn(BaseModel):
+    username: str | None = Field(default=None, max_length=128)
     password: str = Field(min_length=1, max_length=512)
 
 
@@ -44,6 +45,7 @@ def admin_status(admins: AdminSessionsDep, admin: AdminDep) -> dict:
     return {
         "enabled": admins.enabled,
         "signedIn": admin is not None,
+        "username": admins.username if admin is not None else None,
         "session": admin.to_dict() if admin is not None else None,
     }
 
@@ -52,10 +54,10 @@ def admin_status(admins: AdminSessionsDep, admin: AdminDep) -> dict:
 def sign_in(body: SignIn, request: Request, admins: AdminSessionsDep) -> dict:
     client = request.client.host if request.client else "?"
     try:
-        token, session = admins.sign_in(body.password, client)
+        token, session = admins.sign_in(body.password, client, username=body.username)
     except AdminError as error:
         raise _raise(error) from None
-    return {"token": token, **session.to_dict()}
+    return {"token": token, "username": admins.username, **session.to_dict()}
 
 
 @router.delete("/admin/session", status_code=status.HTTP_204_NO_CONTENT)

@@ -329,7 +329,7 @@ async function selectAvatar(slug) {
 // in as admin. An admin session changes nothing by itself: the operator declares,
 // per avatar, in Settings, and the server decides everything (apps/api/admin.py).
 // This code only asks, shows and refreshes.
-const account = { enabled: false, session: null, timer: null };
+const account = { enabled: false, session: null, timer: null, username: 'admin' };
 const PERSON_ICON =
     '<svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5Z" /></svg>';
 
@@ -342,6 +342,7 @@ async function initAccount() {
     }
     account.enabled = Boolean(status && status.enabled);
     if (admin.token && !(status && status.signedIn)) admin.token = '';
+    if (status && status.username) account.username = status.username;
     setSession(status && status.signedIn ? status.session : null);
 }
 
@@ -352,17 +353,17 @@ function setSession(session) {
     $('account').classList.toggle('signed-in', signedIn);
     // A fixed icon, not user text: innerHTML is safe here, and el() cannot make SVG.
     document.querySelectorAll('[data-glyph]').forEach((node) => {
-        if (signedIn) node.textContent = 'A';
+        if (signedIn) node.textContent = (account.username[0] || 'A').toUpperCase();
         else node.innerHTML = PERSON_ICON;
     });
-    document.querySelectorAll('[data-account-name]').forEach((node) => (node.textContent = signedIn ? 'Admin' : 'Guest'));
+    document.querySelectorAll('[data-account-name]').forEach((node) => (node.textContent = signedIn ? account.username : 'Guest'));
     const declared = signedIn ? session.declared.length : 0;
     const sub = signedIn
         ? `${declared ? `Private mode: ${declared} on` : 'Private mode off'} · until ${endsAt(session)}`
-        : 'Not signed in';
+        : 'Not logged in';
     $('account-sub').textContent = sub;
-    $('account-menu-sub').textContent = signedIn ? `Admin session · ends ${endsAt(session)}` : 'Guest · not signed in';
-    $('account-btn').title = signedIn ? 'Admin session' : 'Guest';
+    $('account-menu-sub').textContent = signedIn ? `Logged in · until ${endsAt(session)}` : 'Not logged in';
+    $('account-btn').title = signedIn ? account.username : 'Guest';
 
     $('account-signout').hidden = !signedIn;
     $('account-signin').hidden = signedIn;
@@ -398,6 +399,7 @@ function openSignIn() {
     $('signin-password').value = '';
     $('signin-error').hidden = true;
     $('signin-dialog').showModal();
+    $($('signin-username').value ? 'signin-password' : 'signin-username').focus();
 }
 
 function bindAccount() {
@@ -438,14 +440,17 @@ function bindAccount() {
         event.preventDefault();
         $('signin-submit').disabled = true;
         try {
-            const result = await api.adminSignIn($('signin-password').value);
+            const result = await api.adminSignIn($('signin-username').value, $('signin-password').value);
             admin.token = result.token;
+            if (result.username) account.username = result.username;
             $('signin-dialog').close();
             setSession({ expiresAt: result.expiresAt, declared: result.declared });
             await refreshForSession();
-            openSettings('declarations');
+            setStatus(`Logged in as ${account.username}.`);
         } catch (error) {
-            $('signin-error').textContent = error.status === 429 ? 'Too many attempts — wait a few minutes.' : describe(error);
+            $('signin-error').textContent =
+                error.status === 429 ? 'Too many attempts. Wait a few minutes and try again.' : describe(error);
+            $('signin-password').select();
             $('signin-error').hidden = false;
         } finally {
             $('signin-submit').disabled = false;
@@ -535,15 +540,15 @@ function renderSettings() {
     const session = account.session;
     // General
     $('settings-account').textContent = session
-        ? `Admin · session ends at ${endsAt(session)}, or when this tab closes`
-        : 'Guest · not signed in';
-    $('settings-account-action').textContent = session ? 'Log out' : 'Log in as admin';
+        ? `${account.username} · logged in until ${endsAt(session)}, or until this tab closes`
+        : 'Guest · not logged in';
+    $('settings-account-action').textContent = session ? 'Log out' : 'Log in';
     $('settings-account-action').disabled = !session && !account.enabled;
     $('settings-key').textContent = auth.key
         ? 'Set in this browser'
         : 'Not set · only needed when this Space runs WARDROBE_AUTH_MODE=api_key';
     $('settings-admin').textContent = account.enabled
-        ? 'Available: the operator logs in with the Space secret WARDROBE_ADMIN_PASSWORD'
+        ? 'Available on this Space'
         : 'Not set up on this Space: add a secret named WARDROBE_ADMIN_PASSWORD (12+ characters) and restart it';
 
     // Adult declarations: read-only for a guest, switches for an admin.
@@ -668,7 +673,7 @@ function renderDesigner() {
             disabled: category && needsAdult(category) && !adult,
             title:
                 category && needsAdult(category) && !adult
-                    ? 'Needs private mode on for this avatar: Settings → Private mode (admin)'
+                    ? 'Needs private mode on for this avatar: log in, then Settings → Private mode'
                     : undefined,
             onclick: () => {
                 state.design.category = category;
@@ -744,7 +749,7 @@ function renderDesigner() {
 function renderStyle(adult) {
     const { overrides } = state.vocab;
     const seeThrough = new Set(state.vocab.seeThroughPatterns || []);
-    const reason = 'Shows the body: needs private mode on for this avatar (Settings, admin)';
+    const reason = 'Shows the body: needs private mode on for this avatar (log in, then Settings)';
 
     const chips = (id, key, values, { label = (v) => v, value = (v) => v, gated = () => false } = {}) =>
         $(id).replaceChildren(
@@ -788,7 +793,7 @@ function renderStyle(adult) {
     });
     const underwearBase = $('base-body-select').querySelector('option[value="underwear-base"]');
     underwearBase.disabled = !adult;
-    underwearBase.title = adult ? '' : 'Underwear needs private mode on for this avatar (Settings, admin)';
+    underwearBase.title = adult ? '' : 'Underwear needs private mode on for this avatar (log in, then Settings)';
     if (!adult && $('base-body-select').value === 'underwear-base') $('base-body-select').value = 'replace-outer';
     $('style-hint').textContent = adult ? 'overrides the prompt' : 'overrides the prompt · see-through needs private mode';
 }
@@ -818,7 +823,7 @@ function renderHosiery(adult) {
     };
     $('hosiery-hint').textContent = adult
         ? 'stockings publish their tops; straps clip to them'
-        : 'needs private mode on for this avatar (Settings, admin)';
+        : 'needs private mode on for this avatar (log in, then Settings)';
     $('hosiery-controls').hidden = !h.on;
     if (!h.on) return;
 

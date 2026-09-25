@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     #: an adult declaration can be made per avatar for that session only. Empty: no
     #: admin, and the Studio offers no sign-in. Set it as a secret, never in a file.
     wardrobe_admin_password: str = ""
+    #: The user name that goes with it on the Studio's log-in form.
+    wardrobe_admin_username: str = "admin"
     #: How long an admin session lasts before it signs itself out.
     wardrobe_admin_session_hours: float = 8.0
 

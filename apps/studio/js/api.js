@@ -138,7 +138,8 @@ export const api = {
 
     /** Whether there is an admin, and this tab's session if it has one. */
     adminStatus: () => request('/v1/admin'),
-    adminSignIn: (password) => request('/v1/admin/session', { method: 'POST', body: { password } }),
+    adminSignIn: (username, password) =>
+        request('/v1/admin/session', { method: 'POST', body: { username, password } }),
     adminSignOut: () => request('/v1/admin/session', { method: 'DELETE' }),
     /** Declare, for this session only, that a library avatar depicts an adult (or withdraw it). */
     adminDeclare: (slug, depictsAdult, ageConfirmed = false) =>

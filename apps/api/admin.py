@@ -78,7 +78,13 @@ class AdminSession:
 
 
 class AdminSessions:
-    def __init__(self, password: str, ttl_hours: float = 8.0, clock: Callable[[], float] = time.time):
+    def __init__(
+        self,
+        password: str,
+        ttl_hours: float = 8.0,
+        clock: Callable[[], float] = time.time,
+        username: str = "admin",
+    ):
         self.problem: str | None = None
         if not password:
             self.problem = "WARDROBE_ADMIN_PASSWORD is not set"
@@ -86,6 +92,7 @@ class AdminSessions:
             self.problem = f"WARDROBE_ADMIN_PASSWORD is shorter than {MIN_PASSWORD_LENGTH} characters"
             logger.warning("admin sign-in disabled: %s", self.problem)
         self._password = password.encode("utf-8") if self.problem is None else b""
+        self.username = (username or "admin").strip()
         self._ttl_s = max(ttl_hours, 0.05) * 3600
         self._clock = clock
         self._sessions: dict[str, AdminSession] = {}
@@ -99,7 +106,9 @@ class AdminSessions:
     def _hash(token: str) -> str:
         return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
-    def sign_in(self, password: str, client: str = "?") -> tuple[str, AdminSession]:
+    def sign_in(
+        self, password: str, client: str = "?", username: str | None = None
+    ) -> tuple[str, AdminSession]:
         if not self.enabled:
             raise AdminError(404, "admin_disabled", "this deployment has no admin")
         now = self._clock()
@@ -107,11 +116,16 @@ class AdminSessions:
         self._failures[client] = recent
         if len(recent) >= MAX_FAILURES:
             raise AdminError(429, "too_many_attempts", "too many failed sign-ins; wait and try again")
-        # Compared in constant time, and always compared, so timing says nothing.
-        if not secrets.compare_digest(password.encode("utf-8"), self._password):
+        # Both compared in constant time, and both always compared, so neither the
+        # answer nor its timing says which one was wrong. None (an API caller that
+        # sends only a password) is taken as the configured name.
+        name = self.username if username is None else username.strip()
+        name_ok = secrets.compare_digest(name.encode("utf-8"), self.username.encode("utf-8"))
+        password_ok = secrets.compare_digest(password.encode("utf-8"), self._password)
+        if not (name_ok and password_ok):
             recent.append(now)
             logger.warning("admin sign-in failed from %s", client)
-            raise AdminError(401, "wrong_password", "wrong password")
+            raise AdminError(401, "wrong_credentials", "Wrong username or password")
         self._failures.pop(client, None)
         token = secrets.token_urlsafe(32)
         session = AdminSession(token_hash=self._hash(token), expires_at=now + self._ttl_s)
@@ -143,7 +157,11 @@ class AdminSessions:
 @lru_cache(maxsize=1)
 def get_admin_sessions() -> AdminSessions:
     settings = get_settings()
-    return AdminSessions(settings.wardrobe_admin_password, settings.wardrobe_admin_session_hours)
+    return AdminSessions(
+        settings.wardrobe_admin_password,
+        settings.wardrobe_admin_session_hours,
+        username=settings.wardrobe_admin_username,
+    )
 
 
 def admin_sessions_dependency() -> AdminSessions:

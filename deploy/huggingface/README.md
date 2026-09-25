@@ -92,15 +92,16 @@ production profile below.
 ## Admin sign-in
 
 The Studio has an account button at the bottom left, as in a chat app. Everyone
-starts as **Guest**; the dropdown has **Settings** and **Log in as admin**, which
-works once the Space has an admin password (until then Settings says how to set
-it up).
+starts as **Guest**; the dropdown has **Settings** and **Log in**. Log in with
+the username `admin` (or `WARDROBE_ADMIN_USERNAME`) and the password in the
+`WARDROBE_ADMIN_PASSWORD` secret; until that secret is set, Settings says how to
+set it up.
 
 1. In the Space's **Settings → Variables and secrets**, add a **secret** named
    `WARDROBE_ADMIN_PASSWORD`, at least 12 characters long. A shorter one is
    refused, and a warning is logged.
-2. Restart the Space. Then open the Studio, click the account button and choose
-   **Log in as admin**.
+2. Restart the Space. Then open the Studio, click the account button, choose
+   **Log in**, and enter `admin` and the password.
 3. In **Settings → Private mode**, turn the switch on for an avatar. A popup
    asks you to confirm two things: that you are 18 or older, and that the avatar
    depicts an adult. Nothing turns on until both are ticked, and the server
@@ -125,7 +126,8 @@ What it is, exactly (`apps/api/admin.py`):
   look, so a restart does not expose it). A look's unguessable URL does not
   open it without the session. With S3 storage, the files are served by signed
   S3 URLs instead, so keep the local backend on a Space that uses this.
-- **Sign-in is hardened.** Tokens are random, live in the tab's
+- **Log-in is hardened.** A wrong username and a wrong password get the same
+  answer. Tokens are random, live in the tab's
   `sessionStorage` and are held on the server only as a hash. Five failed
   attempts from one client lock it out for 15 minutes.
 

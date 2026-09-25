@@ -71,7 +71,7 @@ def client(orchestrator, monkeypatch, tmp_path, vrm_bytes, vrm0_bytes, admins):
 
 
 def sign_in(client: TestClient) -> dict:
-    response = client.post("/v1/admin/session", json={"password": PASSWORD})
+    response = client.post("/v1/admin/session", json={"username": "admin", "password": PASSWORD})
     assert response.status_code == 201, response.text
     return {"X-Wardrobe-Admin": response.json()["token"]}
 
@@ -124,6 +124,14 @@ def test_a_wrong_password_is_refused_and_repeated_failures_are_throttled(client:
     assert client.post("/v1/admin/session", json={"password": PASSWORD}).status_code == 429
     clock.now += 16 * 60
     assert client.post("/v1/admin/session", json={"password": PASSWORD}).status_code == 201
+
+
+def test_the_user_name_must_match_too_and_the_answer_does_not_say_which_was_wrong(client: TestClient):
+    wrong_name = client.post("/v1/admin/session", json={"username": "root", "password": PASSWORD})
+    wrong_password = client.post("/v1/admin/session", json={"username": "admin", "password": "guess"})
+    assert wrong_name.status_code == wrong_password.status_code == 401
+    assert wrong_name.json() == wrong_password.json()
+    assert client.post("/v1/admin/session", json={"username": " admin ", "password": PASSWORD}).status_code == 201
 
 
 def test_a_session_expires_and_signing_out_ends_it(client: TestClient, clock: Clock):
