@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "dress-shirt-v1",
+  "name": "Shirt Dress",
+  "category": "dress",
+  "mesh": "procedural:dress",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs",
+    "upperArms"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips",
+    "upperArms"
+  ],
+  "silhouette": "straight",
+  "hem": "knee",
+  "sleeve": "short",
+  "fit": {
+    "bodyClearanceMm": 6.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "shirt dress",
+    "shirt",
+    "button",
+    "casual",
+    "everyday"
+  ],
+  "description": "Knee-length shirt dress with short sleeves."
+}

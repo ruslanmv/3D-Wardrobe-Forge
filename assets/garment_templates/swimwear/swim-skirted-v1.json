@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "swim-skirted-v1",
+  "name": "Skirted Swimsuit",
+  "category": "swimwear",
+  "mesh": "procedural:swim-dress",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips"
+  ],
+  "silhouette": "a-line",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 3.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "straps": "shoulder"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "swim dress",
+    "skirted",
+    "swimsuit with skirt",
+    "retro"
+  ],
+  "description": "One-piece swimsuit with a short flared skirt."
+}

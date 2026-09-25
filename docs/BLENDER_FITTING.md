@@ -46,7 +46,7 @@ identifies bones by **name** while glTF identifies them by index.
 
 | Module | Does |
 | --- | --- |
-| `import_vrm` | enable the add-on, import, find the armature and body |
+| `import_vrm` | enable the add-on, import, find the armature and body (by skin weights, `body_select.py`: the largest mesh can be her hair) |
 | `analyze_humanoid` | resolve humanoid bones: spec names → add-on mapping → name heuristics |
 | `normalize_pose` | clear pose transforms so measurement and fitting see the rest pose |
 | `measure_body` | measure from the *evaluated* scene (modifiers and shape keys included) |

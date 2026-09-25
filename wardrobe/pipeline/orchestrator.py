@@ -28,6 +28,7 @@ from wardrobe.pipeline import (
     assemble_vrm,
     fit_garment,
     generate_garment,
+    prepare_base_body,
     render_preview,
     validate_output,
     validate_source,
@@ -133,6 +134,8 @@ class Orchestrator:
             await validate_source.run(context)
             await analyze_avatar.run(context)
             await generate_garment.plan(context)
+            engine = self._engine_for_outfit(engine, context)
+            await prepare_base_body.run(context)
             await generate_garment.generate(context)
             await fit_garment.run(context, engine)
             await assemble_vrm.run(context, engine)
@@ -160,6 +163,17 @@ class Orchestrator:
             self._cleanup(workdir)
 
         return record
+
+    # ------------------------------------------------------------------
+    def _engine_for_outfit(self, engine, context: PipelineContext):
+        """A layered outfit is built by the native engine: Blender takes one garment per job."""
+        if context.plan is None or len(context.plan.garments) < 2 or engine.name == "native":
+            return engine
+        context.warn(
+            f"a layered outfit ({len(context.plan.garments)} garments) is built by the native engine; "
+            f"the {engine.name} engine fits one garment per job"
+        )
+        return select_engine("native", self.settings)
 
     # ------------------------------------------------------------------
     async def _publish(self, context: PipelineContext) -> None:

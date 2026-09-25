@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>Wardrobe Studio · 3D Wardrobe Forge</title>
+        <meta
+            name="description"
+            content="Design garments for VRM avatars, fit them with 3D Wardrobe Forge, and export wardrobe bundles for 3D-Avatar-Chatbot and yourfriend.online."
+        />
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👗</text></svg>" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="studio.css" />
+        <!--
+            No build step: Three.js and three-vrm come from jsDelivr through an import
+            map, pinned to the versions yourfriend.online ships (three 0.179.1,
+            @pixiv/three-vrm 3.4.4), so a look that renders here renders there.
+        -->
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js",
+                    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/",
+                    "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.4/lib/three-vrm.module.min.js"
+                }
+            }
+        </script>
+        <script type="module" src="js/app.js"></script>
+    </head>
+    <body>
+        <div class="app" data-tab="design">
+            <header class="topbar">
+                <div class="brand">
+                    <span class="brand-mark" aria-hidden="true">👗</span>
+                    <div>
+                        <h1>Wardrobe Studio</h1>
+                        <p class="brand-sub">3D Wardrobe Forge</p>
+                    </div>
+                </div>
+                <div class="caps" id="caps" aria-label="What this deployment can do"></div>
+                <button class="icon-btn" id="key-btn" type="button" title="API key" aria-label="API key">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7a5 5 0 1 1-4.9 6H7v2H5v2H2v-3l6.1-6.1A5 5 0 0 1 14 7Zm2 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" /></svg>
+                </button>
+            </header>
+
+            <nav class="tabs" role="tablist" aria-label="Studio sections">
+                <button role="tab" data-tab-target="library" type="button">Avatars</button>
+                <button role="tab" data-tab-target="design" type="button" aria-selected="true">Design</button>
+                <button role="tab" data-tab-target="wardrobe" type="button">Wardrobe</button>
+            </nav>
+
+            <aside class="panel library" id="library" aria-label="Avatar library">
+                <div class="panel-head">
+                    <h2>Avatars</h2>
+                    <span class="panel-note" id="library-note">Loading…</span>
+                </div>
+                <ul class="avatar-list" id="avatar-list"></ul>
+                <p class="provenance" id="provenance"></p>
+            </aside>
+
+            <main class="stage" aria-label="Viewport">
+                <div class="stage-canvas" id="stage-canvas"></div>
+                <div class="stage-empty" id="stage-empty">
+                    <p>Choose an avatar to begin.</p>
+                </div>
+                <div class="stage-top">
+                    <div class="stage-title">
+                        <strong id="stage-name">—</strong>
+                        <span id="stage-sub"></span>
+                    </div>
+                    <div class="seg" id="view-mode" role="radiogroup" aria-label="View">
+                        <button type="button" role="radio" data-mode="original" aria-checked="true">Original</button>
+                        <button type="button" role="radio" data-mode="look" disabled>Look</button>
+                        <button type="button" role="radio" data-mode="compare" disabled><span class="long">Side by side</span><span class="short">Both</span></button>
+                    </div>
+                </div>
+                <div class="stage-tools">
+                    <button type="button" class="tool" id="pose-btn" aria-pressed="false" title="Show the rest pose — arms out, where clipping under the arms is visible">
+                        T-pose
+                    </button>
+                    <button type="button" class="tool" id="spin-btn" aria-pressed="false">Turntable</button>
+                    <button type="button" class="tool" id="frame-btn">Reframe</button>
+                </div>
+                <div class="stage-status" id="stage-status" role="status"></div>
+            </main>
+
+            <section class="panel designer" id="designer" aria-label="Garment designer">
+                <div class="panel-head">
+                    <h2>Design a garment</h2>
+                </div>
+                <form id="design-form" novalidate>
+                    <fieldset>
+                        <legend>Garment</legend>
+                        <div class="chips" id="category-chips" role="radiogroup" aria-label="Category"></div>
+                        <label class="field">
+                            <span>Template</span>
+                            <select id="template-select"></select>
+                        </label>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Cut</legend>
+                        <div class="row">
+                            <label class="field">
+                                <span>Silhouette</span>
+                                <select id="silhouette-select"></select>
+                            </label>
+                            <label class="field">
+                                <span>Length</span>
+                                <select id="hem-select"></select>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="style">
+                        <legend>Style <span class="legend-hint" id="style-hint"></span></legend>
+                        <div class="style-row">
+                            <span class="style-label">Finish</span>
+                            <div class="chips small" id="finish-chips" role="radiogroup" aria-label="Finish"></div>
+                        </div>
+                        <div class="style-row">
+                            <span class="style-label">Pattern</span>
+                            <div class="chips small" id="pattern-chips" role="radiogroup" aria-label="Pattern"></div>
+                        </div>
+                        <div class="style-row">
+                            <span class="style-label">See-through</span>
+                            <div class="chips small" id="opacity-chips" role="radiogroup" aria-label="See-through"></div>
+                        </div>
+                        <div class="style-row">
+                            <span class="style-label">Coverage</span>
+                            <div class="chips small" id="coverage-chips" role="radiogroup" aria-label="Coverage"></div>
+                        </div>
+                        <div class="row">
+                            <label class="field">
+                                <span>Straps</span>
+                                <select id="straps-select"></select>
+                            </label>
+                            <label class="field">
+                                <span>Neckline</span>
+                                <select id="neckline-select"></select>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Colour <span class="legend-value" id="color-value">Planner chooses</span></legend>
+                        <div class="swatches" id="swatches" role="radiogroup" aria-label="Colour"></div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Fabric &amp; sleeves <span class="legend-hint">added to the prompt</span></legend>
+                        <div class="chips small" id="word-chips"></div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Prompt <span class="legend-hint">layer garments with +</span></legend>
+                        <textarea id="prompt" rows="3" maxlength="1000" placeholder="e.g. elegant satin evening dress"></textarea>
+                        <p class="request-preview" id="request-preview"></p>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Her own outfit</legend>
+                        <label class="field">
+                            <span>Before dressing</span>
+                            <select id="base-body-select">
+                                <option value="replace-outer">Take off what the new outfit covers</option>
+                                <option value="preserve">Keep it on — layer over it</option>
+                                <option value="underwear-base">Take it off, underwear first</option>
+                            </select>
+                        </label>
+                        <button type="button" class="secondary" id="plan-btn" disabled>Check plan</button>
+                        <div class="plan" id="plan-report" hidden></div>
+                    </fieldset>
+
+                    <label class="check build-on" id="build-on-label" title="Generate onto the look on stage instead of her original outfit: a top onto a skirt is a set">
+                        <input type="checkbox" id="build-on" disabled />
+                        <span id="build-on-text">Build on the look on stage</span>
+                    </label>
+                    <button type="submit" class="primary" id="generate-btn" disabled>Generate look</button>
+                </form>
+
+                <div class="job" id="job" hidden>
+                    <div class="job-head">
+                        <strong id="job-title">Generating</strong>
+                        <span id="job-state"></span>
+                    </div>
+                    <ol class="steps" id="steps"></ol>
+                    <p class="job-message" id="job-message"></p>
+                </div>
+
+                <div class="report" id="report" hidden></div>
+            </section>
+
+            <section class="panel shelf" id="wardrobe" aria-label="Wardrobe">
+                <div class="panel-head">
+                    <h2>Wardrobe <span class="count" id="look-count"></span></h2>
+                    <div class="export">
+                        <label class="check">
+                            <input type="checkbox" id="passed-only" />
+                            <span>Passed fit only</span>
+                        </label>
+                        <button type="button" class="secondary" id="export-btn" disabled>Export bundle</button>
+                    </div>
+                </div>
+                <div class="looks" id="looks"></div>
+                <p class="export-hint">
+                    Unzip into <code>vendor/wardrobe/</code> in 3D-Avatar-Chatbot, or into yourfriend.online's
+                    static wardrobe — the Try-On Haul drawer lists the looks with no configuration.
+                </p>
+            </section>
+        </div>
+
+        <dialog id="key-dialog">
+            <form method="dialog">
+                <h2>API key</h2>
+                <p>
+                    Only needed when this Space runs with <code>WARDROBE_AUTH_MODE=api_key</code>. Stored in this
+                    browser only.
+                </p>
+                <input id="key-input" type="password" autocomplete="off" placeholder="Bearer token" />
+                <menu>
+                    <button value="clear" type="submit" class="ghost">Clear</button>
+                    <button value="save" type="submit" class="primary">Save</button>
+                </menu>
+            </form>
+        </dialog>
+
+        <noscript>Wardrobe Studio needs JavaScript and WebGL.</noscript>
+    </body>
+</html>

@@ -28,6 +28,44 @@ WARDROBE_API_KEY=<secret>
 
 For a public demonstration without private avatars you may set authentication to `none`, but do not use that configuration for a paid or multi-tenant service.
 
+## Wardrobe Studio
+
+The image serves an editor at `/studio/`, and `/` redirects there, so opening the
+Space opens the Studio. It is static and build-free — Three.js and three-vrm load
+from jsDelivr, pinned to the versions yourfriend.online ships — and it talks only
+to this deployment's `/v1` API.
+
+**The avatar library is fetched when the image is built.** `tools/fetch_library.py`
+downloads yourfriend's five CC0 avatars and checks each against the SHA-256 pin in
+`assets/library/models.json`, a verbatim copy of yourfriend's own provenance
+manifest. A mismatch fails the build. The files are not committed: 67 MB of
+binaries, and a Space refuses plain-git files over 10 MB. Build with
+`--build-arg FETCH_LIBRARY=0` for an API-only image.
+
+**Library avatars need no licence prompt, and the browser cannot supply one.**
+All five embed `modification: unknown` in their VRM metadata, so under strict
+licensing a plain `POST /v1/jobs` on them is refused with 428. The Studio uses
+`POST /v1/library/{slug}/jobs` instead, where the server fills in the avatar and
+the conditions its provenance manifest grants (`CC0` → modification and
+redistribution allowed). An embedded prohibition is still checked first and
+still wins.
+
+**With `WARDROBE_AUTH_MODE=api_key`**, the Studio's key button stores the key in
+that browser and sends it as a Bearer token. Every asset — avatar, look,
+preview — is fetched with it, so a keyed Space works the same as an open one.
+
+**Exporting.** `GET /v1/wardrobes/{avatar}/bundle.zip` (`?passedOnly=true` to drop
+looks whose fit failed) is the Studio's Export button. Unzip it into
+3D-Avatar-Chatbot's `vendor/wardrobe/`, or yourfriend.online's static wardrobe.
+
+**The container runs as uid 1000.** Hugging Face runs Docker Spaces as uid 1000
+regardless of `USER`; the image creates that user and gives it `/data/wardrobe`.
+
+**Storage is ephemeral on a free Space.** Looks live in `/data/wardrobe` and the
+wardrobe index is in memory, so a restart empties every wardrobe. Export what you
+want to keep. Attaching persistent storage and a durable job backend is the
+production profile below.
+
 ## Production
 
 Use Redis plus S3/R2-compatible storage:

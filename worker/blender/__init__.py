@@ -1,6 +1,7 @@
 """Blender-side pipeline modules.
 
-Every module in this package imports ``bpy`` and can only run inside Blender.
+Every module in this package imports ``bpy`` and can only run inside Blender,
+except ``body_select``, which is plain Python so it can be unit-tested.
 Nothing in :mod:`wardrobe` imports from here — the boundary between the two is
 the job spec JSON written by :class:`wardrobe.engines.blender.BlenderEngine`.
 """

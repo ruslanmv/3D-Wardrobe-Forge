@@ -37,8 +37,11 @@ class TemplateGarmentProvider(GarmentProvider):
                 raise PlanningError(f"no template available for category {plan.category!r}")
             template = candidates[0]
 
+        style = plan.style
         digest = sha1(
-            f"{template.id}|{plan.silhouette}|{plan.hem}|{plan.sleeve}|{plan.material.color_name}".encode()
+            f"{template.id}|{plan.silhouette}|{plan.hem}|{plan.sleeve}|{plan.material.color_name}|"
+            f"{plan.material.finish}|{plan.material.pattern}|{plan.material.opacity}|"
+            f"{style.coverage}|{style.straps}|{style.neckline}|{style.back}|{style.leg_cut}|{style.rise}".encode()
         ).hexdigest()[:12]
 
         return GarmentArtifact(
@@ -58,6 +61,15 @@ class TemplateGarmentProvider(GarmentProvider):
                 "bodyClearanceMm": template.fit.body_clearance_mm,
                 "allowLengthScale": template.fit.allow_length_scale,
                 "allowWidthScale": template.fit.allow_width_scale,
+                "conform": template.fit.conform,
+                "conformBelowHips": template.fit.conform_below_hips,
+                "straps": style.straps or template.fit.straps,
+                "pleats": template.fit.pleats,
+                "coverage": style.coverage,
+                "neckline": style.neckline,
+                "back": style.back,
+                "legCut": style.leg_cut,
+                "rise": style.rise,
             },
         )
 

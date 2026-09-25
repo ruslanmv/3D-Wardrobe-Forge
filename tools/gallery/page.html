@@ -1,0 +1,27 @@
+<!doctype html><html><head><!-- The gallery page: one look, framed by height, A-pose, camera at ?yaw= degrees. --><style>html,body{margin:0;height:100%;background:#26232a}#v{position:absolute;inset:0}</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/","@pixiv/three-vrm":"https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.4/lib/three-vrm.module.min.js"}}</script>
+</head><body><div id="v"></div><script type="module">
+import * as THREE from 'three';
+import { Viewer } from './viewer.js';
+const v = new Viewer(document.getElementById('v'));
+const q = new URLSearchParams(location.search);
+v.frame = () => place();
+await v.load('original', q.get('a'));
+v.setPose('relaxed');
+function place() {
+// Frame by height: the rest-pose bounds include arms out in a T, not the A-pose drawn,
+// but their height is hers whatever her arms do. A VRoid girl is 1.5 m, the mannequin 1.83.
+const box = new THREE.Box3().setFromObject(v.slots.original.vrm.scene);
+const height = Math.max(box.max.y, 0.5), fov = THREE.MathUtils.degToRad(v.camera.fov);
+const distance = (height * 0.56) / Math.tan(fov / 2);
+const yaw = Number(q.get('yaw') || 0) * Math.PI / 180;
+v.controls.target.set(0, height * 0.5, 0);
+v.camera.position.set(Math.sin(yaw) * distance, height * 0.55, Math.cos(yaw) * distance);
+v.camera.near = 0.05; v.camera.far = distance * 10; v.camera.updateProjectionMatrix();
+v.controls.update();
+}
+place();
+await new Promise((r) => setTimeout(r, 300));
+place();
+window.ready = true;
+</script></body></html>

@@ -20,3 +20,7 @@ cache/
 # Generated fixtures and any real avatars dropped in for local testing.
 assets/fixtures/*.vrm
 assets/fixtures/*.glb
+
+# The Studio's avatar library: fetched and sha256-verified by
+# tools/fetch_library.py against assets/library/models.json, never committed.
+assets/library/*.vrm

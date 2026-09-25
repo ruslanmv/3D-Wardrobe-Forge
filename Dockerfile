@@ -1,8 +1,10 @@
-# API / native-engine image.
+# API / native-engine image — also the Hugging Face Space image.
 #
 # Deliberately Blender-free: the native engine needs only Python, so the API
 # container stays small and starts fast. Heavy geometry work goes to the
 # Blender worker image (Dockerfile.blender).
+#
+# The same image serves Wardrobe Studio at /studio/ (the root redirects there).
 FROM python:3.11-slim AS base
 
 ENV PYTHONUNBUFFERED=1 \
@@ -15,12 +17,26 @@ COPY pyproject.toml README.md ./
 COPY apps ./apps
 COPY wardrobe ./wardrobe
 COPY worker ./worker
+COPY tools ./tools
 COPY assets ./assets
 
 RUN pip install --no-cache-dir ".[preview,s3,redis]"
 
+# The Studio's avatar library: yourfriend.online's five CC0 avatars, fetched and
+# checked against the sha256 pins in assets/library/models.json. They are not in
+# git (67 MB, and a Space rejects plain-git files over 10 MB). A pin mismatch
+# fails the build, because an editor serving the wrong bytes is worse than none.
+# FETCH_LIBRARY=0 builds an API-only image; the Studio then lists them as missing.
+ARG FETCH_LIBRARY=1
+RUN if [ "$FETCH_LIBRARY" = "1" ]; then python tools/fetch_library.py; fi
+
 # The worker parses untrusted user models, so it does not run as root.
-RUN useradd --create-home --uid 10001 wardrobe \
+#
+# uid 1000, not an arbitrary high uid: Hugging Face Docker Spaces run the
+# container as uid 1000 whatever USER says. With the tree owned by anyone else,
+# the process could not write /data/wardrobe and every job on a Space failed at
+# its first store write. Still non-root, still a dedicated account.
+RUN useradd --create-home --uid 1000 wardrobe \
     && mkdir -p /data/wardrobe \
     && chown -R wardrobe:wardrobe /data/wardrobe /app
 USER wardrobe

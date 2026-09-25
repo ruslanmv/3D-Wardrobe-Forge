@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "under-garter-set-v1",
+  "name": "Garter Set",
+  "category": "underwear",
+  "mesh": "procedural:briefs",
+  "coverage": [
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "anchors": [
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true,
+    "straps": "garter"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "garter belt",
+    "garter",
+    "suspenders",
+    "suspender belt"
+  ],
+  "description": "Briefs with a garter belt and four suspenders; pairs with thigh-high stockings."
+}

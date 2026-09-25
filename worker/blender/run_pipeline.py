@@ -62,7 +62,6 @@ def run(spec: dict) -> dict:
     log(f"importing {spec['sourceVrm']}")
     scene = import_vrm.import_vrm(spec["sourceVrm"])
     armature = scene["armature"]
-    body = import_vrm.largest_mesh(scene["meshes"])
     if not scene["usedVrmAddon"]:
         report["warnings"].append(
             "the VRM add-on was unavailable on import; VRM metadata may be incomplete"
@@ -72,6 +71,9 @@ def run(spec: dict) -> dict:
     if humanoid["missing"]:
         raise RuntimeError("missing required humanoid bones: " + ", ".join(humanoid["missing"]))
     bones = humanoid["bones"]
+    # Chosen by what drives it, now that the humanoid is known: the largest mesh
+    # can be her hair (see worker/blender/body_select.py).
+    body = import_vrm.body_mesh(scene["meshes"], bones)
     log(f"resolved {len(bones)} humanoid bones")
 
     # ---- 3-4. normalise and measure ------------------------------------
@@ -118,12 +120,22 @@ def run(spec: dict) -> dict:
     report["clipping"] = detection
     report["clippingCheck"] = resolve_clipping.verdict(detection)
 
-    coverage = generate_body_mask.apply_mask(body, garment, margin_m=max(clearance_m * 2.5, 0.015))
+    # Masking hides the body under the garment so it cannot poke through. Under a
+    # see-through garment that would hide exactly what the fabric is meant to
+    # show — the body between fishnet threads, through sheer chiffon — so the
+    # engine sends "none" there and clearance alone keeps the body inside.
+    if spec.get("maskPolicy", "body-only") == "none":
+        coverage = {"masked": False, "reason": "see-through garment: the body under it stays visible"}
+        log("body masking skipped: see-through garment")
+    else:
+        coverage = generate_body_mask.apply_mask(body, garment, margin_m=max(clearance_m * 2.5, 0.015))
+        log(f"masked {coverage.get('coveredVertices', 0)} body vertices")
     report["coverage"] = coverage
-    log(f"masked {coverage.get('coveredVertices', 0)} body vertices")
 
     # ---- 11. materials ---------------------------------------------------
-    report["materials"] = setup_materials.setup(garment, spec["plan"])
+    report["materials"] = setup_materials.setup(
+        garment, spec["plan"], name=spec.get("materialName"), resolved=spec.get("material")
+    )
 
     # ---- 12. validate before exporting -----------------------------------
     issues = validate_scene.check_scene(armature, body, garment)
