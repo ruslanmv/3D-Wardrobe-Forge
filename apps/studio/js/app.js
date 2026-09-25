@@ -357,7 +357,9 @@ function setSession(session) {
     });
     document.querySelectorAll('[data-account-name]').forEach((node) => (node.textContent = signedIn ? 'Admin' : 'Guest'));
     const declared = signedIn ? session.declared.length : 0;
-    const sub = signedIn ? `${declared ? `${declared} declared` : 'Nothing declared'} · until ${endsAt(session)}` : 'Not signed in';
+    const sub = signedIn
+        ? `${declared ? `Private mode: ${declared} on` : 'Private mode off'} · until ${endsAt(session)}`
+        : 'Not signed in';
     $('account-sub').textContent = sub;
     $('account-menu-sub').textContent = signedIn ? `Admin session · ends ${endsAt(session)}` : 'Guest · not signed in';
     $('account-btn').title = signedIn ? 'Admin session' : 'Guest';
@@ -557,8 +559,8 @@ function renderSettings() {
                 role: 'switch',
                 checked,
                 disabled: !session || byOperator || !avatar.available,
-                'aria-label': `${avatar.name} depicts an adult`,
-                onchange: (event) => declareAvatar(avatar, event.currentTarget),
+                'aria-label': `Private mode for ${avatar.name}`,
+                onchange: (event) => onSwitch(avatar, event.currentTarget),
             });
             return el(
                 'li',
@@ -573,12 +575,12 @@ function renderSettings() {
                         el('span', { text: avatar.name }),
                         el('small', {
                             text: byOperator
-                                ? 'Declared by the operator for everyone (policy.json)'
+                                ? 'On for everyone (set by the operator)'
                                 : !avatar.available
                                   ? 'Not available'
                                   : checked
-                                    ? 'Declared as depicting an adult, this session only'
-                                    : 'Not declared',
+                                    ? 'On · this session only'
+                                    : 'Off',
                         })
                     ),
                     box
@@ -588,11 +590,45 @@ function renderSettings() {
     );
 }
 
-async function declareAvatar(avatar, box) {
+/** A switch was flipped. Off is immediate; on waits for the confirmation popup. */
+async function onSwitch(avatar, box) {
+    if (!box.checked) return declareAvatar(avatar, box, false);
+    box.checked = false; // not on until confirmed
+    if (await confirmPrivateMode(avatar)) {
+        box.checked = true;
+        declareAvatar(avatar, box, true);
+    }
+}
+
+/** The popup: both boxes ticked — the viewer's age and the avatar's — or nothing changes. */
+function confirmPrivateMode(avatar) {
+    const dialog = $('confirm-dialog');
+    $('confirm-avatar').textContent = avatar.name;
+    $('confirm-depicts-label').textContent = `${avatar.name} depicts an adult`;
+    $('confirm-age').checked = false;
+    $('confirm-depicts').checked = false;
+    $('confirm-ok').disabled = true;
+    const both = () => ($('confirm-ok').disabled = !($('confirm-age').checked && $('confirm-depicts').checked));
+    $('confirm-age').onchange = both;
+    $('confirm-depicts').onchange = both;
+    return new Promise((resolve) => {
+        let confirmed = false;
+        $('confirm-form').onsubmit = (event) => {
+            event.preventDefault();
+            confirmed = $('confirm-age').checked && $('confirm-depicts').checked;
+            dialog.close();
+        };
+        $('confirm-cancel').onclick = () => dialog.close();
+        dialog.addEventListener('close', () => resolve(confirmed), { once: true });
+        dialog.showModal();
+    });
+}
+
+async function declareAvatar(avatar, box, ageConfirmed) {
     box.disabled = true;
     $('settings-error').hidden = true;
     try {
-        const session = await api.adminDeclare(avatar.slug, box.checked);
+        const session = await api.adminDeclare(avatar.slug, box.checked, ageConfirmed);
         setSession(session);
         await refreshForSession();
     } catch (error) {
@@ -632,7 +668,7 @@ function renderDesigner() {
             disabled: category && needsAdult(category) && !adult,
             title:
                 category && needsAdult(category) && !adult
-                    ? 'Needs this avatar declared as depicting an adult: by the operator (assets/library/policy.json), or in an admin session (Settings)'
+                    ? 'Needs private mode on for this avatar: Settings → Private mode (admin)'
                     : undefined,
             onclick: () => {
                 state.design.category = category;
@@ -708,7 +744,7 @@ function renderDesigner() {
 function renderStyle(adult) {
     const { overrides } = state.vocab;
     const seeThrough = new Set(state.vocab.seeThroughPatterns || []);
-    const reason = 'Shows the body: needs this avatar declared as depicting an adult (policy.json, or an admin session)';
+    const reason = 'Shows the body: needs private mode on for this avatar (Settings, admin)';
 
     const chips = (id, key, values, { label = (v) => v, value = (v) => v, gated = () => false } = {}) =>
         $(id).replaceChildren(
@@ -752,9 +788,9 @@ function renderStyle(adult) {
     });
     const underwearBase = $('base-body-select').querySelector('option[value="underwear-base"]');
     underwearBase.disabled = !adult;
-    underwearBase.title = adult ? '' : 'Underwear needs this avatar declared as depicting an adult';
+    underwearBase.title = adult ? '' : 'Underwear needs private mode on for this avatar (Settings, admin)';
     if (!adult && $('base-body-select').value === 'underwear-base') $('base-body-select').value = 'replace-outer';
-    $('style-hint').textContent = adult ? 'overrides the prompt' : 'overrides the prompt · see-through needs an adult declaration';
+    $('style-hint').textContent = adult ? 'overrides the prompt' : 'overrides the prompt · see-through needs private mode';
 }
 
 const REVEAL_HINTS = {
@@ -782,7 +818,7 @@ function renderHosiery(adult) {
     };
     $('hosiery-hint').textContent = adult
         ? 'stockings publish their tops; straps clip to them'
-        : 'needs this avatar declared as depicting an adult (policy.json, or an admin session)';
+        : 'needs private mode on for this avatar (Settings, admin)';
     $('hosiery-controls').hidden = !h.on;
     if (!h.on) return;
 

@@ -77,7 +77,8 @@ def sign_in(client: TestClient) -> dict:
 
 
 def declare(client: TestClient, headers: dict, slug: str, value: bool = True):
-    return client.put(f"/v1/admin/declarations/{slug}", json={"depictsAdult": value}, headers=headers)
+    body = {"depictsAdult": value, "ageConfirmed": value}
+    return client.put(f"/v1/admin/declarations/{slug}", json=body, headers=headers)
 
 
 def dress(client: TestClient, slug: str, prompt: str, headers: dict | None = None, **body) -> dict:
@@ -141,6 +142,16 @@ def test_declaring_needs_a_session_and_a_library_avatar(client: TestClient):
     assert declare(client, {}, "mira").status_code == 401
     assert declare(client, {"X-Wardrobe-Admin": "forged"}, "mira").status_code == 401
     assert declare(client, sign_in(client), "nobody").status_code == 404
+
+
+def test_turning_one_on_needs_the_viewers_age_confirmation_and_turning_it_off_does_not(client: TestClient):
+    headers = sign_in(client)
+    response = client.put("/v1/admin/declarations/mira", json={"depictsAdult": True}, headers=headers)
+    assert response.status_code == 422 and response.json()["detail"]["reason"] == "age_confirmation_required"
+    assert client.get("/v1/admin", headers=headers).json()["session"]["declared"] == []
+    declare(client, headers, "mira")
+    off = client.put("/v1/admin/declarations/mira", json={"depictsAdult": False}, headers=headers)
+    assert off.status_code == 200 and off.json()["declared"] == []
 
 
 # ----------------------------------------------------------------------

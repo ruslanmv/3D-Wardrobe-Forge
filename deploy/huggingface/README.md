@@ -101,9 +101,12 @@ it up).
    refused, and a warning is logged.
 2. Restart the Space. Then open the Studio, click the account button and choose
    **Log in as admin**.
-3. In **Settings → Adult declarations**, turn on "depicts an adult" for each avatar you have decided
-   depicts an adult. Swimwear, underwear, see-through fabric and stockings then
-   open for that avatar, in that session.
+3. In **Settings → Private mode**, turn the switch on for an avatar. A popup
+   asks you to confirm two things: that you are 18 or older, and that the avatar
+   depicts an adult. Nothing turns on until both are ticked, and the server
+   refuses it without the age confirmation. Swimwear, underwear, see-through
+   fabric and stockings then open for that avatar, in that session. Guests
+   cannot turn private mode on.
 
 What it is, exactly (`apps/api/admin.py`):
 

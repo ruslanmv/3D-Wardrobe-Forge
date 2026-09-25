@@ -23,6 +23,10 @@ class Declaration(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     depicts_adult: bool = Field(alias="depictsAdult")
+    #: The person turning it on confirms they are 18 or older. Required to turn a
+    #: declaration on; it is about the viewer and does not replace ``depictsAdult``,
+    #: which is about the avatar.
+    age_confirmed: bool = Field(default=False, alias="ageConfirmed")
 
 
 def _raise(error: AdminError) -> HTTPException:
@@ -69,6 +73,11 @@ def declare(
     avatar = library.get(slug) if library is not None else None
     if avatar is None:
         raise HTTPException(status_code=404, detail="avatar not in the library")
+    if body.depicts_adult and not body.age_confirmed:
+        raise HTTPException(
+            status_code=422,
+            detail={"reason": "age_confirmation_required", "message": "confirm you are 18 or older first"},
+        )
     admins.declare(admin, avatar.slug, body.depicts_adult)
     return admin.to_dict()
 

@@ -141,8 +141,11 @@ export const api = {
     adminSignIn: (password) => request('/v1/admin/session', { method: 'POST', body: { password } }),
     adminSignOut: () => request('/v1/admin/session', { method: 'DELETE' }),
     /** Declare, for this session only, that a library avatar depicts an adult (or withdraw it). */
-    adminDeclare: (slug, depictsAdult) =>
-        request(`/v1/admin/declarations/${encodeURIComponent(slug)}`, { method: 'PUT', body: { depictsAdult } }),
+    adminDeclare: (slug, depictsAdult, ageConfirmed = false) =>
+        request(`/v1/admin/declarations/${encodeURIComponent(slug)}`, {
+            method: 'PUT',
+            body: { depictsAdult, ageConfirmed },
+        }),
 
     /** An object URL for a protected asset. The caller owns it and must revoke it. */
     async blobUrl(path) {

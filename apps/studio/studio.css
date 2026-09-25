@@ -1548,6 +1548,29 @@ dialog .tag {
 
 
 /* On the picture's corner, opposite the remove button: the card's text rows are full. */
+.confirm-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0;
+    padding: 11px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.confirm-line:has(input:checked) {
+    border-color: var(--accent);
+    background: var(--panel-2);
+}
+
+.confirm-line input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--accent);
+}
+
 .look-private {
     position: absolute;
     top: 6px;

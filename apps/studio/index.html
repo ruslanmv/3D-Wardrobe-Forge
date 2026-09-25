@@ -350,7 +350,7 @@
                 <nav class="settings-nav" role="tablist" aria-label="Settings sections">
                     <button type="button" role="tab" data-section="general" aria-selected="true">General</button>
                     <button type="button" role="tab" data-section="declarations" aria-selected="false">
-                        Adult declarations
+                        Private mode
                     </button>
                 </nav>
 
@@ -378,26 +378,43 @@
                 </section>
 
                 <section class="settings-section" data-section="declarations" role="tabpanel" hidden>
-                    <h3>Adult declarations <span class="tag">this session only</span></h3>
-                    <p>
-                        Swimwear, underwear, see-through fabric and stockings need the avatar declared as depicting
-                        an adult. Turn this on only for an avatar you have decided depicts an adult; nothing is
-                        inferred from how a model looks. The model's own terms are still checked first, and still
-                        win.
-                    </p>
+                    <h3>Private mode <span class="tag">admin · this session only</span></h3>
+                    <p>Unlocks swimwear, underwear, see-through fabric and stockings, per avatar.</p>
                     <div class="settings-locked" id="declarations-locked">
-                        <p>Log in as admin to make declarations. As a guest, only avatars the operator has declared for everyone are unlocked:</p>
+                        <p>Guests can't turn on private mode. Log in as admin to use it.</p>
                         <button type="button" class="secondary" id="declarations-signin">Log in as admin</button>
                     </div>
                     <ul class="declarations" id="declarations"></ul>
                     <p class="settings-note">
-                        Looks made while an avatar is declared here are <strong>private</strong>: only an admin
-                        session sees them, in the wardrobe, the export and their files. Logging out, or the session
-                        ending, withdraws every declaration; nothing is saved to the Space.
+                        What you make with it is <strong>private</strong> to admin sessions. Logging out turns
+                        everything off.
                     </p>
                 </section>
             </div>
             <p class="form-error" id="settings-error" role="alert" hidden></p>
+        </dialog>
+
+        <!-- Turning private mode on for an avatar: nothing changes until both boxes are ticked. -->
+        <dialog id="confirm-dialog" class="confirm" aria-labelledby="confirm-title">
+            <form id="confirm-form" method="dialog">
+                <h2 id="confirm-title">Turn on private mode?</h2>
+                <p>
+                    For <strong id="confirm-avatar"></strong>, in this session only: swimwear, underwear,
+                    see-through fabric and stockings.
+                </p>
+                <label class="confirm-line">
+                    <input type="checkbox" id="confirm-age" />
+                    <span>I am 18 or older</span>
+                </label>
+                <label class="confirm-line">
+                    <input type="checkbox" id="confirm-depicts" />
+                    <span id="confirm-depicts-label">This avatar depicts an adult</span>
+                </label>
+                <menu>
+                    <button type="button" class="ghost" id="confirm-cancel">Cancel</button>
+                    <button type="submit" class="primary" id="confirm-ok" disabled>Turn on</button>
+                </menu>
+            </form>
         </dialog>
 
         <noscript>Wardrobe Studio needs JavaScript and WebGL.</noscript>
