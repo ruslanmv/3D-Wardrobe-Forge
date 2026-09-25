@@ -59,6 +59,20 @@ const state = {
         straps: null,
         neckline: null,
     },
+    // Hosiery & suspenders: off until asked for; a preset fills the rest (wardrobe.hosiery).
+    hosiery: {
+        on: false,
+        preset: null,
+        reveal: 'glimpse',
+        type: 'sheer',
+        denier: 20,
+        topStyle: 'wide',
+        rolledEdge: true,
+        seam: false,
+        belt: 'classic',
+        strapCount: 4,
+        hardware: 'silver',
+    },
     promptDirty: false,
     wardrobe: null,
     activeLookId: null,
@@ -380,6 +394,7 @@ function renderDesigner() {
     $('color-value').textContent = state.design.color || 'Planner chooses';
 
     renderStyle(adult);
+    renderHosiery(adult);
 
     const words = [...promptWords.fabric, ...Object.values(promptWords.sleeve), ...(promptWords.cut || [])];
     $('word-chips').replaceChildren(
@@ -454,6 +469,109 @@ function renderStyle(adult) {
     underwearBase.title = adult ? '' : 'Underwear needs this avatar declared as depicting an adult';
     if (!adult && $('base-body-select').value === 'underwear-base') $('base-body-select').value = 'replace-outer';
     $('style-hint').textContent = adult ? 'overrides the prompt' : 'overrides the prompt · see-through needs an adult declaration';
+}
+
+const REVEAL_HINTS = {
+    discreet: 'Hidden standing, walking and seated',
+    glimpse: 'Hidden standing and walking; the tops show when she sits',
+    statement: 'Tops, clasps and strap ends show below the hem',
+};
+
+/**
+ * Hosiery & Suspenders, disclosed a step at a time: one switch, then the look (a preset)
+ * and the reveal, then the stockings, and the belt and hardware folded away. The whole
+ * section needs an adult declaration: a suspender belt is underwear and sheer or fishnet
+ * stockings show the body. The server refuses it anyway; this only says so first.
+ */
+function renderHosiery(adult) {
+    const vocab = state.vocab.hosiery;
+    const h = state.hosiery;
+    if (!vocab) return ($('hosiery-fieldset').hidden = true);
+    $('hosiery-on').disabled = !adult;
+    if (!adult) h.on = false;
+    $('hosiery-on').checked = h.on;
+    $('hosiery-on').onchange = () => {
+        h.on = $('hosiery-on').checked;
+        renderDesigner();
+    };
+    $('hosiery-hint').textContent = adult
+        ? 'stockings publish their tops; straps clip to them'
+        : 'needs this avatar declared as depicting an adult (assets/library/policy.json)';
+    $('hosiery-controls').hidden = !h.on;
+    if (!h.on) return;
+
+    const radio = (id, values, current, label, pick) =>
+        $(id).replaceChildren(
+            ...values.map((value) =>
+                el('button', {
+                    class: 'chip',
+                    type: 'button',
+                    role: 'radio',
+                    'aria-checked': String(current === value),
+                    text: label(value),
+                    onclick: () => {
+                        pick(value);
+                        renderDesigner();
+                    },
+                })
+            )
+        );
+    radio('hosiery-presets', vocab.presets.map((p) => p.id), h.preset, (id) => vocab.presets.find((p) => p.id === id).title, (id) => {
+        const preset = vocab.presets.find((p) => p.id === id);
+        h.preset = id;
+        h.reveal = preset.reveal.level;
+        Object.assign(h, {
+            type: preset.hosiery.type || 'sheer',
+            denier: preset.hosiery.denier || (preset.hosiery.type === 'fishnet' ? 60 : 20),
+            topStyle: preset.hosiery.topStyle || 'plain',
+            seam: Boolean(preset.hosiery.backSeam && preset.hosiery.backSeam.enabled) || preset.hosiery.type === 'seamed',
+            belt: preset.suspenderBelt.style,
+            strapCount: preset.suspenderBelt.strapCount || 4,
+            hardware: (preset.suspenderBelt.hardware || {}).color || 'silver',
+        });
+        state.promptDirty = true;
+        $('prompt').value = preset.prompt;
+    });
+    radio('reveal-chips', vocab.revealLevels, h.reveal, (v) => v[0].toUpperCase() + v.slice(1), (v) => (h.reveal = v));
+    $('reveal-hint').textContent = REVEAL_HINTS[h.reveal] || '';
+    radio('top-chips', vocab.topStyles, h.topStyle, (v) => v, (v) => (h.topStyle = v));
+    radio('hardware-chips', vocab.hardwareColors, h.hardware, (v) => v, (v) => (h.hardware = v));
+    const select = (id, values, current, label, pick) => {
+        $(id).replaceChildren(...values.map((v) => el('option', { value: String(v), text: label(v), selected: v === current })));
+        $(id).onchange = () => {
+            pick($(id).value);
+            updatePreview();
+        };
+    };
+    select('hosiery-type', vocab.types, h.type, (v) => v.replace('_', ' '), (v) => (h.type = v));
+    select('hosiery-denier', vocab.deniers, h.denier, (v) => `${v} den`, (v) => (h.denier = Number(v)));
+    select('belt-style', vocab.beltStyles, h.belt, (v) => v.replace('_', '-'), (v) => (h.belt = v));
+    select('strap-count', vocab.strapCounts, h.strapCount, (v) => `${v} straps`, (v) => (h.strapCount = Number(v)));
+    $('rolled-edge').checked = h.rolledEdge;
+    $('rolled-edge').onchange = () => (h.rolledEdge = $('rolled-edge').checked);
+    $('back-seam').checked = h.seam;
+    $('back-seam').onchange = () => (h.seam = $('back-seam').checked);
+}
+
+function hosieryRequest() {
+    const h = state.hosiery;
+    if (!h.on) return {};
+    return {
+        ...(h.preset ? { preset: h.preset } : {}),
+        hosiery: {
+            type: h.type,
+            ...(h.type === 'fishnet' ? {} : { denier: h.denier }),
+            topStyle: h.topStyle,
+            rolledEdge: h.rolledEdge,
+            backSeam: { enabled: h.seam },
+        },
+        suspenderBelt: {
+            style: h.belt,
+            strapCount: h.strapCount,
+            hardware: { color: h.hardware },
+        },
+        reveal: { level: h.reveal },
+    };
 }
 
 function fillSelect(select, values, current, onChange) {
@@ -541,7 +659,7 @@ function outfitRequest() {
         if (state.design[key]) outfit[key] = state.design[key];
     if (state.design.opacity !== null && state.design.opacity < 1) outfit.opacity = state.design.opacity;
     if (state.design.templateId) outfit.templateId = state.design.templateId;
-    return outfit;
+    return { ...outfit, ...hosieryRequest() };
 }
 
 function updatePreview() {
@@ -549,7 +667,7 @@ function updatePreview() {
     if (!state.promptDirty) $('prompt').placeholder = outfit.prompt;
     const fields = Object.entries(outfit)
         .filter(([key]) => key !== 'prompt' && key !== 'mode')
-        .map(([key, value]) => `${key}=${value}`);
+        .map(([key, value]) => (typeof value === 'object' ? key : `${key}=${value}`));
     const base = buildOnLook();
     $('request-preview').textContent = state.avatar
         ? `→ ${state.avatar.slug}${base ? ` + ${base.name}` : ''} · ${fields.join(' · ') || 'planner decides'} · "${outfit.prompt}"`
@@ -693,14 +811,14 @@ async function finishJob(job, slug, prompt) {
         $('job-message').textContent = job.error || `The job ended ${job.state}.`;
         return;
     }
-    renderReport(job.fitReport);
+    renderReport(job.fitReport, job.look);
     if (state.avatar && state.avatar.slug === slug) {
         await loadWardrobe();
         if (job.look) await wearLook(job.look.id, { mode: 'compare' });
     }
 }
 
-function renderReport(report) {
+function renderReport(report, look = null) {
     if (!report) return;
     const passed =
         CHECKS.every(([key]) => key === 'expressionsPreserved' || report[key]) &&
@@ -730,8 +848,48 @@ function renderReport(report) {
             })
         );
     }
+    if (report.hosiery) lines.push(...hosieryReport(report.hosiery, look));
     $('report').replaceChildren(...lines);
     $('report').hidden = false;
+}
+
+/** The hosiery block: the reveal in each pose, each strap's stretch, and the close-up and seated views. */
+function hosieryReport(h, look) {
+    const out = [el('h3', { text: 'Hosiery' })];
+    if (h.reveal) out.push(el('p', { class: `report-line ${h.reveal.achieved === h.reveal.requested ? '' : 'warn'}`, text: h.reveal.summary }));
+    if (h.clips) out.push(el('p', { class: 'report-line', text: `${h.clips.count} clips on the fitted tops · furthest ${h.clips.maxBandDistanceMm} mm from the band` }));
+    const tension = h.straps && h.straps.tension;
+    if (tension) {
+        const poses = ['stand', 'walk', 'sit'];
+        out.push(
+            el(
+                'table',
+                { class: 'tension' },
+                el('tr', {}, el('th', { text: 'Strap' }), ...poses.map((p) => el('th', { text: p }))),
+                ...Object.entries(tension).map(([code, strap]) =>
+                    el(
+                        'tr',
+                        {},
+                        el('td', { text: code, title: strap.strap }),
+                        ...poses.map((p) =>
+                            el('td', {
+                                class: strap.status[p],
+                                text: `${(strap.stretch[p] * 100).toFixed(1)}%`,
+                                title: strap.status[p],
+                            })
+                        )
+                    )
+                )
+            )
+        );
+    }
+    for (const warning of h.warnings || []) out.push(el('p', { class: 'report-line warn', text: warning }));
+    const previews = (look && look.previews) || {};
+    const pics = ['detail', 'preview-sit', 'preview-walk', 'preview-back'].filter((k) => previews[k]);
+    if (pics.length)
+        out.push(el('div', { class: 'hosiery-previews' }, ...pics.map((k) => el('img', { src: previews[k], alt: k, title: k, loading: 'lazy' }))));
+    if (h.previews && h.previews.note) out.push(el('p', { class: 'report-line warn', text: h.previews.note }));
+    return out;
 }
 
 // ---------------------------------------------------------------- wardrobe

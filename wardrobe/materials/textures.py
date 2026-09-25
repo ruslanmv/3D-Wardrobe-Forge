@@ -196,6 +196,19 @@ def pattern_texture(
     return None
 
 
+@lru_cache(maxsize=4)
+def pleat_shading(size: int = 64) -> bytes:
+    """One pleat's shading across u: light on the pressed face, a shadow in the fold.
+
+    Grey, so the garment's colour tints it. A toon shader smooths a knife pleat's
+    normals into nothing; this is how the pleat reads, as it does in a drawing.
+    """
+    u = (np.arange(size) + 0.5) / size
+    value = 1.0 - 0.14 * u - 0.22 * np.clip((u - 0.9) / 0.1, 0.0, 1.0)  # darkening toward the fold
+    value = np.where(u < 0.06, 0.8 + 0.2 * (u / 0.06), value)  # the fold's inner edge
+    return _rgba(_grey(np.repeat(value[None, :], 4, axis=0)))
+
+
 # ----------------------------------------------------------------------
 # matcaps
 # ----------------------------------------------------------------------
@@ -247,4 +260,4 @@ def matcap(style: str, strength: float, tint: Colour = (1.0, 1.0, 1.0), size: in
     return _rgba(rgb)
 
 
-__all__ = ["matcap", "pattern_texture"]
+__all__ = ["matcap", "pattern_texture", "pleat_shading"]

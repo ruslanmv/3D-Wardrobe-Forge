@@ -1100,3 +1100,16 @@ dialog .primary {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* Hosiery & Suspenders */
+.hosiery .check { margin: 0.2rem 0 0.5rem; }
+.hosiery details.more { margin-top: 0.5rem; }
+.hosiery details.more summary { cursor: pointer; font-size: 0.85rem; opacity: 0.8; }
+table.tension { border-collapse: collapse; font-size: 0.8rem; margin: 0.4rem 0; }
+table.tension th, table.tension td { padding: 0.15rem 0.5rem; text-align: right; }
+table.tension td:first-child, table.tension th:first-child { text-align: left; }
+table.tension td.warning { color: #e8b04a; }
+table.tension td.error { color: #ef6b6b; }
+table.tension td.slack { opacity: 0.6; }
+.hosiery-previews { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.hosiery-previews img { width: calc(50% - 0.2rem); border-radius: 6px; }

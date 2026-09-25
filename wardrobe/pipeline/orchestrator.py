@@ -166,7 +166,13 @@ class Orchestrator:
 
     # ------------------------------------------------------------------
     def _engine_for_outfit(self, engine, context: PipelineContext):
-        """A layered outfit is built by the native engine: Blender takes one garment per job."""
+        """A layered outfit is built by the native engine: Blender takes one garment per job.
+
+        So is anything with hosiery: its straps are built from contracts only the native fit publishes.
+        """
+        if context.plan is not None and context.plan.hosiery is not None and engine.name != "native":
+            context.warn(f"a hosiery outfit is built by the native engine, not the {engine.name} engine")
+            return select_engine("native", self.settings)
         if context.plan is None or len(context.plan.garments) < 2 or engine.name == "native":
             return engine
         context.warn(
@@ -190,6 +196,12 @@ class Orchestrator:
                 context.key("preview.webp"), context.preview_bytes, content_type="image/webp"
             )
 
+        extra: dict[str, str] = {}
+        for name, data in sorted(context.extra_previews.items()):
+            extra[name.removesuffix(".webp")] = await self.store.put(
+                context.key(name), data, content_type="image/webp"
+            )
+
         report = context.fit_report
         record.fit_report = report
         await self.store.put(
@@ -207,6 +219,7 @@ class Orchestrator:
             prompt=record.request.outfit.prompt,
             plan=context.plan,
             sizeBytes=len(context.output_bytes),
+            previews=extra or None,
         )
         record.look = look
         context.look = look

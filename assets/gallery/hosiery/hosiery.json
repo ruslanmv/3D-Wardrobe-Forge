@@ -1,0 +1,2026 @@
+{
+ "hosiery_garter_discreet_front": {
+  "hosiery": {
+   "belt": {
+    "bottomY": 1.0623,
+    "style": "classic",
+    "topY": 1.163,
+    "visibility": "hidden_under_skirt"
+   },
+   "clips": {
+    "bandDistanceMm": {
+     "FL": 0.0,
+     "FR": 0.0,
+     "RL": 0.0,
+     "RR": 0.0
+    },
+    "count": 4,
+    "maxBandDistanceMm": 0.0
+   },
+   "errors": [],
+   "hardware": {
+    "clasp": 4,
+    "color": "silver",
+    "opaque": true,
+    "ring": 0,
+    "slider": 4
+   },
+   "layering": [
+    {
+     "layer": 1,
+     "name": "Black Suspender Belt",
+     "role": "foundation"
+    },
+    {
+     "layer": 2,
+     "name": "Black Thigh-High Stockings",
+     "role": "legwear"
+    },
+    {
+     "layer": 2,
+     "name": "Black Suspender Straps",
+     "role": "connector"
+    },
+    {
+     "layer": 3,
+     "name": "Black Pencil Skirt",
+     "role": "main"
+    },
+    {
+     "layer": 3,
+     "name": "White Blouse",
+     "role": "main"
+    }
+   ],
+   "materials": {
+    "backSeam": false,
+    "baseOpacity": 0.45,
+    "denier": 20,
+    "pattern": "none",
+    "rolledEdge": true,
+    "sideDarkening": "baked into alpha, view-independent",
+    "sideOpacity": 0.7,
+    "topStyle": "plain",
+    "topWidthMm": 35.0,
+    "type": "sheer"
+   },
+   "preset": "discreet_black",
+   "previews": {
+    "backend": "web",
+    "files": [
+     "preview.webp",
+     "detail.webp",
+     "preview-sit.webp",
+     "preview-walk.webp",
+     "thumb.webp"
+    ],
+    "note": null,
+    "requested": "web"
+   },
+   "reveal": {
+    "achieved": "discreet",
+    "ease": 1.0,
+    "explicitLength": false,
+    "hemY": 0.4835,
+    "marginMm": 15.0,
+    "notes": [],
+    "perPose": {
+     "sit": {
+      "coverMm": 127.9,
+      "state": "covered"
+     },
+     "stand": {
+      "coverMm": 232.7,
+      "state": "covered"
+     },
+     "walk": {
+      "coverMm": 183.8,
+      "state": "covered"
+     }
+    },
+    "requested": "discreet",
+    "ringM": {
+     "sit": {
+      "left": 0.3553,
+      "right": 0.3587
+     },
+     "stand": {
+      "left": 0.46,
+      "right": 0.46
+     },
+     "walk": {
+      "left": 0.4179,
+      "right": 0.4111
+     }
+    },
+    "summary": "reveal: requested discreet, achieved discreet (band hidden in every pose)",
+    "visibleIn": []
+   },
+   "setId": null,
+   "stockingTop": {
+    "left": {
+     "bottomY": 0.7397,
+     "clips": {
+      "back": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        0.15964,
+        0.76257,
+        -0.03444
+       ],
+       "side": "left",
+       "u": 0.33,
+       "v": 0.0123,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        0.11037,
+        0.76257,
+        0.06989
+       ],
+       "side": "left",
+       "u": 0.03,
+       "v": 0.0123,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "left",
+     "topY": 0.7747,
+     "widthMm": 35.0
+    },
+    "right": {
+     "bottomY": 0.7397,
+     "clips": {
+      "back": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        -0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        -0.15964,
+        0.76257,
+        -0.03444
+       ],
+       "side": "right",
+       "u": 0.33,
+       "v": 0.0123,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        -0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        -0.11037,
+        0.76257,
+        0.06989
+       ],
+       "side": "right",
+       "u": 0.03,
+       "v": 0.0123,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "right",
+     "topY": 0.7747,
+     "widthMm": 35.0
+    }
+   },
+   "straps": {
+    "maxStretch": {
+     "sit": -0.0749,
+     "stand": -0.0148,
+     "walk": 0.0277
+    },
+    "restSlack": 0.015,
+    "tension": {
+     "FL": {
+      "currentLengthM": {
+       "sit": 0.2166,
+       "stand": 0.3242,
+       "walk": 0.299
+      },
+      "restLengthM": 0.329,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "left-front",
+      "stretch": {
+       "sit": -0.3418,
+       "stand": -0.0148,
+       "walk": -0.0913
+      }
+     },
+     "FR": {
+      "currentLengthM": {
+       "sit": 0.2166,
+       "stand": 0.3237,
+       "walk": 0.3308
+      },
+      "restLengthM": 0.3285,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "right-front",
+      "stretch": {
+       "sit": -0.3408,
+       "stand": -0.0148,
+       "walk": 0.007
+      }
+     },
+     "RL": {
+      "currentLengthM": {
+       "sit": 0.2874,
+       "stand": 0.3061,
+       "walk": 0.3193
+      },
+      "restLengthM": 0.3107,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "left-back",
+      "stretch": {
+       "sit": -0.0749,
+       "stand": -0.0148,
+       "walk": 0.0277
+      }
+     },
+     "RR": {
+      "currentLengthM": {
+       "sit": 0.2873,
+       "stand": 0.3061,
+       "walk": 0.2761
+      },
+      "restLengthM": 0.3107,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "right-back",
+      "stretch": {
+       "sit": -0.0753,
+       "stand": -0.0148,
+       "walk": -0.1113
+      }
+     }
+    },
+    "thresholds": {
+     "error": 0.1,
+     "warning": 0.04
+    }
+   },
+   "warnings": []
+  },
+  "outfit": {
+   "preset": "discreet_black",
+   "prompt": "discreet_black"
+  },
+  "passed": true,
+  "warnings": []
+ },
+ "hosiery_garter_fishnet_front": {
+  "hosiery": {
+   "belt": {
+    "bottomY": 1.0623,
+    "style": "classic",
+    "topY": 1.163,
+    "visibility": "hidden_under_skirt"
+   },
+   "clips": {
+    "bandDistanceMm": {
+     "FL": 0.0,
+     "FR": 0.0,
+     "RL": 0.0,
+     "RR": 0.0
+    },
+    "count": 4,
+    "maxBandDistanceMm": 0.0
+   },
+   "errors": [],
+   "hardware": {
+    "clasp": 4,
+    "color": "black",
+    "opaque": true,
+    "ring": 0,
+    "slider": 4
+   },
+   "layering": [
+    {
+     "layer": 1,
+     "name": "Black Suspender Belt",
+     "role": "foundation"
+    },
+    {
+     "layer": 2,
+     "name": "Black Thigh-High Stockings",
+     "role": "legwear"
+    },
+    {
+     "layer": 2,
+     "name": "Black Suspender Straps",
+     "role": "connector"
+    },
+    {
+     "layer": 3,
+     "name": "Black Pleated Mini Skirt",
+     "role": "main"
+    },
+    {
+     "layer": 3,
+     "name": "Black Tube Top",
+     "role": "main"
+    }
+   ],
+   "materials": {
+    "backSeam": false,
+    "baseOpacity": 1.0,
+    "denier": 60,
+    "pattern": "fishnet",
+    "rolledEdge": true,
+    "sideDarkening": "none",
+    "sideOpacity": 1.0,
+    "topStyle": "plain",
+    "topWidthMm": 35.0,
+    "type": "fishnet"
+   },
+   "preset": "fishnet_black",
+   "previews": {
+    "backend": "web",
+    "files": [
+     "preview.webp",
+     "detail.webp",
+     "preview-sit.webp",
+     "preview-walk.webp",
+     "thumb.webp"
+    ],
+    "note": null,
+    "requested": "web"
+   },
+   "reveal": {
+    "achieved": "glimpse",
+    "ease": 0.3,
+    "explicitLength": false,
+    "hemY": 0.7208,
+    "marginMm": 15.0,
+    "notes": [
+     "on this cut the band shows walking, not seated"
+    ],
+    "perPose": {
+     "sit": {
+      "coverMm": 143.7,
+      "state": "covered"
+     },
+     "stand": {
+      "coverMm": 18.8,
+      "state": "covered"
+     },
+     "walk": {
+      "coverMm": -30.4,
+      "state": "band"
+     }
+    },
+    "requested": "glimpse",
+    "ringM": {
+     "sit": {
+      "left": 0.371,
+      "right": 0.371
+     },
+     "stand": {
+      "left": 0.2462,
+      "right": 0.2462
+     },
+     "walk": {
+      "left": 0.2698,
+      "right": 0.1969
+     }
+    },
+    "summary": "reveal: requested glimpse, achieved glimpse (band visible in: walk)",
+    "visibleIn": [
+     "walk"
+    ]
+   },
+   "setId": null,
+   "stockingTop": {
+    "left": {
+     "bottomY": 0.7397,
+     "clips": {
+      "back": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        0.15964,
+        0.76257,
+        -0.03444
+       ],
+       "side": "left",
+       "u": 0.33,
+       "v": 0.0123,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        0.11037,
+        0.76257,
+        0.06989
+       ],
+       "side": "left",
+       "u": 0.03,
+       "v": 0.0123,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "left",
+     "topY": 0.7747,
+     "widthMm": 35.0
+    },
+    "right": {
+     "bottomY": 0.7397,
+     "clips": {
+      "back": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        -0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        -0.15964,
+        0.76257,
+        -0.03444
+       ],
+       "side": "right",
+       "u": 0.33,
+       "v": 0.0123,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        -0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        -0.11037,
+        0.76257,
+        0.06989
+       ],
+       "side": "right",
+       "u": 0.03,
+       "v": 0.0123,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "right",
+     "topY": 0.7747,
+     "widthMm": 35.0
+    }
+   },
+   "straps": {
+    "maxStretch": {
+     "sit": -0.0749,
+     "stand": -0.0148,
+     "walk": 0.0277
+    },
+    "restSlack": 0.015,
+    "tension": {
+     "FL": {
+      "currentLengthM": {
+       "sit": 0.2166,
+       "stand": 0.3242,
+       "walk": 0.299
+      },
+      "restLengthM": 0.329,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "left-front",
+      "stretch": {
+       "sit": -0.3418,
+       "stand": -0.0148,
+       "walk": -0.0913
+      }
+     },
+     "FR": {
+      "currentLengthM": {
+       "sit": 0.2166,
+       "stand": 0.3237,
+       "walk": 0.3308
+      },
+      "restLengthM": 0.3285,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "right-front",
+      "stretch": {
+       "sit": -0.3408,
+       "stand": -0.0148,
+       "walk": 0.007
+      }
+     },
+     "RL": {
+      "currentLengthM": {
+       "sit": 0.2874,
+       "stand": 0.3061,
+       "walk": 0.3193
+      },
+      "restLengthM": 0.3107,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "left-back",
+      "stretch": {
+       "sit": -0.0749,
+       "stand": -0.0148,
+       "walk": 0.0277
+      }
+     },
+     "RR": {
+      "currentLengthM": {
+       "sit": 0.2873,
+       "stand": 0.3061,
+       "walk": 0.2761
+      },
+      "restLengthM": 0.3107,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "right-back",
+      "stretch": {
+       "sit": -0.0753,
+       "stand": -0.0148,
+       "walk": -0.1113
+      }
+     }
+    },
+    "thresholds": {
+     "error": 0.1,
+     "warning": 0.04
+    }
+   },
+   "warnings": [
+    "on this cut the band shows walking, not seated"
+   ]
+  },
+  "outfit": {
+   "preset": "fishnet_black",
+   "prompt": "fishnet_black"
+  },
+  "passed": true,
+  "warnings": [
+   "hosiery: on this cut the band shows walking, not seated"
+  ]
+ },
+ "hosiery_garter_glimpse_front": {
+  "hosiery": {
+   "belt": {
+    "bottomY": 1.0623,
+    "style": "classic",
+    "topY": 1.163,
+    "visibility": "hidden_under_skirt"
+   },
+   "clips": {
+    "bandDistanceMm": {
+     "FL": 0.0,
+     "FR": 0.0,
+     "RL": 0.0,
+     "RR": 0.0
+    },
+    "count": 4,
+    "maxBandDistanceMm": 0.0
+   },
+   "errors": [],
+   "hardware": {
+    "clasp": 4,
+    "color": "silver",
+    "opaque": true,
+    "ring": 0,
+    "slider": 4
+   },
+   "layering": [
+    {
+     "layer": 1,
+     "name": "Black Suspender Belt",
+     "role": "foundation"
+    },
+    {
+     "layer": 2,
+     "name": "Black Thigh-High Stockings",
+     "role": "legwear"
+    },
+    {
+     "layer": 2,
+     "name": "Black Suspender Straps",
+     "role": "connector"
+    },
+    {
+     "layer": 4,
+     "name": "Black Bodycon Mini Dress",
+     "role": "one-piece"
+    }
+   ],
+   "materials": {
+    "backSeam": false,
+    "baseOpacity": 0.45,
+    "denier": 20,
+    "pattern": "none",
+    "rolledEdge": true,
+    "sideDarkening": "baked into alpha, view-independent",
+    "sideOpacity": 0.7,
+    "topStyle": "wide",
+    "topWidthMm": 50.0,
+    "type": "sheer"
+   },
+   "preset": "classic_black_mini_dress",
+   "previews": {
+    "backend": "web",
+    "files": [
+     "preview.webp",
+     "detail.webp",
+     "preview-sit.webp",
+     "preview-walk.webp",
+     "thumb.webp"
+    ],
+    "note": null,
+    "requested": "web"
+   },
+   "reveal": {
+    "achieved": "glimpse",
+    "ease": 1.0,
+    "explicitLength": false,
+    "hemY": 0.6558,
+    "marginMm": 15.0,
+    "notes": [],
+    "perPose": {
+     "sit": {
+      "coverMm": -55.7,
+      "state": "band"
+     },
+     "stand": {
+      "coverMm": 68.8,
+      "state": "covered"
+     },
+     "walk": {
+      "coverMm": 19.8,
+      "state": "covered"
+     }
+    },
+    "requested": "glimpse",
+    "ringM": {
+     "sit": {
+      "left": 0.1866,
+      "right": 0.1867
+     },
+     "stand": {
+      "left": 0.3112,
+      "right": 0.3112
+     },
+     "walk": {
+      "left": 0.2691,
+      "right": 0.2621
+     }
+    },
+    "summary": "reveal: requested glimpse, achieved glimpse (band visible in: sit)",
+    "visibleIn": [
+     "sit"
+    ]
+   },
+   "setId": null,
+   "stockingTop": {
+    "left": {
+     "bottomY": 0.7247,
+     "clips": {
+      "back": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        0.15964,
+        0.75982,
+        -0.03444
+       ],
+       "side": "left",
+       "u": 0.33,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        0.11037,
+        0.75981,
+        0.06989
+       ],
+       "side": "left",
+       "u": 0.03,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "left",
+     "topY": 0.7747,
+     "widthMm": 50.1
+    },
+    "right": {
+     "bottomY": 0.7247,
+     "clips": {
+      "back": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        -0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        -0.15964,
+        0.75982,
+        -0.03444
+       ],
+       "side": "right",
+       "u": 0.33,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        -0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        -0.11037,
+        0.75981,
+        0.06989
+       ],
+       "side": "right",
+       "u": 0.03,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "right",
+     "topY": 0.7747,
+     "widthMm": 50.1
+    }
+   },
+   "straps": {
+    "maxStretch": {
+     "sit": -0.0752,
+     "stand": -0.0148,
+     "walk": 0.0272
+    },
+    "restSlack": 0.015,
+    "tension": {
+     "FL": {
+      "currentLengthM": {
+       "sit": 0.2192,
+       "stand": 0.3266,
+       "walk": 0.3018
+      },
+      "restLengthM": 0.3315,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "left-front",
+      "stretch": {
+       "sit": -0.3387,
+       "stand": -0.0148,
+       "walk": -0.0895
+      }
+     },
+     "FR": {
+      "currentLengthM": {
+       "sit": 0.2192,
+       "stand": 0.3261,
+       "walk": 0.3338
+      },
+      "restLengthM": 0.331,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "right-front",
+      "stretch": {
+       "sit": -0.3378,
+       "stand": -0.0148,
+       "walk": 0.0083
+      }
+     },
+     "RL": {
+      "currentLengthM": {
+       "sit": 0.2898,
+       "stand": 0.3088,
+       "walk": 0.3219
+      },
+      "restLengthM": 0.3134,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "left-back",
+      "stretch": {
+       "sit": -0.0752,
+       "stand": -0.0148,
+       "walk": 0.0272
+      }
+     },
+     "RR": {
+      "currentLengthM": {
+       "sit": 0.2897,
+       "stand": 0.3087,
+       "walk": 0.2788
+      },
+      "restLengthM": 0.3133,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "right-back",
+      "stretch": {
+       "sit": -0.0756,
+       "stand": -0.0148,
+       "walk": -0.1103
+      }
+     }
+    },
+    "thresholds": {
+     "error": 0.1,
+     "warning": 0.04
+    }
+   },
+   "warnings": []
+  },
+  "outfit": {
+   "preset": "classic_black_mini_dress",
+   "prompt": "classic_black_mini_dress"
+  },
+  "passed": true,
+  "warnings": []
+ },
+ "hosiery_garter_glimpse_seated": {
+  "hosiery": {
+   "belt": {
+    "bottomY": 1.0623,
+    "style": "classic",
+    "topY": 1.163,
+    "visibility": "hidden_under_skirt"
+   },
+   "clips": {
+    "bandDistanceMm": {
+     "FL": 0.0,
+     "FR": 0.0,
+     "RL": 0.0,
+     "RR": 0.0
+    },
+    "count": 4,
+    "maxBandDistanceMm": 0.0
+   },
+   "errors": [],
+   "hardware": {
+    "clasp": 4,
+    "color": "silver",
+    "opaque": true,
+    "ring": 0,
+    "slider": 4
+   },
+   "layering": [
+    {
+     "layer": 1,
+     "name": "Black Suspender Belt",
+     "role": "foundation"
+    },
+    {
+     "layer": 2,
+     "name": "Black Thigh-High Stockings",
+     "role": "legwear"
+    },
+    {
+     "layer": 2,
+     "name": "Black Suspender Straps",
+     "role": "connector"
+    },
+    {
+     "layer": 4,
+     "name": "Black Bodycon Mini Dress",
+     "role": "one-piece"
+    }
+   ],
+   "materials": {
+    "backSeam": false,
+    "baseOpacity": 0.45,
+    "denier": 20,
+    "pattern": "none",
+    "rolledEdge": true,
+    "sideDarkening": "baked into alpha, view-independent",
+    "sideOpacity": 0.7,
+    "topStyle": "wide",
+    "topWidthMm": 50.0,
+    "type": "sheer"
+   },
+   "preset": "classic_black_mini_dress",
+   "previews": {
+    "backend": "web",
+    "files": [
+     "preview.webp",
+     "detail.webp",
+     "preview-sit.webp",
+     "preview-walk.webp",
+     "thumb.webp"
+    ],
+    "note": null,
+    "requested": "web"
+   },
+   "reveal": {
+    "achieved": "glimpse",
+    "ease": 1.0,
+    "explicitLength": false,
+    "hemY": 0.6558,
+    "marginMm": 15.0,
+    "notes": [],
+    "perPose": {
+     "sit": {
+      "coverMm": -55.7,
+      "state": "band"
+     },
+     "stand": {
+      "coverMm": 68.8,
+      "state": "covered"
+     },
+     "walk": {
+      "coverMm": 19.8,
+      "state": "covered"
+     }
+    },
+    "requested": "glimpse",
+    "ringM": {
+     "sit": {
+      "left": 0.1866,
+      "right": 0.1867
+     },
+     "stand": {
+      "left": 0.3112,
+      "right": 0.3112
+     },
+     "walk": {
+      "left": 0.2691,
+      "right": 0.2621
+     }
+    },
+    "summary": "reveal: requested glimpse, achieved glimpse (band visible in: sit)",
+    "visibleIn": [
+     "sit"
+    ]
+   },
+   "setId": null,
+   "stockingTop": {
+    "left": {
+     "bottomY": 0.7247,
+     "clips": {
+      "back": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        0.15964,
+        0.75982,
+        -0.03444
+       ],
+       "side": "left",
+       "u": 0.33,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        0.11037,
+        0.75981,
+        0.06989
+       ],
+       "side": "left",
+       "u": 0.03,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "left",
+     "topY": 0.7747,
+     "widthMm": 50.1
+    },
+    "right": {
+     "bottomY": 0.7247,
+     "clips": {
+      "back": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        -0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        -0.15964,
+        0.75982,
+        -0.03444
+       ],
+       "side": "right",
+       "u": 0.33,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        -0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        -0.11037,
+        0.75981,
+        0.06989
+       ],
+       "side": "right",
+       "u": 0.03,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "right",
+     "topY": 0.7747,
+     "widthMm": 50.1
+    }
+   },
+   "straps": {
+    "maxStretch": {
+     "sit": -0.0752,
+     "stand": -0.0148,
+     "walk": 0.0272
+    },
+    "restSlack": 0.015,
+    "tension": {
+     "FL": {
+      "currentLengthM": {
+       "sit": 0.2192,
+       "stand": 0.3266,
+       "walk": 0.3018
+      },
+      "restLengthM": 0.3315,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "left-front",
+      "stretch": {
+       "sit": -0.3387,
+       "stand": -0.0148,
+       "walk": -0.0895
+      }
+     },
+     "FR": {
+      "currentLengthM": {
+       "sit": 0.2192,
+       "stand": 0.3261,
+       "walk": 0.3338
+      },
+      "restLengthM": 0.331,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "right-front",
+      "stretch": {
+       "sit": -0.3378,
+       "stand": -0.0148,
+       "walk": 0.0083
+      }
+     },
+     "RL": {
+      "currentLengthM": {
+       "sit": 0.2898,
+       "stand": 0.3088,
+       "walk": 0.3219
+      },
+      "restLengthM": 0.3134,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "left-back",
+      "stretch": {
+       "sit": -0.0752,
+       "stand": -0.0148,
+       "walk": 0.0272
+      }
+     },
+     "RR": {
+      "currentLengthM": {
+       "sit": 0.2897,
+       "stand": 0.3087,
+       "walk": 0.2788
+      },
+      "restLengthM": 0.3133,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "right-back",
+      "stretch": {
+       "sit": -0.0756,
+       "stand": -0.0148,
+       "walk": -0.1103
+      }
+     }
+    },
+    "thresholds": {
+     "error": 0.1,
+     "warning": 0.04
+    }
+   },
+   "warnings": []
+  },
+  "outfit": {
+   "preset": "classic_black_mini_dress",
+   "prompt": "classic_black_mini_dress"
+  },
+  "passed": true,
+  "warnings": []
+ },
+ "hosiery_garter_seamed_back": {
+  "hosiery": {
+   "belt": {
+    "bottomY": 1.0861,
+    "style": "high_waisted",
+    "topY": 1.2234,
+    "visibility": "hidden_under_skirt"
+   },
+   "clips": {
+    "bandDistanceMm": {
+     "FL": 0.0,
+     "FR": 0.0,
+     "RL": 0.0,
+     "RR": 0.0,
+     "SL": 0.0,
+     "SR": 0.0
+    },
+    "count": 6,
+    "maxBandDistanceMm": 0.0
+   },
+   "errors": [],
+   "hardware": {
+    "clasp": 6,
+    "color": "gold",
+    "opaque": true,
+    "ring": 6,
+    "slider": 6
+   },
+   "layering": [
+    {
+     "layer": 1,
+     "name": "Black High-Waisted Suspender Belt",
+     "role": "foundation"
+    },
+    {
+     "layer": 2,
+     "name": "Black Thigh-High Stockings",
+     "role": "legwear"
+    },
+    {
+     "layer": 2,
+     "name": "Black Suspender Straps",
+     "role": "connector"
+    },
+    {
+     "layer": 3,
+     "name": "Black Pencil Skirt",
+     "role": "main"
+    },
+    {
+     "layer": 3,
+     "name": "White Blouse",
+     "role": "main"
+    }
+   ],
+   "materials": {
+    "backSeam": true,
+    "baseOpacity": 0.38,
+    "denier": 15,
+    "pattern": "none",
+    "rolledEdge": true,
+    "sideDarkening": "baked into alpha, view-independent",
+    "sideOpacity": 0.63,
+    "topStyle": "wide",
+    "topWidthMm": 50.0,
+    "type": "seamed"
+   },
+   "preset": "vintage_seamed",
+   "previews": {
+    "backend": "web",
+    "files": [
+     "preview.webp",
+     "detail.webp",
+     "preview-back.webp",
+     "preview-sit.webp",
+     "preview-walk.webp",
+     "thumb.webp"
+    ],
+    "note": null,
+    "requested": "web"
+   },
+   "reveal": {
+    "achieved": "discreet",
+    "ease": 1.0,
+    "explicitLength": false,
+    "hemY": 0.5758,
+    "marginMm": 15.0,
+    "notes": [],
+    "perPose": {
+     "sit": {
+      "coverMm": 27.3,
+      "state": "covered"
+     },
+     "stand": {
+      "coverMm": 148.8,
+      "state": "covered"
+     },
+     "walk": {
+      "coverMm": 99.6,
+      "state": "covered"
+     }
+    },
+    "requested": "discreet",
+    "ringM": {
+     "sit": {
+      "left": 0.2721,
+      "right": 0.2696
+     },
+     "stand": {
+      "left": 0.3912,
+      "right": 0.3912
+     },
+     "walk": {
+      "left": 0.351,
+      "right": 0.3419
+     }
+    },
+    "summary": "reveal: requested discreet, achieved discreet (band hidden in every pose)",
+    "visibleIn": []
+   },
+   "setId": null,
+   "stockingTop": {
+    "left": {
+     "bottomY": 0.7247,
+     "clips": {
+      "back": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        0.15964,
+        0.75982,
+        -0.03444
+       ],
+       "side": "left",
+       "u": 0.33,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        0.11037,
+        0.75981,
+        0.06989
+       ],
+       "side": "left",
+       "u": 0.03,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      },
+      "outer": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "outer",
+       "normal": [
+        1.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        0.16867,
+        0.75982,
+        0.0
+       ],
+       "side": "left",
+       "u": 0.25,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "left",
+     "topY": 0.7747,
+     "widthMm": 50.1
+    },
+    "right": {
+     "bottomY": 0.7247,
+     "clips": {
+      "back": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        -0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        -0.15964,
+        0.75982,
+        -0.03444
+       ],
+       "side": "right",
+       "u": 0.33,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        -0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        -0.11037,
+        0.75981,
+        0.06989
+       ],
+       "side": "right",
+       "u": 0.03,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      },
+      "outer": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "outer",
+       "normal": [
+        -1.0,
+        0.0,
+        0.0
+       ],
+       "position": [
+        -0.16867,
+        0.75982,
+        0.0
+       ],
+       "side": "right",
+       "u": 0.25,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "right",
+     "topY": 0.7747,
+     "widthMm": 50.1
+    }
+   },
+   "straps": {
+    "maxStretch": {
+     "sit": 0.0348,
+     "stand": -0.0148,
+     "walk": 0.0245
+    },
+    "restSlack": 0.015,
+    "tension": {
+     "FL": {
+      "currentLengthM": {
+       "sit": 0.2259,
+       "stand": 0.3504,
+       "walk": 0.3206
+      },
+      "restLengthM": 0.3557,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "left-front",
+      "stretch": {
+       "sit": -0.3649,
+       "stand": -0.0148,
+       "walk": -0.0986
+      }
+     },
+     "FR": {
+      "currentLengthM": {
+       "sit": 0.2259,
+       "stand": 0.3498,
+       "walk": 0.3574
+      },
+      "restLengthM": 0.3551,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "right-front",
+      "stretch": {
+       "sit": -0.3638,
+       "stand": -0.0148,
+       "walk": 0.0066
+      }
+     },
+     "RL": {
+      "currentLengthM": {
+       "sit": 0.3032,
+       "stand": 0.332,
+       "walk": 0.3452
+      },
+      "restLengthM": 0.337,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "left-back",
+      "stretch": {
+       "sit": -0.1003,
+       "stand": -0.0148,
+       "walk": 0.0245
+      }
+     },
+     "RR": {
+      "currentLengthM": {
+       "sit": 0.355,
+       "stand": 0.338,
+       "walk": 0.2964
+      },
+      "restLengthM": 0.3431,
+      "status": {
+       "sit": "ok",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "right-back",
+      "stretch": {
+       "sit": 0.0348,
+       "stand": -0.0148,
+       "walk": -0.1362
+      }
+     },
+     "SL": {
+      "currentLengthM": {
+       "sit": 0.2147,
+       "stand": 0.3351,
+       "walk": 0.3113
+      },
+      "restLengthM": 0.3401,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "left-outer",
+      "stretch": {
+       "sit": -0.3686,
+       "stand": -0.0148,
+       "walk": -0.0847
+      }
+     },
+     "SR": {
+      "currentLengthM": {
+       "sit": 0.2848,
+       "stand": 0.3351,
+       "walk": 0.3113
+      },
+      "restLengthM": 0.3401,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "right-outer",
+      "stretch": {
+       "sit": -0.1625,
+       "stand": -0.0148,
+       "walk": -0.0847
+      }
+     }
+    },
+    "thresholds": {
+     "error": 0.1,
+     "warning": 0.04
+    }
+   },
+   "warnings": []
+  },
+  "outfit": {
+   "preset": "vintage_seamed",
+   "prompt": "vintage_seamed"
+  },
+  "passed": true,
+  "warnings": []
+ },
+ "hosiery_garter_statement_front": {
+  "hosiery": {
+   "belt": {
+    "bottomY": 1.0623,
+    "style": "classic",
+    "topY": 1.163,
+    "visibility": "straps_only"
+   },
+   "clips": {
+    "bandDistanceMm": {
+     "FL": 0.0,
+     "FR": 0.0,
+     "RL": 0.0,
+     "RR": 0.0
+    },
+    "count": 4,
+    "maxBandDistanceMm": 0.0
+   },
+   "errors": [],
+   "hardware": {
+    "clasp": 4,
+    "color": "silver",
+    "opaque": true,
+    "ring": 0,
+    "slider": 4
+   },
+   "layering": [
+    {
+     "layer": 1,
+     "name": "Black Suspender Belt",
+     "role": "foundation"
+    },
+    {
+     "layer": 2,
+     "name": "Black Thigh-High Stockings",
+     "role": "legwear"
+    },
+    {
+     "layer": 2,
+     "name": "Black Suspender Straps",
+     "role": "connector"
+    },
+    {
+     "layer": 4,
+     "name": "Black Bodycon Mini Dress",
+     "role": "one-piece"
+    }
+   ],
+   "materials": {
+    "backSeam": false,
+    "baseOpacity": 0.45,
+    "denier": 20,
+    "pattern": "none",
+    "rolledEdge": true,
+    "sideDarkening": "baked into alpha, view-independent",
+    "sideOpacity": 0.7,
+    "topStyle": "wide",
+    "topWidthMm": 50.0,
+    "type": "sheer"
+   },
+   "preset": "statement_black",
+   "previews": {
+    "backend": "web",
+    "files": [
+     "preview.webp",
+     "detail.webp",
+     "preview-sit.webp",
+     "preview-walk.webp",
+     "thumb.webp"
+    ],
+    "note": null,
+    "requested": "web"
+   },
+   "reveal": {
+    "achieved": "statement",
+    "ease": 1.0,
+    "explicitLength": false,
+    "hemY": 0.7908,
+    "marginMm": 15.0,
+    "notes": [],
+    "perPose": {
+     "sit": {
+      "coverMm": -84.2,
+      "state": "clips"
+     },
+     "stand": {
+      "coverMm": -66.2,
+      "state": "clips"
+     },
+     "walk": {
+      "coverMm": -115.4,
+      "state": "clips"
+     }
+    },
+    "requested": "statement",
+    "ringM": {
+     "sit": {
+      "left": 0.1593,
+      "right": 0.1581
+     },
+     "stand": {
+      "left": 0.1762,
+      "right": 0.1762
+     },
+     "walk": {
+      "left": 0.138,
+      "right": 0.127
+     }
+    },
+    "summary": "reveal: requested statement, achieved statement (band visible in: stand, walk, sit)",
+    "visibleIn": [
+     "stand",
+     "walk",
+     "sit"
+    ]
+   },
+   "setId": null,
+   "stockingTop": {
+    "left": {
+     "bottomY": 0.7247,
+     "clips": {
+      "back": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        0.15964,
+        0.75982,
+        -0.03444
+       ],
+       "side": "left",
+       "u": 0.33,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "leftUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        0.11037,
+        0.75981,
+        0.06989
+       ],
+       "side": "left",
+       "u": 0.03,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "left",
+     "topY": 0.7747,
+     "widthMm": 50.1
+    },
+    "right": {
+     "bottomY": 0.7247,
+     "clips": {
+      "back": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "back",
+       "normal": [
+        -0.8762,
+        0.0,
+        -0.4819
+       ],
+       "position": [
+        -0.15964,
+        0.75982,
+        -0.03444
+       ],
+       "side": "right",
+       "u": 0.33,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      },
+      "front": {
+       "bones": [
+        "rightUpperLeg"
+       ],
+       "name": "front",
+       "normal": [
+        -0.1876,
+        0.0,
+        0.9822
+       ],
+       "position": [
+        -0.11037,
+        0.75981,
+        0.06989
+       ],
+       "side": "right",
+       "u": 0.03,
+       "v": 0.015,
+       "weights": [
+        1.0
+       ]
+      }
+     },
+     "side": "right",
+     "topY": 0.7747,
+     "widthMm": 50.1
+    }
+   },
+   "straps": {
+    "maxStretch": {
+     "sit": -0.0752,
+     "stand": -0.0148,
+     "walk": 0.0272
+    },
+    "restSlack": 0.015,
+    "tension": {
+     "FL": {
+      "currentLengthM": {
+       "sit": 0.2192,
+       "stand": 0.3266,
+       "walk": 0.3018
+      },
+      "restLengthM": 0.3315,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "left-front",
+      "stretch": {
+       "sit": -0.3387,
+       "stand": -0.0148,
+       "walk": -0.0895
+      }
+     },
+     "FR": {
+      "currentLengthM": {
+       "sit": 0.2192,
+       "stand": 0.3261,
+       "walk": 0.3338
+      },
+      "restLengthM": 0.331,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "right-front",
+      "stretch": {
+       "sit": -0.3378,
+       "stand": -0.0148,
+       "walk": 0.0083
+      }
+     },
+     "RL": {
+      "currentLengthM": {
+       "sit": 0.2898,
+       "stand": 0.3088,
+       "walk": 0.3219
+      },
+      "restLengthM": 0.3134,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "ok"
+      },
+      "strap": "left-back",
+      "stretch": {
+       "sit": -0.0752,
+       "stand": -0.0148,
+       "walk": 0.0272
+      }
+     },
+     "RR": {
+      "currentLengthM": {
+       "sit": 0.2897,
+       "stand": 0.3087,
+       "walk": 0.2788
+      },
+      "restLengthM": 0.3133,
+      "status": {
+       "sit": "slack",
+       "stand": "ok",
+       "walk": "slack"
+      },
+      "strap": "right-back",
+      "stretch": {
+       "sit": -0.0756,
+       "stand": -0.0148,
+       "walk": -0.1103
+      }
+     }
+    },
+    "thresholds": {
+     "error": 0.1,
+     "warning": 0.04
+    }
+   },
+   "warnings": []
+  },
+  "outfit": {
+   "preset": "statement_black",
+   "prompt": "statement_black"
+  },
+  "passed": true,
+  "warnings": []
+ }
+}

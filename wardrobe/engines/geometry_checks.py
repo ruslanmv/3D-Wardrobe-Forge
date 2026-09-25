@@ -774,6 +774,36 @@ def lower_body_profile(body: np.ndarray, legs: np.ndarray, bones: dict) -> dict 
     return {"crotchY": crotch, "centreX": centre, "kneeY": knee_y, "ankleY": ankle_y, "legs": sides}
 
 
+#: Height step of the torso profile a skirt is cut from, in metres.
+TORSO_PROFILE_STEP_M = 0.015
+
+
+def torso_profile(torso: np.ndarray, top_y: float, bottom_y: float) -> list[list[float]] | None:
+    """Her outline from ``top_y`` down to ``bottom_y``: [y, half-width, half-depth, cx, cz] every 1.5 cm.
+
+    A skirt was cut from bone spacing: hip width was the distance between the
+    thigh bones times 1.85, the same for a narrow-hipped figure and a full one,
+    and every ring of the skirt was that width times a flare. Nothing in it knew
+    where her waist went in or how far her seat stood out behind. This is the
+    outline a tailor would take, at every height a skirt spans: across both legs
+    below the crotch, since a skirt wraps both. The 2nd and 98th percentiles,
+    so a stray vertex does not widen her. ``torso`` must be her body without arms,
+    neck or head (an A-pose hand beside the hip is not hip).
+    """
+    if torso is None or torso.shape[0] < 100 or top_y <= bottom_y:
+        return None
+    rows = []
+    for y in np.arange(top_y, bottom_y - 1e-9, -TORSO_PROFILE_STEP_M):
+        slab = torso[np.abs(torso[:, 1] - y) < TORSO_PROFILE_STEP_M * 0.7]
+        if slab.shape[0] < 12:
+            continue
+        x_lo, x_hi = np.percentile(slab[:, 0], [2, 98])
+        z_lo, z_hi = np.percentile(slab[:, 2], [2, 98])
+        rows.append([round(float(y), 5), round(float(x_hi - x_lo) / 2, 5), round(float(z_hi - z_lo) / 2, 5),
+                     round(float(x_hi + x_lo) / 2, 5), round(float(z_hi + z_lo) / 2, 5)])
+    return rows if len(rows) >= 4 else None
+
+
 #: Grid step of the upper-body surface map, in metres.
 UPPER_GRID_M = 0.01
 
@@ -1175,17 +1205,27 @@ def apply_pleats(
     *,
     count: int,
     from_y: float,
-    amplitude: float = 0.06,
+    amplitude: float = 0.03,
     mask: np.ndarray | None = None,
+    clearance_m: float = 0.0,
+    retexture: bool = False,
 ) -> int:
-    """Fold a skirt into ``count`` knife pleats that open toward the hem.
+    """Fold a skirt into ``count`` knife pleats round the surface it was cut to.
 
-    A pleated skirt used to come out as a plain A-line — the pleats were a tag and
-    nothing more. This ripples each vertex below ``from_y`` outward by a sawtooth
-    in its angle round the body, scaled from nothing at ``from_y`` to
-    ``amplitude`` of its radius at the hem, the way pressed pleats open as they
-    fall. Outward only, and applied after smoothing (which would iron it flat), so
-    the clearance already established still holds.
+    Each vertex below ``from_y`` moves by a sawtooth in its angle round the body,
+    ``amplitude`` of its radius each way, from nothing at ``from_y`` to full depth
+    within the top third of the skirt, the way pressed pleats are set from just
+    below the waistband.
+
+    The fold is zero-mean: half of each pleat folds in, half out, so the skirt is
+    the size its cut says. Pleats used to fold outward only, by up to 6% at the
+    hem, on top of an already wide A-line: a pleated mini read as a bell, its
+    pleats a faint ripple on the hem. No vertex folds in closer than the body's
+    surface plus ``clearance_m``.
+
+    ``retexture`` (a plain fabric, no pattern) also lays the skirt's u out in
+    pleats, for the pleat-shading texture that makes the folds read under a toon
+    shader. A patterned fabric keeps its own UVs.
     """
     if count <= 0 or not index.valid or mesh.vertex_count == 0:
         return 0
@@ -1196,16 +1236,88 @@ def apply_pleats(
     if not below.any():
         return 0
     hem = float(points[below, 1].min())
-    depth = np.clip((from_y - points[:, 1]) / max(from_y - hem, 1e-6), 0.0, 1.0)
+    depth = np.clip((from_y - points[:, 1]) / max((from_y - hem) * 0.35, 1e-6), 0.0, 1.0)
+    depth = depth * depth * (3.0 - 2.0 * depth)
+    phase = pleat_phase(mesh, count)
+    if phase is None:
+        dx = points[:, 0] - index.axis_x
+        dz = points[:, 2] - index.axis_z
+        phase = (np.arctan2(dz, dx) + np.pi) / (2 * np.pi) * count
+    saw = phase - np.floor(phase)  # 0 → 1 across each pleat, then folds back
+    fold = 2.0 * saw - 1.0  # zero-mean: in on one side of the pleat, out on the other
+    moved = _fold(mesh, points, index, below, 1.0 + amplitude * depth * fold, clearance_m)
+    if retexture and mesh.uvs is not None:
+        # u in pleats: one tile of the pleat-shading texture per pleat, on the folds exactly.
+        mesh.uvs = np.column_stack([phase, mesh.uvs[:, 1]]).astype(np.float32)
+        mesh.metadata["pleatShading"] = True
+    return moved
+
+
+def pleat_phase(mesh: Mesh, count: int) -> np.ndarray | None:
+    """Each vertex's position in pleats round a lofted shell, from its own UVs.
+
+    A loft's u runs round each ring in metres from her back (−P/2) through her
+    front (0) to her back again (+P/2), P the ring's perimeter, the seam twins at
+    both ends. So u/P + ½ is how far round, the same for the seam twins, and the
+    folds and the shading that marks them are cut from one number.
+    """
+    if mesh.uvs is None:
+        return None
+    u, v = mesh.uvs[:, 0].astype(np.float64), np.round(mesh.uvs[:, 1].astype(np.float64), 5)
+    half = np.zeros_like(u)
+    for ring in np.unique(v):
+        member = v == ring
+        half[member] = np.abs(u[member]).max()
+    if (half <= 1e-6).any():
+        return None
+    return (u / (2.0 * half) + 0.5) * count
+
+
+def apply_drape(
+    mesh: Mesh,
+    index: BodyRadialIndex,
+    *,
+    folds: int,
+    from_y: float,
+    amplitude: float,
+    mask: np.ndarray | None = None,
+    clearance_m: float = 0.0,
+) -> int:
+    """Soft folds round a flared hem: ``folds`` waves, ``amplitude`` of the radius each way at the hem.
+
+    A flared skirt cut as a perfect cone reads as a lampshade: real fabric falls in
+    rounded folds that open toward the hem. Zero-mean, rising from nothing at
+    ``from_y`` (where the flare starts) as the square of the way down, and never
+    inside the body.
+    """
+    if folds <= 0 or amplitude <= 0.0 or not index.valid or mesh.vertex_count == 0:
+        return 0
+    points = mesh.positions.astype(np.float64)
+    below = points[:, 1] < from_y
+    if mask is not None:
+        below &= mask
+    if not below.any():
+        return 0
+    hem = float(points[below, 1].min())
+    depth = np.clip((from_y - points[:, 1]) / max(from_y - hem, 1e-6), 0.0, 1.0) ** 2
+    angle = np.arctan2(points[:, 2] - index.axis_z, points[:, 0] - index.axis_x)
+    wave = np.sin(angle * folds + 0.5)
+    return _fold(mesh, points, index, below, 1.0 + amplitude * depth * wave, clearance_m)
+
+
+def _fold(mesh: Mesh, points: np.ndarray, index: BodyRadialIndex, below: np.ndarray, scale: np.ndarray,
+          clearance_m: float) -> int:
+    """Scale each vertex's radius by ``scale`` where ``below``, never closer than the body plus clearance."""
     dx = points[:, 0] - index.axis_x
     dz = points[:, 2] - index.axis_z
-    angle = np.arctan2(dz, dx)
-    phase = (angle + np.pi) / (2 * np.pi) * count
-    saw = phase - np.floor(phase)  # 0 → 1 across each pleat, then folds back
-    scale = 1.0 + amplitude * depth * saw
-    scale = np.where(below, scale, 1.0)
-    points[:, 0] = index.axis_x + dx * scale
-    points[:, 2] = index.axis_z + dz * scale
+    radius = np.maximum(np.hypot(dx, dz), 1e-9)
+    target = radius * np.where(below, scale, 1.0)
+    floor = index.body_radius_at(points) + clearance_m
+    guarded = below & (floor > clearance_m * 1.5)
+    target = np.where(guarded, np.maximum(target, np.minimum(floor, radius)), target)
+    ratio = target / radius
+    points[:, 0] = index.axis_x + dx * ratio
+    points[:, 2] = index.axis_z + dz * ratio
     mesh.positions = points.astype(np.float32)
     mesh.compute_normals()
     return int(below.sum())

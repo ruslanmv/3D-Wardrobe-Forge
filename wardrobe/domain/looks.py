@@ -7,6 +7,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wardrobe.hosiery.options import HosieryOptions, HosieryPlan, RevealOptions, SuspenderBeltOptions
+
 
 class OutfitMode(StrEnum):
     AUTO = "auto"
@@ -40,6 +42,13 @@ class OutfitRequest(BaseModel):
     #: by its layer (foundation, legwear, main, one-piece, outer, shoes). Absent,
     #: the planner splits the prompt itself ("… + matching briefs under a … dress").
     layers: list[OutfitRequest] | None = Field(default=None, max_length=6)
+    # Hosiery (wardrobe.hosiery): stockings, a suspender belt and how much of them the
+    # hem shows. All optional; absent, the outfit plans exactly as it always did.
+    hosiery: HosieryOptions | None = None
+    suspender_belt: SuspenderBeltOptions | None = Field(default=None, alias="suspenderBelt")
+    reveal: RevealOptions | None = None
+    #: A named hosiery look (wardrobe.hosiery.presets); explicit fields above win over it.
+    preset: str | None = Field(default=None, max_length=64)
 
 
 class MaterialPlan(BaseModel):
@@ -142,6 +151,11 @@ class OutfitPlan(BaseModel):
     #: Whether this garment, as it will render, needs an adult declaration: an
     #: intimate category, a template that says so, or fabric the body shows through.
     requires_adult: bool = Field(default=False, alias="requiresAdult")
+    #: The outfit's hosiery design, on every garment that takes part in it: the belt,
+    #: the stockings, the straps between them and the outer layer whose hem reveals them.
+    hosiery: HosieryPlan | None = None
+    #: Garments of one coordinated set share it ("matching set", a belt's matchingSetId).
+    set_id: str | None = Field(default=None, alias="setId")
     #: Free-form keywords the planner recognised, for debugging and telemetry.
     keywords: list[str] = Field(default_factory=list)
     #: 0..1 — how much of the prompt the planner could actually account for.
@@ -239,6 +253,8 @@ class LookResult(BaseModel):
     prompt: str | None = None
     plan: OutfitPlan | None = None
     size_bytes: int | None = Field(default=None, alias="sizeBytes")
+    #: Extra views of a hosiery look (thumb, detail, sit, walk, back): name -> URL. Absent otherwise.
+    previews: dict[str, str] | None = None
 
 
 class ClippingCheck(StrEnum):
@@ -282,6 +298,8 @@ class FitReport(BaseModel):
     base_body: dict = Field(default_factory=dict, alias="baseBody")
     #: One entry per garment of a layered outfit, inner first: its own fit and clearance.
     layers: list[dict] = Field(default_factory=list)
+    #: Stocking tops, clips, strap tension per pose and the reveal achieved (wardrobe.hosiery.report).
+    hosiery: dict | None = None
 
     @property
     def passed(self) -> bool:

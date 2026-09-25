@@ -5,6 +5,7 @@ from __future__ import annotations
 from wardrobe.domain.jobs import FailureReason, JobState
 from wardrobe.domain.looks import OutfitRequest
 from wardrobe.errors import AdultDeclarationRequired, IntimateNotPermitted, PlanningError
+from wardrobe.hosiery.planning import connector_artifact
 from wardrobe.pipeline.context import PipelineContext
 from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
 from wardrobe.policy import intimate
@@ -88,6 +89,9 @@ async def generate(context: PipelineContext) -> None:
     context.artifacts = []
     try:
         for garment in context.plan.garments:
+            if garment.role == "connector":  # suspender straps: no template, built from the fitted layers
+                context.artifacts.append(connector_artifact(garment))
+                continue
             template = context.catalog.get(garment.template_id) if garment.template_id else None
             context.artifacts.append(
                 await provider.create(garment, template=template, analysis=context.record.analysis)

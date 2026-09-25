@@ -94,16 +94,18 @@ def test_zero_strength_is_a_no_op(index):
     assert conform_to_body(mesh, index, CLEARANCE, strength=0.0) == 0
 
 
-def test_pleats_only_ever_move_outward_and_only_below_the_line(index):
+def test_pleats_fold_both_ways_and_only_below_the_line(index):
+    """Zero-mean knife pleats: as much in as out, so the skirt stays the size its cut says."""
     mesh = shell(0.14)
     before = radii(mesh).copy()
     apply_pleats(mesh, index, count=12, from_y=0.5)
     after = radii(mesh)
-    assert (after >= before - 1e-6).all()
     above = mesh.positions[:, 1] >= 0.5
     np.testing.assert_allclose(after[above], before[above], atol=1e-6)
     hem = mesh.positions[:, 1] < 0.25
     assert after[hem].std() > before[hem].std()  # the hem actually ripples
+    assert (after[hem] < before[hem] - 1e-4).any() and (after[hem] > before[hem] + 1e-4).any()
+    assert abs(float((after[hem] / before[hem]).mean()) - 1.0) < 0.01
 
 
 def test_surface_samples_fill_what_vertices_leave_empty():

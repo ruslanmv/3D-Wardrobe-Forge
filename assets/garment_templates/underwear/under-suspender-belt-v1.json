@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "under-suspender-belt-v1",
+  "name": "Suspender Belt",
+  "category": "underwear",
+  "mesh": "procedural:suspender-belt",
+  "coverage": [
+    "waist",
+    "hips"
+  ],
+  "anchors": [
+    "waist"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "optIn": true,
+  "tags": [
+    "classic suspender belt",
+    "classic garter belt"
+  ],
+  "description": "A classic suspender belt at the natural waist, 4 or 6 flat straps clipped to fitted stocking tops."
+}
