@@ -425,6 +425,7 @@ Stated plainly, because the gallery shows them:
 | [STYLING](docs/STYLING.md) | materials, cuts, straps, Base Body Prep and layered outfits, the adult gate |
 | [FIT_QUALITY](docs/FIT_QUALITY.md) | fitting a real avatar: what broke on the library avatars, and what the fitter does now |
 | [HOSIERY_STYLING](docs/HOSIERY_STYLING.md) | *design, not built*: suspender belts, stockings and the reveal control |
+| [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | *design, not built*: flat straps, clip hardware, denier falloff and the web preview backend |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | components, layers, extension points |
 | [PIPELINE](docs/PIPELINE.md) | the ten stages and the failure model |
 | [API](docs/API.md) | HTTP reference |

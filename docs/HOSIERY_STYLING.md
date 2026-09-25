@@ -2,6 +2,9 @@
 
 **Status: designed, not built.** This document specifies an additive feature. Nothing
 in it changes a look the Forge makes today.
+The assets and rendering for its preview (flat straps, clip hardware, wide stocking
+tops, denier falloff and the web preview backend) are in
+[HOSIERY_PREVIEW](HOSIERY_PREVIEW.md).
 
 ## 1. What the brief asks for
 
