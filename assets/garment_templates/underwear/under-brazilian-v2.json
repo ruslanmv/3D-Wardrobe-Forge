@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "id": "under-thong-v2",
-  "name": "Tailored Thong",
+  "id": "under-brazilian-v2",
+  "name": "Tailored Brazilian Briefs",
   "category": "underwear",
   "mesh": "procedural:brief-block",
   "coverage": [
@@ -26,7 +26,7 @@
   "lingerie": {
     "block": "brief",
     "brief": {
-      "preset": "thong"
+      "preset": "brazilian"
     }
   },
   "materials": {
@@ -35,8 +35,10 @@
     "supportsMetallic": false
   },
   "tags": [
-    "tailored thong"
+    "tailored brazilian briefs",
+    "tailored brazilian brief",
+    "tailored brazilian"
   ],
-  "description": "A thong: narrow sides and an 18 mm back strip into the gusset.",
+  "description": "Brazilian briefs: a V-shaped back, narrower than cheeky, wider than a thong.",
   "optIn": true
 }

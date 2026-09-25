@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "id": "under-thong-v2",
-  "name": "Tailored Thong",
+  "id": "under-briefs-french-cut-v2",
+  "name": "Tailored French-Cut Briefs",
   "category": "underwear",
   "mesh": "procedural:brief-block",
   "coverage": [
@@ -26,7 +26,7 @@
   "lingerie": {
     "block": "brief",
     "brief": {
-      "preset": "thong"
+      "preset": "french-cut"
     }
   },
   "materials": {
@@ -35,8 +35,9 @@
     "supportsMetallic": false
   },
   "tags": [
-    "tailored thong"
+    "tailored french-cut briefs",
+    "tailored french cut briefs"
   ],
-  "description": "A thong: narrow sides and an 18 mm back strip into the gusset.",
+  "description": "French-cut briefs: a high leg opening with substantial rear coverage.",
   "optIn": true
 }

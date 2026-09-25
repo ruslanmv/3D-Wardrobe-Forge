@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "id": "under-thong-v2",
-  "name": "Tailored Thong",
-  "category": "underwear",
+  "id": "swim-string-bikini-bottom-v2",
+  "name": "Tailored String Bikini Bottoms",
+  "category": "swimwear",
   "mesh": "procedural:brief-block",
   "coverage": [
     "hips"
@@ -26,7 +26,9 @@
   "lingerie": {
     "block": "brief",
     "brief": {
-      "preset": "thong"
+      "preset": "string-bikini",
+      "waistElastic": "swim-8",
+      "legElastic": "swim-8"
     }
   },
   "materials": {
@@ -35,8 +37,10 @@
     "supportsMetallic": false
   },
   "tags": [
-    "tailored thong"
+    "tailored string bikini bottoms",
+    "tailored string bikini bottom",
+    "tailored tie-side bikini bottoms"
   ],
-  "description": "A thong: narrow sides and an 18 mm back strip into the gusset.",
+  "description": "String bikini bottoms: tie sides, but a real back: about 60% covered, not a thong.",
   "optIn": true
 }

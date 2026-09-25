@@ -1,6 +1,10 @@
 # Lingerie quality upgrade plan
 
-> Status: in progress. **L4 done**: the bra block — cups on her bust points
+> Status: in progress. **L3b done**: the bottom-pattern grammar
+> (`BriefSpec` in `wardrobe/lingerie/specs.py`, `BOTTOM_PRESETS`): rise, side
+> type/width, leg cut, front/back coverage (solved exactly), V-shaping,
+> back-centre width, leg extension; sixteen presets, tie bows, boyshort legs;
+> tested in `tests/unit/test_bottom_grammar.py`. **L4 done**: the bra block — cups on her bust points
 > (triangle, balconette, plunge, full), a gore on her sternum, a level band
 > under the fold with wings, ribbon straps from the cups' published anchors
 > (`wardrobe/lingerie/blocks/bra.py`, `surface.py`); every placed vertex is

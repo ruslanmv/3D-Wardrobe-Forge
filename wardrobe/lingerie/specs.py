@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, fields
 
+import numpy as np
+
 from wardrobe.lingerie.contract import StrapSpec
 
 #: Which block each lingerie kind is built from.
@@ -48,40 +50,146 @@ def _from_dict(cls, data: dict | None, issues: list[str], where: str):
         return cls()
 
 
+#: Named rises: fractions of her crotch-to-waist span at centre front.
+RISES = {"low": 0.5, "mid": 0.72, "high": 0.95, "high-waist": 1.05}
+#: The legacy back-coverage words, as the fractions the grammar uses.
+BACK_COVERAGE_WORDS = {"full": 0.85, "moderate": 0.65, "cheeky": 0.55, "thong": 0.12}
+SIDE_TYPES = ("panel", "narrow", "string", "tie")
+
+
 @dataclass(frozen=True)
 class BriefSpec:
-    """A brief's construction, as a pattern-maker specifies it.
+    """A bottom's construction as independent pattern rules, not as a style name.
 
-    Heights are fractions of her crotch-to-waist span, so the same spec grades
-    across bodies: ``rise`` 1.0 is at her natural waist, 0.5 halfway down.
+    "String", "thong", "high-leg" and "bikini" are four different questions, and a
+    brief that answered them with four meshes could not be a string bikini (string
+    sides, a real back) without also being a thong. Here each is its own rule:
+
+    * **rise** — where the waistline sits: a fraction of her crotch-to-waist span at
+      centre front (or ``low`` / ``mid`` / ``high`` / ``high-waist``); ``back_rise``
+      raises the back, as a back is cut higher.
+    * **sides** — ``side_type`` (panel, narrow, string, tie) and ``side_width_mm``,
+      the side seam's height between waistband and leg opening. A string is its
+      elastic, 3–8 mm.
+    * **leg cut** — ``leg_cut_height``: how high the leg opening rises at the side,
+      as a fraction of crotch → waist. With the rise it fixes the side width; give
+      one or the other. ``leg_extension_mm`` carries the leg opening down round the
+      thigh (a boyshort).
+    * **coverage** — ``front_coverage`` and ``back_coverage``, 0..1: how much of the
+      panel's height, from waistline to the gusset seam, is covered across that
+      half of her, averaged round her. The leg line's curve is *solved* so the
+      pattern measures exactly this: 0.42 is 0.42 on any body.
+    * **V-shaping** — ``front_v_depth``, ``back_v_depth``, 0..1: how far the waistline
+      dips at centre front / centre back (a V-string's Y, a Brazilian's V back).
+    * **gusset and back centre** — the gusset's widths and length, and
+      ``back_center_width_mm``: how wide the back panel is where it meets the gusset
+      (a thong's strip, a G-string's string).
     """
 
-    #: Centre-front waistline height, as a fraction of crotch → waist.
-    rise: float = 0.72
-    #: How much higher the back waistline sits, same units: a back is cut higher.
+    rise: float | str = 0.72
     back_rise: float = 0.06
-    #: Side panel height between waistband and leg opening, same units. A string is ~0.05.
-    side_height: float = 0.42
-    #: How far the front panel's leg line scoops toward the gusset: 0 straight, 1 deep.
-    front_scoop: float = 0.55
-    back_coverage: str = "full"
-    #: Gusset widths at its front seam and at the crotch, and its length under her, in mm.
+    side_type: str = "panel"
+    side_width_mm: float | None = None
+    leg_cut_height: float | None = None
+    leg_extension_mm: float = 0.0
+    front_coverage: float | None = None
+    back_coverage: float | str = 0.85
+    front_v_depth: float = 0.0
+    back_v_depth: float = 0.0
+    back_center_width_mm: float | None = None
     gusset_front_width_mm: float = 70.0
     gusset_width_mm: float = 55.0
     gusset_length_mm: float = 150.0
+    #: Legacy (L3 templates): side height as a fraction of the span, and the front scoop.
+    side_height: float | None = None
+    front_scoop: float | None = None
     #: Elastic names from wardrobe.lingerie.elastic.ELASTICS.
     waist_elastic: str = "picot-10"
     leg_elastic: str = "picot-8"
+    #: A named preset (BOTTOM_PRESETS) this spec starts from; set by ``parse_block``.
+    preset: str | None = None
 
     def __post_init__(self):
-        if not 0.2 <= self.rise <= 1.15:
+        if isinstance(self.rise, str) and self.rise not in RISES:
+            raise ValueError(f"rise {self.rise!r} not one of {tuple(RISES)} or a fraction")
+        if not 0.2 <= self.rise_fraction <= 1.15:
             raise ValueError(f"rise {self.rise} outside 0.2-1.15")
-        if not 0.02 <= self.side_height <= 0.9:
+        if self.side_type not in SIDE_TYPES:
+            raise ValueError(f"sideType {self.side_type!r} not one of {SIDE_TYPES}")
+        if self.side_width_mm is not None and not 2.0 <= self.side_width_mm <= 200.0:
+            raise ValueError(f"sideWidthMm {self.side_width_mm} outside 2-200")
+        if self.side_height is not None and not 0.02 <= self.side_height <= 0.9:
             raise ValueError(f"sideHeight {self.side_height} outside 0.02-0.9")
-        if self.back_coverage not in BACK_COVERAGES:
-            raise ValueError(f"backCoverage {self.back_coverage!r} not one of {BACK_COVERAGES}")
+        if isinstance(self.back_coverage, str) and self.back_coverage not in BACK_COVERAGE_WORDS:
+            raise ValueError(f"backCoverage {self.back_coverage!r} not one of {tuple(BACK_COVERAGE_WORDS)}")
+        if not 0.0 <= self.back_fraction <= 1.0:
+            raise ValueError(f"backCoverage {self.back_coverage} outside 0-1")
+        if self.front_coverage is not None and not 0.0 <= self.front_coverage <= 1.0:
+            raise ValueError(f"frontCoverage {self.front_coverage} outside 0-1")
+        for name, value in (("frontVDepth", self.front_v_depth), ("backVDepth", self.back_v_depth)):
+            if not 0.0 <= value <= 1.0:
+                raise ValueError(f"{name} {value} outside 0-1")
+        if self.leg_cut_height is not None and not 0.0 <= self.leg_cut_height <= 1.1:
+            raise ValueError(f"legCutHeight {self.leg_cut_height} outside 0-1.1")
+        if not 0.0 <= self.leg_extension_mm <= 150.0:
+            raise ValueError(f"legExtensionMm {self.leg_extension_mm} outside 0-150")
         if not 20 <= self.gusset_width_mm <= 120 or not 20 <= self.gusset_front_width_mm <= 140:
             raise ValueError("gusset widths outside 20-140 mm")
+        if self.back_center_width_mm is not None and not 2.0 <= self.back_center_width_mm <= 160.0:
+            raise ValueError(f"backCenterWidthMm {self.back_center_width_mm} outside 2-160")
+
+    @property
+    def rise_fraction(self) -> float:
+        return RISES[self.rise] if isinstance(self.rise, str) else float(self.rise)
+
+    @property
+    def back_fraction(self) -> float:
+        value = self.back_coverage
+        return BACK_COVERAGE_WORDS[value] if isinstance(value, str) else float(value)
+
+    @property
+    def front_fraction(self) -> float:
+        """Front coverage; from the legacy scoop when only that is given (0.55 scoop ≈ 0.62)."""
+        if self.front_coverage is not None:
+            return float(self.front_coverage)
+        scoop = 0.55 if self.front_scoop is None else float(self.front_scoop)
+        return float(np.clip(0.9 - 0.5 * scoop, 0.2, 0.95))
+
+
+#: The bottoms as presets over those rules. A template's ``brief`` block may name one
+#: (``"preset": "cheeky"``) and override any field.
+BOTTOM_PRESETS: dict[str, dict] = {
+    "classic": {"rise": "mid", "sideWidthMm": 80, "backCoverage": 0.85, "frontCoverage": 0.75},
+    "high-leg": {"rise": 0.8, "legCutHeight": 0.62, "backCoverage": 0.72, "frontCoverage": 0.6},
+    "french-cut": {"rise": 0.85, "legCutHeight": 0.72, "backCoverage": 0.8, "frontCoverage": 0.6},
+    "hipster": {"rise": "low", "sideWidthMm": 70, "backCoverage": 0.9, "frontCoverage": 0.85,
+                "gussetFrontWidthMm": 80},
+    # A boyshort's leg opening runs level round her thigh: cut at her crotch, not a side width.
+    "boyshort": {"rise": "low", "legCutHeight": 0.02, "backCoverage": 0.95, "frontCoverage": 0.9,
+                 "legExtensionMm": 45, "gussetFrontWidthMm": 90, "gussetWidthMm": 70},
+    "high-waist": {"rise": "high-waist", "sideWidthMm": 130, "backCoverage": 0.9, "frontCoverage": 0.8},
+    "bikini": {"rise": 0.6, "sideWidthMm": 45, "backCoverage": 0.68, "frontCoverage": 0.62},
+    "cheeky": {"rise": "mid", "sideWidthMm": 38, "backCoverage": 0.58, "frontCoverage": 0.6},
+    "brazilian": {"rise": "mid", "sideType": "narrow", "sideWidthMm": 26, "backCoverage": 0.42,
+                  "backVDepth": 0.55, "frontCoverage": 0.55, "backCenterWidthMm": 60},
+    "tanga": {"rise": "low", "sideType": "narrow", "sideWidthMm": 12, "backCoverage": 0.38,
+              "frontCoverage": 0.5, "backCenterWidthMm": 45},
+    "string-bikini": {"rise": 0.6, "sideType": "tie", "sideWidthMm": 6, "backCoverage": 0.6,
+                      "frontCoverage": 0.6},
+    "string": {"rise": 0.62, "sideType": "string", "sideWidthMm": 6, "backCoverage": 0.55,
+               "frontCoverage": 0.55},
+    "thong": {"rise": 0.66, "sideType": "narrow", "sideWidthMm": 18, "backCoverage": 0.12,
+              "frontCoverage": 0.55, "backCenterWidthMm": 18, "gussetWidthMm": 40},
+    "g-string": {"rise": 0.66, "sideType": "string", "sideWidthMm": 5, "backCoverage": 0.03,
+                 "frontCoverage": 0.45, "backCenterWidthMm": 5, "gussetWidthMm": 35,
+                 "gussetFrontWidthMm": 50},
+    "v-string": {"rise": 0.7, "sideType": "string", "sideWidthMm": 5, "backCoverage": 0.03,
+                 "frontCoverage": 0.45, "backCenterWidthMm": 5, "backVDepth": 0.6, "frontVDepth": 0.35,
+                 "gussetWidthMm": 35, "gussetFrontWidthMm": 50},
+    "high-waist-thong": {"rise": "high-waist", "sideType": "narrow", "sideWidthMm": 20,
+                         "backCoverage": 0.1, "frontCoverage": 0.6, "backCenterWidthMm": 18,
+                         "gussetWidthMm": 40},
+}
 
 
 @dataclass(frozen=True)
@@ -152,7 +260,15 @@ def parse_block(kind: str, data: dict) -> LingerieBlock:
     block = str(data.pop("block", BLOCK_OF_KIND.get(kind, "")))
     if kind in BLOCK_OF_KIND and block != BLOCK_OF_KIND[kind]:
         issues.append(f"lingerie.block {block!r} does not match {kind} ({BLOCK_OF_KIND[kind]!r})")
-    brief = _from_dict(BriefSpec, data.pop("brief", None), issues, "lingerie.brief")
+    brief_data = dict(data.pop("brief", None) or {})
+    preset = brief_data.get("preset")
+    if preset is not None:
+        if preset not in BOTTOM_PRESETS:
+            issues.append(f"lingerie.brief: unknown preset {preset!r}")
+        else:
+            brief_data = {**{_camel(k) if "_" in k else k: v for k, v in BOTTOM_PRESETS[preset].items()},
+                          **brief_data}
+    brief = _from_dict(BriefSpec, brief_data, issues, "lingerie.brief")
     bra = _from_dict(BraSpec, data.pop("bra", None), issues, "lingerie.bra")
     straps = _from_dict(StrapBlock, data.pop("straps", None), issues, "lingerie.straps")
     fabric = data.pop("fabric", None)
@@ -166,5 +282,7 @@ def validate_block(kind: str, data: dict) -> list[str]:
     return list(parse_block(kind, data).issues)
 
 
-__all__ = ["BACK_COVERAGES", "BLOCK_OF_KIND", "BRA_STYLES", "BraSpec", "BriefSpec", "LingerieBlock",
-           "StrapBlock", "parse_block", "validate_block"]
+__all__ = [
+    "BACK_COVERAGES", "BACK_COVERAGE_WORDS", "BLOCK_OF_KIND", "BOTTOM_PRESETS", "BRA_STYLES", "BraSpec",
+    "BriefSpec", "LingerieBlock", "RISES", "SIDE_TYPES", "StrapBlock", "parse_block", "validate_block",
+]

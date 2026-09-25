@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "id": "under-thong-v2",
-  "name": "Tailored Thong",
+  "id": "under-g-string-v2",
+  "name": "Tailored G-String",
   "category": "underwear",
   "mesh": "procedural:brief-block",
   "coverage": [
@@ -26,7 +26,7 @@
   "lingerie": {
     "block": "brief",
     "brief": {
-      "preset": "thong"
+      "preset": "g-string"
     }
   },
   "materials": {
@@ -35,8 +35,9 @@
     "supportsMetallic": false
   },
   "tags": [
-    "tailored thong"
+    "tailored g-string",
+    "tailored g string"
   ],
-  "description": "A thong: narrow sides and an 18 mm back strip into the gusset.",
+  "description": "A G-string: a small front panel, string sides, a string back.",
   "optIn": true
 }

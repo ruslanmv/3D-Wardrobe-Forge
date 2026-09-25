@@ -130,7 +130,7 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     ),
     "underwear": (
         "underwear", "lingerie", "bra", "bralette", "panties", "briefs", "knickers", "bodysuit", "teddy",
-        "thong",
+        "thong", "tanga", "g-string", "g string", "v-string", "v string", "boyshorts", "boyshort",
         "garter belt", "suspender belt", "garter", "garters", "garter set",
         # hosiery foundations: words no other category claims (see wardrobe.hosiery)
         "waspie", "waist cincher", "guêpière", "guepiere",

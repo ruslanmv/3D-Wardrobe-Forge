@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "id": "under-thong-v2",
-  "name": "Tailored Thong",
+  "id": "under-boyshort-v2",
+  "name": "Tailored Boyshorts",
   "category": "underwear",
   "mesh": "procedural:brief-block",
   "coverage": [
@@ -26,7 +26,7 @@
   "lingerie": {
     "block": "brief",
     "brief": {
-      "preset": "thong"
+      "preset": "boyshort"
     }
   },
   "materials": {
@@ -35,8 +35,9 @@
     "supportsMetallic": false
   },
   "tags": [
-    "tailored thong"
+    "tailored boyshorts",
+    "tailored boyshort"
   ],
-  "description": "A thong: narrow sides and an 18 mm back strip into the gusset.",
+  "description": "Boyshorts: low rise, a leg carried down round the thigh, full back.",
   "optIn": true
 }

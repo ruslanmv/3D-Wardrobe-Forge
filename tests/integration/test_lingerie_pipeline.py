@@ -97,8 +97,9 @@ def test_delivered_it_is_one_garment_with_three_openings(brief):
     _form, _record, data, _source = brief
     (mesh,) = garment_meshes(data).values()
     assert components(mesh) == 1
-    assert sorted(len(loop) for loop in boundary_loops(mesh))[:2] == [24, 24]
-    assert len(boundary_loops(mesh)) == 3
+    loops = sorted(len(loop) for loop in boundary_loops(mesh))
+    assert len(loops) == 3
+    assert loops[0] == loops[1]  # the two leg openings, mirror images; the waist is the third
 
 
 def test_the_gusset_crosses_under_her_on_the_midline(brief):

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "id": "under-thong-v2",
-  "name": "Tailored Thong",
+  "id": "under-cheeky-v2",
+  "name": "Tailored Cheeky Briefs",
   "category": "underwear",
   "mesh": "procedural:brief-block",
   "coverage": [
@@ -26,7 +26,7 @@
   "lingerie": {
     "block": "brief",
     "brief": {
-      "preset": "thong"
+      "preset": "cheeky"
     }
   },
   "materials": {
@@ -35,8 +35,10 @@
     "supportsMetallic": false
   },
   "tags": [
-    "tailored thong"
+    "tailored cheeky briefs",
+    "tailored cheeky brief",
+    "tailored cheeky"
   ],
-  "description": "A thong: narrow sides and an 18 mm back strip into the gusset.",
+  "description": "Cheeky briefs: the rear leg opening rises toward the centre, about 58% of the back covered.",
   "optIn": true
 }

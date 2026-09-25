@@ -132,6 +132,18 @@ def after_shell(context, mesh, clearance: float) -> None:
         positions[seam["a"]] = joined
         positions[seam["b"]] = joined
         _seat_brief_gusset(context, mesh, positions, record, clearance)
+        extension = record.get("legExtension")
+        if extension:
+            # A boyshort's legs hang from the openings as fitted, gusset edge included.
+            from wardrobe.lingerie.blocks.brief import leg_rings
+
+            frame_meta = _frame_metadata(mesh)
+            centre = (frame_meta.get("lingerieLandmarks") or {}).get("centre_x", 0.0)
+            for leg in extension["legs"].values():
+                rings = leg_rings(positions[leg["loop"]], frame_meta.get("lowerBody"), float(centre),
+                                  extension["length"], extension["steps"], clearance)
+                for ids, ring in zip(leg["rings"], rings, strict=True):
+                    positions[ids] = ring
     index = np.flatnonzero(placed)
     lo, hi = positions[index].min(axis=0) - 0.04, positions[index].max(axis=0) + 0.04
     points, normals = _surface(context, lo, hi)

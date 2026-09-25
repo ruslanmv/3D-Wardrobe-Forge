@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "id": "under-thong-v2",
-  "name": "Tailored Thong",
+  "id": "under-hipster-v2",
+  "name": "Tailored Hipster Briefs",
   "category": "underwear",
   "mesh": "procedural:brief-block",
   "coverage": [
@@ -26,7 +26,7 @@
   "lingerie": {
     "block": "brief",
     "brief": {
-      "preset": "thong"
+      "preset": "hipster"
     }
   },
   "materials": {
@@ -35,8 +35,10 @@
     "supportsMetallic": false
   },
   "tags": [
-    "tailored thong"
+    "tailored hipster briefs",
+    "tailored hipster",
+    "tailored hipsters"
   ],
-  "description": "A thong: narrow sides and an 18 mm back strip into the gusset.",
+  "description": "Hipsters: low rise, broad horizontal sides, full back.",
   "optIn": true
 }

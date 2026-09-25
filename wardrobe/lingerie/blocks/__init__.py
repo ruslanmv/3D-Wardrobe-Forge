@@ -29,7 +29,7 @@ def build_block(kind: str, params: FitParameters) -> Mesh:
 
 
 #: Metadata a block is drafted from, carried with it.
-FRAME_KEYS = ("lingerieLandmarks", "torsoProfile", "forward", "lingerie")
+FRAME_KEYS = ("lingerieLandmarks", "torsoProfile", "forward", "lingerie", "lowerBody")
 
 
 __all__ = ["FRAME_KEYS", "build_block"]

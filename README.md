@@ -136,6 +136,32 @@ curl -X POST localhost:8080/v1/jobs -H 'content-type: application/json' -d '{
   "options": {"previewBackend": "auto"}}'
 ```
 
+### Lingerie bottoms: one pattern grammar
+
+![Sixteen bottoms on the adult fashion-fit form, front, side and back, each captioned with its own pattern measurements](docs/images/lingerie-bottoms.webp)
+
+A brief is cut from three pieces: front and back panels, and a gusset that
+crosses under the crotch. That gives exactly three openings. Styles are not
+separate meshes. Each is a preset over independent pattern rules:
+
+- rise
+- side type and width
+- leg-cut height
+- front and back coverage
+- V-shaping at front and back
+- back-centre width
+
+"String" is how the sides are made and "thong" is how much back there is, so a
+string bikini keeps a real back: 60% coverage, against a thong's 18%. Coverage
+is solved, not approximated: a Brazilian specified at 42% measures 42%. The
+presets are classic, high-leg, French-cut, hipster, boyshort, high-waist,
+cheeky, Brazilian, tanga, thong, high-waist thong, G-string, V-string, string,
+string bikini and bikini. `tools/gallery/bottoms.py` builds the sheet above
+through the real pipeline, on a fashion-fit form that
+`assets/calibration/policy.json` declares adult. It is intimate wear, so it goes
+through the adult gate like any request. The plan and progress are in
+[docs/LINGERIE_UPGRADE_PLAN.md](docs/LINGERIE_UPGRADE_PLAN.md).
+
 ### Reference look: red bodycon, stockings and suspenders
 
 ![The red bodycon reference look: on the adult mannequin with sheer stockings, a suspender belt and flat straps clipped below the hem; on AvatarSample A with the same dress and light taupe satin thigh-highs over her own loafers](docs/images/red-dress.webp)

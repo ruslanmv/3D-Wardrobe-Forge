@@ -26,14 +26,7 @@
   "lingerie": {
     "block": "brief",
     "brief": {
-      "rise": 0.6,
-      "backRise": 0.06,
-      "sideHeight": 0.3,
-      "frontScoop": 0.6,
-      "backCoverage": "moderate",
-      "gussetFrontWidthMm": 65,
-      "gussetWidthMm": 50,
-      "gussetLengthMm": 150,
+      "preset": "bikini",
       "waistElastic": "swim-8",
       "legElastic": "swim-8"
     }

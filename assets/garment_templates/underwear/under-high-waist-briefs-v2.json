@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "id": "under-thong-v2",
-  "name": "Tailored Thong",
+  "id": "under-high-waist-briefs-v2",
+  "name": "Tailored High-Waist Briefs",
   "category": "underwear",
   "mesh": "procedural:brief-block",
   "coverage": [
@@ -26,7 +26,7 @@
   "lingerie": {
     "block": "brief",
     "brief": {
-      "preset": "thong"
+      "preset": "high-waist"
     }
   },
   "materials": {
@@ -35,8 +35,10 @@
     "supportsMetallic": false
   },
   "tags": [
-    "tailored thong"
+    "tailored high-waist briefs",
+    "tailored high waist briefs",
+    "tailored retro briefs"
   ],
-  "description": "A thong: narrow sides and an 18 mm back strip into the gusset.",
+  "description": "High-waist briefs: to her natural waist, wide sides, full back.",
   "optIn": true
 }
