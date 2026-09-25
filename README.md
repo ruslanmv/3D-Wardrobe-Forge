@@ -138,7 +138,7 @@ curl -X POST localhost:8080/v1/jobs -H 'content-type: application/json' -d '{
 
 ### Reference look: red bodycon, stockings and suspenders
 
-![The red bodycon reference look: on the adult mannequin with sheer stockings, a suspender belt and flat straps clipped below the hem; on AvatarSample A with the same dress and opaque thigh-highs over her own loafers](docs/images/red-dress.webp)
+![The red bodycon reference look: on the adult mannequin with sheer stockings, a suspender belt and flat straps clipped below the hem; on AvatarSample A with the same dress and light taupe satin thigh-highs over her own loafers](docs/images/red-dress.webp)
 
 The look is a red bodycon mini dress over sheer black 20 denier stockings with
 wide tops, and a black suspender belt whose four straps show below the hem. It
@@ -150,8 +150,14 @@ pipeline, no retouching. It also shows the adult gate at work:
   walking and seated.
 - The same request for AvatarSample A is refused, because she carries no adult
   declaration: *underwear needs the avatar declared as depicting an adult*.
-- The policy does permit the same dress with opaque thigh-highs, which she
-  wears over her own loafers.
+- The policy does permit the same dress with light taupe satin thigh-highs,
+  which she wears over her own loafers. Taupe is the nearest the gate allows
+  to sheer nude: the colour and a soft sheen, but nothing is seen through
+  them.
+- Light stockings show two defects that black ones hid. At the inner thigh,
+  where her legs nearly touch, her painted body comes through as a dark mark.
+  At the ankle, where the stockings stop above the foot, her painted tights
+  show. Both are in phase L6 of the plan (stockings with feet, measured legs).
 
 The mannequin is the plain calibration form, and its ridged hip shows why a
 realistic fashion-fit form is the first step of the

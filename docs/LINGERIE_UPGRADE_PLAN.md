@@ -158,6 +158,8 @@ The hash baseline stays untouched in every phase: v1 kinds and templates keep th
   - The foot is measured by a new `foot_profile()` in `geometry_checks.py`, modelled on `arm_profile`.
   - Tights get the same option through `build_legwear(..., foot=)`.
   - If the rig has no Toes bone, keep the old ending and record a report warning.
+  - Fit the leg tubes to the measured leg sections (`lowerBody`, every 3 cm, as trousers and leggings already do), not the formula radius `hip_width × 0.2`.
+- **Seen in the reference look:** light (taupe) thigh-highs on AvatarSample A show her skin at the inner left thigh, where her legs nearly touch. They also show her painted tights between the stocking end and her loafers. Black hid both. Rebuild `docs/images/red-dress.webp` with `tools/gallery/red_dress.py` as the regression picture.
 - **Tests:** the foot is present with a closed toe; the heel is within 15 mm of the heel landmark; clearance on the fit forms; `FittedStockingTop` output is unchanged (band grip and clips identical).
 
 ### L7: Material models: physical separate from visual (M)

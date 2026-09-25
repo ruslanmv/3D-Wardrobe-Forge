@@ -10,7 +10,7 @@ like any request:
 
     Full look       calibration-c-tall   declared adult in assets/calibration/policy.json
     Same request    AvatarSample_A       no declaration: refused, and the reason is printed
-    Permitted look  AvatarSample_A       the same dress with opaque thigh-highs, her own loafers
+    Permitted look  AvatarSample_A       the same dress, opaque taupe satin thigh-highs, her loafers
 
 The tool makes no declaration of its own. The mannequin's comes from the
 repository's policy file, and the library avatar's from its provenance manifest,
@@ -56,9 +56,10 @@ FULL = {
                       "hardware": {"color": "silver"}, "visibility": "straps_only"},
     "reveal": {"level": "statement"},
 }
-#: What the policy permits on an avatar with no declaration: the dress, opaque stockings. Her own
-#: brown loafers stay on, as in the reference, so no shoes are asked for.
-PERMITTED = {"prompt": "red bodycon mini dress + black thigh-high stockings"}
+#: What the policy permits on an avatar with no declaration: the dress, and light stockings that are
+#: opaque. Taupe satin is the nearest the gate allows to sheer nude: the colour and a soft sheen, with
+#: nothing seen through it. Her own brown loafers stay on, as in the reference, so no shoes are asked for.
+PERMITTED = {"prompt": "red bodycon mini dress + taupe satin thigh-high stockings"}
 
 
 async def build(out: Path) -> dict:
@@ -148,7 +149,8 @@ def sheet(out: Path, looks: dict, target: Path) -> None:
                  "repository's policy file."),
         "permitted": (f"On {AVATAR}",
                       "No adult declaration, so sheer stockings and visible suspenders are refused. "
-                      "The policy permits the same dress with opaque thigh-highs, over her own loafers."),
+                      "The policy permits the same dress with opaque taupe satin thigh-highs, "
+                      "over her own loafers."),
     }
 
     def crop(path: Path, box) -> Image.Image:

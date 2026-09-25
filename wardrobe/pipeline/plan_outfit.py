@@ -58,6 +58,7 @@ COLORS: dict[str, str] = {
     "neon pink": "#ff2fa0",
     "champagne": "#e6d2ae",
     "nude": "#d9b39a",
+    "taupe": "#b4a298",
     "neon green": "#39ff14",
     "neon yellow": "#e8ff1a",
     "neon orange": "#ff6a13",
