@@ -221,6 +221,10 @@ make studio        # fetches and verifies the avatar library, then serves
                    # → http://127.0.0.1:8080/studio/
 ```
 
+Local job state and generated artifacts are written to the repository's ignored
+`.wardrobe/` directory by default. Set `WARDROBE_STORAGE_ROOT` to use a different
+location.
+
 **The avatars are proven, not trusted.** `assets/library/models.json` pins each
 file by size and SHA-256. It is yourfriend's provenance manifest, with one
 correction: the `presentation` of AvatarSample B and C was swapped there, and

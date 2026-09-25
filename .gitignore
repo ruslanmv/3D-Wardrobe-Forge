@@ -24,3 +24,6 @@ assets/fixtures/*.glb
 # The Studio's avatar library: fetched and sha256-verified by
 # tools/fetch_library.py against assets/library/models.json, never committed.
 assets/library/*.vrm
+
+# Local job state and generated artifacts (WARDROBE_STORAGE_ROOT default)
+.wardrobe/

@@ -44,7 +44,9 @@ class Settings(BaseSettings):
 
     # -- storage ---------------------------------------------------------
     wardrobe_storage_backend: str = "local"
-    wardrobe_storage_root: str = "/data/wardrobe"
+    # Keep the zero-configuration development server writable for unprivileged
+    # users. Container deployments override this with /data/wardrobe.
+    wardrobe_storage_root: str = str(REPO_ROOT / ".wardrobe")
     wardrobe_database_url: str = ""
 
     s3_endpoint: str = ""
