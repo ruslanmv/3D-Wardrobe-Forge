@@ -1,6 +1,10 @@
 # Lingerie quality upgrade plan
 
-> Status: **plan only**, nothing here is implemented yet. It answers the visual
+> Status: in progress. **L1 done**: the fashion-fit forms
+> (`wardrobe/vrm/fashion_body.py`, declared adult in
+> `assets/calibration/policy.json`) and the landmarks
+> (`wardrobe/lingerie/landmarks.py`), tested in `tests/unit/test_fashion_form.py`.
+> It answers the visual
 > review of looks #2–#11 (clearance passed, but the garments were not built the
 > way lingerie is built) and follows the owner's priority order. Every file and
 > function it names was read in this repository.

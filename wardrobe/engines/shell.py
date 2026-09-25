@@ -41,6 +41,8 @@ from wardrobe.engines.geometry_checks import (
 from wardrobe.errors import FittingError
 from wardrobe.geometry.mesh import Mesh
 from wardrobe.geometry.procedural import FitParameters, build_garment
+from wardrobe.lingerie import LINGERIE_KINDS
+from wardrobe.lingerie.landmarks import measure_landmarks
 from wardrobe.pipeline.context import PipelineContext
 from wardrobe.vrm.inspect import VrmSpec
 from wardrobe.vrm.skinning import bones_for_coverage, build_bone_segments, connected_components
@@ -114,6 +116,20 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         profile = torso_profile(_torso(context, whole), top, knee)
         if profile is not None:
             metadata["torsoProfile"] = profile
+    if kind in LINGERIE_KINDS:
+        # A pattern block is placed on her landmarks (wardrobe.lingerie.landmarks):
+        # bust points, the fold under the bust, sternum, waist, hips, crotch.
+        torso = _torso(context, whole)
+        bone_y = {name: float(p[1]) for name, p in context.measurements.bone_positions.items()}
+        profile = torso_profile(torso, bone_y.get("neck", 1.4), bone_y.get("leftLowerLeg", 0.4))
+        if profile is not None:
+            metadata["torsoProfile"] = profile
+        marks = measure_landmarks(torso, context.measurements.bone_positions, forward=metadata["forward"],
+                                  lower=metadata.get("lowerBody"), armpit_y=metadata.get("armpitY"))
+        if marks is not None:
+            metadata["lingerieLandmarks"] = marks.to_dict()
+            for warning in marks.warnings:
+                context.warn(f"lingerie landmarks: {warning}")
     params = FitParameters(
         measurements=context.measurements,
         clearance_m=clearance,
