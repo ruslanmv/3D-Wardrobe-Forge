@@ -23,6 +23,7 @@ from wardrobe.geometry.procedural import trim_triangles
 from wardrobe.geometry.raster import RenderLayer, render
 from wardrobe.hosiery import assembly as hosiery_assembly
 from wardrobe.hosiery import fit as hosiery_fit
+from wardrobe.materials.textures import pleat_shading
 from wardrobe.pipeline.context import BuiltLayer, PipelineContext
 from wardrobe.vrm.garments import garment_material_name, garment_slot
 from wardrobe.vrm.merge import GarmentMaterial, attach_garment, set_title, tag_derived
@@ -152,14 +153,16 @@ class NativeEngine(FittingEngine):
                     trim=trim_mask, trim_material=trim_mat, extra=extra,
                 )
             else:
+                fabric = GarmentMaterial.from_plan(garment_material_name(layer.plan.name, kind), material)
+                if layer.mesh.metadata.get("pleatShading") and material.pattern == "none":
+                    # Knife pleats read by their shadows (wardrobe.materials.textures.pleat_shading).
+                    fabric.texture = pleat_shading()
                 attached = attach_garment(
                     context.document,
                     context.info,
                     layer.mesh,
                     layer.segments,
-                    material=GarmentMaterial.from_plan(
-                        garment_material_name(layer.plan.name, kind), material
-                    ),
+                    material=fabric,
                     name=layer.plan.name,
                     trim=trim_triangles(layer.mesh) if trim_plan else None,
                     trim_material=GarmentMaterial.from_plan(

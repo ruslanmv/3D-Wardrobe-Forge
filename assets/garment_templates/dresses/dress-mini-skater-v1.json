@@ -24,7 +24,12 @@
     "allowWidthScale": true,
     "minLengthScale": 0.7,
     "maxLengthScale": 1.3,
-    "conform": 0.5
+    "conform": 0.85,
+    "hemFlareRatio": 1.75,
+    "flareStart": "high-hip",
+    "flarePower": 0.8,
+    "drapeFolds": 8,
+    "hemDrape": 0.05
   },
   "materials": {
     "supportsBaseColor": true,

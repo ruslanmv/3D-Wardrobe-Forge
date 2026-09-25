@@ -175,8 +175,10 @@ def render_web(views: list[dict]) -> dict[str, bytes]:
             spec.append({"file": vrm.name, "out": f"{view['name']}.png", "yaw": view.get("yaw", 0),
                          "focus": view.get("focus"), "size": list(view.get("size", PROFILE))})
         (work / "views.json").write_text(json.dumps(spec))
-        subprocess.run(["node", str(VIEWS_SCRIPT), str(work)], check=True, capture_output=True, timeout=600,
-                       cwd=str(ROOT), env=os.environ.copy())
+        done = subprocess.run(["node", str(VIEWS_SCRIPT), str(work)], capture_output=True, timeout=600,
+                              cwd=str(ROOT), env=os.environ.copy())
+        if done.returncode != 0:
+            raise subprocess.SubprocessError(done.stderr.decode(errors="replace")[-800:])
         return {view["name"]: (work / f"{view['name']}.png").read_bytes() for view in views}
     finally:
         shutil.rmtree(work, ignore_errors=True)

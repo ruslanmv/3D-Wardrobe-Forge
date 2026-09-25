@@ -85,6 +85,16 @@ class TemplateGarmentProvider(GarmentProvider):
                 # Down the whole leg: bound to the thighs alone, a stocking's foot stayed
                 # out in front of her when she sat, carried by the thigh past a bent knee.
                 artifact.anchors = ["upperLegs", "lowerLegs", "feet"]
+        # The skirt's cut, where the template sets it (wardrobe.geometry.procedural.SkirtShape).
+        fit = template.fit
+        for key, value in (("hemFlareRatio", fit.hem_flare_ratio), ("flareStart", fit.flare_start),
+                           ("flarePower", fit.flare_power), ("waistEaseMm", fit.waist_ease_mm),
+                           ("hipEaseMm", fit.hip_ease_mm), ("pleatDepth", fit.pleat_depth)):
+            if value is not None:
+                artifact.metadata[key] = value
+        if fit.drape_folds and fit.hem_drape:
+            artifact.metadata["drapeFolds"] = fit.drape_folds
+            artifact.metadata["hemDrape"] = fit.hem_drape
         if template.id in BELT_STYLE_OF_TEMPLATE:
             artifact.metadata["beltStyle"] = BELT_STYLE_OF_TEMPLATE[template.id]
         return artifact

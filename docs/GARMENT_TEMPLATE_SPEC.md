@@ -73,6 +73,12 @@ template.
 | `silhouette` | `a-line` `fit-and-flare` `cocktail` `sheath` `pencil` `ball-gown` `straight` `wide` `slim` `oversized` | modulates flare and length |
 | `hem` | `mini` `knee` `midi` `ankle` `floor` | fraction of hip→ankle distance |
 | `sleeve` | `none` `short` `long` | swept along the arm bone chain |
+| `fit.hemFlareRatio` | 0.85–2.5 | skirts: hem half-width over her full hip; absent, the silhouette's default |
+| `fit.flareStart` | `waist` `high-hip` `hip` `below-hip` | skirts: where the fitted part ends and the flare begins |
+| `fit.flarePower` | 0.5–4 | skirts: flare profile, `progress ** power`. Above 1 is a slow A-line; below 1 is a skater's early curve |
+| `fit.waistEaseMm` / `fit.hipEaseMm` | mm | skirts: ease over her measured outline at the waist and at the full hip |
+| `fit.pleats` / `fit.pleatDepth` | count / metres | zero-mean pleats, clamped to body + clearance |
+| `fit.drapeFolds` / `fit.hemDrape` | 0–24 / 0–0.08 | a soft zero-mean hem drape; both must be set |
 | `fit.bodyClearanceMm` | 0–40 | fabric-to-body spacing; 5–8 fitted, 12–18 outerwear |
 | `materials.supportsMetallic` | bool | when false, a "metallic" prompt is ignored for this template |
 | `tags` | free text | matched against the prompt during selection |

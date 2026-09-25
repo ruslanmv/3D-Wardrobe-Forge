@@ -356,26 +356,149 @@ def build_bodice(params: FitParameters, *, y_top: float | None = None, y_bottom:
                 max_spacing=GARMENT_ROW_SPACING_M)
 
 
+@dataclass(frozen=True, slots=True)
+class SkirtShape:
+    """How a skirt is cut: fitted to her down to ``flare_start``, then flared to the hem.
+
+    ``hem_ratio`` is the hem's half-width over her full hip's, so 1.34 is an A-line
+    whose hem is a third wider than her hips, whatever her hips are. ``flare_power``
+    is how the flare arrives: above 1 it starts gently and opens toward the hem.
+    """
+
+    hem_ratio: float = 1.08
+    flare_start: str = "hip"  # waist | high-hip | hip | below-hip
+    flare_power: float = 1.6
+    waist_ease_m: float = 0.004
+    hip_ease_m: float = 0.008
+
+
+#: The cut of each silhouette's skirt. Template fields override any of them.
+#: These replaced a single flare multiplier on the hip width (``SILHOUETTES``),
+#: which made every ring of a skirt, waist included, a scaled hip: an A-line hem
+#: 55% wider than her hips and a fit-and-flare 70%, both as straight cones.
+SKIRT_SHAPES: dict[str, SkirtShape] = {
+    "a-line": SkirtShape(hem_ratio=1.34, flare_power=1.75),
+    "fit-and-flare": SkirtShape(hem_ratio=1.48, flare_power=1.65),
+    "cocktail": SkirtShape(hem_ratio=1.22, flare_power=1.6),
+    "sheath": SkirtShape(hem_ratio=1.0, flare_power=1.0),
+    "pencil": SkirtShape(hem_ratio=0.94, flare_power=1.0),
+    "ball-gown": SkirtShape(hem_ratio=1.9, flare_power=1.3, flare_start="waist"),
+    "straight": SkirtShape(hem_ratio=1.06, flare_power=1.2),
+    "wide": SkirtShape(hem_ratio=1.3, flare_power=1.5),
+    "slim": SkirtShape(hem_ratio=0.97, flare_power=1.0),
+    "oversized": SkirtShape(hem_ratio=1.25, flare_power=1.3),
+}
+
+
+def skirt_shape(params: FitParameters, silhouette: str | None, flare: float) -> SkirtShape:
+    """The silhouette's cut, with any field the template set in its fit policy."""
+    shape = SKIRT_SHAPES.get(silhouette or "")
+    if shape is None:
+        # A flare with no named silhouette (a swim dress): the old multiplier, tamed.
+        shape = SkirtShape(hem_ratio=1.0 + (flare - 1.0) * 0.62)
+    meta = params.metadata
+    fields = {}
+    for key, name, scale in (("hemFlareRatio", "hem_ratio", 1.0), ("flareStart", "flare_start", None),
+                             ("flarePower", "flare_power", 1.0), ("waistEaseMm", "waist_ease_m", 0.001),
+                             ("hipEaseMm", "hip_ease_m", 0.001)):
+        if meta.get(key) is not None:
+            fields[name] = meta[key] if scale is None else float(meta[key]) * scale
+    if fields:
+        from dataclasses import replace
+
+        shape = replace(shape, **fields)
+    return shape
+
+
+def _outline(params: FitParameters, y: float) -> tuple[float, float, float, float]:
+    """(half-width, half-depth, centre x, centre z) of her body at ``y``: measured, else the formula."""
+    profile = params.metadata.get("torsoProfile")
+    if isinstance(profile, list) and len(profile) >= 4:
+        rows = np.asarray(profile, dtype=np.float64)
+        ys = rows[:, 0]
+        if ys.min() - 0.02 <= y <= ys.max() + 0.02:
+            order = np.argsort(ys)
+            return tuple(float(np.interp(y, ys[order], rows[order, c])) for c in range(1, 5))
+    half_w, half_d = half_at(params, y)
+    return half_w - params.clearance_m, half_d - params.clearance_m, 0.0, 0.0
+
+
+def _full_hip_y(params: FitParameters) -> float:
+    """Where her hips are widest, between her waist and the top of her thighs."""
+    profile = params.metadata.get("torsoProfile")
+    # Above the fork of her legs: below it the outline spans both legs, which stand
+    # apart, and grows with every centimetre down. Searched there, the "full hip"
+    # was always the lowest height tried and every skirt a straight trapezoid.
+    low = crotch_y(params, params.hip_y - (params.hip_y - params.knee_y) * 0.12) + 0.01
+    if isinstance(profile, list) and profile:
+        rows = [r for r in profile if low <= r[0] <= params.waist_y]
+        if rows:
+            # Widest across and deep front to back together: her seat counts, not only her sides.
+            return float(max(rows, key=lambda r: r[1] + 0.5 * r[2])[0])
+    return params.hip_y
+
+
 def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: float = 1.0,
-                name: str = "skirt") -> Mesh:
-    hip_w, hip_d = params.hip_half
+                name: str = "skirt", shape: SkirtShape | None = None,
+                join: tuple[float, float] | None = None) -> Mesh:
+    """A skirt cut from her outline: fitted down to the flare's start, then flared to the hem.
 
-    span = max(y_top - y_bottom, 1e-4)
+    ``join`` is the (half-width, half-depth) of the bodice the skirt hangs from; the
+    top 4 cm blend from it, so a dress has no step at her hips.
 
-    # Flare decays from the hem up to the waist, so the skirt falls rather than
-    # forming a cone.
-    # The top ring takes the torso's width at wherever the skirt starts. It used to
-    # be the waist's, always — right for a skirt, wrong for a dress, whose skirt
-    # starts at the hips: the narrower ring met a wider bodice and left a ledge.
-    top_w, top_d = half_at(params, y_top)
+    Above the flare's start every ring is her own outline at that height plus
+    ease, from the measured torso profile when fitting measured one (the waist
+    goes in, the seat stands out behind). Below it the skirt hangs from her full
+    hip, never narrower than it, and widens toward ``hem_ratio`` of it by
+    ``progress ** flare_power``. Rings are 1.5 cm apart so the curve is a curve.
+
+    It replaced a skirt made of scaled hips: every ring the hip width times a
+    flare decaying toward the top, and only the top ring her real width, so a
+    skirt stepped out from her waist and ran as a straight cone to a wide hem.
+    """
+    shape = shape or skirt_shape(params, None, flare)
+    y_top, y_bottom = max(y_top, y_bottom), min(y_top, y_bottom)
+    full_hip = min(_full_hip_y(params), y_top)
+    start = {"waist": min(params.waist_y, y_top), "high-hip": (params.waist_y + full_hip) / 2,
+             "hip": full_hip, "below-hip": full_hip - (params.hip_y - params.knee_y) * 0.12}.get(
+                 shape.flare_start, full_hip)
+    start = min(max(start, y_bottom + 0.02), y_top)
+    hip_w, hip_d, hip_cx, hip_cz = _outline(params, full_hip)
+    hip_ease = shape.hip_ease_m + params.clearance_m
+    hip_w, hip_d = hip_w + hip_ease, hip_d + hip_ease
+    hem_w, hem_d = hip_w * shape.hem_ratio, hip_d * shape.hem_ratio
+    span = max(start - y_bottom, 1e-4)
+
+    heights = sorted(set(np.round(np.append(np.arange(y_bottom, y_top, 0.015), y_top), 5)))
     rings: list[Ring] = []
-    for fraction in (0.0, 0.18, 0.38, 0.58, 0.78, 1.0):
-        taper = 1.0 + (flare - 1.0) * (1.0 - fraction) ** 1.4
-        width = hip_w * taper if fraction < 0.9 else top_w * 1.01
-        depth = hip_d * taper if fraction < 0.9 else top_d * 1.01
-        rings.append(Ring(y_bottom + span * fraction, width, depth))
-    return loft(rings, segments=params.segments, name=name, front=params.forward,
-                max_spacing=GARMENT_ROW_SPACING_M)
+    for y in heights:
+        w, d, cx, cz = _outline(params, y)
+        if y >= start:
+            # Fitted: her outline plus ease, from the waist's to the hip's.
+            t = float(np.clip((y - full_hip) / max(params.waist_y - full_hip, 1e-4), 0.0, 1.0))
+            ease = shape.hip_ease_m + (shape.waist_ease_m - shape.hip_ease_m) * t + params.clearance_m
+            base_w, base_d = w + ease, d + ease
+            if y <= full_hip:  # hanging from the full hip: never back in toward her thighs
+                base_w, base_d = max(base_w, hip_w), max(base_d, hip_d)
+            rings.append(Ring(float(y), base_w, base_d, cx, cz))
+            continue
+        progress = float(np.clip((start - y) / span, 0.0, 1.0))
+        curve = progress ** shape.flare_power
+        top_w, top_d, _, _ = _outline(params, start)
+        top_w, top_d = max(top_w + shape.hip_ease_m + params.clearance_m, hip_w), max(
+            top_d + shape.hip_ease_m + params.clearance_m, hip_d)
+        width = top_w + (hem_w - top_w) * curve
+        depth = top_d + (hem_d - top_d) * curve
+        rings.append(Ring(float(y), width, depth, hip_cx, hip_cz))
+    if join is not None:
+        for ring in rings:
+            t = float(np.clip((y_top - ring.y) / 0.04, 0.0, 1.0))
+            t = t * t * (3.0 - 2.0 * t)
+            ring.half_width = join[0] + (ring.half_width - join[0]) * t
+            ring.half_depth = join[1] + (ring.half_depth - join[1]) * t
+            ring.center_x *= t
+            ring.center_z *= t
+    return loft(rings, segments=params.segments, name=name, front=params.forward)
 
 
 def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25,
@@ -1268,7 +1391,9 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
     if kind == "slip-dress":
         bodice = build_band(params, y_bottom=params.hip_y, y_top=bust_top, rows=6, name="slip-bodice")
         bodice = cut_top(bodice, params.hip_y, bust_top)
-        skirt = build_skirt(params, y_top=params.hip_y + 1e-3, y_bottom=hem_y, flare=flare, name="slip-skirt")
+        skirt = build_skirt(params, y_top=params.hip_y + 1e-3, y_bottom=hem_y, flare=flare, name="slip-skirt",
+                            shape=skirt_shape(params, meta.get("silhouette"), flare),
+                            join=half_at(params, params.hip_y))
         held = top_straps(params, top_y=bust_top, style=straps or "shoulder", underbust_y=underbust)
         return [bodice, skirt, *held]
     if kind == "shorts":
@@ -1359,12 +1484,14 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
         sections = [
             _cut_bodice(build_bodice(params, y_top=top_y, y_bottom=params.hip_y, name="dress-bodice"),
                         params, params.hip_y, top_y),
-            build_skirt(params, y_top=params.hip_y + 1e-3, y_bottom=hem_y, flare=flare, name="dress-skirt"),
+            build_skirt(params, y_top=params.hip_y + 1e-3, y_bottom=hem_y, flare=flare, name="dress-skirt",
+                        shape=skirt_shape(params, silhouette, flare), join=params.hip_half),
         ]
         sections += build_sleeves(params, length=params.sleeve_length)
 
     elif category == "skirt":
-        sections = [build_skirt(params, y_top=params.waist_y, y_bottom=hem_y, flare=flare)]
+        sections = [build_skirt(params, y_top=params.waist_y, y_bottom=hem_y, flare=flare,
+                                shape=skirt_shape(params, silhouette, flare))]
 
     elif category in {"top", "shirt", "blouse"}:
         top_y = params.top_edge(0.6)
@@ -1420,6 +1547,9 @@ __all__ = [
     "sweep",
     "build_bodice",
     "build_skirt",
+    "SkirtShape",
+    "SKIRT_SHAPES",
+    "skirt_shape",
     "build_sleeves",
     "build_trousers",
     "build_shoes",

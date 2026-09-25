@@ -86,7 +86,7 @@ def strip(panels: list[tuple[Image.Image, str]], gap: int = 8, caption_h: int = 
 FEATURES = [
     ("Words in, VRM out", ["A plain-language request becomes", "a validated VRM in one job."],
      ("render", "AvatarSample_A", 2)),
-    ("58-garment library", ["Procedural templates, generated at", "each avatar's own measurements."],
+    ("59-garment library", ["Procedural templates, generated at", "each avatar's own measurements."],
      ("render", "AvatarSample_B", 10)),
     ("Toon-true materials", ["6 finishes, 7 patterns and a sheer", "scale, all readable under MToon."],
      ("render", "fem_vroid", 3)),
@@ -308,7 +308,7 @@ def main() -> None:
         hosiery(out)
         patch_card(out / "features.webp", len(FEATURES) - 1)
         for index, (title, _lines, _picture) in enumerate(FEATURES):  # the counts hosiery changed
-            if title.startswith(("58-garment", "Runs on plain Python")):
+            if title.startswith(("59-garment", "Runs on plain Python")):
                 patch_card(out / "features.webp", index, keep_picture=True)
         for name in ("hosiery.webp", "features.webp"):
             print(name, (out / name).stat().st_size // 1024, "KB")

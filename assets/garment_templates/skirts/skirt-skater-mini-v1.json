@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "id": "skirt-a-line-v1",
-  "name": "A-line skirt",
+  "id": "skirt-skater-mini-v1",
+  "name": "Skater Skirt",
   "category": "skirt",
   "mesh": "procedural:skirt",
   "coverage": [
@@ -11,11 +11,10 @@
   ],
   "anchors": [
     "waist",
-    "hips",
-    "upperLegs"
+    "hips"
   ],
-  "silhouette": "a-line",
-  "hem": "knee",
+  "silhouette": "fit-and-flare",
+  "hem": "mini",
   "sleeve": "none",
   "fit": {
     "bodyClearanceMm": 6.0,
@@ -23,12 +22,12 @@
     "allowWidthScale": true,
     "minLengthScale": 0.7,
     "maxLengthScale": 1.3,
-    "conform": 0.9,
-    "hemFlareRatio": 1.6,
-    "flareStart": "hip",
-    "flarePower": 1.1,
+    "conform": 0.85,
+    "hemFlareRatio": 1.75,
+    "flareStart": "high-hip",
+    "flarePower": 0.8,
     "drapeFolds": 8,
-    "hemDrape": 0.025
+    "hemDrape": 0.05
   },
   "materials": {
     "supportsBaseColor": true,
@@ -36,10 +35,12 @@
     "supportsMetallic": false
   },
   "tags": [
-    "skirt",
-    "a-line",
-    "casual",
-    "work"
+    "skater skirt",
+    "skater",
+    "circle skirt",
+    "flared",
+    "flirty"
   ],
-  "description": "Knee-length skirt flaring from the waist."
+  "description": "Fitted at the waist and hips, with a soft, curved flare to a mini hem.",
+  "optIn": true
 }

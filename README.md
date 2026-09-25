@@ -45,7 +45,7 @@ Wardrobe Forge turns that into an API call.
 
 | | |
 | --- | --- |
-| **Words in, VRM out** | *"black fitted crop top + blue straight jeans"* is a complete request. The planner picks from 58 procedural garments, resolves colour, fabric, cut and layer order, and the pipeline returns the avatar wearing it. |
+| **Words in, VRM out** | *"black fitted crop top + blue straight jeans"* is a complete request. The planner picks from 59 procedural garments, resolves colour, fabric, cut and layer order, and the pipeline returns the avatar wearing it. |
 | **Fitted to her, not to a mannequin** | Every garment is generated at the avatar's own measurements: legs measured every 3 cm, arms along the bone chain, crotch, armpit and shoulder surface measured from her mesh. Nothing is shrinkwrapped onto her, so nothing is stretched out of shape. |
 | **Replaces her clothes, cleanly** | VRoid avatars arrive dressed. Forge takes off what the new outfit replaces, after checking there is an authored body under it, and puts the whole outfit on in layers, inner first, as one VRM. |
 | **Ships as a standard VRM** | The output is a VRM 0.x or 1.0 file with the original skeleton, humanoid mapping and expressions intact. Any VRM viewer, engine or chatbot that loads the original loads the look. |
@@ -84,7 +84,7 @@ set for materials: lace, mesh, fishnet, sequin, latex and layering.
 
 | | |
 | --- | --- |
-| 🧵 **Garment library** | 58 procedural templates: dresses, tops, skirts, shorts, jeans and trousers, leggings, jumpsuits and catsuits, jackets and coats, swimwear, lingerie, nightwear, legwear and shoes. Adding one is usually a single JSON file. |
+| 🧵 **Garment library** | 59 procedural templates: dresses, tops, skirts, shorts, jeans and trousers, leggings, jumpsuits and catsuits, jackets and coats, swimwear, lingerie, nightwear, legwear and shoes. Adding one is usually a single JSON file. |
 | ✨ **Materials that survive a toon shader** | Six finishes (matte, satin, gloss, latex, metallic, sequin) written in the terms MToon has: rim and matcap. Seven patterns (lace, fishnet, sequin, stripes, dots, gingham, plaid) as generated textures, measured in metres of fabric. Sheer fabrics from *slightly sheer* to *very sheer*. |
 | ✂️ **Cut as parameters** | Coverage from full to micro, V, plunge and sweetheart necklines, low backs, high-cut legs, rise, and strap networks (shoulder, halter, string ties, cross-back, garter, harness), each honoured by the geometry. |
 | 🧥 **Layered outfits** | `bralette + briefs + stockings + sheer dress + cropped jacket` is built in one job, in order, with each layer clearing the ones inside it. |
@@ -96,6 +96,17 @@ set for materials: lace, mesh, fishnet, sequin, latex and layering.
 
 Details: [docs/STYLING.md](docs/STYLING.md) for materials, cuts and layers;
 [docs/FIT_QUALITY.md](docs/FIT_QUALITY.md) for how garments meet a real body.
+
+### Fitted skirts
+
+![A lavender A-line midi, a navy pleated mini and a red skater skirt on the library avatars, from the front, the side and close on the waist and hips](docs/images/skirts.webp)
+
+A skirt is cut from her measured waist and hips first, and the style adds its
+flare after that. An A-line opens gently from the hip. A skater skirt curves
+out early and drapes at the hem. Pleats fold in as well as out, around the
+cut, and never into her. Every panel above is a render of the VRM the pipeline
+produced; [docs/FIT_QUALITY.md](docs/FIT_QUALITY.md#skirts-cut-from-her-waist-and-hips-then-flared)
+has the model.
 
 ### Hosiery and suspenders
 
@@ -124,6 +135,27 @@ curl -X POST localhost:8080/v1/jobs -H 'content-type: application/json' -d '{
   "outfit": {"prompt": "classic_black_mini_dress", "preset": "classic_black_mini_dress"},
   "options": {"previewBackend": "auto"}}'
 ```
+
+### Reference look: red bodycon, stockings and suspenders
+
+![The red bodycon reference look: on the adult mannequin with sheer stockings, a suspender belt and flat straps clipped below the hem; on AvatarSample A with the same dress and opaque thigh-highs over her own loafers](docs/images/red-dress.webp)
+
+The look is a red bodycon mini dress over sheer black 20 denier stockings with
+wide tops, and a black suspender belt whose four straps show below the hem. It
+is reproduced end to end by `tools/gallery/red_dress.py`: one request, the real
+pipeline, no retouching. It also shows the adult gate at work:
+
+- On the calibration mannequin, which the repository declares adult, the full
+  look is built. The reveal solver reports *statement*: the tops show standing,
+  walking and seated.
+- The same request for AvatarSample A is refused, because she carries no adult
+  declaration: *underwear needs the avatar declared as depicting an adult*.
+- The policy does permit the same dress with opaque thigh-highs, which she
+  wears over her own loafers.
+
+The mannequin is the plain calibration form, and its ridged hip shows why a
+realistic fashion-fit form is the first step of the
+[lingerie upgrade plan](docs/LINGERIE_UPGRADE_PLAN.md).
 
 ---
 
@@ -350,7 +382,7 @@ chatbot's VRM Manager already stores. See [docs/LICENSING.md](docs/LICENSING.md)
 
 ### Garment library
 
-58 templates across dresses, tops, skirts, shorts, trousers and leggings, jumpsuits,
+59 templates across dresses, tops, skirts, shorts, trousers and leggings, jumpsuits,
 jackets, swimwear, underwear, nightwear, legwear and shoes, every one procedural —
 the shell is generated at each avatar's measurements, so the repository needs no
 binary garment assets. Adding a garment is usually a single
@@ -450,6 +482,7 @@ Stated plainly, because the gallery shows them:
 | [HOSIERY_UPGRADE](docs/HOSIERY_UPGRADE.md) | the design: the complete hosiery plan, the `garter_belt.py` analysis, the renderer contract |
 | [HOSIERY_STYLING](docs/HOSIERY_STYLING.md) | the design: suspender belts, stockings and the reveal control |
 | [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | the design: flat straps, clip hardware, denier falloff and the web preview backend |
+| [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the plan (not yet built): fashion-fit mannequin, ribbon straps, brief, bra and bodysuit blocks, feet, fabrics, elastic tension, validation |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | components, layers, extension points |
 | [PIPELINE](docs/PIPELINE.md) | the ten stages and the failure model |
 | [API](docs/API.md) | HTTP reference |

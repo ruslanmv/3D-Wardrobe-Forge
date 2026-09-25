@@ -56,6 +56,7 @@ NECKLINES = ("v", "plunge", "sweetheart", "triangle", "demi", "balconette")
 RISES = ("high", "low")
 BACKS = ("low",)
 LEG_CUTS = ("high",)
+FLARE_STARTS = ("waist", "high-hip", "hip", "below-hip")
 
 
 class FitPolicy(BaseModel):
@@ -75,6 +76,20 @@ class FitPolicy(BaseModel):
     straps: str = ""
     #: Knife pleats round the skirt, 0 for none.
     pleats: int = Field(default=0, ge=0, le=32)
+    #: How deep the pleats fold, as a fraction of the skirt's radius each way. Absent: 0.03.
+    pleat_depth: float | None = Field(default=None, alias="pleatDepth", ge=0.005, le=0.08)
+    # The skirt's cut (wardrobe.geometry.procedural.SkirtShape); absent, the silhouette's.
+    #: Hem half-width over the full hip's: 1.34 is an A-line a third wider at the hem.
+    hem_flare_ratio: float | None = Field(default=None, alias="hemFlareRatio", ge=0.85, le=2.5)
+    #: Where the flare begins: waist | high-hip | hip | below-hip.
+    flare_start: str | None = Field(default=None, alias="flareStart")
+    #: How the flare arrives: above 1 it starts gently and opens toward the hem.
+    flare_power: float | None = Field(default=None, alias="flarePower", ge=0.5, le=4.0)
+    waist_ease_mm: float | None = Field(default=None, alias="waistEaseMm", ge=0.0, le=60.0)
+    hip_ease_mm: float | None = Field(default=None, alias="hipEaseMm", ge=0.0, le=80.0)
+    #: Soft folds at the hem: how many round it, and how deep (fraction of the radius, each way).
+    drape_folds: int = Field(default=0, alias="drapeFolds", ge=0, le=24)
+    hem_drape: float = Field(default=0.0, alias="hemDrape", ge=0.0, le=0.08)
     #: Edge profiles the template is cut with by default; a plan may override each.
     neckline: str = ""
     back: str = ""
@@ -159,6 +174,8 @@ class GarmentTemplate(BaseModel):
         needed = {"short": {"upperArms"}, "long": {"upperArms", "lowerArms"}}.get(sleeves, set())
         if needed - set(self.anchors):
             issues.append(f"{self.id}: {sleeves} sleeves need anchors {sorted(needed - set(self.anchors))}")
+        if self.fit.flare_start and self.fit.flare_start not in FLARE_STARTS:
+            issues.append(f"{self.id}: unknown flareStart {self.fit.flare_start!r}")
         if self.fit.min_length_scale > self.fit.max_length_scale:
             issues.append(f"{self.id}: minLengthScale exceeds maxLengthScale")
         return issues
