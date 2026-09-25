@@ -80,6 +80,8 @@ set for materials: lace, mesh, fishnet, sequin, latex and layering.
 
 ## What you get
 
+![Feature map: twelve cards, nine illustrated with renders on the real VRoid library avatars, and the designed hosiery upgrade shown as a line diagram](docs/images/features.webp)
+
 | | |
 | --- | --- |
 | 🧵 **Garment library** | 54 procedural templates: dresses, tops, skirts, shorts, jeans and trousers, leggings, jumpsuits and catsuits, jackets and coats, swimwear, lingerie, nightwear, legwear and shoes. Adding one is usually a single JSON file. |
@@ -100,8 +102,10 @@ guêpières whose straps clip onto the fitted stocking tops, with strap tension
 checked in walking and seated poses. Seamed and lace-top stockings. A **reveal**
 control that sets a skirt's hem against the stockings: hidden, a glimpse when she
 sits, or on show. It is additive and behind the existing adult gate, and nothing it
-adds changes a look made today. The design is in
-[docs/HOSIERY_STYLING.md](docs/HOSIERY_STYLING.md); it is not built yet.
+adds changes a look made today. The complete plan is in
+[docs/HOSIERY_UPGRADE.md](docs/HOSIERY_UPGRADE.md), with the garments in
+[HOSIERY_STYLING](docs/HOSIERY_STYLING.md) and the assets and rendering in
+[HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md). None of it is built yet.
 
 ---
 
@@ -424,6 +428,7 @@ Stated plainly, because the gallery shows them:
 | --- | --- |
 | [STYLING](docs/STYLING.md) | materials, cuts, straps, Base Body Prep and layered outfits, the adult gate |
 | [FIT_QUALITY](docs/FIT_QUALITY.md) | fitting a real avatar: what broke on the library avatars, and what the fitter does now |
+| [HOSIERY_UPGRADE](docs/HOSIERY_UPGRADE.md) | *design, not built*: the complete hosiery plan, the `garter_belt.py` analysis, the renderer contract |
 | [HOSIERY_STYLING](docs/HOSIERY_STYLING.md) | *design, not built*: suspender belts, stockings and the reveal control |
 | [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | *design, not built*: flat straps, clip hardware, denier falloff and the web preview backend |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | components, layers, extension points |

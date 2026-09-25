@@ -7,7 +7,9 @@ REAL_DIR holds one render directory per avatar (``looks.py --avatar`` then
 defaults to docs/images. Writes:
 
 * ``lookbook.webp`` — a strip of looks across the library avatars, front 3/4;
-* ``before-after.webp`` — avatars as they arrive, then in two new outfits.
+* ``before-after.webp`` — avatars as they arrive, then in two new outfits;
+* ``features.webp`` — the feature map: one card per feature, with a render where
+  the feature can be seen and plain text where it is a property.
 
 Nothing is retouched: every panel is a render of a VRM the pipeline produced,
 cropped and scaled. Which looks appear is chosen below, by number, so the
@@ -73,6 +75,135 @@ def strip(panels: list[tuple[Image.Image, str]], gap: int = 8, caption_h: int = 
     return sheet
 
 
+#: The feature map, row by row: (title, lines, picture). A picture is ("render",
+#: avatar, look), ("pair", avatar, look) for source then look, ("image", path),
+#: ("sketch", name) for a drawn diagram, or None for a text-only card.
+FEATURES = [
+    ("Words in, VRM out", ["A plain-language request becomes", "a validated VRM in one job."],
+     ("render", "AvatarSample_A", 2)),
+    ("54-garment library", ["Procedural templates, generated at", "each avatar's own measurements."],
+     ("render", "AvatarSample_B", 10)),
+    ("Toon-true materials", ["6 finishes, 7 patterns and a sheer", "scale, all readable under MToon."],
+     ("render", "fem_vroid", 3)),
+    ("Layered outfits", ["Inner first, each layer clearing", "the ones beneath it, in one VRM."],
+     ("render", "AvatarSample_A", 11)),
+    ("Base Body Prep", ["Her own clothes come off only where", "an authored body is underneath."],
+     ("pair", "AvatarSample_B", 2)),
+    ("Measured fit", ["Legs, arms, crotch, armpit and", "shoulders measured from her mesh."],
+     ("render", "AvatarSample_C", 1)),
+    ("Wardrobe Studio", ["Design, check the plan, compare", "and export, on desktop or phone."],
+     ("image", "docs/images/studio-layers.webp")),
+    ("Validated output",
+     ["\u2713 humanoid \u2713 weights \u2713 skeleton \u2713 expressions \u2713 clearance,",
+      "re-checked from the output bytes."],
+     None),
+    ("Licensing and safety",
+     ["Model terms checked first. Intimate", "garments need an operator's adult",
+      "declaration; prompts cannot grant it."],
+     None),
+    ("Static-bundle export", ["One call packs a wardrobe that", "3D-Avatar-Chatbot loads by unzipping."],
+     None),
+    ("Runs on plain Python", ["Native engine: Python and numpy.", "Blender optional. 553 tests in CI."],
+     None),
+    ("Designed next: Hosiery styling",
+     ["Suspenders clipped to fitted stocking tops, and a reveal control solved "
+      "in standing, walking and seated poses."],
+     ("sketch", "hosiery")),
+]
+
+CARD_W, CARD_H, THUMB_W = 520, 250, 170
+ACCENT, CARD, LINE = (232, 185, 164), (42, 39, 48), (70, 66, 76)
+
+
+def _thumb(real: Path, root: Path, picture) -> Image.Image | None:
+    if picture is None:
+        return None
+    kind = picture[0]
+    if kind == "render":
+        image = portrait(real / picture[1] / f"r-{picture[2]:02d}-34.png")
+    elif kind == "pair":
+        a = portrait(real / picture[1] / "r-source-dressed-34.png")
+        b = portrait(real / picture[1] / f"r-{picture[2]:02d}-34.png")
+        image = Image.new("RGB", (a.width + b.width, PANEL_H), BG)
+        image.paste(a, (0, 0))
+        image.paste(b, (a.width, 0))
+    elif kind == "image":
+        image = Image.open(root / picture[1]).convert("RGB")
+        w, h = image.size  # the viewport: her in two outfits, not the panels round it
+        image = image.crop((int(w * 0.18), int(h * 0.1), int(w * 0.68), int(h * 0.9)))
+    else:
+        return _sketch_hosiery()
+    scale = min(THUMB_W / image.width, (CARD_H - 24) / image.height)
+    return image.resize((max(int(image.width * scale), 1), max(int(image.height * scale), 1)), Image.LANCZOS)
+
+
+def _sketch_hosiery() -> Image.Image:
+    """A labelled line diagram of the hosiery layers: a schematic, not a render."""
+    w, h = THUMB_W, CARD_H - 24
+    sketch = Image.new("RGB", (w, h), CARD)
+    d = ImageDraw.Draw(sketch)
+    cx = w // 2 + 30  # the drawing on the right, its labels in a column on the left
+    d.rectangle((cx - 40, 30, cx + 40, 40), outline=ACCENT, width=2)                  # belt
+    for x in range(cx - 48, cx + 48, 8):
+        d.line((x, 84, x + 4, 84), fill=MUTED, width=1)                               # hem
+    for side in (-1, 1):
+        x0 = cx + side * 20
+        d.polygon([(x0 - 14, 118), (x0 + 14, 118), (x0 + 9, h - 8), (x0 - 9, h - 8)], outline=INK)
+        d.rectangle((x0 - 14, 118, x0 + 14, 130), fill=(20, 19, 23), outline=INK)     # band
+        d.line((cx + side * 24, 40, x0, 116), fill=ACCENT, width=3)                   # strap
+        d.ellipse((x0 - 4, 112, x0 + 4, 120), fill=(199, 201, 204))                   # clip
+    for label, y, colour in (("belt", 28, ACCENT), ("hem", 77, MUTED), ("clips", 106, INK),
+                             ("band", 124, INK), ("stocking", 170, INK)):
+        d.text((2, y), label, font=TINY, fill=colour)
+    return sketch
+
+TINY = font("DejaVuSans.ttf", 13)
+TITLE = font("DejaVuSans-Bold.ttf", 23)
+BODY_TEXT = font("DejaVuSans.ttf", 17)
+HEAD = font("DejaVuSans-Bold.ttf", 34)
+
+
+def _wrap(text: str, width: int) -> list[str]:
+    """Break ``text`` at spaces so each line fits ``width`` pixels in the body font."""
+    lines, line = [], ""
+    for word in text.split():
+        trial = f"{line} {word}".strip()
+        if line and BODY_TEXT.getlength(trial) > width:
+            lines.append(line)
+            trial = word
+        line = trial
+    return lines + [line]
+
+
+def features(real: Path, out: Path) -> None:
+    root = Path(__file__).resolve().parents[2]
+    cols, gap, top = 3, 16, 96
+    rows = (len(FEATURES) + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * CARD_W + (cols + 1) * gap, top + rows * (CARD_H + gap) + gap), BG)
+    d = ImageDraw.Draw(sheet)
+    d.text((gap + 4, 22), "3D Wardrobe Forge", font=HEAD, fill=INK)
+    d.text((gap + 4 + d.textlength("3D Wardrobe Forge", font=HEAD) + 18, 36),
+           "what it does, on real VRoid avatars", font=BODY_TEXT, fill=MUTED)
+    for i, (title, lines, picture) in enumerate(FEATURES):
+        x = gap + (i % cols) * (CARD_W + gap)
+        y = top + (i // cols) * (CARD_H + gap)
+        designed = title.startswith("Designed")
+        d.rounded_rectangle((x, y, x + CARD_W, y + CARD_H), radius=14, fill=CARD,
+                            outline=ACCENT if designed else LINE, width=2 if designed else 1)
+        thumb = _thumb(real, root, picture)
+        text_x = x + 20
+        if thumb is not None:
+            sheet.paste(thumb, (x + CARD_W - thumb.width - 12, y + (CARD_H - thumb.height) // 2))
+        if designed:
+            d.text((text_x, y + 18), "DESIGNED \u00b7 NOT YET BUILT", font=TINY, fill=ACCENT)
+        name = title.replace("Designed next: ", "")
+        d.text((text_x, y + 40), name, font=TITLE, fill=ACCENT if designed else INK)
+        room = CARD_W - 40 - (thumb.width + 20 if thumb is not None else 0)
+        for k, line in enumerate(_wrap(" ".join(lines), room)):
+            d.text((text_x, y + 84 + k * 26), line, font=BODY_TEXT, fill=MUTED)
+    sheet.save(out / "features.webp", "WEBP", quality=88, method=6)
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
@@ -97,7 +228,8 @@ def main() -> None:
         sheet.paste(row, ((width - row.width) // 2, y))
         y += row.height
     sheet.save(out / "before-after.webp", "WEBP", quality=86, method=6)
-    for name in ("lookbook.webp", "before-after.webp"):
+    features(real, out)
+    for name in ("lookbook.webp", "before-after.webp", "features.webp"):
         print(name, (out / name).stat().st_size // 1024, "KB")
 
 
