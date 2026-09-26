@@ -3,6 +3,7 @@
   "id": "dress-a-line-v1",
   "name": "A-line dress",
   "category": "dress",
+  "defaultForCategory": true,
   "mesh": "procedural:dress",
   "coverage": [
     "chest",

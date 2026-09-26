@@ -3,6 +3,7 @@
   "id": "trousers-straight-v1",
   "name": "Straight trousers",
   "category": "trousers",
+  "defaultForCategory": true,
   "mesh": "procedural:trousers",
   "coverage": [
     "waist",

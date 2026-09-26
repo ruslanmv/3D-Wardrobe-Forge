@@ -3,6 +3,7 @@
   "id": "skirt-a-line-v1",
   "name": "A-line skirt",
   "category": "skirt",
+  "defaultForCategory": true,
   "mesh": "procedural:skirt",
   "coverage": [
     "waist",

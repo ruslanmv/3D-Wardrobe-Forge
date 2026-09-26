@@ -138,3 +138,78 @@ def test_llm_failure_falls_back_to_the_rule_based_plan(template_catalog: Templat
 
     plan = plan_with_llm(OutfitRequest(prompt="something nice"), template_catalog, broken)
     assert plan.template_id is not None
+
+
+# ----------------------------------------------------------------------
+# S3. a bare category is answered by the category's default, never by a file name
+# ----------------------------------------------------------------------
+@pytest.mark.parametrize(
+    ("prompt", "template_id"),
+    [
+        ("skirt", "skirt-a-line-v1"),  # was skirt-pencil-v1: a knee-length tube, by reverse id order
+        ("navy skirt", "skirt-a-line-v1"),  # a colour colours; it does not choose
+        ("a dress", "dress-a-line-v1"),
+        ("top", "top-tee-v1"),
+        ("jacket", "jacket-blazer-v1"),
+        ("trousers", "trousers-straight-v1"),
+    ],
+)
+def test_a_bare_category_gets_the_categorys_default(template_catalog, prompt, template_id):
+    assert plan_outfit(OutfitRequest(prompt=prompt), template_catalog).template_id == template_id
+
+
+def test_the_studios_planner_chooses_skirt_is_an_a_line(template_catalog):
+    """What the Studio sends for Garment: Skirt with every other field left to the planner."""
+    plan = plan_outfit(OutfitRequest(prompt="skirt", category="skirt"), template_catalog)
+    assert (plan.template_id, plan.silhouette) == ("skirt-a-line-v1", "a-line")
+
+
+@pytest.mark.parametrize(
+    ("prompt", "template_id"),
+    [
+        ("black pencil skirt", "skirt-pencil-v1"),
+        ("red maxi skirt", "skirt-maxi-v1"),
+        ("navy pleated mini skirt", "skirt-pleated-mini-v1"),
+        ("white tiered maxi skirt", "skirt-tiered-maxi-v1"),  # named outright
+        ("slip shorts", "shorts-slip-v1"),  # ties the default's generic "shorts" tag; the name wins
+    ],
+)
+def test_a_prompt_that_names_something_is_still_scored(template_catalog, prompt, template_id):
+    assert plan_outfit(OutfitRequest(prompt=prompt), template_catalog).template_id == template_id
+
+
+def test_every_category_with_a_choice_declares_exactly_one_default(template_catalog):
+    """So no bare prompt ever falls to the id order again, and a renamed file cannot restyle one."""
+    categories: dict[str, list] = {}
+    for template in template_catalog.all():
+        if not template.opt_in:
+            categories.setdefault(template.category, []).append(template)
+    for category, templates in categories.items():
+        defaults = [t.id for t in templates if t.default_for_category]
+        if len(templates) > 1:
+            assert len(defaults) == 1, (category, defaults)
+    assert not template_catalog.validate_all()
+
+
+def test_the_default_does_not_depend_on_the_template_ids(template_catalog):
+    """Rename every skirt so the pencil sorts last and then first: a bare "skirt" does not move."""
+    from wardrobe.domain.garments import GarmentTemplate
+
+    for prefix in ("a-", "z-"):
+        renamed = []
+        for template in template_catalog.all():
+            data = template.model_dump(by_alias=True)
+            if template.id == "skirt-pencil-v1":
+                data["id"] = f"{prefix}{template.id}"
+            renamed.append(GarmentTemplate.model_validate(data))
+        catalog = TemplateCatalog(renamed)
+        assert plan_outfit(OutfitRequest(prompt="skirt"), catalog).template_id == "skirt-a-line-v1"
+
+
+def test_two_defaults_in_one_category_are_invalid(template_catalog):
+    from wardrobe.domain.garments import GarmentTemplate
+
+    pencil = template_catalog.get("skirt-pencil-v1").model_dump(by_alias=True)
+    others = [t for t in template_catalog.all() if t.id != "skirt-pencil-v1"]
+    catalog = TemplateCatalog([*others, GarmentTemplate.model_validate({**pencil, "defaultForCategory": True})])
+    assert any("more than one defaultForCategory" in issue for issue in catalog.validate_all())

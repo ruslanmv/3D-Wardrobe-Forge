@@ -66,6 +66,12 @@ def test_filter_templates_by_category(client: TestClient):
     assert dresses and all(item["category"] == "dress" for item in dresses)
 
 
+def test_a_category_names_its_recommended_template(client: TestClient):
+    """S3. The Studio labels "Planner chooses" with it, so the default must reach the browser."""
+    skirts = client.get("/v1/templates?category=skirt").json()
+    assert [item["id"] for item in skirts if item["defaultForCategory"]] == ["skirt-a-line-v1"]
+
+
 def test_unknown_template_is_404(client: TestClient):
     assert client.get("/v1/templates/nope").status_code == 404
 

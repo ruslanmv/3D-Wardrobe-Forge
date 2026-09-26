@@ -137,6 +137,12 @@ class GarmentTemplate(BaseModel):
     description: str | None = None
     #: Needs an adult declaration whatever its category or material.
     requires_adult: bool = Field(default=False, alias="requiresAdult")
+    #: The category's answer when a prompt names the category and nothing else ("skirt",
+    #: "navy skirt", the Studio's "Planner chooses"), and the tie-break when two templates
+    #: score the same. Without it the planner fell back on the template id's reverse
+    #: alphabetical order, so a bare "skirt" was always skirt-pencil-v1 — the most
+    #: tube-like cut in the catalogue, chosen by its file name. One per category.
+    default_for_category: bool = Field(default=False, alias="defaultForCategory")
     #: Chosen from a prompt only when the prompt names one of its tags outright. Newer
     #: templates that overlap older ones use it, so a prompt that planned the older
     #: template still does: "suspender belt" is still the Garter Set.
@@ -250,10 +256,23 @@ class TemplateCatalog:
     def by_category(self, category: str) -> list[GarmentTemplate]:
         return [t for t in self._templates.values() if t.category == category]
 
+    def default_for(self, category: str) -> GarmentTemplate | None:
+        """The template a bare ``category`` prompt gets (``defaultForCategory``), if one is declared."""
+        return next((t for t in self.by_category(category) if t.default_for_category), None)
+
     def validate_all(self) -> list[str]:
         issues: list[str] = []
         for template in self._templates.values():
             issues.extend(template.validate_semantics())
+        defaults: dict[str, list[str]] = {}
+        for template in self._templates.values():
+            if template.default_for_category:
+                defaults.setdefault(template.category, []).append(template.id)
+                if template.opt_in:
+                    issues.append(f"{template.id}: an opt-in template cannot be its category's default")
+        for category, ids in defaults.items():
+            if len(ids) > 1:
+                issues.append(f"{category}: more than one defaultForCategory template {sorted(ids)}")
         return issues
 
 

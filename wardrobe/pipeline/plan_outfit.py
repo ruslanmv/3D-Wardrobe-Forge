@@ -445,8 +445,41 @@ def select_template(catalog: TemplateCatalog, parsed: ParsedPrompt, text: str) -
     if not candidates:
         raise PlanningError("no garment templates are installed")
 
+    # A prompt that names the category and nothing else gets the category's default.
+    # Scoring cannot answer it: "skirt" scores A-line, maxi and pencil the same, and
+    # the tie used to fall to the template id sorted backwards — skirt-pencil-v1, a
+    # knee-length tube, for every "skirt" and every Studio "Planner chooses".
+    if parsed.category and _names_only_the_category(candidates, parsed, text):
+        default = next((t for t in candidates if t.default_for_category), None)
+        if default is not None:
+            return default
+    # Otherwise the best score. A tie among scored templates still falls to the id
+    # order it always did: the prompt named something (a tag, a cut, a length), and a
+    # default preferred over it would outvote it — "slip shorts" ties the Denim Shorts'
+    # generic "shorts" tag, and the default would have put her in denim.
     ranked = sorted(candidates, key=lambda t: (score_template(t, parsed, text), t.id), reverse=True)
     return ranked[0]
+
+
+def _names_only_the_category(candidates: list[GarmentTemplate], parsed: ParsedPrompt, text: str) -> bool:
+    """True when nothing in the prompt but the category's own word could tell templates apart.
+
+    A colour, a fabric or a finish colours whatever is chosen; they do not choose.
+    A silhouette, a hem, a sleeve, a formality or any template's own tag does, so
+    "pencil skirt", "mini skirt" and "work skirt" are still scored.
+    """
+    if any((parsed.silhouette, parsed.hem, parsed.sleeve, parsed.formality)):
+        return False
+    generic = set(CATEGORY_KEYWORDS.get(parsed.category or "", ())[:1])
+    for template in candidates:
+        if re.search(rf"(?<!\w){re.escape(template.name.lower())}(?!\w)", text):
+            return False  # "tiered maxi skirt" names a template outright
+        for tag in template.tags:
+            if tag.lower() in generic:
+                continue
+            if re.search(rf"(?<!\w){re.escape(tag.lower())}(?!\w)", text):
+                return False
+    return True
 
 
 def display_name(prompt: str, parsed: ParsedPrompt, template: GarmentTemplate | None = None) -> str:

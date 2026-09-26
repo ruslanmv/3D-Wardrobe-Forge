@@ -3,6 +3,7 @@
   "id": "under-briefs-v1",
   "name": "Briefs",
   "category": "underwear",
+  "defaultForCategory": true,
   "mesh": "procedural:briefs",
   "coverage": [
     "hips"

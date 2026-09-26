@@ -925,12 +925,22 @@ async function loadTemplates() {
     const select = $('template-select');
     try {
         const templates = await api.templates(state.design.category);
+        // S3. Say what "Planner chooses" means for this garment. A bare skirt used to be
+        // whichever template id sorted last — a pencil tube — and the Studio said only
+        // "Planner chooses". It is now the category's declared default, so name it; it
+        // stays "Planner chooses" because a length or silhouette picked here still steers it.
+        const recommended = state.design.category && templates.find((template) => template.defaultForCategory);
+        const planner = !state.design.category
+            ? 'Planner chooses from all'
+            : recommended
+              ? `Planner chooses · ${recommended.name} recommended`
+              : 'Planner chooses';
         select.replaceChildren(
-            el('option', { value: '', text: state.design.category ? 'Planner chooses' : 'Planner chooses from all' }),
+            el('option', { value: '', text: planner }),
             ...templates.map((template) =>
                 el('option', {
                     value: template.id,
-                    text: `${template.name} · ${template.category}`,
+                    text: state.design.category ? template.name : `${template.name} · ${template.category}`,
                     'data-name': template.name.toLowerCase(),
                     selected: template.id === state.design.templateId,
                 })

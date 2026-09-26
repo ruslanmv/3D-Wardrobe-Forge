@@ -3,6 +3,7 @@
   "id": "top-tee-v1",
   "name": "Basic tee",
   "category": "top",
+  "defaultForCategory": true,
   "mesh": "procedural:top",
   "coverage": [
     "chest",

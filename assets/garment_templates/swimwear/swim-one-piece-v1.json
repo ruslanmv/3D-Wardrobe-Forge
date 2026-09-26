@@ -3,6 +3,7 @@
   "id": "swim-one-piece-v1",
   "name": "One-Piece Swimsuit",
   "category": "swimwear",
+  "defaultForCategory": true,
   "mesh": "procedural:one-piece",
   "coverage": [
     "chest",
