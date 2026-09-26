@@ -213,3 +213,15 @@ def test_two_defaults_in_one_category_are_invalid(template_catalog):
     others = [t for t in template_catalog.all() if t.id != "skirt-pencil-v1"]
     catalog = TemplateCatalog([*others, GarmentTemplate.model_validate({**pencil, "defaultForCategory": True})])
     assert any("more than one defaultForCategory" in issue for issue in catalog.validate_all())
+
+
+def test_thong_words_plan_a_thong(template_catalog):
+    """ "white thong" was White Micro Briefs: the word was a tag on the legacy brief, and the
+    thong blocks answered only to "tailored thong"."""
+    from wardrobe.pipeline.plan_outfit import select_template
+
+    catalog = template_catalog
+    for prompt, template in (("white thong", "under-thong-v2"), ("black high-waist thong", "under-high-waist-thong-v2"),
+                             ("white g-string", "under-g-string-v2"), ("white v-string", "under-v-string-v2"),
+                             ("white briefs", "under-briefs-v1"), ("tailored thong", "under-thong-v2")):
+        assert select_template(catalog, parse_prompt(prompt), prompt).id == template, prompt

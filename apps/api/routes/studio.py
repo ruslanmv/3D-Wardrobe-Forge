@@ -29,7 +29,7 @@ from wardrobe.domain.jobs import TERMINAL_STATES, CreateJobRequest, JobOptions, 
 from wardrobe.domain.looks import OutfitRequest
 from wardrobe.library import AvatarLibrary, LibraryAvatar
 from wardrobe.materials.finishes import FINISHES, OPACITY_LEVELS, PATTERNS
-from wardrobe.pipeline.generate_garment import with_foundation
+from wardrobe.pipeline.generate_garment import complete_foundation, with_foundation
 from wardrobe.pipeline.plan_outfit import (
     CATEGORY_KEYWORDS,
     COLORS,
@@ -39,6 +39,7 @@ from wardrobe.pipeline.plan_outfit import (
     SLEEVE_KEYWORDS,
 )
 from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
+from wardrobe.pipeline.prepare_base_body import foundation_conflicts
 from wardrobe.policy import intimate
 from wardrobe.targets.bundle import LookFiles, build_wardrobe_bundle, select_looks
 from wardrobe.vrm.body_integrity import check_body
@@ -165,9 +166,11 @@ def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, dep
     document = GltfDocument.from_bytes(source)
     info = inspect_document(document)
     measurements = measure_body(document, info)
+    inventory = garment_inventory(document)
     plan = plan_outfit_stack(outfit, catalog)
     if mode == "underwear-base":
-        plan = with_foundation(plan, outfit, catalog)
+        # The job's own steps, so "Check plan" shows the outfit the job will build.
+        plan = complete_foundation(with_foundation(plan, outfit, catalog), outfit, catalog, inventory)
 
     garments = []
     for garment in plan.garments:
@@ -181,7 +184,6 @@ def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, dep
         garments.append({**garment.design_sheet(template, inner=inner), "allowed": decision.allowed,
                          "refusal": decision.message if not decision.allowed else None})
 
-    inventory = garment_inventory(document)
     kinds = []
     for garment in plan.garments:
         template = catalog.get(garment.template_id) if garment.template_id else None
@@ -195,11 +197,17 @@ def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, dep
     )
     for sheet in garments:
         sheet["sourceGarmentsRemoved"] = [g.material for g in strip.remove]
+    # Underwear that would have to go over clothes she keeps: the job refuses it outside
+    # "Keep it on" (prepare_base_body), so the plan says so before anyone waits for it.
+    over = foundation_conflicts(strip.retain if mode != "preserve" else inventory, kinds)
+    layering = ("layered" if mode == "preserve" else "refused") if over else "passed"
     return {
+        "layerOrder": layering,
+        "layeredOver": list(dict.fromkeys(g.slot for g in over)),
         "name": plan.name,
         "mode": mode,
         "garments": garments,
-        "allowed": all(g["allowed"] for g in garments),
+        "allowed": all(g["allowed"] for g in garments) and layering != "refused",
         "wearing": [{"slot": g.slot, "material": g.material, "detector": g.detector, "role": g.role}
                     for g in inventory],
         "remove": strip.slots,

@@ -408,6 +408,8 @@ def _shade(rgba: tuple[float, float, float, float], text: str) -> tuple[float, f
 # ----------------------------------------------------------------------
 #: What naming an opt-in template's own tag adds to its score.
 OPT_IN_NAMED = 3.0
+#: What each further word of the longest opt-in tag named adds: less than any other signal.
+OPT_IN_SPECIFIC = 0.25
 
 
 def score_template(template: GarmentTemplate, parsed: ParsedPrompt, text: str) -> float:
@@ -420,14 +422,20 @@ def score_template(template: GarmentTemplate, parsed: ParsedPrompt, text: str) -
         score += 2.0
     if parsed.sleeve and template.sleeve == parsed.sleeve:
         score += 1.5
+    longest = 0
     for tag in template.tags:
         if re.search(rf"(?<!\w){re.escape(tag.lower())}(?!\w)", text):
             score += 1.0
+            longest = max(longest, len(tag.split()))
             # An opt-in template is only ever chosen by name, so a prompt that names it
             # meant it: "tailored high-leg briefs" is the tailored block, not the band
             # brief that shares "high-leg briefs" and "briefs" with the prompt.
             if template.opt_in:
                 score += OPT_IN_NAMED
+    if template.opt_in and longest > 1:
+        # Of two opt-in templates named, the more specific name: "high-waist thong" is the
+        # High-Waist Thong, not the Thong it also contains, which the id order used to pick.
+        score += OPT_IN_SPECIFIC * (longest - 1)
     # A garment named outright beats one that only shares a word with the prompt:
     # "lace bodysuit" is the Bodysuit, not the Lingerie Set tagged "lace". Ties
     # used to fall to the template id's alphabetical order.

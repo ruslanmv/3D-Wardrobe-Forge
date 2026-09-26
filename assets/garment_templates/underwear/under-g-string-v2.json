@@ -36,7 +36,9 @@
   },
   "tags": [
     "tailored g-string",
-    "tailored g string"
+    "tailored g string",
+    "g-string",
+    "g string"
   ],
   "description": "A G-string: a small front panel, string sides, a string back.",
   "optIn": true

@@ -50,6 +50,12 @@ class BodyIncomplete(WardrobeError):
     reason = FailureReason.BODY_INCOMPLETE
 
 
+class FoundationOverClothing(WardrobeError):
+    """Underwear would be fitted over clothes she keeps on; it goes on her body or not at all."""
+
+    reason = FailureReason.FOUNDATION_OVER_CLOTHING
+
+
 class NotHumanoid(WardrobeError):
     reason = FailureReason.SOURCE_NOT_HUMANOID
 
@@ -77,6 +83,8 @@ __all__ = [
     "AttestationRequired",
     "IntimateNotPermitted",
     "AdultDeclarationRequired",
+    "BodyIncomplete",
+    "FoundationOverClothing",
     "NotHumanoid",
     "PlanningError",
     "ProviderError",

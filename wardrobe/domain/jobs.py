@@ -68,6 +68,7 @@ class FailureReason(StrEnum):
     INTIMATE_NOT_PERMITTED = "intimate_garments_not_permitted_by_model"
     ADULT_DECLARATION_REQUIRED = "requires_adult_declaration"
     BODY_INCOMPLETE = "source_body_incomplete_under_clothing"
+    FOUNDATION_OVER_CLOTHING = "foundation_would_sit_over_worn_clothing"
     INTERNAL = "internal_error"
 
 
@@ -201,6 +202,7 @@ _REJECTION_REASONS = frozenset(
         FailureReason.INTIMATE_NOT_PERMITTED,
         FailureReason.ADULT_DECLARATION_REQUIRED,
         FailureReason.BODY_INCOMPLETE,
+        FailureReason.FOUNDATION_OVER_CLOTHING,
     }
 )
 

@@ -145,13 +145,18 @@ def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog, beneath: list[
         if len(pieces) == 1 and not beneath:
             return _placed(plan_outfit(request, catalog), catalog)
         if len(pieces) == 1:
-            pieces = [request.prompt]
-        requests = [OutfitRequest(prompt=piece, mode=request.mode) for piece in pieces]
-        # The request's explicit choices (the Studio's controls) are about the
-        # garment on top — the one the viewer sees — not the ones beneath it.
-        outermost = max(range(len(requests)), key=lambda i: _rank(requests[i], catalog))
-        chosen = {key: getattr(request, key) for key in _OVERRIDES if getattr(request, key) is not None}
-        requests[outermost] = requests[outermost].model_copy(update=chosen)
+            # One garment with something added beneath it: the request is that garment, all of
+            # it. Rebuilt from its prompt alone it lost the template and category the Studio
+            # sent, and the designer's Tailored Triangle Bralette became whatever the word
+            # "underwear" planned to.
+            requests = [request.model_copy(update={"layers": None})]
+        else:
+            requests = [OutfitRequest(prompt=piece, mode=request.mode) for piece in pieces]
+            # The request's explicit choices (the Studio's controls) are about the
+            # garment on top — the one the viewer sees — not the ones beneath it.
+            outermost = max(range(len(requests)), key=lambda i: _rank(requests[i], catalog))
+            chosen = {key: getattr(request, key) for key in _OVERRIDES if getattr(request, key) is not None}
+            requests[outermost] = requests[outermost].model_copy(update=chosen)
     requests = [layer.model_copy(update={"layers": None}) for layer in beneath] + requests
 
     plans = sorted((_placed(plan_outfit(r, catalog), catalog) for r in requests), key=lambda p: p.layer)

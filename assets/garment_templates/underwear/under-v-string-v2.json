@@ -36,7 +36,9 @@
   },
   "tags": [
     "tailored v-string",
-    "tailored v string"
+    "tailored v string",
+    "v-string",
+    "v string"
   ],
   "description": "A V-string: a G-string whose waistband dips to a V where the back string meets it.",
   "optIn": true

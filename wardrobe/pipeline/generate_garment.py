@@ -39,6 +39,12 @@ async def plan(context: PipelineContext) -> None:
     mode = context.record.request.options.base_body_mode
     if mode == "underwear-base":
         outfit_plan = with_foundation(outfit_plan, request, context.catalog)
+        completed = complete_foundation(outfit_plan, request, context.catalog, _worn(context))
+        if completed is not outfit_plan:
+            added = ", ".join(g.name.lower() for g in completed.garments[: len(completed.garments)
+                                                                         - len(outfit_plan.garments)])
+            context.warn(f"added {added} so her own clothes can come off under the underwear")
+        outfit_plan = completed
     elif mode == "replace-outer" and wears_her_own_bottoms(context):
         lined = with_skirt_liner(
             outfit_plan, request, context.catalog, depicts_adult=context.record.request.avatar.depicts_adult
@@ -95,6 +101,43 @@ def with_foundation(outfit_plan, request, catalog):
         return outfit_plan
     beneath = [OutfitRequest(prompt=prompt) for prompt in NEUTRAL_FOUNDATION]
     return plan_outfit_stack(request, catalog, beneath=beneath)
+
+
+#: The neutral half ``complete_foundation`` adds, by the region it has to cover.
+NEUTRAL_HALF = {"upper": NEUTRAL_FOUNDATION[0], "lower": NEUTRAL_FOUNDATION[1]}
+
+
+def _worn(context: PipelineContext) -> list:
+    if context.document is None:
+        return []
+    try:
+        return garment_inventory(context.document)
+    except Exception:  # an inventory failure must not fail the plan; prepare_base_body decides
+        return []
+
+
+def complete_foundation(outfit_plan, request, catalog, worn):
+    """Underwear-base: the other half of the underwear where her own clothes need it to come off.
+
+    A bralette alone under a one-piece dress cannot take the dress off — nothing
+    would be on her hips — so it was fitted over the dress. Underwear first means
+    underwear on her body: a neutral half is added for each region such a garment
+    of hers covers and the outfit does not, and the dress comes off. The plan is
+    returned unchanged when nothing she wears is in the way.
+    """
+    from wardrobe.pipeline.prepare_base_body import foundation_conflicts
+    from wardrobe.vrm.garments import KIND_REGIONS
+
+    layers = []
+    for garment in outfit_plan.garments:
+        template = catalog.get(garment.template_id) if garment.template_id else None
+        layers.append((template.procedural_kind if template is not None else garment.category, garment.role))
+    covered = frozenset().union(*(KIND_REGIONS.get(kind, frozenset()) for kind, _ in layers))
+    needed = set().union(*(g.regions for g in foundation_conflicts(worn, layers))) - covered
+    halves = [NEUTRAL_HALF[region] for region in ("upper", "lower") if region in needed]
+    if not halves:
+        return outfit_plan
+    return plan_outfit_stack(request, catalog, beneath=[OutfitRequest(prompt=prompt) for prompt in halves])
 
 
 def wears_her_own_bottoms(context: PipelineContext) -> bool:
