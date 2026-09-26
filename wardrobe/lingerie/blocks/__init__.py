@@ -7,10 +7,20 @@ from wardrobe.geometry.procedural import FitParameters
 from wardrobe.lingerie.blocks.frame import body_frame
 from wardrobe.lingerie.specs import parse_block
 
+#: The Studio's coverage words on a plain brief: the pattern they name. The legacy band brief
+#: cut its leg line from them; the block keeps what they meant.
+COVERAGE_PRESETS = {"minimal": "cheeky", "micro": "g-string"}
+
 
 def build_block(kind: str, params: FitParameters) -> Mesh:
     """The garment for a lingerie ``kind`` (``wardrobe.lingerie.LINGERIE_KINDS``) at these measurements."""
-    block = parse_block(kind, params.metadata.get("lingerie") or {})
+    data = dict(params.metadata.get("lingerie") or {})
+    coverage = COVERAGE_PRESETS.get(str(params.metadata.get("coverage") or ""))
+    brief = dict(data.get("brief") or {})
+    if kind == "brief-block" and coverage and brief.get("preset") == "classic":
+        # Only a plain brief: a style that names its own cut (a tanga, a thong) keeps it.
+        data["brief"] = {**brief, "preset": coverage}
+    block = parse_block(kind, data)
     rise = params.metadata.get("briefRise")
     if rise is not None and block.brief is not None:
         # P1. A look that places this brief against another garment's waistband sets its

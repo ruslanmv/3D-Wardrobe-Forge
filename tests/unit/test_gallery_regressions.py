@@ -140,7 +140,7 @@ def test_matching_carries_the_fabric_not_only_the_colour(template_catalog: Templ
 
     garments = plan_outfit_stack(OutfitRequest(prompt="burgundy mesh bralette + matching briefs"), template_catalog)
     bralette, briefs = garments.garments
-    assert briefs.template_id == "under-briefs-v1"
+    assert briefs.template_id == "under-briefs-v2"
     assert briefs.material.opacity == bralette.material.opacity < 1.0
     assert briefs.material.alpha_mode == bralette.material.alpha_mode
 

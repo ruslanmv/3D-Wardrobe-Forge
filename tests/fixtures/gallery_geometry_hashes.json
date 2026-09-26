@@ -250,30 +250,30 @@
   "Blue Straight Jeans": "b0c9c02c12ac7f99ed83a8be4919a11d40d4d26bca7e1b196b021ac9a2a5d342"
  },
  "mannequin/02": {
-  "Black Bralette": "b4140733fe5a117330e8c3b32171fb767aacb825ec6d012a082cb07efaf9a358",
-  "Black Briefs": "bb6f8398337f1158d21c00b37858b4e73f61306e45bc3aecf6a9df05c769d0a7"
+  "Black Tailored Briefs": "d52c76947ac70effe3b225307a9e2d77a4684b4a85b4d610b04fe8d10d3bd282",
+  "Black Tailored Triangle Bralette": "1673dcbd2183e13d851885efcae9f8877f29043822aa29aa3101e2dab0dbeba4"
  },
  "mannequin/03": {
-  "Black Lace Bralette": "63339d41ba14405e6305cb43856649b396dc25b83e61e32fbbedc59109a85192",
-  "Black Lace Briefs": "392bccaede3d133b74863b8d58c590285de529ba45ef868bf98cfe6d4815f1bf"
+  "Black Lace Tailored High-Leg Briefs": "a099e9209d7ede41bd36cf911de8b69714b14c1e28a97217413afcc49a0dff81",
+  "Black Lace Tailored Triangle Bralette": "a4f0af8d406ac142959c039d3091c7c81cdfca588e875f89a87147beb954db3d"
  },
  "mannequin/04": {
-  "Burgundy Sheer Bralette": "64cead1036ba9f2833a747482177326d65aa45f2608a3534f356660781594103",
-  "Burgundy Sheer Briefs": "dea7e9b8e6a5d1079c43db976b77c0a2982ce23d6e75ddc1422105cf57486ced"
+  "Burgundy Sheer Tailored Briefs": "975ae87b8488381ac1cb12c8f770c86604a66a3684ed69357af2d745e2cf952c",
+  "Burgundy Sheer Tailored Triangle Bralette": "6e0c73d1e6be1a7bf10303bead04527a80602569aef5077ebaf3e131f17964f0"
  },
  "mannequin/05": {
-  "Black Bralette": "5c6a7642b88a6a4a334e82d986247539070cb011afbe22253495101213d56dd5",
-  "Black Micro Briefs": "6847c10bf17285697af56691e9c5f75b54b55b6ee1294e23d2bc7e7ecff15e61"
+  "Black Micro Tailored Briefs": "f590b278676980aff0ed542529422d843cd2ad4277418bfcd96c954eaf73669f",
+  "Black Tailored Triangle Bralette": "a95c9dcb4b7fb78fccb88053f6140e7d393c4bad7bb4e65fd6b35a37e589f04e"
  },
  "mannequin/06": {
-  "Black Bralette": "7b6ffce17274f491242ff9ea6df8e9bef0e0721141f26de743109603383082a0",
-  "Black Briefs": "fde288e7fcc5a626c257cb51a45ea130420382a28c15ff71195d132c2caf62b2",
-  "Red Sheer Bodycon Mini Dress": "4aee6e63528aaabebb0fac2c8a71b46998a7b22fb3d7238ac9a5681966d72323"
+  "Black Tailored Briefs": "0dfe643c05518ceb028440c57bf78a90c787d2d2f28213ae62099650b4cf04da",
+  "Black Tailored Triangle Bralette": "a95c9dcb4b7fb78fccb88053f6140e7d393c4bad7bb4e65fd6b35a37e589f04e",
+  "Red Sheer Bodycon Mini Dress": "b408744608d4ae82ecec9f6d2ad57165f793865a0e1eaa4a9255d932033652ea"
  },
  "mannequin/07": {
-  "Black Bralette": "7b6ffce17274f491242ff9ea6df8e9bef0e0721141f26de743109603383082a0",
-  "Black Briefs": "fde288e7fcc5a626c257cb51a45ea130420382a28c15ff71195d132c2caf62b2",
-  "Red Bodycon Mini Dress": "c6f3dbd4ae2bfb517ac02430b5da75f9bbd93132f18fb665a052ce53202d3ebe"
+  "Black Tailored Briefs": "0dfe643c05518ceb028440c57bf78a90c787d2d2f28213ae62099650b4cf04da",
+  "Black Tailored Triangle Bralette": "a95c9dcb4b7fb78fccb88053f6140e7d393c4bad7bb4e65fd6b35a37e589f04e",
+  "Red Bodycon Mini Dress": "11d7888df712ec2657b115bb8ff3b50d8b4a935d9fda16d8947cb9db24205048"
  },
  "mannequin/08": {
   "Black Fishnet Thigh-High Stockings": "783e9480369394882cb47f96be96d63ce49710e64f9843a83b5c137b6360f2e3"
@@ -299,8 +299,8 @@
   "White Cropped Tee": "1256178203e1b9e02a6441a180b33f21500dc70cc4acf3707c8134e03e849de8"
  },
  "mannequin/15": {
-  "Black Bralette": "7b6ffce17274f491242ff9ea6df8e9bef0e0721141f26de743109603383082a0",
-  "Black Translucent Lace Crop Cami": "280096c11404ab2472ca0db2958c1866fb6ef8ce6a1345b903e9bee422c617a3"
+  "Black Tailored Full-Cup Bra": "18b715dcf7cdb78deb9a9c39a2ec162bc532b0a01523f60d43c55b125743a754",
+  "Black Translucent Lace Crop Cami": "a2c3c95cda1a444b904b7f22162debf544c5972c95eac0f245bb83c310557f79"
  },
  "mannequin/16": {
   "Black Lace Bodycon Mini Dress": "2f13c65b31e924d333eb1e60c52645afa279260769fff04e03734395429380a3"
@@ -312,16 +312,16 @@
   "Black Glossy Catsuit": "6db6a1bfaa33d063b220370c11b70d70fbb7a7e119269f511986977d6439cff8"
  },
  "mannequin/19": {
-  "Black Briefs": "85d316907e426354e3479a82c359a4cf7fa04e69c1af9353bc61be608d3abf02",
-  "Black Cropped Cardigan": "005569d373aa06a37335cbe5032398666eba62e4900262b16242eebc320d1f52",
-  "Black Lace Bralette": "63339d41ba14405e6305cb43856649b396dc25b83e61e32fbbedc59109a85192",
+  "Black Cropped Cardigan": "eed3b65d6ac83cd8ec7337ca6d4edd52920ebf1fe8632fac1c55b330b67da4e9",
+  "Black Lace Tailored Triangle Bralette": "a4f0af8d406ac142959c039d3091c7c81cdfca588e875f89a87147beb954db3d",
+  "Black Tailored Briefs": "baa0a85cf8a39690e8798bd84b00586b0d085329d4a7690694638c669746e420",
   "Black Thigh-High Stockings": "b5b40dc3cba5f6a734001398c93dcc7288324705a5d2792add324a5cecbdd6a9",
-  "Red Sheer Skater Mini Dress": "8fa62405f9d8648723be6710e4ca0f5ba5b638924cb51903fa2c828c83df51ff"
+  "Red Sheer Skater Mini Dress": "86430edd059accd2aeea97c31406c8b819aa0e0eef344088adc83eabda3034b4"
  },
  "mannequin/20": {
-  "Black Bralette": "7b6ffce17274f491242ff9ea6df8e9bef0e0721141f26de743109603383082a0",
-  "Black Briefs": "fde288e7fcc5a626c257cb51a45ea130420382a28c15ff71195d132c2caf62b2",
-  "Red Bodycon Mini Dress": "c6f3dbd4ae2bfb517ac02430b5da75f9bbd93132f18fb665a052ce53202d3ebe"
+  "Black Tailored Briefs": "0dfe643c05518ceb028440c57bf78a90c787d2d2f28213ae62099650b4cf04da",
+  "Black Tailored Triangle Bralette": "a95c9dcb4b7fb78fccb88053f6140e7d393c4bad7bb4e65fd6b35a37e589f04e",
+  "Red Bodycon Mini Dress": "11d7888df712ec2657b115bb8ff3b50d8b4a935d9fda16d8947cb9db24205048"
  },
  "mannequin/21": {
   "Silver Metallic Bodycon Mini Dress": "2ee6d4aedcc5258318e4bb5b7474c979d38c407ec67a872611d883a65c61eca1"

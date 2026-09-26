@@ -223,5 +223,26 @@ def test_thong_words_plan_a_thong(template_catalog):
     catalog = template_catalog
     for prompt, template in (("white thong", "under-thong-v2"), ("black high-waist thong", "under-high-waist-thong-v2"),
                              ("white g-string", "under-g-string-v2"), ("white v-string", "under-v-string-v2"),
-                             ("white briefs", "under-briefs-v1"), ("tailored thong", "under-thong-v2")):
+                             ("white briefs", "under-briefs-v2"), ("tailored thong", "under-thong-v2")):
         assert select_template(catalog, parse_prompt(prompt), prompt).id == template, prompt
+
+
+def test_plain_words_plan_the_tailored_blocks(template_catalog):
+    """The sweep: every v1 band piece read as a tube, and plain words planned them. Plain words
+    now plan the pattern blocks; the legacy templates stay reachable by id only."""
+    from wardrobe.pipeline.plan_outfit import select_template
+
+    for prompt, template in (("white bra", "under-bra-full-v2"), ("black lace bralette", "under-bralette-v2"),
+                             ("beige seamless briefs", "under-briefs-v2"), ("panties", "under-briefs-v2"),
+                             ("underwear", "under-briefs-v2"), ("high-leg briefs", "under-briefs-high-leg-v2"),
+                             ("low-rise briefs", "under-hipster-v2"), ("black tailored cheeky briefs", "under-cheeky-v2")):
+        assert select_template(template_catalog, parse_prompt(prompt), prompt).id == template, prompt
+    for legacy in ("under-briefs-v1", "under-bralette-v1"):
+        assert template_catalog.get(legacy).tags == []
+
+
+def test_coverage_words_cut_a_plain_brief():
+    """"micro" and "minimal" cut the legacy band's leg line; on the block they name a pattern."""
+    from wardrobe.lingerie.blocks import COVERAGE_PRESETS
+
+    assert COVERAGE_PRESETS == {"minimal": "cheeky", "micro": "g-string"}

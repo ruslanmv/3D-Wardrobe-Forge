@@ -122,7 +122,7 @@ denim. Renaming a template cannot change what a bare category gets —
 | shoes | `shoes-flats-v1` |
 | legwear | `legwear-tights-v1` |
 | swimwear | `swim-one-piece-v1` (still behind the adult gate) |
-| underwear | `under-briefs-v1` (still behind the adult gate) |
+| underwear | `under-briefs-v2`, the tailored brief block (still behind the adult gate) |
 
 Every procedural skirt (`procedural:skirt`) is given a waistband after fitting
 (`wardrobe/geometry/waistband.py`): its top rows, 3 mm proud, drawn a shade

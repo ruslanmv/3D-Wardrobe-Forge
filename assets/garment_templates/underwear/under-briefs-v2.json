@@ -38,8 +38,14 @@
     "tailored briefs",
     "tailored brief",
     "tailored classic briefs",
-    "cut-and-sew briefs"
+    "cut-and-sew briefs",
+    "briefs",
+    "panties",
+    "knickers",
+    "underwear",
+    "lace briefs",
+    "bikini briefs"
   ],
   "description": "Classic briefs: mid rise, wide sides, full back.",
-  "optIn": true
+  "defaultForCategory": true
 }

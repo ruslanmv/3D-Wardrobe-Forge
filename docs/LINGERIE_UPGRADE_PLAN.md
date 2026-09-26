@@ -259,6 +259,11 @@ The hash baseline stays untouched in every phase: v1 kinds and templates keep th
 - **Compatibility:**
   - Don't edit `build_band`, `half_at`, `cups_profile`, `briefs_profile`, `with_elastic`, `_strap_radius`, `build_straps` or the v1 templates.
   - Don't remove `optIn` from v2 templates or flip the stocking `foot` default without a separately reviewed hash re-baseline.
+    That review happened for the briefs and bras (L3d, after the lingerie sweep): every v1 band piece read as a tube,
+    and plain words planned them. "bra", "bralette", "briefs", "panties" and "underwear" now plan the tailored
+    blocks, `under-briefs-v2` is the underwear default (no longer opt-in), and "minimal"/"micro" coverage name
+    cheeky/G-string cuts on a plain brief. Exactly the nine mannequin looks that name them moved, re-baselined after a
+    before/after render; the v1 templates keep their code and are reachable by id.
 - **Physics:** no cloth simulation. Measure tension on posed bodies with `taut_length`, never on skinned garment vertices (the lesson recorded in `suspender_straps.py`).
 - **Real avatars:** VRoid bust and crotch topology varies. Landmark detection must fall back to formula landmarks with a warning, not fail the job. Keep L9 rules as warnings until they are tuned on all 4 real avatars.
 - **Scope:** don't start the pattern kernel, Postgres or Studio before L1–L5 land. Build seams and specs so they can be lifted into `wardrobe/patterns/` later, not a parallel system.

@@ -3,7 +3,6 @@
   "id": "under-briefs-v1",
   "name": "Briefs",
   "category": "underwear",
-  "defaultForCategory": true,
   "mesh": "procedural:briefs",
   "coverage": [
     "hips"
@@ -28,15 +27,6 @@
     "supportsPattern": true,
     "supportsMetallic": false
   },
-  "tags": [
-    "panties",
-    "briefs",
-    "knickers",
-    "underwear",
-    "lace briefs",
-    "bikini briefs",
-    "high-leg briefs",
-    "low-rise briefs"
-  ],
-  "description": "Low-rise briefs."
+  "tags": [],
+  "description": "Low-rise briefs, the legacy band. Every word now plans the tailored block; reachable by template id."
 }

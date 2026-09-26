@@ -159,7 +159,12 @@ def build_bra(frame: BodyFrame, spec: BraSpec, straps: StrapBlock, *, name: str 
             band_index[k, front_count + j] = len(positions)
             positions.append(frame.point(np.array([phi]), y)[0])
         band_index[k, -1] = band_index[k, 0]  # closed ring
-    front_placed = {int(v) for v in band_index[:, :front_count].reshape(-1)}
+    # The whole band is placed and seated on her surface after the shell, not only its front.
+    # Its back half was fitted by the shell's radial passes, whose outline at underbust height
+    # took in her arms where they pass her sides (a spread-armed mannequin): the band's sides
+    # stood out to them as flaps 9-10 cm off her. Drafted on her measured outline at the
+    # clearance, it needs only the push out of her that every placed vertex gets.
+    front_placed = {int(v) for v in band_index.reshape(-1)}
 
     # ---- the cups: their lower row is the band's top row under them.
     cup_rows: dict[str, list[list[int]]] = {}
