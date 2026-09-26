@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from wardrobe.lingerie.blocks.brief import GUSSET_COLUMNS, gusset_point
+from wardrobe.lingerie.blocks.brief import GUSSET_COLUMNS, THONG_BACK_BELOW, gusset_point
 from wardrobe.lingerie.blocks.frame import body_frame
 from wardrobe.lingerie.specs import parse_block
 
@@ -131,6 +131,8 @@ def after_shell(context, mesh, clearance: float) -> None:
         joined = (positions[seam["a"]] + positions[seam["b"]]) / 2
         positions[seam["a"]] = joined
         positions[seam["b"]] = joined
+        if float((record.get("measures") or {}).get("backCoverage", 1.0)) < THONG_BACK_BELOW:
+            _hug_back(context, positions, record, clearance)
         _seat_brief_gusset(context, mesh, positions, record, clearance)
         extension = record.get("legExtension")
         if extension:
@@ -164,6 +166,60 @@ def after_shell(context, mesh, clearance: float) -> None:
         n[seam["a"]] = avg
         n[seam["b"]] = avg
         mesh.normals = n.astype(np.float32)
+
+
+#: A string is drawn in only to this many clearances: it bridges the cleft of her seat,
+#: which the 6 mm surface sampling cannot resolve; drawn in to ``HUG`` it went inside her.
+HUG_BACK = 4.0
+
+
+def _hug_back(context, positions: np.ndarray, record: dict, clearance: float) -> None:
+    """Seat a thong's back on her, the way the gusset is: it followed her outline, not her.
+
+    The panels are drawn on her measured outline at each height, which spans straight
+    across her seat, and the radial passes only push out. A full back is right to
+    bridge it; a thong's string is not: running under her seat to the gusset it stood
+    off her by up to 41 mm on the fit form, a flap behind her in profile, twisted where
+    it met the gusset seam. Every row of the string but the waistband's is pushed out of
+    her, drawn back in where it hangs off (``HUG_BACK`` clearances) and relaxed along and
+    across, as ``seat_gusset`` does; the gusset is then seated from the back seam this
+    leaves.
+    """
+    from wardrobe.lingerie.blocks.brief import GUSSET_COLUMNS, LEG_HALF_COLUMNS
+
+    rows, count = int(record["rows"]), int(record["columns"])
+    # The string's own columns: they alone run down to the gusset seam, so they share one
+    # row structure. Seated with the straps beside them, relaxing dragged the straps down
+    # over her seat into a wide triangle.
+    first = LEG_HALF_COLUMNS + GUSSET_COLUMNS + 2 * LEG_HALF_COLUMNS
+    columns = list(range(first, first + GUSSET_COLUMNS + 1))
+    grid = [[k * count + j for j in columns] for k in range(rows + 1)]
+    moving = np.array([v for row in grid[1:] for v in row])
+    lo, hi = positions[moving].min(axis=0) - 0.04, positions[moving].max(axis=0) + 0.04
+    pts, nrm = _surface(context, lo, hi)
+    if pts.shape[0] == 0:
+        return
+    for _ in range(ITERATIONS):
+        p = positions[moving]
+        signed, normal = _depth(p, pts, nrm)
+        push = np.clip(clearance - signed, 0.0, None)
+        pull = np.clip(signed - HUG_BACK * clearance, 0.0, None) * 0.5
+        positions[moving] = p + normal * (push - pull)[:, None]
+        relaxed = positions.copy()
+        for r in range(1, len(grid)):
+            for i, v in enumerate(grid[r]):
+                around = [grid[r - 1][i]] + ([grid[r + 1][i]] if r + 1 < len(grid) else [])
+                around += [grid[r][i - 1]] if i > 0 else []
+                around += [grid[r][i + 1]] if i + 1 < len(grid[r]) else []
+                relaxed[v] = positions[v] * 0.5 + positions[around].mean(axis=0) * 0.5
+        positions[moving] = relaxed[moving]
+    for _ in range(ITERATIONS):  # relaxing must never leave a vertex in her
+        p = positions[moving]
+        signed, normal = _depth(p, pts, nrm)
+        push = np.clip(clearance - signed, 0.0, None)
+        if push.max() < 1e-5:
+            break
+        positions[moving] = p + normal * push[:, None]
 
 
 def _seat_brief_gusset(context, mesh, positions: np.ndarray, record: dict, clearance: float) -> None:

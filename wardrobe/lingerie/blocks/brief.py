@@ -43,6 +43,10 @@ GUSSET_COLUMNS = 6
 LEG_HALF_COLUMNS = 12
 #: Interior rows of the gusset, front seam to back seam.
 GUSSET_ROWS = 9
+#: A brief whose back covers less than this of her seat is thong-cut: its string is
+#: ``placed`` like the gusset and seated on her by ``wardrobe.lingerie.fit``, not fitted
+#: by the shell's radial passes, which hold it on her outline across her seat.
+THONG_BACK_BELOW = 0.25
 #: Panel rows are at most this far apart.
 ROW_STEP_M = 0.012
 #: How far above her crotch landmark the gusset seams sit.
@@ -306,6 +310,9 @@ def build_brief(frame: BodyFrame, spec: BriefSpec, *, name: str = "brief",
 
     placed = np.zeros(positions.shape[0], dtype=bool)
     placed[base:] = True
+    if measures["backCoverage"] < THONG_BACK_BELOW:
+        # The string's columns below the waistband: seated on her with the gusset.
+        placed[[vid(k, j) for k in range(1, rows + 1) for j in back_cols]] = True
     mesh = Mesh(positions=positions.astype(np.float32),
                 indices=np.array(indices, dtype=np.uint32).reshape(-1),
                 uvs=uvs.astype(np.float32), metadata={"section": name})
