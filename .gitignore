@@ -27,3 +27,9 @@ assets/library/*.vrm
 
 # Local job state and generated artifacts (WARDROBE_STORAGE_ROOT default)
 .wardrobe/
+
+# scripts/download.py: VRoid Hub models (fetched, like the library above) and
+# the saved sign-in. The manifest and licence snapshots beside them are committed.
+assets/library/vroid/*.vrm
+assets/library/vroid/*.part
+.vroid-token.json

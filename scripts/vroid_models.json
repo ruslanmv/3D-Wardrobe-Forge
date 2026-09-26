@@ -1,0 +1,14 @@
+{
+  "about": "VRoid Hub models scripts/download.py fetches. Each entry is only a request: the script reads the model's current conditions from VRoid Hub before downloading and refuses any model whose creator does not allow redistribution and modification. Being listed here declares nothing about the character; adulthood for private outfits is still the operator's declaration in assets/library/policy.json.",
+  "models": [
+    { "slug": "vroid-avatar-sample-o", "name": "AvatarSample_O", "modelId": "3390783334862270831", "presentation": "feminine" },
+    { "slug": "vroid-model-girl", "name": "Model Girl", "modelId": "3353341336249445361", "presentation": "feminine" },
+    { "slug": "vroid-celeste", "name": "Celeste", "modelId": "5295951488219248595", "presentation": "feminine" },
+    { "slug": "vroid-free-vtuber", "name": "Free To Use Vtuber Model", "modelId": "3345334325262507560", "presentation": "feminine" },
+    { "slug": "vroid-jeanne-adelaide", "name": "Jeanne-Adélaïde", "modelId": "7169770912101796294", "presentation": "feminine" },
+    { "slug": "vroid-helen", "name": "Helen", "modelId": "3591428810231326281", "presentation": "feminine" },
+    { "slug": "vroid-auralithis", "name": "Auralithis", "modelId": "1332383967291184475", "presentation": "masculine" },
+    { "slug": "vroid-azary-sheelal", "name": "Azary Sheelal", "modelId": "2128557970269162780", "presentation": "masculine" },
+    { "slug": "vroid-boy-g", "name": "Boy G", "modelId": "892080065338290893", "presentation": "masculine" }
+  ]
+}
