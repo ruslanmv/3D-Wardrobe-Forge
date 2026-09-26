@@ -9,7 +9,8 @@ garment in it is planned, fitted and gated exactly as if it had been typed.
 low-rise pleated mini. Both are clothes — nothing in it is underwear — so it needs
 no declaration, and the skirt liner under it is cut below the skirt's low waistband.
 
-``visible_thong_low_rise_jeans`` is the Y2K "whale tail": a V-string worn with its
+``visible_thong_low_rise_jeans`` (and ``visible_thong_cami_baggy_jeans``, the same with a
+white cropped cami and baggy jeans) is the Y2K "whale tail": a V-string worn with its
 side straps and the V at the back above the waistband of low-rise jeans. It is two
 garments placed against each other, so the ``visibleThong`` block moves exactly two
 waistlines — the thong's up, the jeans' down — and nothing else. The thong is
@@ -39,6 +40,13 @@ LOOK_PRESETS: dict[str, dict] = {
     "visible_thong_low_rise_jeans": {
         "title": "Visible thong + low-rise jeans",
         "prompt": "white fitted crop top + blue low-rise straight jeans + black tailored v-string",
+        "visibleThong": {"style": "classic"},
+    },
+    # The same whale tail with a plain white cropped cami on thin straps and baggy
+    # low-rise jeans, all-white underneath: the other half of the Y2K look.
+    "visible_thong_cami_baggy_jeans": {
+        "title": "Visible thong + cami + baggy jeans",
+        "prompt": "white cropped cami + blue low-rise baggy jeans + white tailored v-string",
         "visibleThong": {"style": "classic"},
     },
 }

@@ -64,6 +64,24 @@ def test_the_visible_thong_block_moves_two_waistlines_and_nothing_else(catalog, 
     assert by_id["top-crop-tee-v1"].style.brief_rise is None and by_id["top-crop-tee-v1"].style.rise == ""
 
 
+def test_the_cami_version_is_a_plain_cropped_cami_over_baggy_low_rise_jeans(catalog):
+    outfit = plan(catalog, prompt="visible_thong_cami_baggy_jeans", preset="visible_thong_cami_baggy_jeans")
+    by_id = {g.template_id: g for g in outfit.garments}
+    assert set(by_id) == {"under-v-string-v2", "top-cropped-cami-v1", "jeans-baggy-v1"}
+    assert all(g.material.color_name == ("blue" if g.category == "trousers" else "white") for g in outfit.garments)
+    assert "Lace" not in outfit.name  # a plain cami, not the lace one
+    assert by_id["under-v-string-v2"].style.brief_rise == look_presets.VISIBLE_THONG_STYLES["classic"][0]
+    assert by_id["jeans-baggy-v1"].style.rise == "low"
+
+
+def test_the_plain_cami_is_chosen_only_by_name(catalog):
+    from wardrobe.pipeline.plan_outfit import select_template
+
+    for prompt, template in (("white crop cami", "top-crop-cami-v1"), ("lace crop cami", "top-crop-cami-v1"),
+                             ("white cropped cami", "top-cropped-cami-v1")):
+        assert select_template(catalog, parse_prompt(prompt), prompt).id == template
+
+
 def test_explicit_rises_win_over_the_style(catalog):
     garments = plan(catalog, prompt="visible_thong_low_rise_jeans", preset="visible_thong_low_rise_jeans",
                     visibleThong={"style": "subtle", "thongRise": 1.1, "jeansRise": "ultra-low"}).garments

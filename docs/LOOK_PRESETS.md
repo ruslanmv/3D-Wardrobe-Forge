@@ -58,6 +58,20 @@ changes that. The pictures below use the calibration mannequin, which
 
 ![visible thong over low-rise jeans, three styles](images/looks/visible-thong.webp)
 
+### `visible_thong_cami_baggy_jeans`
+
+The same whale tail with a plain white **cropped cami** on thin straps
+(`top-cropped-cami-v1`, new, opt-in — chosen only when named, so "crop cami"
+still plans the lace one), **low-rise baggy jeans** and a **white** tailored
+V-string, `classic` by default (5.1 cm of strap on the mannequin). Gated the same
+way.
+
+The preview below dresses the same declared mannequin with its skin tinted a
+warmer tone, only so white fabric reads against it; the body and its declaration
+are unchanged.
+
+![visible thong with a white cropped cami and baggy low-rise jeans](images/looks/visible-thong-cami.webp)
+
 ## What changed underneath, and what did not
 
 - `StylePlan.brief_rise` places a pattern-block brief's waistline. Only the
