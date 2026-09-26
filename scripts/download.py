@@ -20,6 +20,13 @@ What it does, in order:
    ``.vroid-token.json`` (gitignored, mode 600) and refreshed when it expires, so
    the browser is needed once. ``--paste`` is for a machine with no browser: open
    the printed URL anywhere, then paste the address the browser ends up on.
+   ``--begin`` / ``--finish ADDRESS`` split that in two for a session where the
+   person clicking is not at the terminal (a remote agent relaying the link in a
+   chat): ``--begin`` prints the link and keeps the PKCE verifier and ``state`` in
+   ``.vroid-pending.json`` (gitignored, mode 600); ``--finish`` takes the address
+   the browser ended on, checks ``state``, exchanges the code and deletes the
+   pending file. The code in that address is single-use, expires in minutes and
+   is useless without the verifier, which never leaves this machine.
 3. For each model, reads its *current* conditions from VRoid Hub and refuses it
    unless it is downloadable, available to other users, and its creator allows
    redistribution and modification. That is the bar because of what happens to the
@@ -260,13 +267,47 @@ def _save_token(token: dict) -> None:
         TOKEN_FILE.chmod(0o600)
 
 
+PENDING_FILE = TOKEN_FILE.with_name(".vroid-pending.json")
+
+
+def _require_app(config: dict) -> None:
+    missing = [k for k in ("VROID_CLIENT_ID", "VROID_CLIENT_SECRET") if not config.get(k)]
+    if missing:
+        raise DownloadError(f"set {' and '.join(missing)} in .env (see .env.example)")
+
+
+def begin_sign_in(config: dict) -> str:
+    """First half of a split sign-in: the link to open, with the verifier kept here."""
+    _require_app(config)
+    verifier, challenge = pkce_pair()
+    state = secrets.token_urlsafe(24)
+    PENDING_FILE.write_text(json.dumps({"verifier": verifier, "state": state, "at": time.time()}),
+                            encoding="utf-8")
+    with contextlib.suppress(OSError):
+        PENDING_FILE.chmod(0o600)
+    return authorize_url(config, state, challenge)
+
+
+def finish_sign_in(config: dict, address: str) -> None:
+    """Second half: exchange the code in ``address`` for a saved token."""
+    _require_app(config)
+    if not PENDING_FILE.is_file():
+        raise DownloadError("no sign-in in progress; run with --begin first")
+    pending = json.loads(PENDING_FILE.read_text(encoding="utf-8"))
+    try:  # one attempt per link: a wrong or forged address uses it up
+        code = code_from_redirect(address, pending["state"])
+        token = _token_request(config, grant_type="authorization_code", code=code,
+                               code_verifier=pending["verifier"])
+    finally:
+        PENDING_FILE.unlink(missing_ok=True)
+    _save_token(token)
+
+
 def access_token(config: dict, *, paste: bool) -> str:
     """A usable token: the environment's, the saved one, a refreshed one, or a fresh sign-in."""
     if config.get("VROID_ACCESS_TOKEN"):
         return config["VROID_ACCESS_TOKEN"]
-    missing = [k for k in ("VROID_CLIENT_ID", "VROID_CLIENT_SECRET") if not config.get(k)]
-    if missing:
-        raise DownloadError(f"set {' and '.join(missing)} in .env (see .env.example)")
+    _require_app(config)
     if TOKEN_FILE.is_file():
         saved = json.loads(TOKEN_FILE.read_text(encoding="utf-8"))
         if saved.get("expires_at", 0) > time.time():
@@ -486,6 +527,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--force", action="store_true", help="download again even if the file is present")
     parser.add_argument("--paste", action="store_true", help="sign in without a local browser redirect")
     parser.add_argument("--logout", action="store_true", help="revoke and delete the saved token")
+    parser.add_argument("--begin", action="store_true",
+                        help="print a sign-in link for someone elsewhere to open; then --finish")
+    parser.add_argument("--finish", metavar="ADDRESS",
+                        help="the address the browser ended on after --begin's link")
     args = parser.parse_args(argv)
 
     config = read_env()
@@ -494,6 +539,15 @@ def main(argv: list[str] | None = None) -> int:
     config["VROID_SCOPE"] = config.get("VROID_SCOPE") or "default"
     if args.logout:
         logout(config)
+        return 0
+    if args.begin:
+        print("Open this link, sign in to VRoid Hub and approve. The browser then lands on an address\n"
+              "that may not load; copy that whole address and run --finish with it:\n\n  "
+              + begin_sign_in(config) + "\n")
+        return 0
+    if args.finish:
+        finish_sign_in(config, args.finish)
+        print("Signed in; the token is saved in .vroid-token.json. Now run with --only <slugs>.")
         return 0
 
     only = {slug.strip() for slug in args.only.split(",")} if args.only else None

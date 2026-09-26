@@ -33,3 +33,4 @@ assets/library/*.vrm
 assets/library/vroid/*.vrm
 assets/library/vroid/*.part
 .vroid-token.json
+.vroid-pending.json

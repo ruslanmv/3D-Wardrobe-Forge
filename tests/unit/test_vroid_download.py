@@ -49,7 +49,10 @@ def test_env_file_is_read_and_the_environment_wins(tmp_path):
 
 def test_the_model_list_is_complete_and_filterable():
     models = dl.load_models()
-    assert len(models) == 9 and len({m["slug"] for m in models}) == 9
+    assert len(models) == 12 and len({m["slug"] for m in models}) == 12
+    # Where a creator states the character's age, the entry records it and what was said.
+    stated = [m for m in models if "creatorStatesAge" in m]
+    assert stated and all(m["creatorStatesAge"] >= 18 and m["creatorStatement"] for m in stated)
     assert all(m["modelId"].isdigit() and m["presentation"] in {"feminine", "masculine"} for m in models)
     assert [m["slug"] for m in dl.load_models(only={"vroid-helen"})] == ["vroid-helen"]
     with pytest.raises(dl.DownloadError, match="not in"):
@@ -219,3 +222,31 @@ def test_a_download_that_is_not_a_vrm_leaves_nothing_behind(tmp_path, monkeypatc
         dl.download({"slug": "vroid-helen", "modelId": "359"}, "TOKEN", tmp_path)
     assert not list(tmp_path.iterdir())
     assert calls[-1][0] == "DELETE"  # the licence is invalidated even when the file is bad
+
+
+def test_a_split_sign_in_keeps_the_verifier_here_and_checks_state(tmp_path, monkeypatch):
+    """--begin prints a link; --finish exchanges the code from the address pasted back."""
+    monkeypatch.setattr(dl, "TOKEN_FILE", tmp_path / ".vroid-token.json")
+    monkeypatch.setattr(dl, "PENDING_FILE", tmp_path / ".vroid-pending.json")
+    config = {"VROID_CLIENT_ID": "id", "VROID_CLIENT_SECRET": "secret", "VROID_SCOPE": "default",
+              "VROID_REDIRECT_URI": "http://localhost:18927/callback"}
+    url = dl.begin_sign_in(config)
+    pending = json.loads(dl.PENDING_FILE.read_text())
+    assert pending["verifier"] not in url and f"state={pending['state']}" in url
+    with pytest.raises(dl.DownloadError, match="state"):
+        dl.finish_sign_in(config, "http://localhost:18927/callback?code=c&state=forged")
+    assert not dl.PENDING_FILE.exists()  # a failed attempt cannot be replayed
+
+    url = dl.begin_sign_in(config)
+    state = json.loads(dl.PENDING_FILE.read_text())["state"]
+    sent = {}
+
+    def request(method, address, *, token=None, form=None, **_):
+        sent.update(form)
+        return 200, {}, json.dumps({"access_token": "a", "refresh_token": "r", "expires_in": 3600}).encode()
+
+    monkeypatch.setattr(dl, "_request", request)
+    dl.finish_sign_in(config, f"http://localhost:18927/callback?code=the-code&state={state}")
+    assert sent["code"] == "the-code" and sent["code_verifier"] and sent["grant_type"] == "authorization_code"
+    assert json.loads(dl.TOKEN_FILE.read_text())["access_token"] == "a"
+    assert not dl.PENDING_FILE.exists()
