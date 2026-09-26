@@ -165,6 +165,12 @@ def build_body_mesh(body: BodyProportions, positions: dict[str, np.ndarray]) -> 
     arm_radius = max(h * 0.028, 0.02)
     leg_radius = max(body.hip_width * 0.21, 0.04)
 
+    # Each leg starts inside the torso, not at the hip joint. The torso is capped 2% of
+    # her height below the hips and the joint is 2.5% below, so the two met across an
+    # open gap of 7-9 mm; on every calibration body the dark background showed through
+    # it as a black line round the tops of her thighs once her trousers came off.
+    leg_top = float(positions["hips"][1]) - h * 0.01
+
     for side in ("left", "right"):
         sections.append(
             sweep(
@@ -179,7 +185,8 @@ def build_body_mesh(body: BodyProportions, positions: dict[str, np.ndarray]) -> 
         sections.append(
             sweep(
                 np.array(
-                    [positions[f"{side}UpperLeg"], positions[f"{side}LowerLeg"], positions[f"{side}Foot"]]
+                    [positions[f"{side}UpperLeg"] * [1.0, 0.0, 1.0] + [0.0, leg_top, 0.0],
+                     positions[f"{side}LowerLeg"], positions[f"{side}Foot"]]
                 ),
                 [leg_radius, leg_radius * 0.72, leg_radius * 0.5],
                 segments=10,
