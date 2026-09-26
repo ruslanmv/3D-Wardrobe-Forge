@@ -21,8 +21,10 @@ from wardrobe.engines.shell import build_fitted_shell, on_axis_mask, shell_cover
 from wardrobe.errors import FittingError
 from wardrobe.geometry.procedural import trim_triangles
 from wardrobe.geometry.raster import RenderLayer, render
+from wardrobe.geometry.waistband import WAISTBAND_SHADE, waistband_mask
 from wardrobe.hosiery import assembly as hosiery_assembly
 from wardrobe.hosiery import fit as hosiery_fit
+from wardrobe.hosiery.materials import shade_material
 from wardrobe.materials.textures import pleat_shading
 from wardrobe.pipeline.context import BuiltLayer, PipelineContext
 from wardrobe.vrm.garments import garment_material_name, garment_slot
@@ -157,6 +159,11 @@ class NativeEngine(FittingEngine):
                 if layer.mesh.metadata.get("pleatShading") and material.pattern == "none":
                     # Knife pleats read by their shadows (wardrobe.materials.textures.pleat_shading).
                     fabric.texture = pleat_shading()
+                # A skirt's waistband is the same cloth a shade darker, opaque, unpatterned:
+                # the line that says where the garment begins (wardrobe.geometry.waistband).
+                band = waistband_mask(layer.mesh)
+                extra = [(band, shade_material(garment_material_name(f"{layer.plan.name} Waistband", kind),
+                                               material, WAISTBAND_SHADE))] if band.any() else None
                 attached = attach_garment(
                     context.document,
                     context.info,
@@ -168,6 +175,7 @@ class NativeEngine(FittingEngine):
                     trim_material=GarmentMaterial.from_plan(
                         garment_material_name(f"{layer.plan.name} Trim", kind), trim_plan
                     ) if trim_plan else None,
+                    extra=extra,
                 )
             # What this garment is, for the next job that meets it: an outer layer
             # made later knows not to take this underwear off (garment_inventory).

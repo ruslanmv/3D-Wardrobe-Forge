@@ -22,7 +22,13 @@
     "allowLengthScale": true,
     "allowWidthScale": true,
     "minLengthScale": 0.7,
-    "maxLengthScale": 1.3
+    "maxLengthScale": 1.3,
+    "conform": 0.9,
+    "hemFlareRatio": 0.89,
+    "flareStart": "below-hip",
+    "flarePower": 1.15,
+    "waistEaseMm": 2.0,
+    "hipEaseMm": 5.0
   },
   "materials": {
     "supportsBaseColor": true,
@@ -35,5 +41,5 @@
     "work",
     "formal"
   ],
-  "description": "Narrow straight skirt."
+  "description": "Fitted through the waist and seat, tapering to the knee."
 }

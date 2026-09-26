@@ -382,7 +382,11 @@ SKIRT_SHAPES: dict[str, SkirtShape] = {
     "fit-and-flare": SkirtShape(hem_ratio=1.48, flare_power=1.65),
     "cocktail": SkirtShape(hem_ratio=1.22, flare_power=1.6),
     "sheath": SkirtShape(hem_ratio=1.0, flare_power=1.0),
-    "pencil": SkirtShape(hem_ratio=0.94, flare_power=1.0),
+    # Fitted through the seat, then tapered: 11% in by the hem. At 0.94 from the hip
+    # with default ease it read as a tube — 15.5 / 17.1 / 15.9 cm half-widths at waist,
+    # hip and hem on AvatarSample A, the cylinder a bare "skirt" used to be given.
+    "pencil": SkirtShape(hem_ratio=0.89, flare_power=1.15, flare_start="below-hip", waist_ease_m=0.002,
+                         hip_ease_m=0.005),
     "ball-gown": SkirtShape(hem_ratio=1.9, flare_power=1.3, flare_start="waist"),
     "straight": SkirtShape(hem_ratio=1.06, flare_power=1.2),
     "wide": SkirtShape(hem_ratio=1.3, flare_power=1.5),

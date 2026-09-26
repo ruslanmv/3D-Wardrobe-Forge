@@ -271,3 +271,54 @@ def test_real_jeans_have_two_legs_and_no_hip_ledge():
     slices = [jeans[np.abs(jeans[:, 1] - y) < 0.02] for y in np.arange(0.62, 1.0, 0.04)]
     widths = [np.abs(s[:, 0]).max() for s in slices if s.shape[0]]
     assert max(widths) < 0.17  # no ledge standing off her hips
+
+
+def _half_widths(points: np.ndarray, rows: int = 9) -> np.ndarray:
+    top, bottom = points[:, 1].max(), points[:, 1].min()
+    out = []
+    for y in np.linspace(top - 0.005, bottom + 0.005, rows):
+        band = points[np.abs(points[:, 1] - y) < 0.006]
+        out.append(np.ptp(band[:, 0]) / 2)
+    return np.asarray(out)
+
+
+def _skirt_body(document: GltfDocument, template_id: str) -> np.ndarray:
+    """The skirt's own fabric: its first primitive, without the waistband."""
+    for node in document.nodes:
+        tag = (node.get("extras") or {}).get("wardrobeForge") or {}
+        if tag.get("templateId") == template_id and "mesh" in node:
+            primitive = document.meshes[node["mesh"]]["primitives"][0]
+            positions = document.read_accessor(primitive["attributes"]["POSITION"])[:, :3]
+            return positions[np.unique(document.read_accessor(primitive["indices"]).reshape(-1))]
+    raise AssertionError(f"no {template_id} in the look")
+
+
+def test_a_bare_skirt_on_a_real_avatar_is_an_a_line_not_a_tube():
+    """S3. The Studio's "Planner chooses" skirt: planned, fitted, smoothed, assembled — and still flared.
+
+    The fitted shell is measured, not the builder's rings, so a fitting pass that
+    evened the cut back out would fail here where test_skirt_fit could not see it.
+    """
+    document, result = _library_look("AvatarSample_A.vrm", "skirt")
+    assert result.fit_report.passed
+    widths = _half_widths(_skirt_body(document, "skirt-a-line-v1"))
+    hip = widths[:4].max()
+    assert widths[0] < hip  # her waist goes in
+    assert widths[-1] / hip > 1.4  # and the hem flares: 17 → 28 cm half-widths on Sample A
+
+
+def test_a_real_pencil_skirt_tapers_and_has_a_waistband():
+    document, result = _library_look("AvatarSample_A.vrm", "grey pencil skirt")
+    assert result.fit_report.passed
+    widths = _half_widths(_skirt_body(document, "skirt-pencil-v1"))
+    hip = widths.max()
+    assert widths[0] < hip
+    assert 0.82 <= widths[-1] / hip <= 0.92  # was 0.93: a tube
+
+    node = next(n for n in document.nodes
+                if ((n.get("extras") or {}).get("wardrobeForge") or {}).get("templateId") == "skirt-pencil-v1")
+    primitives = document.meshes[node["mesh"]]["primitives"]
+    assert len(primitives) == 2  # the fabric and its waistband
+    fabric, band = (document.materials[p["material"]] for p in primitives)
+    shade = lambda m: sum(m["pbrMetallicRoughness"]["baseColorFactor"][:3])  # noqa: E731
+    assert shade(band) < shade(fabric)  # the same cloth, a shade darker

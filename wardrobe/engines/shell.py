@@ -41,6 +41,7 @@ from wardrobe.engines.geometry_checks import (
 from wardrobe.errors import FittingError
 from wardrobe.geometry.mesh import Mesh
 from wardrobe.geometry.procedural import FitParameters, build_garment
+from wardrobe.geometry.waistband import add_waistband
 from wardrobe.lingerie import LINGERIE_KINDS
 from wardrobe.pipeline.context import PipelineContext
 from wardrobe.vrm.inspect import VrmSpec
@@ -223,6 +224,10 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
                     from_y=params.hip_y, mask=axis_mask, clearance_m=clearance)
     after = measure_clearance(mesh, index, clearance, axis_mask)
     after.resolved = pushed
+    if kind == "skirt":
+        # Last, from the finished shape: a band built before fitting is pressed back
+        # into the skirt by the passes above (wardrobe.geometry.waistband).
+        mesh = add_waistband(mesh, index.axis_x, index.axis_z)
 
     # The shell's UVs are metres of fabric; one pattern tile covers its physical size.
     scale = float(context.plan.material.texture_scale or 0.0)
