@@ -33,7 +33,19 @@ it `pip install` and fetching the avatar library.
 
 Out of the box the Space is an open demo (`WARDROBE_AUTH_MODE=none`). To require
 a key, add `WARDROBE_AUTH_MODE=api_key` as a variable and `WARDROBE_API_KEY` as a
-**secret** in the Space settings; the Studio's key button then asks for it.
+**secret** in the Space settings.
+
+**A keyed Space still lets its trusted pages in without the key.** The key is for
+callers that can keep a secret — a server. Two kinds of page cannot, and are trusted
+instead: the pages listed in `WARDROBE_TRUSTED_ORIGINS` (default
+`["https://yourfriend.online","https://www.yourfriend.online"]`), and the Studio this
+Space serves (`WARDROBE_TRUST_SAME_ORIGIN=true`). Neither ever sees a key prompt: the
+Studio shows its key button only when `/v1/capabilities` says this page needs one.
+Trust is read from the browser's `Origin` header, which a page on another site cannot
+forge — so no other website can spend the Space — but which a script outside a browser
+can send. It keeps other sites out; it is not a password. Set
+`WARDROBE_TRUSTED_ORIGINS=[]` and `WARDROBE_TRUST_SAME_ORIGIN=false` for a Space where
+only the key opens it.
 
 Variables for a keyed or cross-origin Space:
 
@@ -73,9 +85,10 @@ the conditions its provenance manifest grants (`CC0` → modification and
 redistribution allowed). An embedded prohibition is still checked first and
 still wins.
 
-**With `WARDROBE_AUTH_MODE=api_key`**, the Studio's key button stores the key in
-that browser and sends it as a Bearer token. Every asset — avatar, look,
-preview — is fetched with it, so a keyed Space works the same as an open one.
+**With `WARDROBE_AUTH_MODE=api_key`**, the Studio served by the Space is trusted and
+asks for nothing. Opened from anywhere else, its key button stores the key in that
+browser and sends it as a Bearer token. Every asset — avatar, look, preview — is
+fetched with it, so a keyed Space works the same as an open one.
 
 **Exporting.** `GET /v1/wardrobes/{avatar}/bundle.zip` (`?passedOnly=true` to drop
 looks whose fit failed) is the Studio's Export button. Unzip it into

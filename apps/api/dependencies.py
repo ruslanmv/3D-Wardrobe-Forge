@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import secrets
 from typing import Annotated
+from urllib.parse import urlsplit
 
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, Header, HTTPException, Request
 
 from wardrobe.config import Settings, get_settings
 from wardrobe.domain.garments import TemplateCatalog
@@ -30,6 +31,8 @@ _STATUS_FOR_REASON = {
     FailureReason.PROVIDER_ERROR: 502,
     FailureReason.INTIMATE_NOT_PERMITTED: 451,
     FailureReason.ADULT_DECLARATION_REQUIRED: 428,
+    FailureReason.BODY_INCOMPLETE: 422,
+    FailureReason.FOUNDATION_OVER_CLOTHING: 422,
 }
 
 
@@ -67,20 +70,49 @@ async def require_job(job_id: str, orchestrator: OrchestratorDep) -> JobRecord:
 JobDep = Annotated[JobRecord, Depends(require_job)]
 
 
-def require_api_key(
-    settings: SettingsDep,
-    authorization: Annotated[str | None, Header()] = None,
-) -> None:
-    """Optional bearer authentication for hosted deployments."""
-    if settings.wardrobe_auth_mode == "none":
-        return
+def trusted_caller(request: Request, settings: Settings) -> str | None:
+    """F5. Why this browser request may skip the key: "origin" or "same-origin", else None.
 
-    expected = settings.wardrobe_api_key
+    A listed origin (yourfriend.online by default) or the Studio this deployment
+    serves. The ``Origin`` header is the browser's, not the page's, so a page on
+    another site cannot claim to be one of these; a script outside a browser can,
+    which is why this is a fallback for pages that cannot hold a secret and not a
+    replacement for the key.
+    """
+    origin = (request.headers.get("origin") or "").strip().rstrip("/").lower()
+    trusted = {entry.strip().rstrip("/").lower() for entry in settings.wardrobe_trusted_origins if entry}
+    if origin and origin != "null" and origin in trusted:
+        return "origin"
+    if not settings.wardrobe_trust_same_origin:
+        return None
+    hosts = {request.headers.get(name, "").lower() for name in ("host", "x-forwarded-host")} - {""}
+    if origin and origin != "null":
+        return "same-origin" if urlsplit(origin).netloc in hosts else None
+    # A same-origin GET carries no Origin; the browser says where it came from instead.
+    return "same-origin" if request.headers.get("sec-fetch-site") == "same-origin" else None
+
+
+def key_status(request: Request, settings: Settings, authorization: str | None = None) -> dict:
+    """How this request stands: whether the deployment wants a key, and whether this caller needs one."""
+    if settings.wardrobe_auth_mode == "none":
+        return {"mode": "none", "keyRequired": False, "trusted": None, "authorized": True}
     supplied = ""
     if authorization and authorization.lower().startswith("bearer "):
         supplied = authorization[7:].strip()
+    expected = settings.wardrobe_api_key
+    keyed = bool(expected) and bool(supplied) and secrets.compare_digest(supplied, expected)
+    trusted = trusted_caller(request, settings)
+    return {"mode": settings.wardrobe_auth_mode, "keyRequired": trusted is None, "trusted": trusted,
+            "authorized": keyed or trusted is not None}
 
-    if not expected or not secrets.compare_digest(supplied, expected):
+
+def require_api_key(
+    request: Request,
+    settings: SettingsDep,
+    authorization: Annotated[str | None, Header()] = None,
+) -> None:
+    """Optional bearer authentication for hosted deployments, with a trusted-page fallback (F5)."""
+    if not key_status(request, settings, authorization)["authorized"]:
         raise HTTPException(
             status_code=401,
             detail={"reason": "unauthorized", "message": "valid bearer token required"},
@@ -104,5 +136,7 @@ __all__ = [
     "JobDep",
     "require_job",
     "require_api_key",
+    "key_status",
+    "trusted_caller",
     "http_error_for",
 ]

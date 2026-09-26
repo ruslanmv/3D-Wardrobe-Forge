@@ -30,6 +30,17 @@ class Settings(BaseSettings):
     #: none | api_key. Hosted production deployments should use api_key or an upstream gateway.
     wardrobe_auth_mode: str = "none"
     wardrobe_api_key: str = ""
+    #: F5. Pages that may call a keyed deployment without the key: yourfriend.online by
+    #: default, which is where the try-on haul runs and which cannot hold a secret in a
+    #: public page. Checked against the browser's ``Origin`` header — which a web page
+    #: cannot forge, so another website cannot spend this Space, but which any script
+    #: outside a browser can send. It keeps other sites out; it is not a password, and
+    #: the key (server to server) and a rate limit are what stop a determined client.
+    wardrobe_trusted_origins: list[str] = Field(
+        default_factory=lambda: ["https://yourfriend.online", "https://www.yourfriend.online"]
+    )
+    #: F5. The Studio this deployment serves is trusted too: it is the same site.
+    wardrobe_trust_same_origin: bool = True
     #: Signs the operator in to the Studio's account menu (apps/api/admin.py), where
     #: an adult declaration can be made per avatar for that session only. Empty: no
     #: admin, and the Studio offers no sign-in. Set it as a secret, never in a file.

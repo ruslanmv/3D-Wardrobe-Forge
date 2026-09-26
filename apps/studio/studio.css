@@ -185,6 +185,11 @@ code {
     background: transparent;
 }
 
+/* F5. The key button and its Settings row are hidden unless this page needs a key. */
+.icon-btn[hidden],
+.settings-row[hidden] {
+    display: none;
+}
 .icon-btn svg {
     width: 16px;
     height: 16px;
@@ -1058,6 +1063,12 @@ dialog .primary {
 /* ---------------------------------------------------------------- plan preview */
 #plan-btn {
     margin-top: 0.5rem;
+}
+.hint {
+    margin: 0.5rem 0 0;
+    color: var(--faint);
+    font-size: 0.8rem;
+    line-height: 1.4;
 }
 .plan {
     margin-top: 0.75rem;

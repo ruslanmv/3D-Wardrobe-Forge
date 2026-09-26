@@ -3,8 +3,9 @@
  *
  * Same origin, so there is no base URL to configure on the Space. The one piece
  * of state is an optional API key, for a deployment running
- * `WARDROBE_AUTH_MODE=api_key`; it lives in this browser's localStorage and is
- * sent as a Bearer token on every call.
+ * `WARDROBE_AUTH_MODE=api_key` that does not trust this page (F5: the Studio a
+ * Space serves is trusted, and never asked); it lives in this browser's
+ * localStorage and is sent as a Bearer token on every call.
  *
  * Binary assets — the avatar, a look's VRM, its preview — are fetched through
  * `blobUrl()` rather than put straight into `<img src>` or a loader URL. An

@@ -114,6 +114,22 @@ function revoke(url) {
     if (url) URL.revokeObjectURL(url);
 }
 
+/**
+ * F5. The API key is shown only to a page that needs one. The Studio this Space serves and
+ * yourfriend.online are trusted by the server, so on them the key button and the Settings
+ * row were a question nobody had to answer ("Not set · only needed when…"). A deployment
+ * that does want a key from this page says so in /v1/capabilities, and they come back.
+ */
+function keyWanted() {
+    return Boolean(state.caps && state.caps.auth && state.caps.auth.keyRequired);
+}
+
+function renderKeyControls() {
+    const show = keyWanted() || Boolean(auth.key);
+    $('key-btn').hidden = !show;
+    $('settings-key-row').hidden = !show;
+}
+
 // ---------------------------------------------------------------- boot
 async function boot() {
     viewer = new Viewer($('stage-canvas'));
@@ -125,12 +141,16 @@ async function boot() {
     } catch (error) {
         setStatus(describe(error), true);
         $('library-note').textContent = 'unavailable';
-        if (error instanceof ApiError && error.status === 401) $('key-dialog').showModal();
+        if (error instanceof ApiError && error.status === 401) {
+            $('key-btn').hidden = false;
+            $('key-dialog').showModal();
+        }
         initAccount();
         return;
     }
     const [caps, vocab, library] = loaded;
     state.caps = caps;
+    renderKeyControls();
     state.vocab = vocab;
     state.library = library.avatars;
 
@@ -200,7 +220,10 @@ function bindChrome() {
     $('build-on').addEventListener('change', updatePreview);
     $('plan-btn').addEventListener('click', checkPlan);
     bindAccount();
-    $('base-body-select').addEventListener('change', () => ($('plan-report').hidden = true));
+    $('base-body-select').addEventListener('change', () => {
+        $('plan-report').hidden = true;
+        renderBaseBodyNote();
+    });
 }
 
 // ---------------------------------------------------------------- capabilities
@@ -559,9 +582,12 @@ function renderSettings() {
         ? `${account.username} · logged in until ${endsAt(session)}, or until this tab closes`
         : 'Guest · not logged in';
     $('settings-account-action').textContent = session ? 'Log out' : 'Log in';
+    renderKeyControls();
     $('settings-key').textContent = auth.key
-        ? 'Set in this browser'
-        : 'Not set · only needed when this Space runs WARDROBE_AUTH_MODE=api_key';
+        ? keyWanted()
+            ? 'Set in this browser'
+            : 'Set in this browser · not needed here, this page is trusted'
+        : 'This Space asks this page for a key';
     $('settings-admin').textContent = account.enabled ? 'Available on this Space' : offReason();
 
     // Adult declarations: read-only for a guest, switches for an admin.
@@ -670,6 +696,36 @@ function setViewMode(mode) {
 }
 
 // ---------------------------------------------------------------- designer
+/** Underwear and swimwear go on her body, first: the categories the planner makes a foundation. */
+const FOUNDATION_CATEGORIES = new Set(['underwear', 'swimwear']);
+
+/**
+ * A foundation look starts from her, undressed where it goes. "Take off what the new outfit
+ * covers" was the default, and a bralette — whose shape the strip plan did not know — took
+ * nothing off and was fitted over her cardigan; "Build on" could still be ticked from the
+ * look before. So choosing underwear picks "underwear first" and starts from her own avatar.
+ * Both stay the designer's to change: keeping her clothes on is a styling, said as one.
+ */
+function startFoundation() {
+    const select = $('base-body-select');
+    const underwearFirst = select.querySelector('option[value="underwear-base"]');
+    if (underwearFirst && !underwearFirst.disabled) select.value = 'underwear-base';
+    $('build-on').checked = false;
+    $('plan-report').hidden = true;
+}
+
+function renderBaseBodyNote() {
+    const note = $('base-body-note');
+    const mode = $('base-body-select').value;
+    const foundation = FOUNDATION_CATEGORIES.has(state.design.category);
+    note.hidden = !foundation;
+    if (!foundation) return;
+    note.textContent =
+        mode === 'preserve'
+            ? 'Layered over her clothes on purpose: a styling, not an underwear fit.'
+            : 'Underwear is the first layer. Her clothes where it goes come off — only where her avatar has a body under them; otherwise the look is refused, never fitted over her clothes.';
+}
+
 function renderDesigner() {
     const { overrides, promptWords } = state.vocab;
 
@@ -690,6 +746,7 @@ function renderDesigner() {
             onclick: () => {
                 state.design.category = category;
                 state.design.templateId = null;
+                if (FOUNDATION_CATEGORIES.has(category)) startFoundation();
                 renderDesigner();
                 loadTemplates();
             },
@@ -807,6 +864,7 @@ function renderStyle(adult) {
     underwearBase.disabled = !adult;
     underwearBase.title = adult ? '' : 'Underwear needs private mode on for this avatar (log in, then Settings)';
     if (!adult && $('base-body-select').value === 'underwear-base') $('base-body-select').value = 'replace-outer';
+    renderBaseBodyNote();
     $('style-hint').textContent = adult ? 'overrides the prompt' : 'overrides the prompt · see-through needs private mode';
 }
 
@@ -946,6 +1004,12 @@ async function loadTemplates() {
                 })
             )
         );
+        // A template chosen for another list is not one of these: showing "Planner chooses"
+        // while still sending it made the request say templateId=under-bralette-v2 under a
+        // select that said the planner would choose.
+        if (state.design.templateId && !templates.some((template) => template.id === state.design.templateId)) {
+            state.design.templateId = null;
+        }
         select.onchange = () => {
             state.design.templateId = select.value || null;
             updatePreview();
@@ -1126,6 +1190,14 @@ async function checkPlan() {
                       : '✓ Complete body under what comes off',
               })
             : null,
+        report.layerOrder === 'refused'
+            ? el('p', {
+                  class: 'report-line bad',
+                  text: `✕ The underwear would go over her ${report.layeredOver.join(', ')} — choose "Take it off, underwear first" to add the other half, or "Keep it on" to layer it on purpose`,
+              })
+            : report.layerOrder === 'layered'
+              ? el('p', { class: 'report-line warn', text: `Layered over her ${report.layeredOver.join(', ')}: a styling, not an underwear fit` })
+              : null,
         el('p', {
             class: `report-line ${report.allowed ? '' : 'bad'}`,
             text: report.allowed ? `→ ${report.garments.length} layer(s) will be built` : 'This outfit will be refused',
@@ -1196,6 +1268,12 @@ function renderReport(report, look = null) {
                 text: 'Something under the garment still shows through. If it is her own clothing, this model does not mark it in a way the Forge recognises, so it was layered over rather than taken off.',
             })
         );
+    }
+    const body = report.baseBody || {};
+    if (body.layerOrder === 'layered') {
+        lines.push(el('p', { class: 'report-line warn', text: 'Layered over her own clothes (Keep it on): a styling, not an underwear fit' }));
+    } else if (body.bodyPreparation === 'passed' && (body.removedSlots || []).length) {
+        lines.push(el('p', { class: 'report-line', text: `Took off her ${body.removedSlots.join(', ')} · fitted to her body` }));
     }
     if (report.hosiery) lines.push(...hosieryReport(report.hosiery, look));
     $('report').replaceChildren(...lines);

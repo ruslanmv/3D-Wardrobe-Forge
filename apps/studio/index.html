@@ -43,7 +43,7 @@
                     </div>
                 </div>
                 <div class="caps" id="caps" aria-label="What this deployment can do"></div>
-                <button class="icon-btn" id="key-btn" type="button" title="API key" aria-label="API key">
+                <button class="icon-btn" id="key-btn" type="button" title="API key" aria-label="API key" hidden>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7a5 5 0 1 1-4.9 6H7v2H5v2H2v-3l6.1-6.1A5 5 0 0 1 14 7Zm2 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" /></svg>
                 </button>
             </header>
@@ -221,10 +221,11 @@
                             <span>Before dressing</span>
                             <select id="base-body-select">
                                 <option value="replace-outer">Take off what the new outfit covers</option>
-                                <option value="preserve">Keep it on — layer over it</option>
+                                <option value="preserve">Keep it on — layer over it (styling)</option>
                                 <option value="underwear-base">Take it off, underwear first</option>
                             </select>
                         </label>
+                        <p class="hint" id="base-body-note" hidden></p>
                         <button type="button" class="secondary" id="plan-btn" disabled>Check plan</button>
                         <div class="plan" id="plan-report" hidden></div>
                     </fieldset>
@@ -370,7 +371,7 @@
                         </div>
                         <button type="button" class="secondary" id="settings-account-action"></button>
                     </div>
-                    <div class="settings-row">
+                    <div class="settings-row" id="settings-key-row" hidden>
                         <div>
                             <strong>API key</strong>
                             <small id="settings-key"></small>
