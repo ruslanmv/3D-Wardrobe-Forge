@@ -143,7 +143,10 @@ def with_skirt_liner(outfit_plan, request, catalog, *, depicts_adult: bool):
     # it would make a job fail where there is no body under her clothes, and an
     # automatic addition must never turn a skirt that worked into a refusal.
     layers = [lined.layers[0].model_copy(update={"role": "liner"}), *lined.layers[1:]]
-    return lined.model_copy(update={"layers": layers})
+    # The look keeps the name of what was asked for. The liner is invisible under the skirt
+    # and nobody asked for it, so "Black Slip Shorts + Burgundy Evening" in a wardrobe was
+    # a name describing a garment no one will ever see.
+    return lined.model_copy(update={"layers": layers, "name": outfit_plan.name})
 
 
 async def generate(context: PipelineContext) -> None:

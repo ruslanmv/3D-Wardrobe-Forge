@@ -86,6 +86,7 @@ async def test_a_clothed_avatar_gets_the_liner_where_her_bottoms_come_off(orches
     record = await _run(orchestrator, store, dress_like_vroid(vrm_bytes), "navy pleated mini skirt")
     assert record.state == "completed", record.error
     assert [g.role for g in record.plan.garments] == ["liner", "main"]
+    assert record.plan.name == "Navy Pleated Mini Skirt" and record.look.name == record.plan.name
     assert "bottoms" in record.fit_report.replaced_garments
     assert any("under the skirt" in warning for warning in record.fit_report.warnings)
 
