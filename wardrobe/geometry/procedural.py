@@ -13,7 +13,7 @@ reuses the same template metadata.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
@@ -996,6 +996,8 @@ HAUL_KINDS = frozenset(
         "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
         # hosiery foundations (wardrobe.hosiery.garter_belt)
         "suspender-belt", "waspie", "guepiere",
+        # the liner a skirt is worn over (S2, wardrobe.pipeline.generate_garment.with_skirt_liner)
+        "slip-shorts",
     }
 )
 
@@ -1397,6 +1399,16 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
                             join=half_at(params, params.hip_y))
         held = top_straps(params, top_y=bust_top, style=straps or "shoulder", underbust_y=underbust)
         return [bodice, skirt, *held]
+    if kind == "slip-shorts":
+        # S2. A skirt liner: fitted, opaque, and short on purpose. It ends a little
+        # below her crotch whatever the template's hem says, because it must stay
+        # hidden under the shortest skirt it is put under; a mini skirt's hem is
+        # a third of her thigh down, this is an eighth.
+        # Low-rise, too: trousers rise above the natural waist and a skirt starts at
+        # it, so a liner cut like trousers showed a band above every skirt's waist.
+        crotch = crotch_y(params, params.hip_y - thigh * 0.12)
+        low = replace(params, metadata={**params.metadata, "rise": "low"})
+        return build_trousers(low, hem_y=crotch - thigh * 0.12, flare=1.0, name="slip-shorts")
     if kind == "shorts":
         inseam = min(0.55 * scale, 0.55) if scale < 1.0 else 0.55
         return build_trousers(params, hem_y=max(hem_y, params.hip_y - thigh * max(inseam, 0.2)), flare=flare)

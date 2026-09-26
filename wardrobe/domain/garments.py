@@ -44,7 +44,7 @@ PROCEDURAL_KINDS = {
     "dress", "skirt", "top", "trousers", "jacket", "shoes",
     "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
     "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
-    "suspender-belt", "waspie", "guepiere",
+    "suspender-belt", "waspie", "guepiere", "slip-shorts",
 } | set(LINGERIE_KINDS)
 
 #: The template schema that carries a ``lingerie`` block (pattern blocks, wardrobe.lingerie).

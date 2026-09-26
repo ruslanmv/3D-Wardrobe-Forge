@@ -50,6 +50,7 @@ KIND_REGIONS: dict[str, frozenset[str]] = {
     "trousers": frozenset({"lower"}),
     "leggings": frozenset({"lower"}),
     "shorts": frozenset({"lower"}),
+    "slip-shorts": frozenset({"lower"}),
     "briefs": frozenset({"lower"}),
     "dress": frozenset({"upper", "lower"}),
     "slip-dress": frozenset({"upper", "lower"}),

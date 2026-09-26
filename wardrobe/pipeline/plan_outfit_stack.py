@@ -32,6 +32,11 @@ from wardrobe.vrm.garments import KIND_REGIONS
 
 #: (rank, role) by what a garment is.
 FOUNDATION = (1, "foundation")
+#: S2. What a skirt is worn over. Innermost like a foundation, so it is fitted first
+#: and the skirt clears it, but not a foundation: it is not underwear, it does not
+#: decide what of her own clothes comes off, and it does not make a job fail where
+#: her avatar has no body under her clothes (prepare_base_body keeps them instead).
+LINER = (1, "liner")
 LEGWEAR = (2, "legwear")
 MAIN = (3, "main")
 ONE_PIECE = (4, "one-piece")
@@ -58,6 +63,8 @@ def layer_of(template: GarmentTemplate | None, category: str) -> tuple[int, str]
     if category == "shoes":
         return SHOES
     kind = template.procedural_kind if template is not None else category
+    if kind == "slip-shorts":
+        return LINER
     if kind in {"jacket", "cropped-jacket"}:
         return OUTER
     if KIND_REGIONS.get(kind) == frozenset({"upper", "lower"}):
@@ -114,25 +121,36 @@ def _word_for(table: dict, key, text: str) -> str:
     return table[key][0]
 
 
-def plan_outfit_stack(request: OutfitRequest, catalog: TemplateCatalog) -> OutfitPlan:
-    """One plan, or a layered plan whose ``layers`` are its garments, inner first."""
+def plan_outfit_stack(
+    request: OutfitRequest, catalog: TemplateCatalog, *, beneath: list[OutfitRequest] | tuple = ()
+) -> OutfitPlan:
+    """One plan, or a layered plan whose ``layers`` are its garments, inner first.
+
+    ``beneath`` adds garments the pipeline puts under the request's own (a
+    foundation, a skirt liner). They are added after the request is split into
+    its garments and its overrides placed: passing them as extra ``layers``
+    instead made "a tee + a skirt" one layer and lost the tee (S2).
+    """
     request = hosiery_presets.expand(request)
-    return hosiery_planning.apply(_plan_stack(request, catalog), request, catalog)
+    return hosiery_planning.apply(_plan_stack(request, catalog, list(beneath)), request, catalog)
 
 
-def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog) -> OutfitPlan:
+def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog, beneath: list[OutfitRequest]) -> OutfitPlan:
     if request.layers:
         requests = [layer.model_copy(update={"layers": None}) for layer in request.layers]
     else:
         pieces = split_prompt(request.prompt)
-        if len(pieces) == 1:
+        if len(pieces) == 1 and not beneath:
             return _placed(plan_outfit(request, catalog), catalog)
+        if len(pieces) == 1:
+            pieces = [request.prompt]
         requests = [OutfitRequest(prompt=piece, mode=request.mode) for piece in pieces]
         # The request's explicit choices (the Studio's controls) are about the
         # garment on top — the one the viewer sees — not the ones beneath it.
         outermost = max(range(len(requests)), key=lambda i: _rank(requests[i], catalog))
         chosen = {key: getattr(request, key) for key in _OVERRIDES if getattr(request, key) is not None}
         requests[outermost] = requests[outermost].model_copy(update=chosen)
+    requests = [layer.model_copy(update={"layers": None}) for layer in beneath] + requests
 
     plans = sorted((_placed(plan_outfit(r, catalog), catalog) for r in requests), key=lambda p: p.layer)
     if len(plans) == 1:

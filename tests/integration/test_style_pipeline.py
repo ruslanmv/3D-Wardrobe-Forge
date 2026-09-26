@@ -35,7 +35,8 @@ async def dress(orchestrator, store, source: bytes, prompt: str, *, adult: bool 
 
 def garment_material(output: bytes, record) -> dict:
     document = GltfDocument.from_bytes(output)
-    return next(m for m in document.materials if m.get("name", "").startswith(record.plan.name)), document
+    outer = record.plan.garments[-1].name  # a skirt on a clothed avatar has a liner under it (S2)
+    return next(m for m in document.materials if m.get("name", "").startswith(outer)), document
 
 
 ACCEPTANCE = [
