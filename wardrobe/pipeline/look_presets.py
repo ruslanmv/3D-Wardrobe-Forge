@@ -23,14 +23,19 @@ from __future__ import annotations
 from wardrobe.domain.garments import TemplateCatalog
 from wardrobe.domain.looks import OutfitPlan, OutfitRequest, VisibleThongOptions
 
-#: The three usual amounts of visible thong: (thong rise, jeans rise). The rise is a
-#: fraction of her crotch → waist span (wardrobe.lingerie.specs.RISES); the jeans' is a
-#: trouser rise (wardrobe.geometry.procedural.build_trousers).
+#: The three usual amounts of visible thong: (side straps above the jeans' waistband, mm;
+#: the jeans' rise). P2: all on ultra-low jeans — on the hip bones, well below the high
+#: hip, so the straps have room to rise to it. The thong's waistline is then computed from
+#: the jeans' own top edge (wardrobe.lingerie.blocks.whale_tail_targets).
 VISIBLE_THONG_STYLES: dict[str, tuple[float, str]] = {
-    "subtle": (0.86, "low"),  # the side straps just clear the waistband: ~2 cm
-    "classic": (1.05, "low"),  # the whale tail: straps and the back's V well above it: ~5 cm
-    "full": (0.98, "ultra-low"),  # jeans on her hip bones, the thong at her waist: ~8 cm
+    "subtle": (25.0, "ultra-low"),
+    "classic": (38.0, "ultra-low"),
+    "full": (55.0, "ultra-low"),
 }
+#: Where the rest of the thong sits against the jeans, whatever the style: the front panel
+#: well under the centre-front waistband, the back's Y junction just above the centre back,
+#: straps 5 mm wide.
+WHALE_TAIL = {"frontBelowMm": 20.0, "backAboveMm": 18.0, "strapMm": 5.0}
 
 LOOK_PRESETS: dict[str, dict] = {
     "corset_top_low_rise_mini": {
@@ -71,8 +76,8 @@ def apply(plan: OutfitPlan, request: OutfitRequest, catalog: TemplateCatalog) ->
     options = request.visible_thong
     if options is None:
         return plan
-    thong_rise, jeans_rise = VISIBLE_THONG_STYLES[options.style]
-    thong_rise = options.thong_rise if options.thong_rise is not None else thong_rise
+    strap_above, jeans_rise = VISIBLE_THONG_STYLES[options.style]
+    strap_above = options.strap_above_mm if options.strap_above_mm is not None else strap_above
     jeans_rise = options.jeans_rise or jeans_rise
 
     garments = plan.garments
@@ -82,9 +87,17 @@ def apply(plan: OutfitPlan, request: OutfitRequest, catalog: TemplateCatalog) ->
         missing = "thong" if thong is None else "trousers"
         return plan.model_copy(update={"notes": [*plan.notes, f"visible thong: the outfit has no {missing}"]})
     placed = list(garments)
-    placed[thong] = _with_style(placed[thong], brief_rise=thong_rise)
+    if options.thong_rise is not None:
+        # An explicit rise: the thong's waistline level at that height, as P1 made it.
+        placed[thong] = _with_style(placed[thong], brief_rise=options.thong_rise)
+        note = (f"visible thong ({options.style}): thong rise {options.thong_rise:.2f}, "
+                f"{jeans_rise}-rise trousers")
+    else:
+        # P2. Fitted to the jeans: the thong's waistline is computed from their top edge.
+        tail = {**WHALE_TAIL, "strapAboveMm": strap_above, "jeansRise": jeans_rise}
+        placed[thong] = _with_style(placed[thong], whale_tail=tail)
+        note = f"visible thong ({options.style}): straps {strap_above:.0f} mm above {jeans_rise}-rise jeans"
     placed[jeans] = _with_style(placed[jeans], rise=jeans_rise)
-    note = f"visible thong ({options.style}): thong rise {thong_rise:.2f}, {jeans_rise}-rise trousers"
     if plan.layers:
         return plan.model_copy(update={"layers": placed, "notes": [*plan.notes, note]})
     return placed[0].model_copy(update={"notes": [*plan.notes, note]})
@@ -104,4 +117,4 @@ def catalogue() -> list[dict]:
     return [{"id": name, **preset} for name, preset in LOOK_PRESETS.items()]
 
 
-__all__ = ["LOOK_PRESETS", "VISIBLE_THONG_STYLES", "apply", "catalogue", "expand"]
+__all__ = ["LOOK_PRESETS", "VISIBLE_THONG_STYLES", "WHALE_TAIL", "apply", "catalogue", "expand"]

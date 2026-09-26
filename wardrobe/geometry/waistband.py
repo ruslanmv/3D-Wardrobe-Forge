@@ -22,6 +22,7 @@ and rolled edge take (``wardrobe.hosiery.assembly``).
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 
 import numpy as np
@@ -40,33 +41,55 @@ WAISTBAND_SHADE = 0.78
 
 
 def add_waistband(mesh: Mesh, axis_x: float, axis_z: float, *, depth_m: float = WAISTBAND_DEPTH_M,
-                  proud_m: float = WAISTBAND_PROUD_M) -> Mesh:
+                  proud_m: float = WAISTBAND_PROUD_M, section: str | None = None,
+                  top_edge: Callable[[np.ndarray], np.ndarray] | None = None) -> Mesh:
     """``mesh`` with a waistband section over its top rows; ``mesh`` itself if it has none to give.
 
-    The band is the skirt's top rows pushed out radially from (``axis_x``, ``axis_z``)
-    by ``proud_m``, closed to the skirt above and below by a narrow lip so neither
+    The band is the garment's top rows pushed out radially from (``axis_x``, ``axis_z``)
+    by ``proud_m``, closed to the garment above and below by a narrow lip so neither
     edge shows a gap. Heights are untouched: the band is exactly as deep as the rows
     it was copied from.
+
+    ``section`` limits it to one part of a merged garment — a pair of jeans' yoke, not
+    its legs (P2). ``top_edge`` gives the top edge's height at each point when it is not
+    level: a low-rise waistband dips at centre front and back, and a band measured from
+    the highest point would be 4 cm deep at the hips and 2 at the front. Without either,
+    the band is exactly the skirt's it always was.
     """
     if mesh.vertex_count == 0 or mesh.indices.size < 3:
         return mesh
     positions = mesh.positions.astype(np.float64)
     heights = np.round(positions[:, 1], 5)
-    top = float(heights.max())
-    in_band = heights >= top - depth_m - 1e-6
     triangles = mesh.indices.reshape(-1, 3).astype(np.int64)
-    band_tris = triangles[in_band[triangles].all(axis=1)]
+    candidates = triangles
+    if section is not None:
+        keep = np.zeros(triangles.shape[0], dtype=bool)
+        for name, first, count in section_ranges(mesh):
+            if name == section:
+                keep[first:first + count] = True
+        candidates = triangles[keep]
+        if candidates.shape[0] == 0:
+            return mesh
+    listed = np.unique(candidates.reshape(-1))
+    if top_edge is None:
+        local_top = np.full(mesh.vertex_count, float(heights[listed].max()))
+        tolerance = 1e-5
+    else:
+        local_top = np.round(np.asarray(top_edge(positions), dtype=np.float64), 5)
+        tolerance = 1e-3  # a fitted row keeps its height; its angle about the origin moves a hair
+    in_band = np.zeros(mesh.vertex_count, dtype=bool)
+    in_band[listed] = heights[listed] >= local_top[listed] - depth_m - 1e-6
+    band_tris = candidates[in_band[candidates].all(axis=1)]
     if band_tris.shape[0] == 0:
         return mesh
-    bottom = float(heights[in_band].min())
-    if top - bottom < 0.005:  # one row, or two a hair apart: no band worth drawing
+    if float((local_top - heights)[in_band].max()) < 0.005:  # one row, or two a hair apart
         return mesh
 
     used = np.unique(band_tris.reshape(-1))
     remap = -np.ones(mesh.vertex_count, dtype=np.int64)
     remap[used] = np.arange(used.size)
 
-    # The band's face: the skirt's own rows, pushed straight out from her axis.
+    # The band's face: the garment's own rows, pushed straight out from her axis.
     dx = positions[used, 0] - axis_x
     dz = positions[used, 2] - axis_z
     radius = np.maximum(np.hypot(dx, dz), 1e-9)
@@ -77,15 +100,23 @@ def add_waistband(mesh: Mesh, axis_x: float, axis_z: float, *, depth_m: float = 
     points = [outer]
     uvs = [mesh.uvs[used]] if mesh.uvs is not None else None
 
-    # The lips: the band's open edges at its top and its bottom row, each joined
-    # back to the skirt where it was copied from, so there is no slot to see into.
-    edges = np.concatenate([band_tris[:, [0, 1]], band_tris[:, [1, 2]], band_tris[:, [2, 0]]])
-    key = np.sort(edges, axis=1)
-    _, first, counts = np.unique(key, axis=0, return_index=True, return_counts=True)
-    open_edges = edges[first[counts == 1]]
-    for row, facing in ((top, 1.0), (bottom, -1.0)):
-        on_row = open_edges[(np.abs(heights[open_edges[:, 0]] - row) < 1e-5)
-                            & (np.abs(heights[open_edges[:, 1]] - row) < 1e-5)]
+    # The lips: the band's open edges along the garment's top edge and along its own
+    # lower edge, each joined back to the garment where it was copied from, so there is
+    # no slot to see into. The top edge is open in the garment too; the lower edge is not
+    # (the garment carries on below it). The seam's twin edges are open but on neither.
+    def _open(tris: np.ndarray) -> tuple[np.ndarray, set]:
+        edges = np.concatenate([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+        key = np.sort(edges, axis=1)
+        _, first, counts = np.unique(key, axis=0, return_index=True, return_counts=True)
+        found = edges[first[counts == 1]]
+        return found, {tuple(sorted(map(int, e))) for e in found}
+
+    open_edges, _ = _open(band_tris)
+    _, garment_open = _open(candidates)
+    at_top = (np.abs(heights - local_top) < tolerance)
+    is_open = np.array([tuple(sorted(map(int, e))) in garment_open for e in open_edges], dtype=bool)
+    on_top = at_top[open_edges[:, 0]] & at_top[open_edges[:, 1]]
+    for on_row, facing in ((open_edges[on_top], 1.0), (open_edges[~is_open & ~on_top], -1.0)):
         if not on_row.shape[0]:
             continue
         ends = np.unique(on_row.reshape(-1))

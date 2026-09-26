@@ -40,7 +40,15 @@ from wardrobe.engines.geometry_checks import (
 )
 from wardrobe.errors import FittingError
 from wardrobe.geometry.mesh import Mesh
-from wardrobe.geometry.procedural import FitParameters, build_garment, skirt_top
+from wardrobe.geometry.procedural import (
+    TROUSER_WAISTBAND_M,
+    FitParameters,
+    build_garment,
+    front_angle,
+    skirt_top,
+    trouser_top,
+    trouser_top_dip,
+)
 from wardrobe.geometry.waistband import add_waistband
 from wardrobe.lingerie import LINGERIE_KINDS
 from wardrobe.pipeline.context import PipelineContext
@@ -229,6 +237,16 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # Last, from the finished shape: a band built before fitting is pressed back
         # into the skirt by the passes above (wardrobe.geometry.waistband).
         mesh = add_waistband(mesh, index.axis_x, index.axis_z)
+    elif kind == "trousers" and str(params.metadata.get("rise") or "") in {"low", "ultra-low"}:
+        # P2. Low-rise jeans get a narrow waistband that follows their curved top edge. The
+        # yoke alone read as a thick blue belt: nothing marked where the band ended and the
+        # jeans began. Other rises keep the trousers they always had.
+        rise = str(params.metadata["rise"])
+        top = trouser_top(params, rise)
+        mesh = add_waistband(
+            mesh, index.axis_x, index.axis_z, depth_m=TROUSER_WAISTBAND_M + 0.002, section="trousers-yoke",
+            top_edge=lambda points: top + trouser_top_dip(front_angle(points, params), rise, params.height),
+        )
 
     # The shell's UVs are metres of fabric; one pattern tile covers its physical size.
     scale = float(context.plan.material.texture_scale or 0.0)

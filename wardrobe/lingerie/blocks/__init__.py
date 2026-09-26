@@ -22,7 +22,7 @@ def build_block(kind: str, params: FitParameters) -> Mesh:
     if kind == "brief-block":
         from wardrobe.lingerie.blocks.brief import build_brief
 
-        mesh = build_brief(frame, block.brief)
+        mesh = build_brief(frame, block.brief, targets=whale_tail_targets(params))
     elif kind == "bra-block":
         from wardrobe.lingerie.blocks.bra import build_bra
 
@@ -35,8 +35,40 @@ def build_block(kind: str, params: FitParameters) -> Mesh:
     return mesh
 
 
+def whale_tail_targets(params: FitParameters):
+    """P2. The brief's waistline against the jeans over it (the visible-thong block), or None.
+
+    The jeans' top edge comes from the function the jeans are built with
+    (``trouser_top`` and ``trouser_top_dip``) on the same body, so the thong is fitted to
+    the jeans rather than placed on its own and hoped to meet them.
+    """
+    tail = params.metadata.get("whaleTail")
+    if not isinstance(tail, dict):
+        return None
+    import math
+
+    from wardrobe.geometry.procedural import trouser_top, trouser_top_dip
+    from wardrobe.lingerie.blocks.brief import WaistlineTargets
+
+    rise = str(tail.get("jeansRise") or "ultra-low")
+    side = trouser_top(params, rise)
+    height = params.height
+
+    def jeans_top(phi):
+        return side + trouser_top_dip(phi, rise, height)
+
+    mm = 0.001
+    return WaistlineTargets(
+        side_y=float(jeans_top(math.pi / 2)) + float(tail.get("strapAboveMm", 38)) * mm,
+        front_y=float(jeans_top(0.0)) - float(tail.get("frontBelowMm", 20)) * mm,
+        back_y=float(jeans_top(math.pi)) + float(tail.get("backAboveMm", 18)) * mm,
+        strap_m=float(tail.get("strapMm", 5)) * mm,
+        jeans_top=jeans_top,
+    )
+
+
 #: Metadata a block is drafted from, carried with it.
-FRAME_KEYS = ("lingerieLandmarks", "torsoProfile", "forward", "lingerie", "lowerBody")
+FRAME_KEYS = ("lingerieLandmarks", "torsoProfile", "forward", "lingerie", "lowerBody", "whaleTail")
 
 
 __all__ = ["FRAME_KEYS", "build_block"]

@@ -29,7 +29,8 @@ her posed surface to the clearance.
 from __future__ import annotations
 
 import math
-from dataclasses import asdict
+from collections.abc import Callable
+from dataclasses import asdict, dataclass
 
 import numpy as np
 
@@ -71,7 +72,36 @@ def _columns(phi_front: float, phi_back: float) -> np.ndarray:
     return np.concatenate(parts)
 
 
-def build_brief(frame: BodyFrame, spec: BriefSpec, *, name: str = "brief") -> Mesh:
+#: P2. A whale tail's straps run from each centre to her high hip over these angles.
+TAIL_FRONT_SPAN = math.pi / 2 * 0.85
+TAIL_BACK_SPAN = math.pi / 2 * 0.8
+#: How sharply the back straps climb out of the Y's junction (1 is a straight line).
+TAIL_BACK_EASE = 2.5
+#: Columns whose waistline is less than this below the jeans' top edge are cut to a strap.
+TAIL_ZONE_MARGIN_M = 0.01
+
+
+@dataclass(frozen=True)
+class WaistlineTargets:
+    """P2. A brief's waistline placed against the top edge of the jeans worn over it.
+
+    ``side_y`` is her high hip, where the straps peak; ``front_y`` is below the jeans'
+    centre front, so the front panel stays hidden; ``back_y`` is the junction of the
+    back's Y, just above the jeans' centre back. ``jeans_top(phi)`` is the jeans' top
+    edge round her, from the same function the jeans are built with, so the two layers
+    agree on it instead of each being placed on its own. Above the jeans the brief is cut
+    to a ``strap_m`` strap; below them it is the brief it always was.
+    """
+
+    side_y: float
+    front_y: float
+    back_y: float
+    strap_m: float
+    jeans_top: Callable[[np.ndarray], np.ndarray]
+
+
+def build_brief(frame: BodyFrame, spec: BriefSpec, *, name: str = "brief",
+                targets: WaistlineTargets | None = None) -> Mesh:
     marks, c = frame.marks, frame.clearance
     crotch, waist = marks.crotch_y, marks.waist_y
     span = max(waist - crotch, 0.08)
@@ -80,6 +110,8 @@ def build_brief(frame: BodyFrame, spec: BriefSpec, *, name: str = "brief") -> Me
     back_waist = front_waist + span * spec.back_rise
     seam_y = crotch + SEAM_ABOVE_CROTCH_M
     side_waist = front_waist + (back_waist - front_waist) * 0.5
+    if targets is not None:
+        front_waist, back_waist, side_waist = targets.front_y, targets.back_y, targets.side_y
     # The side: from the leg cut if given, else its width, else the legacy fraction.
     if spec.leg_cut_height is not None:
         side_bottom = crotch + span * spec.leg_cut_height
@@ -100,6 +132,19 @@ def build_brief(frame: BodyFrame, spec: BriefSpec, *, name: str = "brief") -> Me
 
     def waistline(phi: np.ndarray) -> np.ndarray:
         wrapped = np.abs(np.angle(np.exp(1j * phi)))
+        if targets is not None:
+            # A V from each centre up to her high hip: straight straps, as a string's are.
+            y = np.full(np.shape(wrapped), side_waist, dtype=np.float64)
+            front = wrapped < TAIL_FRONT_SPAN
+            y = np.where(front, front_waist + (side_waist - front_waist) * wrapped / TAIL_FRONT_SPAN, y)
+            # At the back they leave the junction steeply and level off toward her hips: a
+            # straight line from a junction just above the jeans to a hip four centimetres
+            # above them climbs a few degrees, and read as a flat band with a notch in it
+            # rather than the Y a whale tail is.
+            back = wrapped > math.pi - TAIL_BACK_SPAN
+            t = np.clip((math.pi - wrapped) / TAIL_BACK_SPAN, 0.0, 1.0)
+            rising = (side_waist - back_waist) * (1.0 - (1.0 - t) ** TAIL_BACK_EASE)
+            return np.where(back, back_waist + rising, y)
         base = front_waist + (back_waist - front_waist) * (1 - np.cos(phi)) / 2
         # V-shaping: the waistline dips toward a centre, straight-sided, as a V-string's
         # waist meets its string or a Brazilian's back panel narrows.
@@ -142,6 +187,16 @@ def build_brief(frame: BodyFrame, spec: BriefSpec, *, name: str = "brief") -> Me
     p_front = solve("front", spec.front_fraction)
     p_back = solve("back", spec.back_fraction)
     top, bottom = waistline(phis), leg_line(phis, p_front, p_back)
+    if targets is not None:
+        # Above the jeans only a strap shows: those columns are cut to one. The gusset's
+        # columns — the front panel's centre and the back's string — run on to the seam.
+        index = np.arange(count)
+        front_first = LEG_HALF_COLUMNS
+        back_first = LEG_HALF_COLUMNS + GUSSET_COLUMNS + 2 * LEG_HALF_COLUMNS
+        gusset = (((index >= front_first) & (index <= front_first + GUSSET_COLUMNS))
+                  | ((index >= back_first) & (index <= back_first + GUSSET_COLUMNS)))
+        exposed = (top > targets.jeans_top(phis) - TAIL_ZONE_MARGIN_M) & ~gusset
+        bottom = np.where(exposed, np.maximum(bottom, top - targets.strap_m), bottom)
     measures = {
         "frontCoverage": coverage("front", p_front), "backCoverage": coverage("back", p_back),
         "sideWidthMm": (side_waist - side_bottom) * 1000.0,

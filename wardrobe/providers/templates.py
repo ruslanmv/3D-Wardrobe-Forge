@@ -48,6 +48,8 @@ class TemplateGarmentProvider(GarmentProvider):
             key += "|" + plan.hosiery.model_dump_json(by_alias=True, exclude_none=True)
         if style.brief_rise is not None:  # likewise (P1)
             key += f"|briefRise={style.brief_rise}"
+        if style.whale_tail is not None:  # likewise (P2)
+            key += "|whaleTail=" + ",".join(f"{k}={style.whale_tail[k]}" for k in sorted(style.whale_tail))
         digest = sha1(key.encode()).hexdigest()[:12]
 
         artifact = GarmentArtifact(
@@ -103,6 +105,9 @@ class TemplateGarmentProvider(GarmentProvider):
             if style.brief_rise is not None:
                 # P1. The look places this brief's waistline (the visible-thong block).
                 artifact.metadata["briefRise"] = style.brief_rise
+            if style.whale_tail is not None:
+                # P2. ...against the jeans worn over it.
+                artifact.metadata["whaleTail"] = dict(style.whale_tail)
         if template.id in BELT_STYLE_OF_TEMPLATE:
             artifact.metadata["beltStyle"] = BELT_STYLE_OF_TEMPLATE[template.id]
         return artifact

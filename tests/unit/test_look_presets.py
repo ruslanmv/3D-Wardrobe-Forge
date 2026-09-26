@@ -11,6 +11,7 @@ which the repository's own policy file declares adult.
 from __future__ import annotations
 
 import asyncio
+import math
 import sys
 import tempfile
 from pathlib import Path
@@ -57,11 +58,15 @@ def test_the_visible_thong_block_moves_two_waistlines_and_nothing_else(catalog, 
     garments = plan(catalog, prompt="visible_thong_low_rise_jeans", preset="visible_thong_low_rise_jeans",
                     visibleThong={"style": style}).garments
     by_id = {g.template_id: g for g in garments}
-    thong_rise, jeans_rise = look_presets.VISIBLE_THONG_STYLES[style]
-    assert by_id["under-v-string-v2"].style.brief_rise == thong_rise
+    strap_above, jeans_rise = look_presets.VISIBLE_THONG_STYLES[style]
+    tail = by_id["under-v-string-v2"].style.whale_tail
+    assert tail["strapAboveMm"] == strap_above and tail["jeansRise"] == jeans_rise
+    assert 25.0 <= strap_above <= 55.0 and 4.0 <= tail["strapMm"] <= 8.0  # the brief: 25–50 mm, 4–8 mm
+    assert by_id["under-v-string-v2"].style.brief_rise is None  # fitted to the jeans, not a level rise
     assert by_id["under-v-string-v2"].category == "underwear"  # gated as underwear, whatever the style
     assert by_id["jeans-straight-v1"].style.rise == jeans_rise
     assert by_id["top-crop-tee-v1"].style.brief_rise is None and by_id["top-crop-tee-v1"].style.rise == ""
+    assert by_id["top-crop-tee-v1"].style.whale_tail is None
 
 
 def test_the_cami_version_is_a_plain_cropped_cami_over_baggy_low_rise_jeans(catalog):
@@ -70,8 +75,8 @@ def test_the_cami_version_is_a_plain_cropped_cami_over_baggy_low_rise_jeans(cata
     assert set(by_id) == {"under-v-string-v2", "top-cropped-cami-v1", "jeans-baggy-v1"}
     assert all(g.material.color_name == ("blue" if g.category == "trousers" else "white") for g in outfit.garments)
     assert "Lace" not in outfit.name  # a plain cami, not the lace one
-    assert by_id["under-v-string-v2"].style.brief_rise == look_presets.VISIBLE_THONG_STYLES["classic"][0]
-    assert by_id["jeans-baggy-v1"].style.rise == "low"
+    assert by_id["under-v-string-v2"].style.whale_tail["strapAboveMm"] == look_presets.VISIBLE_THONG_STYLES["classic"][0]
+    assert by_id["jeans-baggy-v1"].style.rise == "ultra-low"
 
 
 def test_the_plain_cami_is_chosen_only_by_name(catalog):
@@ -86,8 +91,12 @@ def test_explicit_rises_win_over_the_style(catalog):
     garments = plan(catalog, prompt="visible_thong_low_rise_jeans", preset="visible_thong_low_rise_jeans",
                     visibleThong={"style": "subtle", "thongRise": 1.1, "jeansRise": "ultra-low"}).garments
     by_id = {g.template_id: g for g in garments}
-    assert by_id["under-v-string-v2"].style.brief_rise == 1.1
+    assert by_id["under-v-string-v2"].style.brief_rise == 1.1  # an explicit rise: a level waistline, as P1
+    assert by_id["under-v-string-v2"].style.whale_tail is None
     assert by_id["jeans-straight-v1"].style.rise == "ultra-low"
+    garments = plan(catalog, prompt="visible_thong_low_rise_jeans", preset="visible_thong_low_rise_jeans",
+                    visibleThong={"style": "subtle", "strapAboveMm": 45}).garments
+    assert next(g for g in garments if g.category == "underwear").style.whale_tail["strapAboveMm"] == 45
 
 
 def test_the_block_without_a_thong_or_trousers_says_so_and_changes_nothing(catalog):
@@ -195,24 +204,71 @@ def _dress(outfit: dict, *, declared: bool):
         return asyncio.run(run(Path(tmp)))
 
 
-def _points(document, prefix):
+def _points(document, prefix, only=None):
     out = []
     for node in document.nodes:
         tag = (node.get("extras") or {}).get("wardrobeForge") or {}
         if (tag.get("templateId") or "").startswith(prefix) and "mesh" in node:
-            for primitive in document.meshes[node["mesh"]]["primitives"]:
+            primitives = document.meshes[node["mesh"]]["primitives"]
+            for primitive in primitives if only is None else [primitives[only]]:
                 p = document.read_accessor(primitive["attributes"]["POSITION"])[:, :3]
                 out.append(p[np.unique(document.read_accessor(primitive["indices"]).reshape(-1))])
     return np.vstack(out)
 
 
-def test_the_whale_tail_shows_the_thong_above_the_jeans():
+def _around(points, low, high):
+    """The points between ``low`` and ``high`` degrees round her from the front (0) to the back (180)."""
+    angle = np.degrees(np.abs(np.arctan2(points[:, 0], points[:, 2])))
+    return points[(angle >= low) & (angle <= high)]
+
+
+def test_the_whale_tail_is_the_thong_fitted_to_the_jeans():
+    """P2. Straps above the jeans at her hips, the front panel under them, the back's Y just above."""
     record, document = _dress({"prompt": "visible_thong_low_rise_jeans", "preset": "visible_thong_low_rise_jeans"},
                               declared=True)
     assert record.fit_report.passed
     thong, jeans = _points(document, "under-v-string"), _points(document, "jeans-")
-    straps = thong[np.abs(thong[:, 0]) > 0.07][:, 1].max() - jeans[:, 1].max()
-    assert 0.03 < straps < 0.08  # classic: ~5 cm of strap above the waistband
+
+    def top(points, low, high):
+        return float(_around(points, low, high)[:, 1].max())
+
+    side, front, back = top(jeans, 75, 105), top(jeans, 0, 12), top(jeans, 168, 180)
+    assert 0.01 < side - front < 0.03 and 0.0 < side - back < side - front  # curved: dips front, less back
+    assert 0.025 <= top(thong, 75, 105) - side <= 0.05  # classic straps: 25–50 mm above
+    assert top(thong, 0, 12) < front - 0.005  # the front panel stays under the waistband
+    assert top(thong, 175, 180) > back  # the Y's junction is above the centre back
+    # Above the jeans only a strap shows: at her side, a few millimetres of it, not a panel.
+    hip = _around(thong, 80, 100)
+    assert np.ptp(hip[hip[:, 1] > side][:, 1]) < 0.009
+    # The waistband is denim's narrow band following that curved edge, not the whole yoke.
+    from wardrobe.geometry.procedural import TROUSER_WAISTBAND_M
+
+    band = _points(document, "jeans-", only=1)
+    for low in range(0, 180, 40):
+        depth = np.ptp(_around(band, low, low + 20)[:, 1])
+        # The brief was 35–45 mm; a 20° window also spans a few mm of the edge's own slope.
+        assert TROUSER_WAISTBAND_M - 0.003 < depth < TROUSER_WAISTBAND_M + 0.006
+
+
+def test_a_low_rise_top_edge_follows_her_pelvis():
+    from wardrobe.geometry.procedural import trouser_top_dip
+
+    phi = np.array([0.0, math.pi / 2, math.pi])
+    front, sides, back = trouser_top_dip(phi, "ultra-low")
+    assert front < back < 0.0 and sides == 0.0
+    assert not np.any(trouser_top_dip(phi, ""))  # every other rise stays level
+    assert not np.any(trouser_top_dip(phi, "high"))
+
+
+def test_low_rise_jeans_have_a_crotch_that_covers(body):
+    from wardrobe.geometry.procedural import build_trousers
+
+    params = FitParameters(measurements=body, metadata={"rise": "ultra-low"})
+    yoke = build_trousers(params, hem_y=params.hip_y - 0.6)[0]
+    crotch = crotch_y(params, params.hip_y - (params.hip_y - params.knee_y) * 0.18)
+    assert yoke.positions[:, 1].min() < crotch - 0.02  # over the tops of the legs, no slot at her front
+    liner = build_trousers(params, hem_y=params.hip_y - 0.3, shaped=False)[0]
+    assert abs(float(liner.positions[:, 1].min()) - crotch) < 1e-4  # the hidden liner keeps its yoke
 
 
 def test_an_undeclared_avatar_is_refused_the_thong_and_given_the_corset():
@@ -224,3 +280,4 @@ def test_an_undeclared_avatar_is_refused_the_thong_and_given_the_corset():
     assert record.fit_report.passed
     skirt, liner = _points(document, "skirt-"), _points(document, "shorts-slip")
     assert liner[:, 1].max() < skirt[:, 1].max() - 0.01  # the liner stays under the low waistband
+

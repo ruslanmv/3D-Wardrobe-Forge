@@ -34,6 +34,8 @@ class VisibleThongOptions(BaseModel):
     thong_rise: float | None = Field(default=None, alias="thongRise", ge=0.2, le=1.15)
     #: The trousers' rise.
     jeans_rise: Literal["low", "ultra-low"] | None = Field(default=None, alias="jeansRise")
+    #: P2. How far the side straps rise above the jeans' waistband, overriding the style's.
+    strap_above_mm: float | None = Field(default=None, alias="strapAboveMm", ge=10.0, le=90.0)
 
 
 class OutfitRequest(BaseModel):
@@ -150,6 +152,10 @@ class StylePlan(BaseModel):
     #: that places underwear against another garment's waistband (the visible-thong block);
     #: None everywhere else, so every other brief is drafted exactly as its template says.
     brief_rise: float | None = Field(default=None, alias="briefRise", ge=0.2, le=1.15)
+    #: P2. A brief's waistline placed against the jeans over it (wardrobe.lingerie.blocks
+    #: whale_tail_targets): strapAboveMm, frontBelowMm, backAboveMm, strapMm, jeansRise. Set
+    #: only by the visible-thong block; None everywhere else.
+    whale_tail: dict | None = Field(default=None, alias="whaleTail")
 
     def to_dict(self) -> dict:
         return self.model_dump(by_alias=True)
