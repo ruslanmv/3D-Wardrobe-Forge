@@ -34,6 +34,8 @@ from wardrobe.lingerie.surface import DepthMap
 GAP_M = 0.0012
 #: Points along a strap, about this far apart.
 STEP_M = 0.01
+#: How far from each anchor a strap runs straight before it lies on her.
+SPAN_M = 0.04
 
 
 def _point(params: FitParameters, x: float, y: float, side: str, lift: float) -> np.ndarray | None:
@@ -114,8 +116,29 @@ def route(params: FitParameters, front: np.ndarray, back: np.ndarray, side: floa
         over_normals.append(n / np.linalg.norm(n))
     path = np.array(points[0] + over_points + points[1])
     normal = np.array(normals[0] + over_normals + normals[1])
-    # The ends are the anchors themselves: the strap is sewn there, not near there.
+    # The ends are the anchors themselves: the strap is sewn there, not near there. From an
+    # anchor it runs straight for SPAN_M, as a strap spans the air from a cup's point to her
+    # chest: laid on her depth map from the first step, it dropped off a triangle cup's
+    # proud peak into a hollow of the map and out again, and the ribbon turned over (102°)
+    # just above the cup. Anything straight that would be inside her is pushed out after
+    # the shell, as every placed vertex is.
     path[0], path[-1] = front, back
+    # Measured up her body (x and y), not along the path: a drop off a proud anchor is
+    # itself a long 3D step, and would end the straight run before it began.
+    along = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(path[:, :2], axis=0), axis=1))])
+    for distance, end in ((along, 0), (along[-1] - along, path.shape[0] - 1)):
+        reach = np.flatnonzero(distance >= SPAN_M)
+        if reach.size == 0:
+            continue
+        k = int(reach[0] if end == 0 else reach[-1])
+        span = range(1, k) if end == 0 else range(k + 1, end)
+        for i in span:
+            t = distance[i] / max(distance[k], 1e-9)
+            path[i] = path[end] + (path[k] - path[end]) * t
+            # Its face turns evenly too, from the anchor's to where it lands on her: the map's
+            # normals over the hollow it no longer touches flipped the ribbon over.
+            face = normal[end] + (normal[k] - normal[end]) * t
+            normal[i] = face / max(np.linalg.norm(face), 1e-9)
     return _smooth(path), normal
 
 

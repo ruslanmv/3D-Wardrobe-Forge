@@ -55,6 +55,12 @@ PEAK_WIDTH_M = 0.008
 #: Per style: the neckline's outer top as a fraction of (bust point → fold) above the bust
 #: point, and where along the neckline (inner 0 → outer 1) the strap is sewn. The inner top
 #: is the gore's: a neckline starts where the gore ends (a triangle has no neckline, a peak).
+#: Top-edge vertices this close to its highest are all "the peak" a strap may be sewn to.
+PEAK_TOLERANCE_M = 0.002
+#: How far down the cup below its peak a strap is sewn on, and how far off the cup it lies.
+STRAP_OVERLAP_M = 0.012
+STRAP_ON_CUP_M = 0.0008
+
 NECKLINES = {
     "triangle": (None, 0.5),
     "balconette": (0.45, 0.75),
@@ -205,13 +211,34 @@ def build_bra(frame: BodyFrame, spec: BraSpec, straps: StrapBlock, *, name: str 
                 positions.append(np.asarray(p, dtype=np.float64))
             indexed.append(ids)
         cup_rows[side] = indexed
-        # The strap is sewn at the neckline's strap point (a triangle's peak).
+        # A cup with a neckline has its strap sewn at its high point. At a fixed fraction
+        # along the top edge it was sewn on the edge's inner slope, and the cup's peak stood
+        # up beside the strap's end: the spike every such bra showed from three-quarters. A
+        # triangle's short level peak is made for the strap and keeps its strap point.
         top_ids = indexed[-1]
-        at = top_ids[int(round(cup["strap_at"] * CUP_COLUMNS))]
-        anchor_p = np.asarray(positions[at], dtype=np.float64)
+        column = int(round(cup["strap_at"] * CUP_COLUMNS))
+        necked = NECKLINES[spec.style][0] is not None
+        if necked:
+            heights = np.array([positions[v][1] for v in top_ids])
+            highest = np.flatnonzero(heights >= heights.max() - PEAK_TOLERANCE_M)
+            column = int(highest[np.argmin(np.abs(highest - column))])
+        at = top_ids[column]
+        # Sewn onto the cup's outside, overlapping it: centred on the peak itself, a 10 mm
+        # strap's square end hung over her skin either side of the point.
+        peak_p = np.asarray(positions[at], dtype=np.float64)
+        anchor_p = peak_p
+        # A triangle's peak is already the narrow point a strap is made for; there, run down
+        # its column, the strap dipped under the cup's edge and out again.
+        for row in (reversed(indexed[:-1]) if necked else ()):
+            below = np.asarray(positions[row[column]], dtype=np.float64)
+            anchor_p = below
+            if np.linalg.norm(below - peak_p) >= STRAP_OVERLAP_M:
+                break
         n = surface_normal(frame.params, float(anchor_p[0]), float(anchor_p[1]), "front")
         if n is None:
             n = np.array([0.0, 0.0, frame.forward])
+        if anchor_p is not peak_p:
+            anchor_p = anchor_p + n * (straps.strap_spec().thickness_m / 2 + STRAP_ON_CUP_M)
         up = np.array([0.0, 1.0, 0.0])
         tangent = up - n * float(np.dot(up, n))
         anchors[side] = Anchor(name="cup-strap", side=side, position=anchor_p, normal=n,
