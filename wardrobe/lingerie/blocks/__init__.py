@@ -11,6 +11,13 @@ from wardrobe.lingerie.specs import parse_block
 def build_block(kind: str, params: FitParameters) -> Mesh:
     """The garment for a lingerie ``kind`` (``wardrobe.lingerie.LINGERIE_KINDS``) at these measurements."""
     block = parse_block(kind, params.metadata.get("lingerie") or {})
+    rise = params.metadata.get("briefRise")
+    if rise is not None and block.brief is not None:
+        # P1. A look that places this brief against another garment's waistband sets its
+        # rise; the template's own stays for every brief that nothing places.
+        from dataclasses import replace
+
+        block = replace(block, brief=replace(block.brief, rise=float(rise)))
     frame = body_frame(params)
     if kind == "brief-block":
         from wardrobe.lingerie.blocks.brief import build_brief

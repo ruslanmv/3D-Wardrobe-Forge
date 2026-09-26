@@ -27,6 +27,7 @@ from wardrobe.domain.looks import OutfitPlan, OutfitRequest
 from wardrobe.hosiery import planning as hosiery_planning
 from wardrobe.hosiery import presets as hosiery_presets
 from wardrobe.materials.finishes import FINISH_KEYWORDS, OPACITY_KEYWORDS, PATTERN_KEYWORDS
+from wardrobe.pipeline import look_presets
 from wardrobe.pipeline.plan_outfit import parse_prompt, plan_outfit
 from wardrobe.vrm.garments import KIND_REGIONS
 
@@ -131,8 +132,9 @@ def plan_outfit_stack(
     its garments and its overrides placed: passing them as extra ``layers``
     instead made "a tee + a skirt" one layer and lost the tee (S2).
     """
-    request = hosiery_presets.expand(request)
-    return hosiery_planning.apply(_plan_stack(request, catalog, list(beneath)), request, catalog)
+    request = hosiery_presets.expand(look_presets.expand(request))
+    plan = hosiery_planning.apply(_plan_stack(request, catalog, list(beneath)), request, catalog)
+    return look_presets.apply(plan, request, catalog)
 
 
 def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog, beneath: list[OutfitRequest]) -> OutfitPlan:

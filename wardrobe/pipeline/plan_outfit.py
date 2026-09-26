@@ -118,6 +118,9 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     "top": (
         "top", "shirt", "blouse", "tee", "t-shirt", "sweater", "hoodie", "jumper", "crop top", "tube top",
         "halter top", "cami", "crop cami", "cami top", "tank top",
+        # P1: the boned top (top-corset-v1). The lingerie foundations keep their own words
+        # (guêpière, waspie); a sheer or lace corset is still gated by its material.
+        "corset", "corset top", "bustier", "bustier top",
     ),
     "shoes": ("shoes", "boots", "heels", "sneakers", "trainers", "sandals"),
     # try-on haul. The planner takes the longest phrase that matches, so a word
@@ -233,6 +236,8 @@ NECKLINE_KEYWORDS: dict[str, tuple[str, ...]] = {
 RISE_KEYWORDS: dict[str, tuple[str, ...]] = {
     "high": ("high-waisted", "high waisted", "high-rise", "high rise", "high-waist"),
     "low": ("low-rise", "low rise", "hipster", "low-slung"),
+    # P1: on her hip bones. Longer phrases than "low-rise", so the parser takes these first.
+    "ultra-low": ("ultra-low", "ultra low", "ultra-low-rise", "super low-rise", "extra low-rise"),
 }
 
 BACK_KEYWORDS: dict[str, tuple[str, ...]] = {

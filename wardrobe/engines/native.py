@@ -25,7 +25,7 @@ from wardrobe.geometry.waistband import WAISTBAND_SHADE, waistband_mask
 from wardrobe.hosiery import assembly as hosiery_assembly
 from wardrobe.hosiery import fit as hosiery_fit
 from wardrobe.hosiery.materials import shade_material
-from wardrobe.materials.textures import pleat_shading
+from wardrobe.materials.textures import boning_shading, pleat_shading
 from wardrobe.pipeline.context import BuiltLayer, PipelineContext
 from wardrobe.vrm.garments import garment_material_name, garment_slot
 from wardrobe.vrm.merge import GarmentMaterial, attach_garment, set_title, tag_derived
@@ -159,6 +159,13 @@ class NativeEngine(FittingEngine):
                 if layer.mesh.metadata.get("pleatShading") and material.pattern == "none":
                     # Knife pleats read by their shadows (wardrobe.materials.textures.pleat_shading).
                     fabric.texture = pleat_shading()
+                pitch = layer.mesh.metadata.get("boningPitchM")
+                if pitch and material.pattern == "none" and layer.mesh.uvs is not None:
+                    # P1. A corset's boning channels, one texture tile per panel. The loft's u is
+                    # metres round her body, so dividing by the pitch puts a channel every pitch.
+                    layer.mesh.uvs = layer.mesh.uvs.copy()
+                    layer.mesh.uvs[:, 0] /= float(pitch)
+                    fabric.texture = boning_shading()
                 # A skirt's waistband is the same cloth a shade darker, opaque, unpatterned:
                 # the line that says where the garment begins (wardrobe.geometry.waistband).
                 band = waistband_mask(layer.mesh)

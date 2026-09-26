@@ -40,7 +40,7 @@ from wardrobe.engines.geometry_checks import (
 )
 from wardrobe.errors import FittingError
 from wardrobe.geometry.mesh import Mesh
-from wardrobe.geometry.procedural import FitParameters, build_garment
+from wardrobe.geometry.procedural import FitParameters, build_garment, skirt_top
 from wardrobe.geometry.waistband import add_waistband
 from wardrobe.lingerie import LINGERIE_KINDS
 from wardrobe.pipeline.context import PipelineContext
@@ -214,7 +214,8 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         seat_placed(context, mesh, clearance)
     if pleats:
         # Set from just below the waistband on a skirt, from the hips on a dress.
-        pleat_from = params.waist_y - 0.03 if kind == "skirt" else params.hip_y
+        # From just below the skirt's own top: a low-rise skirt starts below her waist (P1).
+        pleat_from = skirt_top(params) - 0.03 if kind == "skirt" else params.hip_y
         apply_pleats(mesh, index, count=pleats, from_y=pleat_from, mask=axis_mask, clearance_m=clearance,
                      amplitude=float(artifact.metadata.get("pleatDepth") or 0.03),
                      retexture=context.plan.material.pattern == "none")

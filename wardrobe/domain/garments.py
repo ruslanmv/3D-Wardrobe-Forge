@@ -44,7 +44,7 @@ PROCEDURAL_KINDS = {
     "dress", "skirt", "top", "trousers", "jacket", "shoes",
     "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
     "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
-    "suspender-belt", "waspie", "guepiere", "slip-shorts",
+    "suspender-belt", "waspie", "guepiere", "slip-shorts", "corset",
 } | set(LINGERIE_KINDS)
 
 #: The template schema that carries a ``lingerie`` block (pattern blocks, wardrobe.lingerie).
@@ -58,7 +58,7 @@ INTIMATE_CATEGORIES = frozenset({"swimwear", "underwear"})
 COVERAGE_PRESETS: dict[str, float] = {"full": 1.12, "standard": 1.0, "minimal": 0.78, "micro": 0.58}
 STRAP_PRESETS = ("shoulder", "halter", "none", "string", "cross-back", "garter", "harness")
 NECKLINES = ("v", "plunge", "sweetheart", "triangle", "demi", "balconette")
-RISES = ("high", "low")
+RISES = ("high", "low", "ultra-low")
 BACKS = ("low",)
 LEG_CUTS = ("high",)
 FLARE_STARTS = ("waist", "high-hip", "hip", "below-hip")

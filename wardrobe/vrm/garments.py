@@ -44,6 +44,7 @@ SLOT_REGIONS: dict[str, frozenset[str]] = {
 KIND_REGIONS: dict[str, frozenset[str]] = {
     "top": frozenset({"upper"}),
     "crop-top": frozenset({"upper"}),
+    "corset": frozenset({"upper"}),
     "tube-top": frozenset({"upper"}),
     "bra": frozenset({"upper"}),
     "skirt": frozenset({"lower"}),

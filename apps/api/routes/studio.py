@@ -290,9 +290,18 @@ def vocabulary() -> dict:
         ),
         # Hosiery & suspenders (wardrobe.hosiery): every value the request blocks accept, and the presets.
         "hosiery": hosiery_vocabulary(),
+        # Looks of more than one garment (wardrobe.pipeline.look_presets): send the id as
+        # `outfit.preset` (and as the prompt, to take its prompt too).
+        "lookPresets": look_vocabulary(),
         "jobStates": [state.value for state in JobState if state not in TERMINAL_STATES],
         "terminalStates": sorted(state.value for state in TERMINAL_STATES),
     }
+
+
+def look_vocabulary() -> dict:
+    from wardrobe.pipeline.look_presets import VISIBLE_THONG_STYLES, catalogue
+
+    return {"presets": catalogue(), "visibleThongStyles": list(VISIBLE_THONG_STYLES)}
 
 
 def hosiery_vocabulary() -> dict:

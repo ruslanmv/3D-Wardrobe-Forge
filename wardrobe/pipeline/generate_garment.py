@@ -142,7 +142,14 @@ def with_skirt_liner(outfit_plan, request, catalog, *, depicts_adult: bool):
     # A liner the pipeline added is a liner, briefs included: as a "foundation"
     # it would make a job fail where there is no body under her clothes, and an
     # automatic addition must never turn a skirt that worked into a refusal.
-    layers = [lined.layers[0].model_copy(update={"role": "liner"}), *lined.layers[1:]]
+    liner_plan = lined.layers[0].model_copy(update={"role": "liner"})
+    skirt_rise = next((p.style.rise for p in lined.layers[1:] if p.category in {"skirt", "dress"}), "")
+    if skirt_rise in {"low", "ultra-low"}:
+        # P1. Under a low-rise skirt the liner is cut lower still: slip shorts sit at a low
+        # rise already, and a low-rise skirt starts below it, so the liner's band showed.
+        lower = liner_plan.style.model_copy(update={"rise": "ultra-low"})
+        liner_plan = liner_plan.model_copy(update={"style": lower})
+    layers = [liner_plan, *lined.layers[1:]]
     # The look keeps the name of what was asked for. The liner is invisible under the skirt
     # and nobody asked for it, so "Black Slip Shorts + Burgundy Evening" in a wardrobe was
     # a name describing a garment no one will ever see.

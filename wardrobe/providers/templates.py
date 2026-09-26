@@ -46,6 +46,8 @@ class TemplateGarmentProvider(GarmentProvider):
         )
         if plan.hosiery is not None:  # only then: every other garment keeps the id it always had
             key += "|" + plan.hosiery.model_dump_json(by_alias=True, exclude_none=True)
+        if style.brief_rise is not None:  # likewise (P1)
+            key += f"|briefRise={style.brief_rise}"
         digest = sha1(key.encode()).hexdigest()[:12]
 
         artifact = GarmentArtifact(
@@ -98,6 +100,9 @@ class TemplateGarmentProvider(GarmentProvider):
         if template.lingerie is not None:
             # The pattern block's spec, for wardrobe.lingerie to build from.
             artifact.metadata["lingerie"] = dict(template.lingerie)
+            if style.brief_rise is not None:
+                # P1. The look places this brief's waistline (the visible-thong block).
+                artifact.metadata["briefRise"] = style.brief_rise
         if template.id in BELT_STYLE_OF_TEMPLATE:
             artifact.metadata["beltStyle"] = BELT_STYLE_OF_TEMPLATE[template.id]
         return artifact
