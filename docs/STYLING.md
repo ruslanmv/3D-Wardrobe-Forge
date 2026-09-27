@@ -51,10 +51,15 @@ garment inventory ─► strip plan for the whole outfit ─► is there a body 
 - **Layers stay layers.** Each fitted layer joins what the next must clear, so the
   dress goes over the underwear, and the underwear is still there — visible under
   a sheer dress. Forge garments are tagged, so a later outer layer leaves them on.
-- **Modes:** `preserve` layers over her outfit, `replace-outer` (default) takes
-  off what the outfit covers, `underwear-base` also puts a neutral foundation on
-  first. **No mode outputs her with nothing on**, the stripped state is never
-  stored, and the stored source is byte-identical after every job.
+- **Modes:** `preserve` layers over her outfit ("Keep her clothes on"),
+  `replace-outer` (default, "Replace what this look covers") takes off what the
+  outfit covers, `underwear-base` ("Underwear underneath, then the outfit") also
+  puts a neutral foundation on first where the outfit names none. None of them
+  means "take her whole outfit off": briefs replace her bottoms and leave her top,
+  and a plain "underwear" is a bra and briefs, which replace both. The Studio does
+  not offer `underwear-base` while designing underwear or swimwear, which are the
+  foundation already. **No mode outputs her with nothing on**, the stripped state
+  is never stored, and the stored source is byte-identical after every job.
 - **Provenance:** the look records the base-body mode, which of her garments came
   off and the layers put on; the fit report has an entry — and a design sheet —
   per layer.

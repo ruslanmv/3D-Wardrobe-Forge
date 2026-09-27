@@ -202,7 +202,7 @@ def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, dep
     for sheet in garments:
         sheet["sourceGarmentsRemoved"] = [g.material for g in strip.remove]
     # Underwear that would have to go over clothes she keeps: the job refuses it outside
-    # "Keep it on" (prepare_base_body), so the plan says so before anyone waits for it.
+    # "Keep her clothes on" (prepare_base_body), so the plan says so before anyone waits for it.
     over = foundation_conflicts(strip.retain if mode != "preserve" else inventory, kinds)
     layering = ("layered" if mode == "preserve" else "refused") if over else "passed"
     return {

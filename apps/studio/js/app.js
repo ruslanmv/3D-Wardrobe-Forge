@@ -700,30 +700,59 @@ function setViewMode(mode) {
 const FOUNDATION_CATEGORIES = new Set(['underwear', 'swimwear']);
 
 /**
- * A foundation look starts from her, undressed where it goes. "Take off what the new outfit
- * covers" was the default, and a bralette — whose shape the strip plan did not know — took
- * nothing off and was fitted over her cardigan; "Build on" could still be ticked from the
- * look before. So choosing underwear picks "underwear first" and starts from her own avatar.
- * Both stay the designer's to change: keeping her clothes on is a styling, said as one.
+ * A foundation look starts from her own avatar, not the look before ("Build on" is unticked),
+ * and replaces what it covers. This used to pick "underwear first", from when a bralette's
+ * shape was unknown to the strip plan and took nothing off; that is fixed, and "underwear
+ * first" never meant "take her whole outfit off" anyway — briefs replaced her bottoms and her
+ * top stayed, under a label that promised more (L5b). Keeping her clothes on stays the
+ * designer's to choose, and is said as a styling.
  */
 function startFoundation() {
-    const select = $('base-body-select');
-    const underwearFirst = select.querySelector('option[value="underwear-base"]');
-    if (underwearFirst && !underwearFirst.disabled) select.value = 'underwear-base';
+    $('base-body-select').value = 'replace-outer';
     $('build-on').checked = false;
     $('plan-report').hidden = true;
+}
+
+/**
+ * L5b. What "Before dressing" offers, in words that say what the job does. For underwear and
+ * swimwear the third choice is gone: they are the foundation already, and "underwear first"
+ * while designing underwear read as "undress her", which it never did. What comes off is
+ * what the look replaces — a set her top and her bottoms, briefs alone her bottoms only.
+ */
+function renderBaseBodyChoices(adult) {
+    const select = $('base-body-select');
+    const foundation = FOUNDATION_CATEGORIES.has(state.design.category);
+    const what = `this ${state.design.category}`;
+    // Short enough for the select at its width; the default needs no "(recommended)" there, it is chosen.
+    select.querySelector('option[value="replace-outer"]').textContent = foundation
+        ? `Replace what ${what} covers`
+        : 'Replace what this look covers (recommended)';
+    select.querySelector('option[value="preserve"]').textContent = foundation
+        ? 'Keep her clothes on and layer it (styling)'
+        : 'Keep her clothes on — layer over them (styling)';
+    const underwearBase = select.querySelector('option[value="underwear-base"]');
+    underwearBase.hidden = foundation;
+    underwearBase.disabled = foundation || !adult;
+    underwearBase.title = adult ? '' : 'Underwear needs private mode on for this avatar (log in, then Settings)';
+    if (underwearBase.disabled && select.value === 'underwear-base') select.value = 'replace-outer';
 }
 
 function renderBaseBodyNote() {
     const note = $('base-body-note');
     const mode = $('base-body-select').value;
     const foundation = FOUNDATION_CATEGORIES.has(state.design.category);
-    note.hidden = !foundation;
-    if (!foundation) return;
-    note.textContent =
+    const text =
         mode === 'preserve'
-            ? 'Layered over her clothes on purpose: a styling, not an underwear fit.'
-            : 'Underwear is the first layer. Her clothes where it goes come off — only where her avatar has a body under them; otherwise the look is refused, never fitted over her clothes.';
+            ? foundation
+                ? 'Layered over her clothes on purpose: a styling, not an underwear fit.'
+                : ''
+            : mode === 'underwear-base'
+              ? 'Plain underwear goes on first where the outfit names none, then the outfit; her clothes come off where the outfit and its underwear cover them.'
+              : foundation
+                ? 'Her clothes come off where this replaces them: a set (bra and briefs) takes off her top and her bottoms, briefs alone only her bottoms. Only where her avatar has a body under them; otherwise the look is refused, never fitted over her clothes.'
+                : '';
+    note.hidden = !text;
+    note.textContent = text;
 }
 
 function renderDesigner() {
@@ -860,10 +889,7 @@ function renderStyle(adult) {
         state.design.neckline = value;
         updatePreview();
     });
-    const underwearBase = $('base-body-select').querySelector('option[value="underwear-base"]');
-    underwearBase.disabled = !adult;
-    underwearBase.title = adult ? '' : 'Underwear needs private mode on for this avatar (log in, then Settings)';
-    if (!adult && $('base-body-select').value === 'underwear-base') $('base-body-select').value = 'replace-outer';
+    renderBaseBodyChoices(adult);
     renderBaseBodyNote();
     $('style-hint').textContent = adult ? 'overrides the prompt' : 'overrides the prompt · see-through needs private mode';
 }
@@ -1169,7 +1195,9 @@ async function checkPlan() {
     );
     const body = report.body;
     const missing = body ? Object.entries(body.regions).filter(([, r]) => !r.present).map(([k]) => k) : [];
-    box.replaceChildren(
+    // Filtered: replaceChildren writes a null out as the word "null", which the plan showed
+    // under every report with nothing to say about the layer order.
+    const planLines = [
         el('ol', { class: 'plan-layers' }, lines),
         ...[...new Set(report.garments.filter((g) => !g.allowed).map((g) => g.refusal))].map((refusal) =>
             el('p', { class: 'report-line bad', text: `✕ ${refusal}` })
@@ -1193,7 +1221,13 @@ async function checkPlan() {
         report.layerOrder === 'refused'
             ? el('p', {
                   class: 'report-line bad',
-                  text: `✕ The underwear would go over her ${report.layeredOver.join(', ')} — choose "Take it off, underwear first" to add the other half, or "Keep it on" to layer it on purpose`,
+                  // "Underwear underneath" is not offered while designing underwear (renderBaseBodyChoices),
+                  // so there the way to add the other half is the Lingerie Set.
+                  text: `✕ The underwear would go over her ${report.layeredOver.join(', ')} — ${
+                      FOUNDATION_CATEGORIES.has(state.design.category)
+                          ? `choose ${state.design.category === 'swimwear' ? 'a bikini' : 'the Lingerie Set'} (or add the other half with +) so both come off`
+                          : 'choose "Underwear underneath, then the outfit" to add the other half'
+                  }, or "Keep her clothes on" to layer it on purpose`,
               })
             : report.layerOrder === 'layered'
               ? el('p', { class: 'report-line warn', text: `Layered over her ${report.layeredOver.join(', ')}: a styling, not an underwear fit` })
@@ -1201,8 +1235,9 @@ async function checkPlan() {
         el('p', {
             class: `report-line ${report.allowed ? '' : 'bad'}`,
             text: report.allowed ? `→ ${report.garments.length} layer(s) will be built` : 'This outfit will be refused',
-        })
-    );
+        }),
+    ];
+    box.replaceChildren(...planLines.filter(Boolean));
 }
 
 function showJob(job, prompt) {
@@ -1271,9 +1306,9 @@ function renderReport(report, look = null) {
     }
     const body = report.baseBody || {};
     if (body.layerOrder === 'layered') {
-        lines.push(el('p', { class: 'report-line warn', text: 'Layered over her own clothes (Keep it on): a styling, not an underwear fit' }));
+        lines.push(el('p', { class: 'report-line warn', text: 'Layered over her own clothes (Keep her clothes on): a styling, not an underwear fit' }));
     } else if (body.bodyPreparation === 'passed' && (body.removedSlots || []).length) {
-        lines.push(el('p', { class: 'report-line', text: `Took off her ${body.removedSlots.join(', ')} · fitted to her body` }));
+        lines.push(el('p', { class: 'report-line', text: `Took off her ${body.removedSlots.join(' and ')} · fitted to her body` }));
     }
     if (report.hosiery) lines.push(...hosieryReport(report.hosiery, look));
     $('report').replaceChildren(...lines);

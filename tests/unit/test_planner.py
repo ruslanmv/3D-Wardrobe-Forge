@@ -234,11 +234,54 @@ def test_plain_words_plan_the_tailored_blocks(template_catalog):
 
     for prompt, template in (("white bra", "under-bra-full-v2"), ("black lace bralette", "under-bralette-v2"),
                              ("beige seamless briefs", "under-briefs-v2"), ("panties", "under-briefs-v2"),
-                             ("underwear", "under-briefs-v2"), ("high-leg briefs", "under-briefs-high-leg-v2"),
+                             ("high-leg briefs", "under-briefs-high-leg-v2"),
                              ("low-rise briefs", "under-hipster-v2"), ("black tailored cheeky briefs", "under-cheeky-v2")):
         assert select_template(template_catalog, parse_prompt(prompt), prompt).id == template, prompt
     for legacy in ("under-briefs-v1", "under-bralette-v1"):
         assert template_catalog.get(legacy).tags == []
+
+
+@pytest.mark.parametrize(
+    ("prompt", "category", "parts"),
+    [
+        ("underwear", None, ["under-bralette-v2", "under-briefs-v2"]),
+        ("underwear", "underwear", ["under-bralette-v2", "under-briefs-v2"]),
+        ("black", "underwear", ["under-bralette-v2", "under-briefs-v2"]),  # the Studio's chip, no word
+        ("black lace", "underwear", ["under-bralette-v2", "under-briefs-v2"]),
+        ("sporty underwear", None, ["under-bralette-v2", "under-briefs-v2"]),
+        ("lingerie set", None, ["under-bralette-v2", "under-briefs-v2"]),
+        ("bra and panties", None, ["under-bralette-v2", "under-briefs-v2"]),
+        ("bra and briefs", None, ["under-bralette-v2", "under-briefs-v2"]),
+        ("briefs", None, ["under-briefs-v2"]),
+        ("panties", None, ["under-briefs-v2"]),
+        ("underwear briefs", None, ["under-briefs-v2"]),
+        ("thong", None, ["under-thong-v2"]),
+        ("bralette", None, ["under-bralette-v2"]),
+        ("white bra", None, ["under-bra-full-v2"]),
+        ("bodysuit", None, ["under-bodysuit-v2"]),
+    ],
+)
+def test_a_plain_underwear_request_is_the_whole_set_and_a_named_piece_is_that_piece(
+    template_catalog, prompt, category, parts
+):
+    """L5b. "underwear" planned Tailored Briefs alone: her bottoms came off and her top stayed.
+
+    Asserted on the stack, the production path, because the set is planned as its parts;
+    plan_outfit alone answers the retired one-band set. "bra and panties" planned a bra
+    alone the other way round, its first word outscoring the phrase.
+    """
+    from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
+
+    plan = plan_outfit_stack(OutfitRequest(prompt=prompt, category=category), template_catalog)
+    assert [g.template_id for g in plan.garments] == parts, prompt
+    assert template_catalog.default_for("underwear").id == "under-lingerie-set-v1"
+
+
+def test_a_set_phrase_in_another_category_is_that_category(template_catalog):
+    from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
+
+    plan = plan_outfit_stack(OutfitRequest(prompt="bra and panties", category="swimwear"), template_catalog)
+    assert {g.category for g in plan.garments} == {"swimwear"}
 
 
 def test_coverage_words_cut_a_plain_brief():

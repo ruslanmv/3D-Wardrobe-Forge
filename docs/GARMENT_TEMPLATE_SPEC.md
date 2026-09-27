@@ -121,8 +121,20 @@ denim. Renaming a template cannot change what a bare category gets —
 | nightwear | `night-nightgown-v1` |
 | shoes | `shoes-flats-v1` |
 | legwear | `legwear-tights-v1` |
-| swimwear | `swim-one-piece-v1` (still behind the adult gate) |
-| underwear | `under-briefs-v2`, the tailored brief block (still behind the adult gate) |
+| swimwear | `swim-one-piece-v2`, the bodysuit block (still behind the adult gate) |
+| underwear | `under-lingerie-set-v1`, planned as its parts: `under-bralette-v2` + `under-briefs-v2` (still behind the adult gate) |
+
+**A bare "underwear" is the whole set (L5b).** It used to be the tailored briefs,
+which cover only her lower half, so the strip plan — correctly — took off her
+bottoms and left her top on. The strip plan is unchanged: a garment of hers comes
+off because the new outfit replaces what it covered. What changed is what the
+generic word asks for. A piece named outright is still that piece: "briefs" and
+"thong" replace her bottoms only, "bralette" her top only, "bodysuit" both.
+
+A set named by one of its phrases of more than one word — "bra and panties",
+"bra and briefs", "lingerie set" — is that set whatever single words inside the
+phrase score (`_named_set` in `plan_outfit_stack.py`); scored word by word,
+"bra and panties" was a full-cup bra alone.
 
 Every procedural skirt (`procedural:skirt`) is given a waistband after fitting
 (`wardrobe/geometry/waistband.py`): its top rows, 3 mm proud, drawn a shade

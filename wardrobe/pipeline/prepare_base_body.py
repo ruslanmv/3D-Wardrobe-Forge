@@ -79,9 +79,9 @@ def _refuse_foundation_over(conflicts: list[DetectedGarment], layers: list[tuple
                        - frozenset().union(*(KIND_REGIONS.get(kind, frozenset()) for kind, _ in layers)))
     raise FoundationOverClothing(
         f"the underwear would have to go over her {worn}: it comes off only when the new outfit also "
-        f"covers her {' and '.join(uncovered) or 'body'} there. Add the other half (briefs under a bra, "
-        "or a bra over briefs), choose 'Take it off, underwear first', or 'Keep it on' to layer it "
-        "on purpose",
+        f"covers her {' and '.join(uncovered) or 'body'} there. Add the other half (a lingerie set, "
+        "briefs under a bra, or a bra over briefs), choose 'Underwear underneath, then the outfit', "
+        "or 'Keep her clothes on' to layer it on purpose",
         detail={"worn": sorted({g.slot for g in conflicts}), "uncovered": uncovered},
     )
 
@@ -101,7 +101,7 @@ async def run(context: PipelineContext) -> None:
             # Asked for: a bralette over a shirt is a styling. Said so, not reported as underwear.
             report.base_body["layerOrder"] = "layered"
             context.warn(f"the underwear is layered over her {', '.join(sorted({g.slot for g in conflicts}))}"
-                         " (Keep it on): styled over her clothes, not fitted to her body")
+                         " (Keep her clothes on): styled over her clothes, not fitted to her body")
         return
 
     report.base_body["bodyPreparation"] = "passed"

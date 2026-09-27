@@ -184,7 +184,13 @@ def set_parts(request: OutfitRequest, catalog: TemplateCatalog) -> list[OutfitRe
     if request.template_id:
         chosen = request.template_id
     else:
-        chosen = select_template(catalog, parse_prompt(request.prompt), request.prompt).id
+        # L5b. With the category the Studio sent, as plan_outfit reads it. Without it the two
+        # could disagree: plan_outfit chose the set, this chose something else, and the set
+        # was built as the one band shape the sweep retired instead of as its parts.
+        parsed = parse_prompt(request.prompt)
+        if request.category:
+            parsed.category = request.category
+        chosen = _named_set(request, catalog) or select_template(catalog, parsed, request.prompt).id
     parts = SET_PARTS.get(chosen)
     if parts is None:
         return None
@@ -198,6 +204,27 @@ def set_parts(request: OutfitRequest, catalog: TemplateCatalog) -> list[OutfitRe
         out.append(request.model_copy(update={"template_id": template_id, "category": template.category,
                                               "layers": None}))
     return out
+
+
+def _named_set(request: OutfitRequest, catalog: TemplateCatalog) -> str | None:
+    """L5b. A set the prompt names outright by one of its phrases: "bra and panties" is both halves.
+
+    Scored like any other template, the phrase lost to its first word. "bra" is a tag
+    of the full-cup bra, whose name ends in it too, so "bra and panties" planned a bra
+    alone: her top came off and her own bottoms stayed, under a request for both. A
+    phrase of more than one word that belongs to a set says more than any single word
+    inside it. Only in the set's own category, or with none, so a swimwear request that
+    happens to contain such a phrase is still planned as swimwear.
+    """
+    text = request.prompt.lower()
+    for set_id in SET_PARTS:
+        template = catalog.get(set_id)
+        if template is None or request.category not in (None, template.category):
+            continue
+        for tag in template.tags:
+            if len(tag.split()) > 1 and re.search(rf"(?<!\w){re.escape(tag.lower())}(?!\w)", text):
+                return set_id
+    return None
 
 
 def _rank(request: OutfitRequest, catalog: TemplateCatalog) -> int:
