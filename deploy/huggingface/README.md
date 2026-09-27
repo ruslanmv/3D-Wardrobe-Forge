@@ -24,8 +24,8 @@ exactly what the Dockerfile copies (`Dockerfile`, `pyproject.toml`, `LICENSE`,
 Space's root `README.md` — its front matter is what makes it a Docker Space on
 port 8080. The upload mirrors, so files removed here are removed there, and the
 Space commit names the source commit. It then sets the Space variables
-`WARDROBE_PROFILE=space`, `WARDROBE_JOB_CONCURRENCY=1` and `PUBLIC_BASE_URL` (read
-from the Space's domain). Use a write token, and prefer a fine-grained one scoped
+`WARDROBE_PROFILE=space`, `WARDROBE_JOB_CONCURRENCY=1`, `WARDROBE_QUEUE_CAP=8` and
+`PUBLIC_BASE_URL` (read from the Space's domain). Use a write token, and prefer a fine-grained one scoped
 to the Space.
 
 The Space builds the image itself; the first build takes a few minutes, most of

@@ -71,7 +71,10 @@ from huggingface_hub import HfApi
 repo = sys.argv[1]
 api = HfApi()
 domains = api.get_space_runtime(repo).raw.get("domains") or []
-variables = {"WARDROBE_PROFILE": "space", "WARDROBE_JOB_CONCURRENCY": "1"}
+# F1. A queue cap is global, so it is right behind any number of proxies. The
+# per-visitor limit needs WARDROBE_FORWARDED_HOPS to match the proxies in front of
+# the Space, which this script cannot see: set both yourself once you have checked.
+variables = {"WARDROBE_PROFILE": "space", "WARDROBE_JOB_CONCURRENCY": "1", "WARDROBE_QUEUE_CAP": "8"}
 if domains:
     variables["PUBLIC_BASE_URL"] = f"https://{domains[0]['domain']}"
 for key, value in variables.items():
