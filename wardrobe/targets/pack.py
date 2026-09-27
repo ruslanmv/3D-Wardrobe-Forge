@@ -64,11 +64,27 @@ class PackLook:
     prompt: str | None = None
     recipe_id: str | None = None
     tags: tuple[str, ...] = ()
-    rating: str = "general"
+    #: None: unrated — a look made before its rating was recorded. The app gates it.
+    rating: str | None = "general"
     fit_passed: bool = True
     clipping: str | None = None
     engine: str = "native"
     garments: tuple[str, ...] = field(default=())
+
+
+#: SPDX ids for the licence words the library manifest uses.
+SPDX = {"CC0": "CC0-1.0", "CC0-1.0": "CC0-1.0", "CC-BY-4.0": "CC-BY-4.0", "CC BY 4.0": "CC-BY-4.0"}
+
+
+def spdx_for(licence: str | None) -> str:
+    """The SPDX id for a library licence word, or NOASSERTION when we cannot say."""
+    return SPDX.get(str(licence or "").strip(), "NOASSERTION")
+
+
+def pack_slug(value: str) -> str:
+    """A Forge id (``look_ab12``, ``AvatarSample_A``) as a pack id: lowercase, dashes."""
+    slug = re.sub(r"[^a-z0-9]+", "-", str(value).lower()).strip("-")
+    return slug[:64] or "x"
 
 
 def sha256(data: bytes) -> str:
@@ -113,7 +129,7 @@ def build_pack(
                              "which the pack does not list")
         if (look.avatar_id, look.look_id) in seen:
             raise ValueError(f"look {look.look_id!r} appears twice for {look.avatar_id!r}")
-        if look.rating not in RATINGS:
+        if look.rating is not None and look.rating not in RATINGS:
             raise ValueError(f"look {look.look_id!r}: rating {look.rating!r} is not one of {RATINGS}")
         if look.vrm[:4] != b"glTF":
             raise ValueError(f"look {look.look_id!r}: not a binary glTF")
@@ -134,7 +150,6 @@ def build_pack(
             "bytes": len(look.vrm),
             "previewUrl": None,
             "tags": list(look.tags),
-            "rating": look.rating,
             "fit": {
                 "avatarId": look.avatar_id,
                 "quality": "verified" if look.fit_passed else "unverified",
@@ -150,6 +165,8 @@ def build_pack(
             },
             "license": {"spdx": by_avatar[look.avatar_id].license_spdx, "derivedFrom": look.avatar_id},
         }
+        if look.rating is not None:
+            entry["rating"] = look.rating
         if look.preview:
             files[f"{base}/preview.webp"] = look.preview
             entry.update(previewUrl=f"{base}/preview.webp", previewSha256=sha256(look.preview),
@@ -210,5 +227,6 @@ def _json(value) -> bytes:
     return (json.dumps(value, indent=2, ensure_ascii=False) + "\n").encode()
 
 
-__all__ = ["PACK_SCHEMA_VERSION", "RATINGS", "PackAvatar", "PackLook", "build_pack", "rating_for", "sha256",
+__all__ = ["PACK_SCHEMA_VERSION", "RATINGS", "SPDX", "PackAvatar", "PackLook", "build_pack", "pack_slug",
+           "rating_for", "sha256", "spdx_for",
            "zip_pack"]

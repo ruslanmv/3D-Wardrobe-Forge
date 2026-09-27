@@ -43,7 +43,7 @@ from wardrobe.pipeline.orchestrator import Orchestrator  # noqa: E402
 from wardrobe.queue.jobs import AsyncioJobQueue  # noqa: E402
 from wardrobe.storage.database import InMemoryJobRepository, InMemoryWardrobeRepository  # noqa: E402
 from wardrobe.storage.object_store import LocalObjectStore  # noqa: E402
-from wardrobe.targets.pack import PackAvatar, PackLook, build_pack, rating_for, zip_pack  # noqa: E402
+from wardrobe.targets.pack import SPDX, PackAvatar, PackLook, build_pack, rating_for, zip_pack  # noqa: E402
 
 PACK_ID = "homepilot-default"
 SOURCE_NAME = "HomePilot"
@@ -66,10 +66,6 @@ RECIPES: dict[str, list[tuple[str, str, str, tuple[str, ...]]]] = {
          ("casual", "denim", "day")),
     ],
 }
-
-#: SPDX ids for the licence words the library manifest uses.
-SPDX = {"CC0": "CC0-1.0", "CC-BY-4.0": "CC-BY-4.0", "CC BY 4.0": "CC-BY-4.0"}
-
 
 async def make(out: Path, version: str, only: set[str] | None, zip_path: Path | None,
                web_previews: bool = False) -> int:

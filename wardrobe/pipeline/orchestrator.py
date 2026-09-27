@@ -8,6 +8,7 @@ Stage order matches docs/PIPELINE.md exactly:
 
 from __future__ import annotations
 
+import json
 import logging
 import shutil
 import tempfile
@@ -228,6 +229,21 @@ class Orchestrator:
         await self.store.put(
             context.key("fit-report.json"),
             report.model_dump_json(by_alias=True, indent=2).encode("utf-8"),
+            content_type="application/json",
+        )
+
+        # W14. What the pack export needs and only this job knows: the rating comes from
+        # the plan, and the plan lives in the job record — memory, on a Space. Written beside
+        # the look, it survives the record and lets an export say what each look is.
+        from wardrobe.targets.pack import rating_for
+
+        await self.store.put(
+            context.key("look.json"),
+            json.dumps({
+                "rating": rating_for(context.plan),
+                "garments": [g.template_id for g in context.plan.garments] if context.plan else [],
+                "prompt": record.request.outfit.prompt,
+            }).encode("utf-8"),
             content_type="application/json",
         )
 

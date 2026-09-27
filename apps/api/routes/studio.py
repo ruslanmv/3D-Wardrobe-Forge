@@ -14,6 +14,7 @@ Three things the editor needs that the rest of the API did not offer:
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import replace
 
@@ -43,6 +44,7 @@ from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
 from wardrobe.pipeline.prepare_base_body import foundation_conflicts
 from wardrobe.policy import intimate
 from wardrobe.targets.bundle import LookFiles, build_wardrobe_bundle, select_looks
+from wardrobe.targets.pack import RATINGS, PackAvatar, PackLook, build_pack, pack_slug, spdx_for, zip_pack
 from wardrobe.vrm.body_integrity import check_body
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.garment_inventory import build_strip_plan, garment_inventory
@@ -385,6 +387,79 @@ async def export_wardrobe_bundle(
             "X-Wardrobe-Looks": str(len(files)),
         },
     )
+
+
+@router.get("/wardrobes/{avatar_id}/pack.zip")
+async def export_wardrobe_pack(
+    avatar_id: str,
+    request: Request,
+    orchestrator: OrchestratorDep,
+    store: StoreDep,
+    admin: AdminDep,
+    passed_only: bool = Query(default=True, alias="passedOnly"),
+) -> Response:
+    """W14. The wardrobe as a v2 wardrobe pack (``wardrobe.targets.pack``): what the chatbot imports.
+
+    Generation produces an artifact: this is the same contract the chatbot ships, so a
+    look made here is imported, verified and worn exactly like a built-in one. Each look's
+    rating comes from the ``look.json`` its job wrote; a look made before that existed is
+    left unrated, which the chatbot gates. A private look (an admin session's) is at least
+    ``intimate`` whatever its own garments were — it may be built on a private base — so a
+    pack holding one always says ``visibility: private``. Fit-failed looks are left out
+    unless ``passedOnly=false``.
+    """
+    manifest = await orchestrator.wardrobes.get(avatar_id)
+    if manifest is None:
+        raise HTTPException(status_code=404, detail="wardrobe not found")
+    if admin is None:
+        manifest = manifest.public()
+    slug = pack_slug(avatar_id)
+    entry = _library(request).get(avatar_id)
+    avatar = PackAvatar(slug, manifest.source_hash or "", entry.name if entry else avatar_id,
+                        spdx_for(entry.license if entry else None))
+
+    looks: list[PackLook] = []
+    for look_id in select_looks(manifest, passed_only=passed_only):
+        look = next(item for item in manifest.looks if item.id == look_id)
+        base = f"looks/{look_id}"
+        try:
+            vrm = await store.get(f"{base}/look.vrm")
+        except (OSError, KeyError, ValueError):
+            continue  # expired from the store: never ship a dead URL
+        meta = _json_or_empty(await _optional(store, f"{base}/look.json"))
+        rating = meta.get("rating") if meta.get("rating") in RATINGS else None
+        if look.private and rating in (None, "general"):
+            rating = "intimate"
+        looks.append(PackLook(
+            look_id=pack_slug(look_id), avatar_id=slug, name=look.name, vrm=vrm,
+            preview=await _optional(store, f"{base}/preview.webp"), prompt=look.prompt,
+            recipe_id=look_id, rating=rating, fit_passed=bool(look.fit_passed),
+            garments=tuple(meta.get("garments") or ()),
+        ))
+    if not looks:
+        raise HTTPException(status_code=409, detail="wardrobe has no looks to export")
+    try:
+        files = build_pack(looks, [avatar], pack_id=pack_slug(f"forge-{avatar_id}"),
+                           version=manifest.updated_at.strftime("%Y.%m.%d.%H%M%S"),
+                           source_name="Wardrobe Forge", generator_version=__version__)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return Response(
+        content=zip_pack(files),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{slug}-pack.zip"',
+            "X-Wardrobe-Looks": str(len(looks)),
+        },
+    )
+
+
+def _json_or_empty(data: bytes | None) -> dict:
+    try:
+        value = json.loads(data) if data else {}
+    except ValueError:
+        return {}
+    return value if isinstance(value, dict) else {}
 
 
 async def _optional(store, key: str) -> bytes | None:
