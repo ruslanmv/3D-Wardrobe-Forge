@@ -1446,18 +1446,18 @@ async function exportBundle() {
     button.disabled = true;
     button.textContent = 'Packing…';
     try {
-        const blob = await api.bundle(state.avatar.slug, $('passed-only').checked);
+        const blob = await api.pack(state.avatar.slug, $('passed-only').checked);
         const url = URL.createObjectURL(blob);
-        const link = el('a', { href: url, download: `${state.avatar.slug}-wardrobe.zip` });
+        const link = el('a', { href: url, download: `${state.avatar.slug}-pack.zip` });
         document.body.append(link);
         link.click();
         link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 10000);
-        setStatus(`Exported ${(blob.size / 1048576).toFixed(1)} MB — unzip into vendor/wardrobe/.`);
+        setStatus(`Exported ${(blob.size / 1048576).toFixed(1)} MB — import it in Try-On ▸ Import wardrobe pack.`);
     } catch (error) {
         setStatus(describe(error), true);
     } finally {
-        button.textContent = 'Export bundle';
+        button.textContent = 'Export pack';
         button.disabled = false;
     }
 }

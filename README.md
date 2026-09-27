@@ -324,7 +324,8 @@ the same pipeline.
 | `POST /v1/jobs` · `POST /v1/generate` | request a look |
 | `GET /v1/jobs/{id}` · `…/events` | poll or stream progress |
 | `GET /v1/wardrobes/{avatar}` | every look an avatar has |
-| `GET /v1/wardrobes/{avatar}/bundle.zip` | **the whole wardrobe as a static bundle** (`?passedOnly=true` drops failed fits) |
+| `GET /v1/wardrobes/{avatar}/pack.zip` | **the wardrobe as a v2 pack** — hashed, rated, what the chatbot imports (`?passedOnly=false` keeps failed fits) |
+| `GET /v1/wardrobes/{avatar}/bundle.zip` | the wardrobe as the older v1 static bundle (`?passedOnly=true` drops failed fits) |
 | `GET /v1/library` · `POST /v1/library/{slug}/jobs` | the Studio's avatar library, and jobs on it |
 | `GET /v1/vocabulary` | the colours, cuts and lengths the planner understands |
 | `GET /v1/templates` · `GET /v1/capabilities` | the garment library · what this deployment can do |

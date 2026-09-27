@@ -83,6 +83,6 @@ hold a long-lived token for a public page; a deployment that must keep the Space
 private puts the key in a server it controls — `deploy/proxy/` (F4) is a reference.
 
 **A Space's disk is ephemeral.** Looks created there are for the session that made
-them. A look worth keeping is exported as a pack (`GET /v1/wardrobes/{avatar}/bundle.zip`,
+them. A look worth keeping is exported as a pack (`GET /v1/wardrobes/{avatar}/pack.zip`,
 or `tools/export_default_wardrobe.py` for the shipped set) and imported into the
 chatbot, where it becomes an artifact with a hash; job storage is never the catalogue.

@@ -132,6 +132,12 @@ export const api = {
             method: 'DELETE',
         }),
 
+    /** W14. The wardrobe as a v2 pack: what 3D-Avatar-Chatbot imports, hashed and rated. */
+    pack: (avatarId, passedOnly) =>
+        request(`/v1/wardrobes/${encodeURIComponent(avatarId)}/pack.zip?passedOnly=${passedOnly ? 'true' : 'false'}`, {
+            expect: 'blob',
+        }),
+
     bundle: (avatarId, passedOnly) =>
         request(`/v1/wardrobes/${encodeURIComponent(avatarId)}/bundle.zip${passedOnly ? '?passedOnly=true' : ''}`, {
             expect: 'blob',
