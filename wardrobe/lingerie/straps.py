@@ -73,8 +73,8 @@ def strap_x(params: FitParameters) -> float:
     return params.measurements.shoulder_width_m * 0.5 * 0.55
 
 
-def route(params: FitParameters, front: np.ndarray, back: np.ndarray, side: float, lift: float
-          ) -> tuple[np.ndarray, np.ndarray] | None:
+def route(params: FitParameters, front: np.ndarray, back: np.ndarray, side: float, lift: float,
+          *, over_her: bool = False) -> tuple[np.ndarray, np.ndarray] | None:
     """Points and normals from ``front`` up her chest, over her shoulder, down to ``back``."""
     x_top = side * strap_x(params)
     peak = shoulder_top(params, x_top)
@@ -132,9 +132,19 @@ def route(params: FitParameters, front: np.ndarray, back: np.ndarray, side: floa
             continue
         k = int(reach[0] if end == 0 else reach[-1])
         span = range(1, k) if end == 0 else range(k + 1, end)
+        face_side = "front" if end == 0 else "back"
+        facing = params.forward if end == 0 else -params.forward
         for i in span:
             t = distance[i] / max(distance[k], 1e-9)
             path[i] = path[end] + (path[k] - path[end]) * t
+            if over_her:
+                # L5. A straight run from an anchor on her chest (a bodysuit's neckline) is
+                # a chord across her upper chest, which is proud of it: the chord ran inside
+                # her, the push-out after the shell shoved each point along its own diverging
+                # normal, and the strap hooked. Straight where it clears her, on her where not.
+                on = _point(params, float(path[i, 0]), float(path[i, 1]), face_side, lift)
+                if on is not None and (on[2] - path[i, 2]) * facing > 0:
+                    path[i, 2] = on[2]
             # Its face turns evenly too, from the anchor's to where it lands on her: the map's
             # normals over the hollow it no longer touches flipped the ribbon over.
             face = normal[end] + (normal[k] - normal[end]) * t
@@ -158,13 +168,13 @@ def _smooth(path: np.ndarray, passes: int = 2) -> np.ndarray:
 
 
 def build_ribbon_strap(params: FitParameters, front: Anchor, back: Anchor, *, spec: StrapSpec | None = None,
-                       name: str = "strap") -> tuple[Mesh, FittedStrap] | None:
+                       name: str = "strap", over_her: bool = False) -> tuple[Mesh, FittedStrap] | None:
     """A flat strap from ``front`` over her shoulder to ``back``, and its fitted record."""
     spec = spec or StrapSpec()
     side = 1.0 if front.position[0] >= 0 else -1.0
     lift = spec.thickness_m / 2 + GAP_M
     routed = route(params, np.asarray(front.position, dtype=np.float64),
-                   np.asarray(back.position, dtype=np.float64), side, lift)
+                   np.asarray(back.position, dtype=np.float64), side, lift, over_her=over_her)
     if routed is None:
         return None
     path, normals = routed

@@ -63,13 +63,23 @@ MIN_SIDE_M = 0.003
 EASE_MIN, EASE_MAX = 0.05, 80.0
 
 
-def _columns(phi_front: float, phi_back: float) -> np.ndarray:
-    """Angles round her, starting and ending at her side seam at -90° (a UV seam there, as sewn)."""
+def _columns(phi_front: float, phi_back: float, symmetric: bool = False) -> np.ndarray:
+    """Angles round her, starting and ending at her side seam at -90° (a UV seam there, as sewn).
+
+    ``symmetric`` (L5): the +x side's columns are the -x side's mirrored. Otherwise the
+    span from the front gusset round to the back one is spaced evenly as one, which puts
+    the +x front a fraction of a degree off the -x front wherever the back gusset is
+    narrower than the front: nothing on a brief, and a bodysuit's strap, sewn at the
+    neckline's highest column, landed 18 mm apart on the two sides of a curvy form.
+    """
     half = LEG_HALF_COLUMNS
+    middle = (np.concatenate([np.linspace(phi_front, math.pi / 2, half + 1),
+                              np.linspace(math.pi / 2, math.pi - phi_back, half + 1)[1:]])
+              if symmetric else np.linspace(phi_front, math.pi - phi_back, 2 * half + 1))
     parts = [
         np.linspace(-math.pi / 2, -phi_front, half + 1)[:-1],
         np.linspace(-phi_front, phi_front, GUSSET_COLUMNS + 1),
-        np.linspace(phi_front, math.pi - phi_back, 2 * half + 1)[1:-1],
+        middle[1:-1],
         np.linspace(math.pi - phi_back, math.pi + phi_back, GUSSET_COLUMNS + 1),
         np.linspace(math.pi + phi_back, 1.5 * math.pi, half + 1)[1:],
     ]
@@ -105,7 +115,13 @@ class WaistlineTargets:
 
 
 def build_brief(frame: BodyFrame, spec: BriefSpec, *, name: str = "brief",
-                targets: WaistlineTargets | None = None) -> Mesh:
+                targets: WaistlineTargets | None = None,
+                top_line: Callable[[np.ndarray], np.ndarray] | None = None,
+                top_section: str = "elastic-brief-waist", symmetric: bool = False) -> Mesh:
+    """The brief block. ``top_line`` (L5) raises its top edge to another line — a bodysuit's
+    neckline — while the leg line is still solved against the brief's own waistline: a
+    coverage fraction is of the panel from waist to gusset, and measured against a neckline
+    it would cut the legs to her ribs. ``top_section`` names that top edge's trim."""
     marks, c = frame.marks, frame.clearance
     crotch, waist = marks.crotch_y, marks.waist_y
     span = max(waist - crotch, 0.08)
@@ -131,7 +147,7 @@ def build_brief(frame: BodyFrame, spec: BriefSpec, *, name: str = "brief",
                  else front_half * 1.2)
     phi_front = math.asin(min(front_half / max(a_front + c, 1e-6), 0.9))
     phi_back = math.asin(min(max(back_half, 0.0015) / max(a_front + c, 1e-6), 0.9))
-    phis = _columns(phi_front, phi_back)
+    phis = _columns(phi_front, phi_back, symmetric)
     count = phis.size
 
     def waistline(phi: np.ndarray) -> np.ndarray:
@@ -191,6 +207,8 @@ def build_brief(frame: BodyFrame, spec: BriefSpec, *, name: str = "brief",
     p_front = solve("front", spec.front_fraction)
     p_back = solve("back", spec.back_fraction)
     top, bottom = waistline(phis), leg_line(phis, p_front, p_back)
+    if top_line is not None:
+        top = np.maximum(np.asarray(top_line(phis), dtype=np.float64), top)
     if targets is not None:
         # Above the jeans only a strap shows: those columns are cut to one. The gusset's
         # columns — the front panel's centre and the back's string — run on to the seam.
@@ -258,12 +276,12 @@ def build_brief(frame: BodyFrame, spec: BriefSpec, *, name: str = "brief",
 
     extended = spec.leg_extension_mm > 0.0
     faces: dict[str, list[tuple[int, int, int]]] = {
-        "elastic-brief-waist": [], name: [], "elastic-brief-leg": [], "gusset": []}
+        top_section: [], name: [], "elastic-brief-leg": [], "gusset": []}
     for k in range(rows):
         for j in range(count - 1):
             a, b, cc, d = vid(k, j), vid(k, j + 1), vid(k + 1, j + 1), vid(k + 1, j)
             if k == 0:
-                section = "elastic-brief-waist"
+                section = top_section
             elif k == rows - 1 and j not in gusset_cols and not extended:
                 section = "elastic-brief-leg"
             else:
@@ -295,7 +313,7 @@ def build_brief(frame: BodyFrame, spec: BriefSpec, *, name: str = "brief",
         positions, uvs, extension_faces, extension_elastic, extension = _extend_legs(
             frame, positions, uvs, loops, spec.leg_extension_mm / 1000.0 * grade)
 
-    order = ["elastic-brief-waist", name, "elastic-brief-leg", "gusset"]
+    order = [top_section, name, "elastic-brief-leg", "gusset"]
     indices, sections, start = [], [], 0
     for section in order:
         tris = faces[section]

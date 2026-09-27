@@ -10,6 +10,9 @@ from wardrobe.lingerie.specs import parse_block
 #: The Studio's coverage words on a plain brief: the pattern they name. The legacy band brief
 #: cut its leg line from them; the block keeps what they meant.
 COVERAGE_PRESETS = {"minimal": "cheeky", "micro": "g-string"}
+#: L5. The Studio's leg-cut word, on a plain cut: "high-leg bodysuit" is a high-leg one.
+LEG_CUT_PRESETS = {"high": "high-leg"}
+PLAIN_CUTS = ("classic", "cheeky", "bikini")
 
 
 def build_block(kind: str, params: FitParameters) -> Mesh:
@@ -17,9 +20,13 @@ def build_block(kind: str, params: FitParameters) -> Mesh:
     data = dict(params.metadata.get("lingerie") or {})
     coverage = COVERAGE_PRESETS.get(str(params.metadata.get("coverage") or ""))
     brief = dict(data.get("brief") or {})
-    if kind == "brief-block" and coverage and brief.get("preset") == "classic":
+    if kind in ("brief-block", "bodysuit-block") and coverage and brief.get("preset") == "classic":
         # Only a plain brief: a style that names its own cut (a tanga, a thong) keeps it.
         data["brief"] = {**brief, "preset": coverage}
+    leg_cut = LEG_CUT_PRESETS.get(str(params.metadata.get("legCut") or ""))
+    brief = dict(data.get("brief") or {})
+    if kind in ("brief-block", "bodysuit-block") and leg_cut and brief.get("preset") in PLAIN_CUTS:
+        data["brief"] = {**brief, "preset": leg_cut}
     block = parse_block(kind, data)
     rise = params.metadata.get("briefRise")
     if rise is not None and block.brief is not None:
@@ -37,6 +44,10 @@ def build_block(kind: str, params: FitParameters) -> Mesh:
         from wardrobe.lingerie.blocks.bra import build_bra
 
         mesh = build_bra(frame, block.bra, block.straps)
+    elif kind == "bodysuit-block":
+        from wardrobe.lingerie.blocks.bodysuit import build_bodysuit
+
+        mesh = build_bodysuit(frame, block.brief, block.bodysuit, block.straps)
     else:
         raise ValueError(f"no pattern block for {kind!r} yet")
     # What it was drafted on, for the fitting steps after the shell (wardrobe.lingerie.fit).

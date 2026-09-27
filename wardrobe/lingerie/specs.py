@@ -219,6 +219,44 @@ class BraSpec:
             raise ValueError(f"cupHeight {self.cup_height} outside 0.3-2.5")
 
 
+NECKLINE_STYLES = ("scoop", "plunge", "high", "square")
+BACK_STYLES = ("high", "scoop", "low")
+
+
+@dataclass(frozen=True)
+class BodysuitSpec:
+    """L5. A one-piece's top half, as landmark-relative rules; its bottom half is a ``BriefSpec``.
+
+    * **neckline** — the front's shape between the straps: ``scoop`` (a curve under her
+      collarbones), ``plunge`` (a V to between her bust points), ``high`` (near her
+      collarbones), ``square`` (level across). ``neck_depth`` overrides how far down the
+      centre front goes, as a fraction of (strap point → underbust fold).
+    * **straps** sit over her bust points (``strap_offset``: fraction of the bust point's
+      distance from her midline, 1.0 = straight above it), sewn where the neckline peaks.
+    * **armhole** — how far below the strap points the side dips, as a fraction of (strap
+      point → fold): a swimsuit's armhole clears her armpit.
+    * **back** — ``high`` (shoulder-blade), ``scoop`` (mid-back) or ``low`` (to her waist).
+    """
+
+    neckline: str = "scoop"
+    neck_depth: float | None = None
+    strap_offset: float = 0.85
+    armhole: float = 0.75
+    back: str = "scoop"
+
+    def __post_init__(self):
+        if self.neckline not in NECKLINE_STYLES:
+            raise ValueError(f"neckline {self.neckline!r} not one of {NECKLINE_STYLES}")
+        if self.back not in BACK_STYLES:
+            raise ValueError(f"back {self.back!r} not one of {BACK_STYLES}")
+        if self.neck_depth is not None and not 0.0 <= self.neck_depth <= 1.2:
+            raise ValueError(f"neckDepth {self.neck_depth} outside 0-1.2")
+        if not 0.3 <= self.strap_offset <= 1.4:
+            raise ValueError(f"strapOffset {self.strap_offset} outside 0.3-1.4")
+        if not 0.2 <= self.armhole <= 1.2:
+            raise ValueError(f"armhole {self.armhole} outside 0.2-1.2")
+
+
 @dataclass(frozen=True)
 class StrapBlock:
     """The straps' make: ``ribbon`` flat straps (default) of this width and thickness."""
@@ -248,6 +286,7 @@ class LingerieBlock:
     block: str
     brief: BriefSpec = field(default_factory=BriefSpec)
     bra: BraSpec = field(default_factory=BraSpec)
+    bodysuit: BodysuitSpec = field(default_factory=BodysuitSpec)
     straps: StrapBlock = field(default_factory=StrapBlock)
     fabric: str | None = None
     issues: tuple[str, ...] = ()
@@ -270,11 +309,12 @@ def parse_block(kind: str, data: dict) -> LingerieBlock:
                           **brief_data}
     brief = _from_dict(BriefSpec, brief_data, issues, "lingerie.brief")
     bra = _from_dict(BraSpec, data.pop("bra", None), issues, "lingerie.bra")
+    bodysuit = _from_dict(BodysuitSpec, data.pop("bodysuit", None), issues, "lingerie.bodysuit")
     straps = _from_dict(StrapBlock, data.pop("straps", None), issues, "lingerie.straps")
     fabric = data.pop("fabric", None)
     for key in data:
         issues.append(f"lingerie: unknown field {key!r}")
-    return LingerieBlock(block=block, brief=brief, bra=bra, straps=straps, fabric=fabric,
+    return LingerieBlock(block=block, brief=brief, bra=bra, bodysuit=bodysuit, straps=straps, fabric=fabric,
                          issues=tuple(issues))
 
 
@@ -283,6 +323,7 @@ def validate_block(kind: str, data: dict) -> list[str]:
 
 
 __all__ = [
-    "BACK_COVERAGES", "BACK_COVERAGE_WORDS", "BLOCK_OF_KIND", "BOTTOM_PRESETS", "BRA_STYLES", "BraSpec",
+    "BACK_COVERAGES", "BACK_COVERAGE_WORDS", "BACK_STYLES", "BLOCK_OF_KIND", "BOTTOM_PRESETS", "BRA_STYLES",
+    "BodysuitSpec", "BraSpec", "NECKLINE_STYLES",
     "BriefSpec", "LingerieBlock", "RISES", "SIDE_TYPES", "StrapBlock", "parse_block", "validate_block",
 ]

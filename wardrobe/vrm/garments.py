@@ -60,6 +60,8 @@ KIND_REGIONS: dict[str, frozenset[str]] = {
     "slip-shorts": frozenset({"lower"}),
     "briefs": frozenset({"lower"}),
     "brief-block": frozenset({"lower"}),
+    # L5. A one-piece: a brief carried up to a neckline covers both halves.
+    "bodysuit-block": frozenset({"upper", "lower"}),
     "dress": frozenset({"upper", "lower"}),
     "slip-dress": frozenset({"upper", "lower"}),
     "bikini": frozenset({"upper", "lower"}),

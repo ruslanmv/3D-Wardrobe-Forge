@@ -125,8 +125,8 @@ def test_a_legging_over_a_patch_of_unsampled_leg_is_still_outside_it():
     [
         # Both tied with the Lingerie Set ("lace") or the Oversized Coat and fell
         # to alphabetical order; a garment named outright now wins.
-        ("black lace bodysuit", "under-bodysuit-v1"),
-        ("black unlined lace high-leg bodysuit", "under-bodysuit-v1"),
+        ("black lace bodysuit", "under-bodysuit-v2"),
+        ("black unlined lace high-leg bodysuit", "under-bodysuit-v2"),
         ("black cropped jacket", "jacket-cropped-cardigan-v1"),
     ],
 )

@@ -23,13 +23,15 @@ import numpy as np
 MIN_FACING = 0.4
 #: Finite-difference step for normals.
 NORMAL_STEP_M = 0.01
+#: A cell deeper than all four of its neighbours by more than this is a hole, not her.
+PIT_M = 0.02
 
 
 class DepthMap:
     def __init__(self, surface: dict):
         self.x0, self.y0 = float(surface["x0"]), float(surface["y0"])
         self.step, self.forward = float(surface["step"]), float(surface["forward"])
-        self.grids = {side: np.asarray(surface[side], dtype=np.float64)
+        self.grids = {side: _fill_pits(np.asarray(surface[side], dtype=np.float64), side)
                       for side in ("front", "back") if surface.get(side)}
 
     @classmethod
@@ -92,6 +94,33 @@ class DepthMap:
         along = lift / max(facing, MIN_FACING)
         signed = depth + along if side == "front" else depth - along
         return np.array([x, y, signed * self.forward])
+
+
+def _fill_pits(grid: np.ndarray, side: str) -> np.ndarray:
+    """L5. Fill the map's isolated holes with their neighbours' mean.
+
+    A cell holds the outermost point that fell in it, and the map is built from
+    her vertices, not her faces: where her mesh is sparse — her upper chest turning
+    into her armpit on the fit form — a cell can hold only a vertex from her side,
+    centimetres inside her front. On one side of the form that read 8 mm where her
+    surface is 80 mm, and a bodysuit's strap, laid on it, dived into her and was
+    shoved out into a hook. A body has no such pit: deeper than all four neighbours
+    by ``PIT_M`` is a hole. Her cleavage is a groove across her, not a pit — the
+    cells above and below it are as deep — so it stays.
+    """
+    out = grid.copy()
+    sign = 1.0 if side == "front" else -1.0  # outward is larger on the front, smaller on the back
+    depth = grid * sign
+    rows, cols = grid.shape
+    for i in range(1, rows - 1):
+        for j in range(1, cols - 1):
+            here = depth[i, j]
+            around = np.array([depth[i - 1, j], depth[i + 1, j], depth[i, j - 1], depth[i, j + 1]])
+            if not np.isfinite(here) or not np.isfinite(around).all():
+                continue
+            if (around - here).min() > PIT_M:
+                out[i, j] = float(around.mean()) * sign
+    return out
 
 
 __all__ = ["DepthMap", "MIN_FACING"]

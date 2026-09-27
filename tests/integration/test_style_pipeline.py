@@ -44,9 +44,9 @@ ACCEPTANCE = [
     # L3e. A bikini is planned as its two parts, each a checked pattern block.
     ("red micro bikini", "matte", "none", "OPAQUE", ("swim-bikini-top-v2", "swim-bikini-bottom-v2")),
     ("black latex bodycon mini dress", "latex", "none", "OPAQUE", "dress-mini-bodycon-v1"),
-    ("sheer black lace bodysuit", "matte", "lace", "MASK", "under-bodysuit-v1"),  # unlined lace
+    ("sheer black lace bodysuit", "matte", "lace", "MASK", "under-bodysuit-v2"),  # unlined lace
     ("black fishnet thigh-highs", "matte", "fishnet", "MASK", "legwear-thigh-highs-v1"),
-    ("pink sequin bodysuit", "sequin", "sequin", "OPAQUE", "under-bodysuit-v1"),
+    ("pink sequin bodysuit", "sequin", "sequin", "OPAQUE", "under-bodysuit-v2"),
 ]
 
 

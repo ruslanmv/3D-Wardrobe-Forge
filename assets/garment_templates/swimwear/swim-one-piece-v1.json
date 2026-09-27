@@ -3,7 +3,6 @@
   "id": "swim-one-piece-v1",
   "name": "One-Piece Swimsuit",
   "category": "swimwear",
-  "defaultForCategory": true,
   "mesh": "procedural:one-piece",
   "coverage": [
     "chest",
@@ -34,11 +33,7 @@
     "supportsMetallic": false
   },
   "tags": [
-    "one-piece",
-    "swimsuit",
-    "bathing suit",
-    "monokini",
-    "maillot"
+    "monokini"
   ],
   "description": "Classic scoop one-piece swimsuit."
 }

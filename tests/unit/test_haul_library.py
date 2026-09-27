@@ -60,11 +60,11 @@ def test_an_unknown_shape_is_invalid(template_catalog: TemplateCatalog):
     [
         ("red triangle bikini", "swim-bikini-triangle-v1"),
         ("black bandeau bikini", "swim-bikini-bandeau-v1"),
-        ("white one-piece swimsuit", "swim-one-piece-v1"),
+        ("white one-piece swimsuit", "swim-one-piece-v2"),
         ("swimsuit with skirt", "swim-skirted-v1"),
         ("lace lingerie set", "under-lingerie-set-v1"),
         ("black lace bralette", "under-bralette-v2"),
-        ("lace bodysuit", "under-bodysuit-v1"),
+        ("lace bodysuit", "under-bodysuit-v2"),
         ("satin nightgown", "night-nightgown-v1"),
         ("pajama bottoms", "night-pajama-trousers-v1"),
         ("pink crop top", "top-crop-tee-v1"),
