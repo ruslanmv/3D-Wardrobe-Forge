@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     )
     #: F5. The Studio this deployment serves is trusted too: it is the same site.
     wardrobe_trust_same_origin: bool = True
+    #: F1. Jobs one client may create per minute (apps/api/ratelimit.py). 0 = no limit.
+    wardrobe_rate_limit_per_minute: int = 0
+    #: F1. Jobs waiting or running at once, across all clients. 0 = no cap.
+    wardrobe_queue_cap: int = 0
+    #: F1. How many proxies in front of this server append to X-Forwarded-For: the client
+    #: is the entry that many from the right. 0 = the connecting peer. A Space: 1.
+    wardrobe_forwarded_hops: int = 0
     #: Signs the operator in to the Studio's account menu (apps/api/admin.py), where
     #: an adult declaration can be made per avatar for that session only. Empty: no
     #: admin, and the Studio offers no sign-in. Set it as a secret, never in a file.

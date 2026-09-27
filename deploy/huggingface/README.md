@@ -47,6 +47,14 @@ can send. It keeps other sites out; it is not a password. Set
 `WARDROBE_TRUSTED_ORIGINS=[]` and `WARDROBE_TRUST_SAME_ORIGIN=false` for a Space where
 only the key opens it.
 
+**Because trusted pages need no key, a public Space should limit job creation.**
+`WARDROBE_RATE_LIMIT_PER_MINUTE` caps the looks one visitor can start per minute and
+`WARDROBE_QUEUE_CAP` the looks waiting or running at once; past either, the API answers
+429 with `Retry-After`. Only routes that start a fit are limited — polling a job, listing
+templates and loading a look never are. A Space sits behind one proxy, so set
+`WARDROBE_FORWARDED_HOPS=1` to count visitors by the address it forwards rather than by
+the proxy's. Both limits are off (0) unless set.
+
 Variables for a keyed or cross-origin Space:
 
 ```text
@@ -57,6 +65,9 @@ WARDROBE_JOB_BACKEND=memory
 WARDROBE_STORAGE_BACKEND=local
 PUBLIC_BASE_URL=https://<space-subdomain>.hf.space
 WARDROBE_ALLOWED_ORIGINS=["https://yourfriend.online"]
+WARDROBE_RATE_LIMIT_PER_MINUTE=6
+WARDROBE_QUEUE_CAP=8
+WARDROBE_FORWARDED_HOPS=1
 WARDROBE_AUTH_MODE=api_key
 WARDROBE_API_KEY=<secret>
 ```

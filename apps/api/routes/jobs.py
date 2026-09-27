@@ -5,11 +5,12 @@ from __future__ import annotations
 import asyncio
 import json
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import JobDep, OrchestratorDep
+from apps.api.ratelimit import limit_job_creation
 from wardrobe.domain.jobs import CreateJobRequest, JobRecord
 
 router = APIRouter(tags=["jobs"])
@@ -18,7 +19,8 @@ router = APIRouter(tags=["jobs"])
 HEARTBEAT_SECONDS = 15.0
 
 
-@router.post("/jobs", response_model=JobRecord, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/jobs", response_model=JobRecord, status_code=status.HTTP_202_ACCEPTED,
+             dependencies=[Depends(limit_job_creation)])
 async def create_job(request: CreateJobRequest, orchestrator: OrchestratorDep) -> JobRecord:
     """Accept a look request. The work happens on the queue.
 

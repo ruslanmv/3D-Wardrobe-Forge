@@ -17,12 +17,13 @@ from __future__ import annotations
 import re
 from dataclasses import replace
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import OrchestratorDep, SettingsDep, StoreDep
+from apps.api.ratelimit import limit_job_creation
 from wardrobe import __version__
 from wardrobe.domain.garments import COVERAGE_PRESETS, INTIMATE_CATEGORIES, NECKLINES, STRAP_PRESETS
 from wardrobe.domain.jobs import TERMINAL_STATES, CreateJobRequest, JobOptions, JobRecord, JobState
@@ -103,7 +104,8 @@ class LibraryJobRequest(BaseModel):
     base_look_id: str | None = Field(default=None, alias="baseLookId")
 
 
-@router.post("/library/{slug}/jobs", response_model=JobRecord, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/library/{slug}/jobs", response_model=JobRecord, status_code=status.HTTP_202_ACCEPTED,
+             dependencies=[Depends(limit_job_creation)])
 async def create_library_job(
     slug: str, body: LibraryJobRequest, request: Request, orchestrator: OrchestratorDep, admin: AdminDep
 ) -> JobRecord:

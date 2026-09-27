@@ -7,10 +7,11 @@ Orchestrator.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from apps.api.dependencies import OrchestratorDep
+from apps.api.ratelimit import limit_job_creation
 from wardrobe.domain.avatars import AvatarInput
 from wardrobe.domain.jobs import CreateJobRequest, JobOptions
 from wardrobe.domain.looks import OutfitMode, OutfitRequest
@@ -38,7 +39,8 @@ class GenerateAccepted(BaseModel):
 router = APIRouter(tags=["generation"])
 
 
-@router.post("/generate", response_model=GenerateAccepted, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/generate", response_model=GenerateAccepted, status_code=status.HTTP_202_ACCEPTED,
+             dependencies=[Depends(limit_job_creation)])
 async def generate(request: GenerateRequest, orchestrator: OrchestratorDep) -> GenerateAccepted:
     job_request = CreateJobRequest(
         avatar=request.avatar,
