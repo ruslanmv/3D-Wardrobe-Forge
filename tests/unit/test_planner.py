@@ -246,3 +246,18 @@ def test_coverage_words_cut_a_plain_brief():
     from wardrobe.lingerie.blocks import COVERAGE_PRESETS
 
     assert COVERAGE_PRESETS == {"minimal": "cheeky", "micro": "g-string"}
+
+
+def test_a_set_is_planned_as_its_parts(template_catalog):
+    """The sweep found every v1 set built as one band shape; a set now plans its parts."""
+    from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
+
+    for prompt, parts in (("black micro triangle string bikini", ["swim-bikini-top-v2", "swim-string-bikini-bottom-v2"]),
+                          ("red bikini", ["swim-bikini-top-v2", "swim-bikini-bottom-v2"]),
+                          ("lace lingerie set", ["under-bralette-v2", "under-briefs-v2"])):
+        garments = plan_outfit_stack(OutfitRequest(prompt=prompt), template_catalog).garments
+        assert sorted(g.template_id for g in garments) == sorted(parts), prompt
+        assert len({g.material.color_name for g in garments}) == 1  # the set's words apply to both
+    # Hosiery planning owns the garter set (H2): it is not split here.
+    assert plan_outfit_stack(OutfitRequest(prompt="black garter set"), template_catalog).template_id == \
+        "under-garter-set-v1"

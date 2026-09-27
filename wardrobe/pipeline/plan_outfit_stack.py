@@ -28,7 +28,7 @@ from wardrobe.hosiery import planning as hosiery_planning
 from wardrobe.hosiery import presets as hosiery_presets
 from wardrobe.materials.finishes import FINISH_KEYWORDS, OPACITY_KEYWORDS, PATTERN_KEYWORDS
 from wardrobe.pipeline import look_presets
-from wardrobe.pipeline.plan_outfit import parse_prompt, plan_outfit
+from wardrobe.pipeline.plan_outfit import parse_prompt, plan_outfit, select_template
 from wardrobe.vrm.garments import KIND_REGIONS
 
 #: (rank, role) by what a garment is.
@@ -142,7 +142,7 @@ def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog, beneath: list[
         requests = [layer.model_copy(update={"layers": None}) for layer in request.layers]
     else:
         pieces = split_prompt(request.prompt)
-        if len(pieces) == 1 and not beneath:
+        if len(pieces) == 1 and not beneath and set_parts(request, catalog) is None:
             return _placed(plan_outfit(request, catalog), catalog)
         if len(pieces) == 1:
             # One garment with something added beneath it: the request is that garment, all of
@@ -157,12 +157,47 @@ def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog, beneath: list[
             outermost = max(range(len(requests)), key=lambda i: _rank(requests[i], catalog))
             chosen = {key: getattr(request, key) for key in _OVERRIDES if getattr(request, key) is not None}
             requests[outermost] = requests[outermost].model_copy(update=chosen)
+    requests = [part for r in requests for part in (set_parts(r, catalog) or [r])]
     requests = [layer.model_copy(update={"layers": None}) for layer in beneath] + requests
 
     plans = sorted((_placed(plan_outfit(r, catalog), catalog) for r in requests), key=lambda p: p.layer)
     if len(plans) == 1:
         return plans[0]
     return _stack(plans)
+
+
+#: L3e. The sets the lingerie sweep found built as one v1 band shape, and the parts they are
+#: made of now: each part a pattern block the sweep checked (a bandeau is a band, so the
+#: tube top is its top). A request for the set plans its parts, each with the set's own
+#: words: colour, fabric and coverage apply to both. "string" picks the string bottoms.
+#: The garter set is not here: hosiery planning owns it (belt, straps and stockings, H2).
+SET_PARTS: dict[str, tuple[str, str]] = {
+    "swim-bikini-triangle-v1": ("swim-bikini-top-v2", "swim-bikini-bottom-v2"),
+    "swim-bikini-bandeau-v1": ("top-tube-v1", "swim-bikini-bottom-v2"),
+    "under-lingerie-set-v1": ("under-bralette-v2", "under-briefs-v2"),
+}
+_STRING = re.compile(r"(?<!\w)string(?!\w)", re.IGNORECASE)
+
+
+def set_parts(request: OutfitRequest, catalog: TemplateCatalog) -> list[OutfitRequest] | None:
+    """The parts a set request is planned as, or None when it names no set."""
+    if request.template_id:
+        chosen = request.template_id
+    else:
+        chosen = select_template(catalog, parse_prompt(request.prompt), request.prompt).id
+    parts = SET_PARTS.get(chosen)
+    if parts is None:
+        return None
+    out = []
+    for template_id in parts:
+        if template_id == "swim-bikini-bottom-v2" and _STRING.search(request.prompt):
+            template_id = "swim-string-bikini-bottom-v2"
+        template = catalog.get(template_id)
+        if template is None:
+            return None
+        out.append(request.model_copy(update={"template_id": template_id, "category": template.category,
+                                              "layers": None}))
+    return out
 
 
 def _rank(request: OutfitRequest, catalog: TemplateCatalog) -> int:

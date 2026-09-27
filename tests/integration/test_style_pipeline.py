@@ -41,7 +41,8 @@ def garment_material(output: bytes, record) -> dict:
 
 ACCEPTANCE = [
     # prompt, finish, pattern, alpha mode, template
-    ("red micro bikini", "matte", "none", "OPAQUE", "swim-bikini-triangle-v1"),
+    # L3e. A bikini is planned as its two parts, each a checked pattern block.
+    ("red micro bikini", "matte", "none", "OPAQUE", ("swim-bikini-top-v2", "swim-bikini-bottom-v2")),
     ("black latex bodycon mini dress", "latex", "none", "OPAQUE", "dress-mini-bodycon-v1"),
     ("sheer black lace bodysuit", "matte", "lace", "MASK", "under-bodysuit-v1"),  # unlined lace
     ("black fishnet thigh-highs", "matte", "fishnet", "MASK", "legwear-thigh-highs-v1"),
@@ -57,7 +58,11 @@ async def test_the_style_acceptance_looks(orchestrator, store, toon_avatar, prom
     report = record.fit_report
     assert report.passed and report.humanoid_valid and report.skeleton_preserved, report
     plan = record.plan
-    assert plan.template_id == template_id
+    if isinstance(template_id, tuple):
+        assert sorted(g.template_id for g in plan.garments) == sorted(template_id)
+        plan = plan.garments[-1]
+    else:
+        assert plan.template_id == template_id
     assert (plan.material.finish, plan.material.pattern) == (finish, pattern)
 
     material, document = garment_material(output, record)
