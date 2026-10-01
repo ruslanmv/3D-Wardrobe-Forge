@@ -464,11 +464,10 @@ function renderLibrary(library) {
     $('provenance').textContent = library.licenseNote || '';
     $('avatar-list').replaceChildren(
         ...state.library.map((avatar) => {
-            const badge = avatar.vroidModelId
-                ? 'VRoid Hub'
-                : avatar.collection === 'imports'
-                  ? 'Imported'
-                  : avatar.license;
+            const badge =
+                avatar.collection === 'imports' && (!avatar.license || avatar.license === 'Embedded VRM terms')
+                    ? 'Imported'
+                    : avatar.license;
             const byline = avatar.creator ? ` · ${avatar.creator}` : '';
             return el(
                 'li',
