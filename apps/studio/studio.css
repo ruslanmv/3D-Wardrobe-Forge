@@ -227,6 +227,36 @@ code {
     font: 500 12px var(--ui);
 }
 
+.library-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.library-import {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 9px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 11.5px;
+    font-weight: 600;
+}
+
+.library-import:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.library-import svg {
+    width: 13px;
+    height: 13px;
+    fill: currentColor;
+}
+
 /* ------------------------------------------------------------------ library */
 .avatar-list {
     flex: 1;
@@ -904,6 +934,233 @@ dialog menu {
 
 dialog .primary {
     width: auto;
+}
+
+/* VRM import: deliberately roomier than the small settings prompts. */
+dialog.import-vrm {
+    position: relative;
+    width: min(540px, calc(100vw - 32px));
+    padding: 24px;
+}
+
+.import-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+.import-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding-right: 28px;
+}
+
+.import-heading h2 {
+    margin-bottom: 3px;
+}
+
+.import-heading p {
+    margin: 0;
+    line-height: 1.45;
+}
+
+.import-mark {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    background: var(--panel-2);
+    color: var(--accent);
+}
+
+.import-mark svg {
+    width: 23px;
+    height: 23px;
+    fill: currentColor;
+}
+
+.import-drop {
+    display: grid;
+    place-items: center;
+    gap: 5px;
+    margin-top: 18px;
+    padding: 24px 16px;
+    border: 1px dashed var(--line-strong);
+    border-radius: 14px;
+    background: var(--panel-2);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.import-drop:hover,
+.import-drop.drag {
+    border-color: var(--accent);
+    background: var(--panel-3);
+}
+
+.import-drop svg {
+    width: 26px;
+    height: 26px;
+    margin-bottom: 3px;
+    fill: var(--accent);
+}
+
+.import-drop strong {
+    font-size: 14px;
+}
+
+.import-drop span,
+.import-drop small {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.import-drop small {
+    color: var(--faint);
+}
+
+.import-file-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel-2);
+}
+
+.import-file-card[hidden],
+.import-analysis[hidden],
+.import-attestation[hidden],
+.import-presentation[hidden] {
+    display: none;
+}
+
+.import-file-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 42px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--panel-3);
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.import-file-meta {
+    min-width: 0;
+}
+
+.import-file-meta strong,
+.import-file-meta small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.import-file-meta small {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 11.5px;
+}
+
+.import-file-state {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.import-file-state.ok {
+    color: var(--ok);
+}
+
+.import-file-state.bad {
+    color: var(--bad);
+}
+
+.import-presentation {
+    margin-top: 14px;
+}
+
+.import-analysis {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel-2);
+}
+
+.import-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.import-stats > div {
+    padding: 8px 10px;
+    border-radius: 9px;
+    background: var(--panel-3);
+}
+
+.import-stats span,
+.import-stats strong {
+    display: block;
+}
+
+.import-stats span {
+    color: var(--faint);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.import-stats strong {
+    margin-top: 2px;
+    font-size: 13px;
+}
+
+.import-license {
+    margin-top: 10px;
+    padding: 9px 10px;
+    border-radius: 9px;
+    background: var(--panel-3);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.import-license.ok {
+    color: var(--ok);
+}
+
+.import-license.warn {
+    color: var(--warn);
+}
+
+.import-license.bad {
+    color: var(--bad);
+}
+
+.import-attestation {
+    margin-top: 12px;
+}
+
+#import-form .form-error {
+    margin: 10px 0 0;
+    color: var(--bad);
+    font-size: 12.5px;
 }
 
 /* ------------------------------------------------------------------ phone */
