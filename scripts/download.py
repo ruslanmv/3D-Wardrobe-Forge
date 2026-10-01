@@ -55,6 +55,7 @@ from __future__ import annotations
 import argparse
 import base64
 import contextlib
+import gzip
 import hashlib
 import http.server
 import json
@@ -133,8 +134,11 @@ def load_models(path: Path = MODELS_FILE, only: set[str] | None = None) -> list[
 
 # ---------------------------------------------------------------- http
 def _request(method: str, url: str, *, token: str | None = None, form: dict | None = None,
-             body: dict | None = None, redirects: bool = True) -> tuple[int, dict, bytes]:
+             body: dict | None = None, redirects: bool = True,
+             extra_headers: dict[str, str] | None = None) -> tuple[int, dict, bytes]:
     headers = {"X-Api-Version": API_VERSION, "Accept": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
     data = None
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -467,6 +471,42 @@ def sha256_of(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _decode_download_payload(path: Path) -> Path:
+    """Return a GLB-ready file, transparently expanding a gzip-wrapped download.
+
+    Browser fetch and requests transparently decode HTTP gzip responses, while
+    urllib.request exposes the response bytes as-is. VRoid Hub's official API
+    example requests gzip for the download redirect, and its S3 response may
+    therefore be gzip wrapped. Detect the gzip magic rather than trusting
+    Content-Encoding alone, because CDN/S3 metadata can vary.
+    """
+    with path.open("rb") as handle:
+        magic = handle.read(4)
+    if not magic.startswith(b"\x1f\x8b"):
+        return path
+
+    with tempfile.NamedTemporaryFile(dir=path.parent, suffix=".part", delete=False) as decoded:
+        decoded_path = Path(decoded.name)
+        try:
+            with gzip.open(path, "rb") as compressed:
+                shutil.copyfileobj(compressed, decoded, 1 << 20)
+        except (OSError, EOFError) as exc:
+            decoded_path.unlink(missing_ok=True)
+            raise DownloadError(f"VRoid Hub returned a broken gzip-wrapped model: {exc}") from exc
+    path.unlink(missing_ok=True)
+    return decoded_path
+
+
+def _payload_hint(path: Path, headers: dict) -> str:
+    """Small, non-secret diagnostic for a response that is not a VRM/GLB."""
+    with path.open("rb") as handle:
+        head = handle.read(32)
+    content_type = headers.get("Content-Type") or headers.get("content-type") or "unknown"
+    content_encoding = headers.get("Content-Encoding") or headers.get("content-encoding") or "identity"
+    return (f"content-type={content_type!r}, content-encoding={content_encoding!r}, "
+            f"first-bytes={head[:16].hex() or '<empty>'}")
+
+
 def download(entry: dict, token: str, out_dir: Path) -> Path:
     status, _, raw = _request("POST", f"{HUB}/api/download_licenses", token=token,
                               body={"character_model_id": entry["modelId"]})
@@ -474,24 +514,31 @@ def download(entry: dict, token: str, out_dir: Path) -> Path:
     if not licence_id:
         raise DownloadError("VRoid Hub issued no download licence")
     try:
-        status, headers, raw = _request("GET", f"{HUB}/api/download_licenses/{licence_id}/download",
-                                        token=token, redirects=False)
+        status, headers, raw = _request(
+            "GET", f"{HUB}/api/download_licenses/{licence_id}/download",
+            token=token, redirects=False, extra_headers={"Accept-Encoding": "gzip"})
         location = headers.get("Location") or headers.get("location")
         if status not in (301, 302, 303, 307, 308) or not location:
             _json(status, raw, "download")  # raises with VRoid Hub's reason
             raise DownloadError(f"download: expected a redirect, got HTTP {status}")
         target = out_dir / f"{entry['slug']}.vrm"
         out_dir.mkdir(parents=True, exist_ok=True)
+        response_headers: dict = {}
         with tempfile.NamedTemporaryFile(dir=out_dir, suffix=".part", delete=False) as part:
             temporary = Path(part.name)
-            # The presigned URL is the credential: no bearer token, no API headers.
+            # The presigned URL is the credential: no bearer token, no VRoid API headers.
+            # urllib does not auto-decompress Content-Encoding like fetch/requests do.
             with urllib.request.urlopen(location, timeout=TIMEOUT_S * 5) as response:
+                response_headers = dict(getattr(response, "headers", {}) or {})
                 shutil.copyfileobj(response, part, 1 << 20)
         try:
+            temporary = _decode_download_payload(temporary)
             glb_json(temporary)
-        except DownloadError:
+        except DownloadError as exc:
+            hint = _payload_hint(temporary, response_headers) if temporary.exists() else ""
             temporary.unlink(missing_ok=True)
-            raise
+            suffix = f" ({hint})" if hint else ""
+            raise DownloadError(f"{exc}{suffix}") from exc
         temporary.replace(target)
         return target
     finally:
