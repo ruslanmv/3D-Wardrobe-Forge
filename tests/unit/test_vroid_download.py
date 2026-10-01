@@ -163,6 +163,28 @@ def test_a_real_vrm_is_read_and_its_embedded_licence_reported(tmp_path):
         dl.glb_json(bad)
 
 
+@pytest.mark.parametrize(
+    ("summary", "embedded", "expected"),
+    [
+        ({}, {"licenseName": "CC0"}, "CC0"),
+        ({}, {"licenseName": "CC_BY_NC_SA"}, "CC BY-NC-SA"),
+        (
+            {"licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"},
+            {},
+            "CC0",
+        ),
+        (
+            {"licenseUrl": "https://creativecommons.org/licenses/by/4.0/"},
+            {},
+            "CC BY",
+        ),
+        ({"licenseUrl": "https://example.com/custom-terms"}, {}, "VRoid Hub"),
+    ],
+)
+def test_display_license_prefers_real_creative_commons_terms(summary, embedded, expected):
+    assert dl.display_license(summary, embedded) == expected
+
+
 def test_the_manifest_merges_by_slug(tmp_path):
     dl.write_manifest(tmp_path, [{"slug": "b", "bytes": 1}, {"slug": "a", "bytes": 1}])
     dl.write_manifest(tmp_path, [{"slug": "b", "bytes": 2}])
