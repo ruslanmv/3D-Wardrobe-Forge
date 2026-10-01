@@ -546,9 +546,13 @@ def download(entry: dict, token: str, out_dir: Path) -> Path:
         _request("DELETE", f"{HUB}/api/download_licenses/{licence_id}", token=token)
 
 
-def write_manifest(out_dir: Path, items: list[dict]) -> Path:
+def write_manifest(out_dir: Path, items: list[dict], *, replace: bool = False) -> Path:
     path = out_dir / "models.json"
-    existing = json.loads(path.read_text(encoding="utf-8")).get("items", []) if path.is_file() else []
+    existing = (
+        []
+        if replace or not path.is_file()
+        else json.loads(path.read_text(encoding="utf-8")).get("items", [])
+    )
     by_slug = {item["slug"]: item for item in existing}
     by_slug.update({item["slug"]: item for item in items})
     manifest = {
@@ -655,7 +659,7 @@ def main(argv: list[str] | None = None) -> int:
             shutil.copy2(licences / f"{entry['slug']}.json", args.copy_to / f"{entry['slug']}.license.json")
 
     if items:
-        print(f"\nManifest: {write_manifest(args.out, items)}")
+        print(f"\nManifest: {write_manifest(args.out, items, replace=only is None)}")
     for heading, rows in (("Refused", refused), ("Failed", failed)):
         if rows:
             print(f"\n{heading}:")
