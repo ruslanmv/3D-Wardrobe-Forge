@@ -170,6 +170,13 @@ def test_the_manifest_merges_by_slug(tmp_path):
     assert [(i["slug"], i["bytes"]) for i in items] == [("a", 1), ("b", 2)]
 
 
+def test_a_full_manifest_replaces_removed_models(tmp_path):
+    dl.write_manifest(tmp_path, [{"slug": "auralithis", "bytes": 1}, {"slug": "helen", "bytes": 1}])
+    dl.write_manifest(tmp_path, [{"slug": "helen", "bytes": 2}], replace=True)
+    items = json.loads((tmp_path / "models.json").read_text())["items"]
+    assert [(i["slug"], i["bytes"]) for i in items] == [("helen", 2)]
+
+
 def _fake_hub(monkeypatch, body: bytes):
     calls = []
 
