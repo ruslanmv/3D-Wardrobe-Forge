@@ -198,7 +198,9 @@ class AvatarLibrary:
                 try:
                     avatar = cls._verify(root, item, manifest_dir=manifest_path.parent)
                     if avatar.slug in seen:
-                        logger.warning("ignoring duplicate avatar slug %s from %s", avatar.slug, manifest_path)
+                        logger.warning(
+                            "ignoring duplicate avatar slug %s from %s", avatar.slug, manifest_path
+                        )
                         continue
                     seen.add(avatar.slug)
                     if declared.get(avatar.slug, {}).get("depictsAdult") is True:
