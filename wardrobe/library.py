@@ -219,6 +219,7 @@ class AvatarLibrary:
                 ", ".join(missing),
             )
         return library
+
     @staticmethod
     def _declarations(root: Path) -> dict:
         """The operator's policy file, or nothing. Only a literal ``true`` counts."""
@@ -300,7 +301,8 @@ class AvatarLibrary:
         except OSError as exc:
             return LibraryAvatar(**base, problem=f"unreadable: {exc.strerror or exc}")
         return LibraryAvatar(**base, path=path)
-    def get(self, slug: str)    def get(self, slug: str) -> LibraryAvatar | None:
+
+    def get(self, slug: str) -> LibraryAvatar | None:
         return next((avatar for avatar in self.avatars if avatar.slug == slug), None)
 
     def available(self) -> list[LibraryAvatar]:
