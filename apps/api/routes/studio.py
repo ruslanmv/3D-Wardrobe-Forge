@@ -26,8 +26,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import OrchestratorDep, SettingsDep, StoreDep, http_error_for
-from apps.api.routes.avatars import _inspect
 from apps.api.ratelimit import limit_job_creation
+from apps.api.routes.avatars import _inspect
 from wardrobe import __version__
 from wardrobe.domain.avatars import LicenseAttestation
 from wardrobe.domain.garments import COVERAGE_PRESETS, INTIMATE_CATEGORIES, NECKLINES, STRAP_PRESETS
