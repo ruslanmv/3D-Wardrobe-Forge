@@ -83,6 +83,7 @@ const state = {
 let viewer = null;
 let importFile = null;
 let importInspection = null;
+let libraryRefreshAt = 0;
 
 // ---------------------------------------------------------------- helpers
 function el(tag, props = {}, ...children) {
@@ -210,6 +211,7 @@ function bindChrome() {
     });
     $('key-btn').classList.toggle('has-key', Boolean(auth.key));
 
+    window.addEventListener('focus', () => refreshLibraryFromServer());
     $('import-vrm-btn').addEventListener('click', openImportDialog);
     $('import-close').addEventListener('click', closeImportDialog);
     $('import-cancel').addEventListener('click', closeImportDialog);
@@ -407,6 +409,31 @@ async function importAvatar(event) {
         setImportError(describe(error));
         button.disabled = false;
         button.textContent = 'Import avatar';
+    }
+}
+
+async function refreshLibraryFromServer() {
+    if (!state.library.length) return;
+    const now = Date.now();
+    if (now - libraryRefreshAt < 2000) return;
+    libraryRefreshAt = now;
+
+    const before = state.library
+        .map((avatar) => `${avatar.slug}:${avatar.sha256}:${avatar.available}`)
+        .join('|');
+    try {
+        const library = await api.library();
+        const after = (library.avatars || [])
+            .map((avatar) => `${avatar.slug}:${avatar.sha256}:${avatar.available}`)
+            .join('|');
+        state.library = library.avatars || [];
+        if (state.avatar) {
+            state.avatar = state.library.find((avatar) => avatar.slug === state.avatar.slug) || state.avatar;
+        }
+        renderLibrary(library);
+        if (after !== before) setStatus('Avatar library updated.');
+    } catch (_) {
+        // A focus refresh is convenience only; boot and explicit actions surface API errors.
     }
 }
 
