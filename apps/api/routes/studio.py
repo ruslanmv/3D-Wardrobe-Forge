@@ -33,6 +33,7 @@ from wardrobe.domain.avatars import LicenseAttestation
 from wardrobe.domain.garments import COVERAGE_PRESETS, INTIMATE_CATEGORIES, NECKLINES, STRAP_PRESETS
 from wardrobe.domain.jobs import TERMINAL_STATES, CreateJobRequest, JobOptions, JobRecord, JobState
 from wardrobe.domain.looks import OutfitRequest
+from wardrobe.errors import WardrobeError
 from wardrobe.library import AvatarLibrary, LibraryAvatar
 from wardrobe.materials.finishes import FINISHES, OPACITY_LEVELS, PATTERNS
 from wardrobe.pipeline.generate_garment import complete_foundation, with_foundation
@@ -46,7 +47,6 @@ from wardrobe.pipeline.plan_outfit import (
 )
 from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
 from wardrobe.pipeline.prepare_base_body import foundation_conflicts
-from wardrobe.errors import WardrobeError
 from wardrobe.policy import file_safety, intimate, licensing
 from wardrobe.targets.bundle import LookFiles, build_wardrobe_bundle, select_looks
 from wardrobe.targets.pack import RATINGS, PackAvatar, PackLook, build_pack, pack_slug, spdx_for, zip_pack
@@ -66,6 +66,7 @@ def _library(request: Request) -> AvatarLibrary:
     if library is None:  # started without the lifespan (a bare TestClient, a script)
         raise HTTPException(status_code=503, detail="avatar library is not loaded")
     return library
+
 
 async def _refresh_library(request: Request, store) -> AvatarLibrary:
     """Re-read collection manifests so downloads/imports appear without a restart."""
