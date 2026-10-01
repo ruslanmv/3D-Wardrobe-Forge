@@ -49,7 +49,7 @@ def test_env_file_is_read_and_the_environment_wins(tmp_path):
 
 def test_the_model_list_is_complete_and_filterable():
     models = dl.load_models()
-    assert len(models) == 12 and len({m["slug"] for m in models}) == 12
+    assert len(models) == 11 and len({m["slug"] for m in models}) == 11
     # Where a creator states the character's age, the entry records it and what was said.
     stated = [m for m in models if "creatorStatesAge" in m]
     assert stated and all(m["creatorStatesAge"] >= 18 and m["creatorStatement"] for m in stated)
