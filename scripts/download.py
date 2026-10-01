@@ -643,6 +643,7 @@ def main(argv: list[str] | None = None) -> int:
             "slug": entry["slug"], "name": record["name"], "file": target.name,
             "presentation": entry.get("presentation", ""), "source": record["source"],
             "license": f"VRoid Hub conditions of use; see licenses/{entry['slug']}.json",
+            "licenseConditions": {"modification": "allow", "redistribution": "allow"},
             "creator": record["creator"], "vroidModelId": record["modelId"],
             "bytes": target.stat().st_size, "sha256": sha256_of(target), "glb_version": 2,
         })
