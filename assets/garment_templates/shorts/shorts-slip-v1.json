@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "shorts-slip-v1",
+  "name": "Slip Shorts",
+  "category": "shorts",
+  "mesh": "procedural:slip-shorts",
+  "coverage": [
+    "hips",
+    "upperLegs"
+  ],
+  "anchors": [
+    "waist",
+    "hips"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.0,
+    "allowLengthScale": false,
+    "allowWidthScale": true,
+    "minLengthScale": 1.0,
+    "maxLengthScale": 1.0,
+    "conform": 1.0,
+    "conformBelowHips": true
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": false,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "slip shorts",
+    "safety shorts",
+    "skirt liner",
+    "under-skirt shorts"
+  ],
+  "description": "Opaque fitted shorts worn under a skirt; ends just below the crotch so it never shows past a hem."
+}

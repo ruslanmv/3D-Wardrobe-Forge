@@ -204,6 +204,41 @@ def test_export_is_a_bundle_the_chatbot_can_unzip(client: TestClient):
     assert bundle.read(look["vrmUrl"])[:4] == b"glTF"
 
 
+def test_the_pack_export_is_the_contract_the_chatbot_verifies(client: TestClient, orchestrator):
+    """W14. A look made here exports as the same v2 pack the chatbot ships and imports."""
+    import hashlib
+
+    job = dress(client, category="skirt", color="black")
+    response = client.get("/v1/wardrobes/mira/pack.zip")
+    assert response.status_code == 200 and response.headers["x-wardrobe-looks"] == "1"
+    pack = zipfile.ZipFile(io.BytesIO(response.content))
+    manifest = json.loads(pack.read("wardrobe.json"))
+    assert manifest["schemaVersion"] == 2 and manifest["visibility"] == "public"
+    (look,) = manifest["looks"]
+    assert look["avatarId"] == "mira" and look["rating"] == "general"
+    assert look["provenance"]["recipeId"] == job["look"]["id"]
+    assert look["sha256"] == hashlib.sha256(pack.read(look["vrmUrl"])).hexdigest()
+    assert manifest["avatars"][0]["sourceSha256"] == job["look"]["sourceAvatarHash"]
+
+    # A look made before its rating was recorded is exported unrated — the chatbot gates it.
+    asyncio.run(orchestrator.store.delete(f"looks/{job['look']['id']}/look.json"))
+    manifest = json.loads(zipfile.ZipFile(io.BytesIO(client.get("/v1/wardrobes/mira/pack.zip").content))
+                          .read("wardrobe.json"))
+    assert "rating" not in manifest["looks"][0] and manifest["visibility"] == "private"
+
+
+def test_a_pack_with_a_gated_look_says_it_is_private(orchestrator, monkeypatch, tmp_path, vrm_bytes):
+    """The calibration body, declared in this test's own policy file: swimwear exports rated."""
+    root = write_library(tmp_path / "declared", {"Mira.vrm": vrm_bytes})
+    (root / "policy.json").write_text(json.dumps({"avatars": {"mira": {"depictsAdult": True}}}))
+    with make_client(orchestrator, monkeypatch, AvatarLibrary.from_directory(root)) as client:
+        assert dress(client, prompt="red triangle bikini")["state"] == "completed"
+        manifest = json.loads(zipfile.ZipFile(io.BytesIO(client.get("/v1/wardrobes/mira/pack.zip").content))
+                              .read("wardrobe.json"))
+    assert manifest["visibility"] == "private"
+    assert {look["rating"] for look in manifest["looks"]} == {"swimwear"}
+
+
 def test_export_of_an_unknown_wardrobe_is_a_404(client: TestClient):
     assert client.get("/v1/wardrobes/nobody/bundle.zip").status_code == 404
 

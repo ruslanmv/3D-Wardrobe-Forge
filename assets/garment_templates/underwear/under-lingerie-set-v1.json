@@ -31,11 +31,16 @@
     "supportsMetallic": false
   },
   "tags": [
+    "underwear",
     "lingerie",
     "lingerie set",
+    "underwear set",
     "bra and panties",
+    "bra and briefs",
+    "bra and knickers",
     "matching set",
     "lace"
   ],
-  "description": "Matching bra and briefs."
+  "description": "Matching bra and briefs.",
+  "defaultForCategory": true
 }

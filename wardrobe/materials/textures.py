@@ -209,6 +209,20 @@ def pleat_shading(size: int = 64) -> bytes:
     return _rgba(_grey(np.repeat(value[None, :], 4, axis=0)))
 
 
+def boning_shading(size: int = 64) -> bytes:
+    """One boned panel across u: the channel's two stitch lines, and the panel between (P1).
+
+    Grey, so the garment's colour tints it — the same route as ``pleat_shading``. A
+    corset's shape is in its boning; a toon shader draws a smooth tube without it, and
+    the channels are what make it read as structured rather than as a tight top.
+    """
+    u = (np.arange(size) + 0.5) / size
+    value = np.full(size, 0.97)
+    value = np.where(np.abs(u - 0.5) < 0.1, 0.9, value)  # the raised channel
+    value = np.where(np.abs(np.abs(u - 0.5) - 0.1) < 0.025, 0.6, value)  # its two stitch lines
+    return _rgba(_grey(np.repeat(value[None, :], 4, axis=0)))
+
+
 # ----------------------------------------------------------------------
 # matcaps
 # ----------------------------------------------------------------------
@@ -260,4 +274,4 @@ def matcap(style: str, strength: float, tint: Colour = (1.0, 1.0, 1.0), size: in
     return _rgba(rgb)
 
 
-__all__ = ["matcap", "pattern_texture", "pleat_shading"]
+__all__ = ["boning_shading", "matcap", "pattern_texture", "pleat_shading"]

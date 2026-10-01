@@ -3,6 +3,7 @@
   "id": "shoes-flats-v1",
   "name": "Flat shoes",
   "category": "shoes",
+  "defaultForCategory": true,
   "mesh": "procedural:shoes",
   "coverage": [
     "feet"

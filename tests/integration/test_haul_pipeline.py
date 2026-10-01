@@ -51,7 +51,8 @@ async def test_the_garment_is_toon_shaded_and_the_output_still_validates(orchest
     record, output = await run(orchestrator, store, dress_like_vroid(vrm0_bytes, mtoon=True), "red cocktail dress")
     assert record.state == "completed", record.error  # validate_output re-imported it
     document = GltfDocument.from_bytes(output)
-    garment = next(i for i, m in enumerate(document.materials) if m.get("name", "").startswith(record.plan.name))
+    outer = record.plan.garments[-1].name  # the dress, over the liner a clothed avatar gets (S2)
+    garment = next(i for i, m in enumerate(document.materials) if m.get("name", "").startswith(outer))
     entry = document.extension("VRM")["materialProperties"][garment]
     assert entry["shader"] == "VRM/MToon" and entry["textureProperties"] == {}
 

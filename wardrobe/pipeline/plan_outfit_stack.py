@@ -27,11 +27,17 @@ from wardrobe.domain.looks import OutfitPlan, OutfitRequest
 from wardrobe.hosiery import planning as hosiery_planning
 from wardrobe.hosiery import presets as hosiery_presets
 from wardrobe.materials.finishes import FINISH_KEYWORDS, OPACITY_KEYWORDS, PATTERN_KEYWORDS
-from wardrobe.pipeline.plan_outfit import parse_prompt, plan_outfit
+from wardrobe.pipeline import look_presets
+from wardrobe.pipeline.plan_outfit import parse_prompt, plan_outfit, select_template
 from wardrobe.vrm.garments import KIND_REGIONS
 
 #: (rank, role) by what a garment is.
 FOUNDATION = (1, "foundation")
+#: S2. What a skirt is worn over. Innermost like a foundation, so it is fitted first
+#: and the skirt clears it, but not a foundation: it is not underwear, it does not
+#: decide what of her own clothes comes off, and it does not make a job fail where
+#: her avatar has no body under her clothes (prepare_base_body keeps them instead).
+LINER = (1, "liner")
 LEGWEAR = (2, "legwear")
 MAIN = (3, "main")
 ONE_PIECE = (4, "one-piece")
@@ -58,6 +64,8 @@ def layer_of(template: GarmentTemplate | None, category: str) -> tuple[int, str]
     if category == "shoes":
         return SHOES
     kind = template.procedural_kind if template is not None else category
+    if kind == "slip-shorts":
+        return LINER
     if kind in {"jacket", "cropped-jacket"}:
         return OUTER
     if KIND_REGIONS.get(kind) == frozenset({"upper", "lower"}):
@@ -114,30 +122,109 @@ def _word_for(table: dict, key, text: str) -> str:
     return table[key][0]
 
 
-def plan_outfit_stack(request: OutfitRequest, catalog: TemplateCatalog) -> OutfitPlan:
-    """One plan, or a layered plan whose ``layers`` are its garments, inner first."""
-    request = hosiery_presets.expand(request)
-    return hosiery_planning.apply(_plan_stack(request, catalog), request, catalog)
+def plan_outfit_stack(
+    request: OutfitRequest, catalog: TemplateCatalog, *, beneath: list[OutfitRequest] | tuple = ()
+) -> OutfitPlan:
+    """One plan, or a layered plan whose ``layers`` are its garments, inner first.
+
+    ``beneath`` adds garments the pipeline puts under the request's own (a
+    foundation, a skirt liner). They are added after the request is split into
+    its garments and its overrides placed: passing them as extra ``layers``
+    instead made "a tee + a skirt" one layer and lost the tee (S2).
+    """
+    request = hosiery_presets.expand(look_presets.expand(request))
+    plan = hosiery_planning.apply(_plan_stack(request, catalog, list(beneath)), request, catalog)
+    return look_presets.apply(plan, request, catalog)
 
 
-def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog) -> OutfitPlan:
+def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog, beneath: list[OutfitRequest]) -> OutfitPlan:
     if request.layers:
         requests = [layer.model_copy(update={"layers": None}) for layer in request.layers]
     else:
         pieces = split_prompt(request.prompt)
-        if len(pieces) == 1:
+        if len(pieces) == 1 and not beneath and set_parts(request, catalog) is None:
             return _placed(plan_outfit(request, catalog), catalog)
-        requests = [OutfitRequest(prompt=piece, mode=request.mode) for piece in pieces]
-        # The request's explicit choices (the Studio's controls) are about the
-        # garment on top — the one the viewer sees — not the ones beneath it.
-        outermost = max(range(len(requests)), key=lambda i: _rank(requests[i], catalog))
-        chosen = {key: getattr(request, key) for key in _OVERRIDES if getattr(request, key) is not None}
-        requests[outermost] = requests[outermost].model_copy(update=chosen)
+        if len(pieces) == 1:
+            # One garment with something added beneath it: the request is that garment, all of
+            # it. Rebuilt from its prompt alone it lost the template and category the Studio
+            # sent, and the designer's Tailored Triangle Bralette became whatever the word
+            # "underwear" planned to.
+            requests = [request.model_copy(update={"layers": None})]
+        else:
+            requests = [OutfitRequest(prompt=piece, mode=request.mode) for piece in pieces]
+            # The request's explicit choices (the Studio's controls) are about the
+            # garment on top — the one the viewer sees — not the ones beneath it.
+            outermost = max(range(len(requests)), key=lambda i: _rank(requests[i], catalog))
+            chosen = {key: getattr(request, key) for key in _OVERRIDES if getattr(request, key) is not None}
+            requests[outermost] = requests[outermost].model_copy(update=chosen)
+    requests = [part for r in requests for part in (set_parts(r, catalog) or [r])]
+    requests = [layer.model_copy(update={"layers": None}) for layer in beneath] + requests
 
     plans = sorted((_placed(plan_outfit(r, catalog), catalog) for r in requests), key=lambda p: p.layer)
     if len(plans) == 1:
         return plans[0]
     return _stack(plans)
+
+
+#: L3e. The sets the lingerie sweep found built as one v1 band shape, and the parts they are
+#: made of now: each part a pattern block the sweep checked (a bandeau is a band, so the
+#: tube top is its top). A request for the set plans its parts, each with the set's own
+#: words: colour, fabric and coverage apply to both. "string" picks the string bottoms.
+#: The garter set is not here: hosiery planning owns it (belt, straps and stockings, H2).
+SET_PARTS: dict[str, tuple[str, str]] = {
+    "swim-bikini-triangle-v1": ("swim-bikini-top-v2", "swim-bikini-bottom-v2"),
+    "swim-bikini-bandeau-v1": ("top-tube-v1", "swim-bikini-bottom-v2"),
+    "under-lingerie-set-v1": ("under-bralette-v2", "under-briefs-v2"),
+}
+_STRING = re.compile(r"(?<!\w)string(?!\w)", re.IGNORECASE)
+
+
+def set_parts(request: OutfitRequest, catalog: TemplateCatalog) -> list[OutfitRequest] | None:
+    """The parts a set request is planned as, or None when it names no set."""
+    if request.template_id:
+        chosen = request.template_id
+    else:
+        # L5b. With the category the Studio sent, as plan_outfit reads it. Without it the two
+        # could disagree: plan_outfit chose the set, this chose something else, and the set
+        # was built as the one band shape the sweep retired instead of as its parts.
+        parsed = parse_prompt(request.prompt)
+        if request.category:
+            parsed.category = request.category
+        chosen = _named_set(request, catalog) or select_template(catalog, parsed, request.prompt).id
+    parts = SET_PARTS.get(chosen)
+    if parts is None:
+        return None
+    out = []
+    for template_id in parts:
+        if template_id == "swim-bikini-bottom-v2" and _STRING.search(request.prompt):
+            template_id = "swim-string-bikini-bottom-v2"
+        template = catalog.get(template_id)
+        if template is None:
+            return None
+        out.append(request.model_copy(update={"template_id": template_id, "category": template.category,
+                                              "layers": None}))
+    return out
+
+
+def _named_set(request: OutfitRequest, catalog: TemplateCatalog) -> str | None:
+    """L5b. A set the prompt names outright by one of its phrases: "bra and panties" is both halves.
+
+    Scored like any other template, the phrase lost to its first word. "bra" is a tag
+    of the full-cup bra, whose name ends in it too, so "bra and panties" planned a bra
+    alone: her top came off and her own bottoms stayed, under a request for both. A
+    phrase of more than one word that belongs to a set says more than any single word
+    inside it. Only in the set's own category, or with none, so a swimwear request that
+    happens to contain such a phrase is still planned as swimwear.
+    """
+    text = request.prompt.lower()
+    for set_id in SET_PARTS:
+        template = catalog.get(set_id)
+        if template is None or request.category not in (None, template.category):
+            continue
+        for tag in template.tags:
+            if len(tag.split()) > 1 and re.search(rf"(?<!\w){re.escape(tag.lower())}(?!\w)", text):
+                return set_id
+    return None
 
 
 def _rank(request: OutfitRequest, catalog: TemplateCatalog) -> int:

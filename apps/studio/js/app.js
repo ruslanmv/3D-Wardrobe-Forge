@@ -9,7 +9,7 @@
  * pretending to be one.
  */
 
-import { api, auth, ApiError } from './api.js';
+import { admin, api, auth, ApiError } from './api.js';
 import { Viewer } from './viewer.js';
 
 const $ = (id) => document.getElementById(id);
@@ -104,12 +104,30 @@ function setStatus(message, isError = false) {
 }
 
 function describe(error) {
-    if (error instanceof ApiError && error.status === 401) return 'This Space needs an API key — use the key button.';
+    // Only the API key's 401 is about the key; the admin routes answer 401 for a wrong password.
+    const keyMissing = !error.detail || error.detail.reason === 'unauthorized';
+    if (error instanceof ApiError && error.status === 401 && keyMissing) return 'This Space needs an API key — use the key button.';
     return error && error.message ? error.message : String(error);
 }
 
 function revoke(url) {
     if (url) URL.revokeObjectURL(url);
+}
+
+/**
+ * F5. The API key is shown only to a page that needs one. The Studio this Space serves and
+ * yourfriend.online are trusted by the server, so on them the key button and the Settings
+ * row were a question nobody had to answer ("Not set · only needed when…"). A deployment
+ * that does want a key from this page says so in /v1/capabilities, and they come back.
+ */
+function keyWanted() {
+    return Boolean(state.caps && state.caps.auth && state.caps.auth.keyRequired);
+}
+
+function renderKeyControls() {
+    const show = keyWanted() || Boolean(auth.key);
+    $('key-btn').hidden = !show;
+    $('settings-key-row').hidden = !show;
 }
 
 // ---------------------------------------------------------------- boot
@@ -123,17 +141,23 @@ async function boot() {
     } catch (error) {
         setStatus(describe(error), true);
         $('library-note').textContent = 'unavailable';
-        if (error instanceof ApiError && error.status === 401) $('key-dialog').showModal();
+        if (error instanceof ApiError && error.status === 401) {
+            $('key-btn').hidden = false;
+            $('key-dialog').showModal();
+        }
+        initAccount();
         return;
     }
     const [caps, vocab, library] = loaded;
     state.caps = caps;
+    renderKeyControls();
     state.vocab = vocab;
     state.library = library.avatars;
 
     renderCaps();
     renderLibrary(library);
     renderDesigner();
+    initAccount();
 
     const wanted = new URLSearchParams(location.search).get('avatar');
     const first =
@@ -195,7 +219,11 @@ function bindChrome() {
     $('export-btn').addEventListener('click', exportBundle);
     $('build-on').addEventListener('change', updatePreview);
     $('plan-btn').addEventListener('click', checkPlan);
-    $('base-body-select').addEventListener('change', () => ($('plan-report').hidden = true));
+    bindAccount();
+    $('base-body-select').addEventListener('change', () => {
+        $('plan-report').hidden = true;
+        renderBaseBodyNote();
+    });
 }
 
 // ---------------------------------------------------------------- capabilities
@@ -319,6 +347,343 @@ async function selectAvatar(slug) {
     await loadWardrobe();
 }
 
+// ---------------------------------------------------------------- account
+// The bottom-left account menu, always present: "Guest" until the operator logs
+// in as admin. An admin session changes nothing by itself: the operator declares,
+// per avatar, in Settings, and the server decides everything (apps/api/admin.py).
+// This code only asks, shows and refreshes.
+const account = { enabled: false, unavailable: null, minLength: 12, session: null, timer: null, username: 'admin' };
+const PERSON_ICON =
+    '<svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5Z" /></svg>';
+
+async function initAccount() {
+    let status = null;
+    try {
+        status = await api.adminStatus();
+    } catch (_) {
+        status = null; // an older server, or a keyed Space without its key: a guest with no admin
+    }
+    account.enabled = Boolean(status && status.enabled);
+    account.unavailable = status ? status.unavailable || null : 'unreachable';
+    if (status && status.minPasswordLength) account.minLength = status.minPasswordLength;
+    if (admin.token && !(status && status.signedIn)) admin.token = '';
+    if (status && status.username) account.username = status.username;
+    setSession(status && status.signedIn ? status.session : null);
+}
+
+function setSession(session) {
+    account.session = session;
+    clearTimeout(account.timer);
+    const signedIn = Boolean(session);
+    $('account').classList.toggle('signed-in', signedIn);
+    // A fixed icon, not user text: innerHTML is safe here, and el() cannot make SVG.
+    document.querySelectorAll('[data-glyph]').forEach((node) => {
+        if (signedIn) node.textContent = (account.username[0] || 'A').toUpperCase();
+        else node.innerHTML = PERSON_ICON;
+    });
+    document.querySelectorAll('[data-account-name]').forEach((node) => (node.textContent = signedIn ? account.username : 'Guest'));
+    const declared = signedIn ? session.declared.length : 0;
+    const sub = signedIn
+        ? `${declared ? `Private mode: ${declared} on` : 'Private mode off'} · until ${endsAt(session)}`
+        : 'Not logged in';
+    $('account-sub').textContent = sub;
+    $('account-menu-sub').textContent = signedIn ? `Logged in · until ${endsAt(session)}` : 'Not logged in';
+    $('account-btn').title = signedIn ? account.username : 'Guest';
+
+    $('account-signout').hidden = !signedIn;
+    $('account-signin').hidden = signedIn;
+    if (signedIn) {
+        const left = new Date(session.expiresAt).getTime() - Date.now();
+        account.timer = setTimeout(() => endSession('Your admin session ended.'), Math.max(left, 0));
+    }
+    if ($('settings-dialog').open) renderSettings();
+}
+
+function endsAt(session) {
+    return new Date(session.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function menuItems() {
+    return [...$('account-menu').querySelectorAll('button:not([hidden]):not(:disabled)')];
+}
+
+function toggleMenu(open) {
+    const menu = $('account-menu');
+    const show = open === undefined ? menu.hidden : open;
+    if (menu.hidden === !show) return;
+    menu.hidden = !show;
+    $('account-btn').setAttribute('aria-expanded', String(show));
+    if (show) (menuItems()[0] || menu).focus();
+}
+
+function openSignIn() {
+    toggleMenu(false);
+    if ($('settings-dialog').open) $('settings-dialog').close();
+    // Always opens. When the Space has log-in switched off, the card says why and how to fix it.
+    const off = offReason();
+    $('login-off').hidden = !off;
+    $('login-off').textContent = off || '';
+    for (const id of ['signin-username', 'signin-password', 'signin-submit']) $(id).disabled = Boolean(off);
+    $('signin-password').value = '';
+    $('signin-error').hidden = true;
+    $('signin-dialog').showModal();
+    if (off) return;
+    $($('signin-username').value ? 'signin-password' : 'signin-username').focus();
+}
+
+/** Why log-in is off on this Space, in words the operator can act on; null when it is on. */
+function offReason() {
+    if (account.enabled) return null;
+    if (account.unavailable === 'password_too_short')
+        return `Log-in is switched off on this Space: the WARDROBE_ADMIN_PASSWORD secret is shorter than ${account.minLength} characters. Set a longer one in the Space settings, then restart the Space.`;
+    if (account.unavailable === 'not_configured')
+        return 'Log-in is not set up on this Space yet: add a secret named WARDROBE_ADMIN_PASSWORD in the Space settings, then restart the Space.';
+    return 'Log-in is not available right now. Reload the page and try again.';
+}
+
+function bindAccount() {
+    setSession(null); // a guest until the server says otherwise
+
+    $('account-btn').addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleMenu();
+    });
+    document.addEventListener('click', (event) => {
+        if (!$('account').contains(event.target)) toggleMenu(false);
+    });
+    $('account-menu').addEventListener('keydown', (event) => {
+        const items = menuItems();
+        const at = items.indexOf(document.activeElement);
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            const step = event.key === 'ArrowDown' ? 1 : -1;
+            items[(at + step + items.length) % items.length].focus();
+        } else if (event.key === 'Escape' || event.key === 'Tab') {
+            toggleMenu(false);
+            $('account-btn').focus();
+        }
+    });
+
+    $('account-settings').addEventListener('click', () => {
+        toggleMenu(false);
+        openSettings('general');
+    });
+    $('account-signin').addEventListener('click', openSignIn);
+    $('account-signout').addEventListener('click', () => {
+        toggleMenu(false);
+        signOut();
+    });
+
+    $('signin-cancel').addEventListener('click', () => $('signin-dialog').close());
+    $('signin-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        $('signin-submit').disabled = true;
+        try {
+            const result = await api.adminSignIn($('signin-username').value, $('signin-password').value);
+            admin.token = result.token;
+            if (result.username) account.username = result.username;
+            $('signin-dialog').close();
+            setSession({ expiresAt: result.expiresAt, declared: result.declared });
+            await refreshForSession();
+            setStatus(`Logged in as ${account.username}.`);
+        } catch (error) {
+            $('signin-error').textContent =
+                error.status === 429 ? 'Too many attempts. Wait a few minutes and try again.' : describe(error);
+            $('signin-password').select();
+            $('signin-error').hidden = false;
+        } finally {
+            $('signin-submit').disabled = false;
+        }
+    });
+
+    // Settings: a section list on the left (tabs on a phone), one section at a time.
+    $('settings-close').addEventListener('click', () => $('settings-dialog').close());
+    $('settings-dialog').addEventListener('click', (event) => {
+        if (event.target === $('settings-dialog')) $('settings-dialog').close(); // the backdrop
+    });
+    document.querySelectorAll('.settings-nav [data-section]').forEach((tab) =>
+        tab.addEventListener('click', () => showSection(tab.dataset.section))
+    );
+    $('settings-account-action').addEventListener('click', () => {
+        if (account.session) signOut();
+        else openSignIn();
+    });
+    $('declarations-signin').addEventListener('click', openSignIn);
+    $('settings-key-action').addEventListener('click', () => {
+        $('key-input').value = auth.key;
+        $('key-dialog').showModal();
+    });
+}
+
+async function signOut() {
+    try {
+        await api.adminSignOut();
+    } catch (_) {
+        /* already gone on the server: logging out here is what matters */
+    }
+    endSession('Logged out. Every declaration from that session is withdrawn.');
+}
+
+async function endSession(message) {
+    admin.token = '';
+    setSession(null);
+    // A private look on the stage stays visible to nobody once the session is gone.
+    const active = state.wardrobe && state.wardrobe.looks.find((look) => look.id === state.activeLookId);
+    if (active && active.private) {
+        viewer.clear('look');
+        revoke(state.urls.look);
+        state.urls.look = null;
+        state.activeLookId = null;
+        setViewMode('original');
+        $('report').hidden = true;
+    }
+    await refreshForSession();
+    setStatus(message);
+}
+
+/** The library and wardrobe as this session (or no session) is allowed to see them. */
+async function refreshForSession() {
+    try {
+        const library = await api.library();
+        state.library = library.avatars;
+        renderLibrary(library);
+        if (state.avatar) {
+            state.avatar = state.library.find((item) => item.slug === state.avatar.slug) || state.avatar;
+            document
+                .querySelectorAll('.avatar')
+                .forEach((node) => node.setAttribute('aria-current', String(node.dataset.slug === state.avatar.slug)));
+            renderDesigner();
+        }
+        await loadWardrobe();
+    } catch (error) {
+        setStatus(describe(error), true);
+    }
+    if ($('settings-dialog').open) renderSettings();
+}
+
+function openSettings(section = 'general') {
+    $('settings-error').hidden = true;
+    showSection(section);
+    if (!$('settings-dialog').open) $('settings-dialog').showModal();
+}
+
+function showSection(section) {
+    document.querySelectorAll('.settings-nav [data-section]').forEach((tab) =>
+        tab.setAttribute('aria-selected', String(tab.dataset.section === section))
+    );
+    document.querySelectorAll('.settings-section').forEach((panel) => (panel.hidden = panel.dataset.section !== section));
+    renderSettings();
+}
+
+function renderSettings() {
+    const session = account.session;
+    // General
+    $('settings-account').textContent = session
+        ? `${account.username} · logged in until ${endsAt(session)}, or until this tab closes`
+        : 'Guest · not logged in';
+    $('settings-account-action').textContent = session ? 'Log out' : 'Log in';
+    renderKeyControls();
+    $('settings-key').textContent = auth.key
+        ? keyWanted()
+            ? 'Set in this browser'
+            : 'Set in this browser · not needed here, this page is trusted'
+        : 'This Space asks this page for a key';
+    $('settings-admin').textContent = account.enabled ? 'Available on this Space' : offReason();
+
+    // Adult declarations: read-only for a guest, switches for an admin.
+    $('declarations-locked').hidden = Boolean(session);
+    $('declarations').replaceChildren(
+        ...state.library.map((avatar) => {
+            const byOperator = avatar.declaredBy === 'operator';
+            const checked = byOperator || Boolean(session && session.declared.includes(avatar.slug));
+            const box = el('input', {
+                type: 'checkbox',
+                class: 'switch',
+                role: 'switch',
+                checked,
+                disabled: !session || byOperator || !avatar.available,
+                'aria-label': `Private mode for ${avatar.name}`,
+                onchange: (event) => onSwitch(avatar, event.currentTarget),
+            });
+            return el(
+                'li',
+                {},
+                el(
+                    'label',
+                    {},
+                    el('span', { class: 'avatar-glyph', text: initials(avatar.name) }),
+                    el(
+                        'span',
+                        { class: 'who' },
+                        el('span', { text: avatar.name }),
+                        el('small', {
+                            text: byOperator
+                                ? 'On for everyone (set by the operator)'
+                                : !avatar.available
+                                  ? 'Not available'
+                                  : checked
+                                    ? 'On · this session only'
+                                    : 'Off',
+                        })
+                    ),
+                    box
+                )
+            );
+        })
+    );
+}
+
+/** A switch was flipped. Off is immediate; on waits for the confirmation popup. */
+async function onSwitch(avatar, box) {
+    if (!box.checked) return declareAvatar(avatar, box, false);
+    box.checked = false; // not on until confirmed
+    if (await confirmPrivateMode(avatar)) {
+        box.checked = true;
+        declareAvatar(avatar, box, true);
+    }
+}
+
+/** The popup: both boxes ticked — the viewer's age and the avatar's — or nothing changes. */
+function confirmPrivateMode(avatar) {
+    const dialog = $('confirm-dialog');
+    $('confirm-avatar').textContent = avatar.name;
+    $('confirm-depicts-label').textContent = `${avatar.name} depicts an adult`;
+    $('confirm-age').checked = false;
+    $('confirm-depicts').checked = false;
+    $('confirm-ok').disabled = true;
+    const both = () => ($('confirm-ok').disabled = !($('confirm-age').checked && $('confirm-depicts').checked));
+    $('confirm-age').onchange = both;
+    $('confirm-depicts').onchange = both;
+    return new Promise((resolve) => {
+        let confirmed = false;
+        $('confirm-form').onsubmit = (event) => {
+            event.preventDefault();
+            confirmed = $('confirm-age').checked && $('confirm-depicts').checked;
+            dialog.close();
+        };
+        $('confirm-cancel').onclick = () => dialog.close();
+        dialog.addEventListener('close', () => resolve(confirmed), { once: true });
+        dialog.showModal();
+    });
+}
+
+async function declareAvatar(avatar, box, ageConfirmed) {
+    box.disabled = true;
+    $('settings-error').hidden = true;
+    try {
+        const session = await api.adminDeclare(avatar.slug, box.checked, ageConfirmed);
+        setSession(session);
+        await refreshForSession();
+    } catch (error) {
+        box.checked = !box.checked;
+        $('settings-error').textContent = describe(error);
+        $('settings-error').hidden = false;
+        if (error.status === 401) return endSession('Your admin session ended.');
+    } finally {
+        renderSettings();
+    }
+}
+
 // ---------------------------------------------------------------- view modes
 function setViewMode(mode) {
     const hasLook = viewer.has('look');
@@ -331,6 +696,65 @@ function setViewMode(mode) {
 }
 
 // ---------------------------------------------------------------- designer
+/** Underwear and swimwear go on her body, first: the categories the planner makes a foundation. */
+const FOUNDATION_CATEGORIES = new Set(['underwear', 'swimwear']);
+
+/**
+ * A foundation look starts from her own avatar, not the look before ("Build on" is unticked),
+ * and replaces what it covers. This used to pick "underwear first", from when a bralette's
+ * shape was unknown to the strip plan and took nothing off; that is fixed, and "underwear
+ * first" never meant "take her whole outfit off" anyway — briefs replaced her bottoms and her
+ * top stayed, under a label that promised more (L5b). Keeping her clothes on stays the
+ * designer's to choose, and is said as a styling.
+ */
+function startFoundation() {
+    $('base-body-select').value = 'replace-outer';
+    $('build-on').checked = false;
+    $('plan-report').hidden = true;
+}
+
+/**
+ * L5b. What "Before dressing" offers, in words that say what the job does. For underwear and
+ * swimwear the third choice is gone: they are the foundation already, and "underwear first"
+ * while designing underwear read as "undress her", which it never did. What comes off is
+ * what the look replaces — a set her top and her bottoms, briefs alone her bottoms only.
+ */
+function renderBaseBodyChoices(adult) {
+    const select = $('base-body-select');
+    const foundation = FOUNDATION_CATEGORIES.has(state.design.category);
+    const what = `this ${state.design.category}`;
+    // Short enough for the select at its width; the default needs no "(recommended)" there, it is chosen.
+    select.querySelector('option[value="replace-outer"]').textContent = foundation
+        ? `Replace what ${what} covers`
+        : 'Replace what this look covers (recommended)';
+    select.querySelector('option[value="preserve"]').textContent = foundation
+        ? 'Keep her clothes on and layer it (styling)'
+        : 'Keep her clothes on — layer over them (styling)';
+    const underwearBase = select.querySelector('option[value="underwear-base"]');
+    underwearBase.hidden = foundation;
+    underwearBase.disabled = foundation || !adult;
+    underwearBase.title = adult ? '' : 'Underwear needs private mode on for this avatar (log in, then Settings)';
+    if (underwearBase.disabled && select.value === 'underwear-base') select.value = 'replace-outer';
+}
+
+function renderBaseBodyNote() {
+    const note = $('base-body-note');
+    const mode = $('base-body-select').value;
+    const foundation = FOUNDATION_CATEGORIES.has(state.design.category);
+    const text =
+        mode === 'preserve'
+            ? foundation
+                ? 'Layered over her clothes on purpose: a styling, not an underwear fit.'
+                : ''
+            : mode === 'underwear-base'
+              ? 'Plain underwear goes on first where the outfit names none, then the outfit; her clothes come off where the outfit and its underwear cover them.'
+              : foundation
+                ? 'Her clothes come off where this replaces them: a set (bra and briefs) takes off her top and her bottoms, briefs alone only her bottoms. Only where her avatar has a body under them; otherwise the look is refused, never fitted over her clothes.'
+                : '';
+    note.hidden = !text;
+    note.textContent = text;
+}
+
 function renderDesigner() {
     const { overrides, promptWords } = state.vocab;
 
@@ -346,11 +770,12 @@ function renderDesigner() {
             disabled: category && needsAdult(category) && !adult,
             title:
                 category && needsAdult(category) && !adult
-                    ? 'Needs this avatar declared as depicting an adult, by the operator, in assets/library/policy.json'
+                    ? 'Needs private mode on for this avatar: log in, then Settings → Private mode'
                     : undefined,
             onclick: () => {
                 state.design.category = category;
                 state.design.templateId = null;
+                if (FOUNDATION_CATEGORIES.has(category)) startFoundation();
                 renderDesigner();
                 loadTemplates();
             },
@@ -422,7 +847,7 @@ function renderDesigner() {
 function renderStyle(adult) {
     const { overrides } = state.vocab;
     const seeThrough = new Set(state.vocab.seeThroughPatterns || []);
-    const reason = 'Shows the body: needs this avatar declared as depicting an adult (assets/library/policy.json)';
+    const reason = 'Shows the body: needs private mode on for this avatar (log in, then Settings)';
 
     const chips = (id, key, values, { label = (v) => v, value = (v) => v, gated = () => false } = {}) =>
         $(id).replaceChildren(
@@ -464,11 +889,9 @@ function renderStyle(adult) {
         state.design.neckline = value;
         updatePreview();
     });
-    const underwearBase = $('base-body-select').querySelector('option[value="underwear-base"]');
-    underwearBase.disabled = !adult;
-    underwearBase.title = adult ? '' : 'Underwear needs this avatar declared as depicting an adult';
-    if (!adult && $('base-body-select').value === 'underwear-base') $('base-body-select').value = 'replace-outer';
-    $('style-hint').textContent = adult ? 'overrides the prompt' : 'overrides the prompt · see-through needs an adult declaration';
+    renderBaseBodyChoices(adult);
+    renderBaseBodyNote();
+    $('style-hint').textContent = adult ? 'overrides the prompt' : 'overrides the prompt · see-through needs private mode';
 }
 
 const REVEAL_HINTS = {
@@ -496,7 +919,7 @@ function renderHosiery(adult) {
     };
     $('hosiery-hint').textContent = adult
         ? 'stockings publish their tops; straps clip to them'
-        : 'needs this avatar declared as depicting an adult (assets/library/policy.json)';
+        : 'needs private mode on for this avatar (log in, then Settings)';
     $('hosiery-controls').hidden = !h.on;
     if (!h.on) return;
 
@@ -586,17 +1009,33 @@ async function loadTemplates() {
     const select = $('template-select');
     try {
         const templates = await api.templates(state.design.category);
+        // S3. Say what "Planner chooses" means for this garment. A bare skirt used to be
+        // whichever template id sorted last — a pencil tube — and the Studio said only
+        // "Planner chooses". It is now the category's declared default, so name it; it
+        // stays "Planner chooses" because a length or silhouette picked here still steers it.
+        const recommended = state.design.category && templates.find((template) => template.defaultForCategory);
+        const planner = !state.design.category
+            ? 'Planner chooses from all'
+            : recommended
+              ? `Planner chooses · ${recommended.name} recommended`
+              : 'Planner chooses';
         select.replaceChildren(
-            el('option', { value: '', text: state.design.category ? 'Planner chooses' : 'Planner chooses from all' }),
+            el('option', { value: '', text: planner }),
             ...templates.map((template) =>
                 el('option', {
                     value: template.id,
-                    text: `${template.name} · ${template.category}`,
+                    text: state.design.category ? template.name : `${template.name} · ${template.category}`,
                     'data-name': template.name.toLowerCase(),
                     selected: template.id === state.design.templateId,
                 })
             )
         );
+        // A template chosen for another list is not one of these: showing "Planner chooses"
+        // while still sending it made the request say templateId=under-bralette-v2 under a
+        // select that said the planner would choose.
+        if (state.design.templateId && !templates.some((template) => template.id === state.design.templateId)) {
+            state.design.templateId = null;
+        }
         select.onchange = () => {
             state.design.templateId = select.value || null;
             updatePreview();
@@ -756,7 +1195,9 @@ async function checkPlan() {
     );
     const body = report.body;
     const missing = body ? Object.entries(body.regions).filter(([, r]) => !r.present).map(([k]) => k) : [];
-    box.replaceChildren(
+    // Filtered: replaceChildren writes a null out as the word "null", which the plan showed
+    // under every report with nothing to say about the layer order.
+    const planLines = [
         el('ol', { class: 'plan-layers' }, lines),
         ...[...new Set(report.garments.filter((g) => !g.allowed).map((g) => g.refusal))].map((refusal) =>
             el('p', { class: 'report-line bad', text: `✕ ${refusal}` })
@@ -777,11 +1218,26 @@ async function checkPlan() {
                       : '✓ Complete body under what comes off',
               })
             : null,
+        report.layerOrder === 'refused'
+            ? el('p', {
+                  class: 'report-line bad',
+                  // "Underwear underneath" is not offered while designing underwear (renderBaseBodyChoices),
+                  // so there the way to add the other half is the Lingerie Set.
+                  text: `✕ The underwear would go over her ${report.layeredOver.join(', ')} — ${
+                      FOUNDATION_CATEGORIES.has(state.design.category)
+                          ? `choose ${state.design.category === 'swimwear' ? 'a bikini' : 'the Lingerie Set'} (or add the other half with +) so both come off`
+                          : 'choose "Underwear underneath, then the outfit" to add the other half'
+                  }, or "Keep her clothes on" to layer it on purpose`,
+              })
+            : report.layerOrder === 'layered'
+              ? el('p', { class: 'report-line warn', text: `Layered over her ${report.layeredOver.join(', ')}: a styling, not an underwear fit` })
+              : null,
         el('p', {
             class: `report-line ${report.allowed ? '' : 'bad'}`,
             text: report.allowed ? `→ ${report.garments.length} layer(s) will be built` : 'This outfit will be refused',
-        })
-    );
+        }),
+    ];
+    box.replaceChildren(...planLines.filter(Boolean));
 }
 
 function showJob(job, prompt) {
@@ -847,6 +1303,12 @@ function renderReport(report, look = null) {
                 text: 'Something under the garment still shows through. If it is her own clothing, this model does not mark it in a way the Forge recognises, so it was layered over rather than taken off.',
             })
         );
+    }
+    const body = report.baseBody || {};
+    if (body.layerOrder === 'layered') {
+        lines.push(el('p', { class: 'report-line warn', text: 'Layered over her own clothes (Keep her clothes on): a styling, not an underwear fit' }));
+    } else if (body.bodyPreparation === 'passed' && (body.removedSlots || []).length) {
+        lines.push(el('p', { class: 'report-line', text: `Took off her ${body.removedSlots.join(' and ')} · fitted to her body` }));
     }
     if (report.hosiery) lines.push(...hosieryReport(report.hosiery, look));
     $('report').replaceChildren(...lines);
@@ -953,6 +1415,13 @@ async function renderWardrobe() {
                         })
                     )
                 ),
+                look.private
+                    ? el('span', {
+                          class: 'look-private',
+                          text: 'private',
+                          title: "Made under an admin session's declaration: only an admin session sees it",
+                      })
+                    : null,
                 el('button', {
                     class: 'look-del',
                     type: 'button',
@@ -1012,18 +1481,18 @@ async function exportBundle() {
     button.disabled = true;
     button.textContent = 'Packing…';
     try {
-        const blob = await api.bundle(state.avatar.slug, $('passed-only').checked);
+        const blob = await api.pack(state.avatar.slug, $('passed-only').checked);
         const url = URL.createObjectURL(blob);
-        const link = el('a', { href: url, download: `${state.avatar.slug}-wardrobe.zip` });
+        const link = el('a', { href: url, download: `${state.avatar.slug}-pack.zip` });
         document.body.append(link);
         link.click();
         link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 10000);
-        setStatus(`Exported ${(blob.size / 1048576).toFixed(1)} MB — unzip into vendor/wardrobe/.`);
+        setStatus(`Exported ${(blob.size / 1048576).toFixed(1)} MB — import it in Try-On ▸ Import wardrobe pack.`);
     } catch (error) {
         setStatus(describe(error), true);
     } finally {
-        button.textContent = 'Export bundle';
+        button.textContent = 'Export pack';
         button.disabled = false;
     }
 }

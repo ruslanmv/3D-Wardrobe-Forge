@@ -7,6 +7,7 @@ import pytest
 from wardrobe.domain.garments import PROCEDURAL_KINDS, GarmentTemplate, TemplateCatalog
 from wardrobe.domain.looks import OutfitRequest
 from wardrobe.geometry.procedural import HAUL_KINDS, FitParameters, build_garment
+from wardrobe.lingerie import LINGERIE_KINDS
 from wardrobe.pipeline.plan_outfit import plan_outfit
 from wardrobe.vrm.build import CALIBRATION_BODIES, build_vrm
 from wardrobe.vrm.document import GltfDocument
@@ -17,7 +18,7 @@ ORIGINAL_KINDS = {"dress", "skirt", "top", "trousers", "jacket", "shoes"}
 
 
 def test_the_domain_knows_every_shape_the_builder_makes():
-    assert PROCEDURAL_KINDS == ORIGINAL_KINDS | HAUL_KINDS
+    assert PROCEDURAL_KINDS == ORIGINAL_KINDS | HAUL_KINDS | LINGERIE_KINDS
 
 
 def test_the_library_covers_the_haul_categories(template_catalog: TemplateCatalog):
@@ -59,11 +60,11 @@ def test_an_unknown_shape_is_invalid(template_catalog: TemplateCatalog):
     [
         ("red triangle bikini", "swim-bikini-triangle-v1"),
         ("black bandeau bikini", "swim-bikini-bandeau-v1"),
-        ("white one-piece swimsuit", "swim-one-piece-v1"),
+        ("white one-piece swimsuit", "swim-one-piece-v2"),
         ("swimsuit with skirt", "swim-skirted-v1"),
         ("lace lingerie set", "under-lingerie-set-v1"),
-        ("black lace bralette", "under-bralette-v1"),
-        ("lace bodysuit", "under-bodysuit-v1"),
+        ("black lace bralette", "under-bralette-v2"),
+        ("lace bodysuit", "under-bodysuit-v2"),
         ("satin nightgown", "night-nightgown-v1"),
         ("pajama bottoms", "night-pajama-trousers-v1"),
         ("pink crop top", "top-crop-tee-v1"),

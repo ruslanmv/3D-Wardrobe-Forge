@@ -12,6 +12,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wardrobe.lingerie import LINGERIE_KINDS
+
 SCHEMA_VERSION = 1
 
 #: Body regions a template may declare coverage over.
@@ -42,8 +44,11 @@ PROCEDURAL_KINDS = {
     "dress", "skirt", "top", "trousers", "jacket", "shoes",
     "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
     "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
-    "suspender-belt", "waspie", "guepiere",
-}
+    "suspender-belt", "waspie", "guepiere", "slip-shorts", "corset",
+} | set(LINGERIE_KINDS)
+
+#: The template schema that carries a ``lingerie`` block (pattern blocks, wardrobe.lingerie).
+LINGERIE_SCHEMA_VERSION = 2
 
 #: Categories that only dress an avatar declared to depict an adult. See wardrobe.policy.intimate.
 #: Not the whole gate: see-through fabric in any category needs the same declaration.
@@ -53,7 +58,7 @@ INTIMATE_CATEGORIES = frozenset({"swimwear", "underwear"})
 COVERAGE_PRESETS: dict[str, float] = {"full": 1.12, "standard": 1.0, "minimal": 0.78, "micro": 0.58}
 STRAP_PRESETS = ("shoulder", "halter", "none", "string", "cross-back", "garter", "harness")
 NECKLINES = ("v", "plunge", "sweetheart", "triangle", "demi", "balconette")
-RISES = ("high", "low")
+RISES = ("high", "low", "ultra-low")
 BACKS = ("low",)
 LEG_CUTS = ("high",)
 FLARE_STARTS = ("waist", "high-hip", "hip", "below-hip")
@@ -132,10 +137,19 @@ class GarmentTemplate(BaseModel):
     description: str | None = None
     #: Needs an adult declaration whatever its category or material.
     requires_adult: bool = Field(default=False, alias="requiresAdult")
+    #: The category's answer when a prompt names the category and nothing else ("skirt",
+    #: "navy skirt", the Studio's "Planner chooses"), and the tie-break when two templates
+    #: score the same. Without it the planner fell back on the template id's reverse
+    #: alphabetical order, so a bare "skirt" was always skirt-pencil-v1 — the most
+    #: tube-like cut in the catalogue, chosen by its file name. One per category.
+    default_for_category: bool = Field(default=False, alias="defaultForCategory")
     #: Chosen from a prompt only when the prompt names one of its tags outright. Newer
     #: templates that overlap older ones use it, so a prompt that planned the older
     #: template still does: "suspender belt" is still the Garter Set.
     opt_in: bool = Field(default=False, alias="optIn")
+    #: Schema 2 only: the pattern block a lingerie kind is built from — its spec
+    #: (wardrobe.lingerie.specs), strap and elastic choices. Absent everywhere else.
+    lingerie: dict | None = None
 
     @property
     def is_procedural(self) -> bool:
@@ -176,6 +190,16 @@ class GarmentTemplate(BaseModel):
             issues.append(f"{self.id}: {sleeves} sleeves need anchors {sorted(needed - set(self.anchors))}")
         if self.fit.flare_start and self.fit.flare_start not in FLARE_STARTS:
             issues.append(f"{self.id}: unknown flareStart {self.fit.flare_start!r}")
+        if self.procedural_kind in LINGERIE_KINDS or self.lingerie is not None:
+            if self.schema_version != LINGERIE_SCHEMA_VERSION:
+                issues.append(f"{self.id}: a lingerie block needs schemaVersion {LINGERIE_SCHEMA_VERSION}")
+            if self.procedural_kind in LINGERIE_KINDS and not self.lingerie:
+                issues.append(f"{self.id}: {self.procedural_kind} needs a lingerie block")
+            if self.lingerie is not None:
+                from wardrobe.lingerie.specs import validate_block  # the spec lives with its builder
+
+                found = validate_block(self.procedural_kind, self.lingerie)
+                issues += [f"{self.id}: {issue}" for issue in found]
         if self.fit.min_length_scale > self.fit.max_length_scale:
             issues.append(f"{self.id}: minLengthScale exceeds maxLengthScale")
         return issues
@@ -232,10 +256,23 @@ class TemplateCatalog:
     def by_category(self, category: str) -> list[GarmentTemplate]:
         return [t for t in self._templates.values() if t.category == category]
 
+    def default_for(self, category: str) -> GarmentTemplate | None:
+        """The template a bare ``category`` prompt gets (``defaultForCategory``), if one is declared."""
+        return next((t for t in self.by_category(category) if t.default_for_category), None)
+
     def validate_all(self) -> list[str]:
         issues: list[str] = []
         for template in self._templates.values():
             issues.extend(template.validate_semantics())
+        defaults: dict[str, list[str]] = {}
+        for template in self._templates.values():
+            if template.default_for_category:
+                defaults.setdefault(template.category, []).append(template.id)
+                if template.opt_in:
+                    issues.append(f"{template.id}: an opt-in template cannot be its category's default")
+        for category, ids in defaults.items():
+            if len(ids) > 1:
+                issues.append(f"{category}: more than one defaultForCategory template {sorted(ids)}")
         return issues
 
 

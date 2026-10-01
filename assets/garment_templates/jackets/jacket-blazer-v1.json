@@ -3,6 +3,7 @@
   "id": "jacket-blazer-v1",
   "name": "Tailored blazer",
   "category": "jacket",
+  "defaultForCategory": true,
   "mesh": "procedural:jacket",
   "coverage": [
     "chest",

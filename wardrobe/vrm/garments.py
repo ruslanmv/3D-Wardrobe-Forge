@@ -44,13 +44,24 @@ SLOT_REGIONS: dict[str, frozenset[str]] = {
 KIND_REGIONS: dict[str, frozenset[str]] = {
     "top": frozenset({"upper"}),
     "crop-top": frozenset({"upper"}),
+    "corset": frozenset({"upper"}),
     "tube-top": frozenset({"upper"}),
     "bra": frozenset({"upper"}),
+    # The L-series lingerie blocks and the foundations built beside them. Absent, a
+    # Tailored Triangle Bralette covered nothing as far as the strip plan could tell:
+    # nothing came off in any mode, and it was fitted over her cardigan.
+    "bra-block": frozenset({"upper"}),
+    "guepiere": frozenset({"upper"}),
+    "waspie": frozenset({"upper"}),
     "skirt": frozenset({"lower"}),
     "trousers": frozenset({"lower"}),
     "leggings": frozenset({"lower"}),
     "shorts": frozenset({"lower"}),
+    "slip-shorts": frozenset({"lower"}),
     "briefs": frozenset({"lower"}),
+    "brief-block": frozenset({"lower"}),
+    # L5. A one-piece: a brief carried up to a neckline covers both halves.
+    "bodysuit-block": frozenset({"upper", "lower"}),
     "dress": frozenset({"upper", "lower"}),
     "slip-dress": frozenset({"upper", "lower"}),
     "bikini": frozenset({"upper", "lower"}),

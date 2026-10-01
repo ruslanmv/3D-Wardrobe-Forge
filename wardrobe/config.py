@@ -30,6 +30,32 @@ class Settings(BaseSettings):
     #: none | api_key. Hosted production deployments should use api_key or an upstream gateway.
     wardrobe_auth_mode: str = "none"
     wardrobe_api_key: str = ""
+    #: F5. Pages that may call a keyed deployment without the key: yourfriend.online by
+    #: default, which is where the try-on haul runs and which cannot hold a secret in a
+    #: public page. Checked against the browser's ``Origin`` header — which a web page
+    #: cannot forge, so another website cannot spend this Space, but which any script
+    #: outside a browser can send. It keeps other sites out; it is not a password, and
+    #: the key (server to server) and a rate limit are what stop a determined client.
+    wardrobe_trusted_origins: list[str] = Field(
+        default_factory=lambda: ["https://yourfriend.online", "https://www.yourfriend.online"]
+    )
+    #: F5. The Studio this deployment serves is trusted too: it is the same site.
+    wardrobe_trust_same_origin: bool = True
+    #: F1. Jobs one client may create per minute (apps/api/ratelimit.py). 0 = no limit.
+    wardrobe_rate_limit_per_minute: int = 0
+    #: F1. Jobs waiting or running at once, across all clients. 0 = no cap.
+    wardrobe_queue_cap: int = 0
+    #: F1. How many proxies in front of this server append to X-Forwarded-For: the client
+    #: is the entry that many from the right. 0 = the connecting peer. A Space: 1.
+    wardrobe_forwarded_hops: int = 0
+    #: Signs the operator in to the Studio's account menu (apps/api/admin.py), where
+    #: an adult declaration can be made per avatar for that session only. Empty: no
+    #: admin, and the Studio offers no sign-in. Set it as a secret, never in a file.
+    wardrobe_admin_password: str = ""
+    #: The user name that goes with it on the Studio's log-in form.
+    wardrobe_admin_username: str = "admin"
+    #: How long an admin session lasts before it signs itself out.
+    wardrobe_admin_session_hours: float = 8.0
 
     # -- pipeline --------------------------------------------------------
     #: auto picks blender when available and falls back to the native engine.
@@ -44,7 +70,9 @@ class Settings(BaseSettings):
 
     # -- storage ---------------------------------------------------------
     wardrobe_storage_backend: str = "local"
-    wardrobe_storage_root: str = "/data/wardrobe"
+    # Keep the zero-configuration development server writable for unprivileged
+    # users. Container deployments override this with /data/wardrobe.
+    wardrobe_storage_root: str = str(REPO_ROOT / ".wardrobe")
     wardrobe_database_url: str = ""
 
     s3_endpoint: str = ""
