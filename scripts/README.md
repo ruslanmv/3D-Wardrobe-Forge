@@ -49,6 +49,8 @@ Commit `models.json` and `licenses/`; they are the provenance. The VRMs stay
 out of git for the same reason the library's do (size, and a Hugging Face
 Space refuses plain-git files over 10 MB).
 
+**Wardrobe Studio.** The Studio discovers `assets/library/vroid/models.json` automatically. After a successful download, refresh the Studio page and the verified VRoid models appear under **Avatars**; no copying into the root library manifest is required.
+
 **Your application's registration.** VRoid Hub registers what an application
 may do with the models it loads — redistribution, alterations, commercial use,
 use as an avatar — and its developer terms require an application to stay
