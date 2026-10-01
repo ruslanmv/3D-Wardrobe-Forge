@@ -13,13 +13,14 @@ reuses the same template metadata.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
 from wardrobe.geometry.mesh import Mesh, concatenate, section_ranges
 from wardrobe.hosiery.garter_belt import BELT_KINDS, build_belt
 from wardrobe.hosiery.stockings import build_stockings
+from wardrobe.lingerie import LINGERIE_KINDS
 from wardrobe.vrm.measure import BodyMeasurements
 
 #: Radial resolution of every lofted shell. 32 keeps a dress silhouette smooth
@@ -336,8 +337,13 @@ def sweep(points: np.ndarray, radii: list[float], *, segments: int = 12, name: s
 # garment sections
 # ----------------------------------------------------------------------
 def build_bodice(params: FitParameters, *, y_top: float | None = None, y_bottom: float | None = None,
-                 looseness: float = 1.0, name: str = "bodice") -> Mesh:
-    """Torso shell from hip/waist up to the chest or shoulders."""
+                 looseness: float = 1.0, name: str = "bodice", rows: tuple[float, ...] = ()) -> Mesh:
+    """Torso shell from hip/waist up to the chest or shoulders.
+
+    ``rows`` are extra heights the shell must have a row at, each a ring interpolated
+    between its neighbours: a low-rise yoke has one exactly a waistband's depth below
+    its top, so the band ends there and not on whichever row happened to be nearest.
+    """
     top = y_top if y_top is not None else params.top_edge(0.55)
     bottom = y_bottom if y_bottom is not None else params.hip_y
 
@@ -352,6 +358,14 @@ def build_bodice(params: FitParameters, *, y_top: float | None = None, y_bottom:
         Ring(bottom + (top - bottom) * 0.72, chest_w * looseness, chest_d * looseness),
         Ring(top, chest_w * looseness * 0.98, chest_d * looseness * 0.98),
     ]
+    for y in rows:
+        if not bottom < y < top:
+            continue
+        above = next(i for i, ring in enumerate(rings) if ring.y > y)
+        a, b = rings[above - 1], rings[above]
+        t = (y - a.y) / max(b.y - a.y, 1e-9)
+        rings.insert(above, Ring(y, a.half_width + (b.half_width - a.half_width) * t,
+                                 a.half_depth + (b.half_depth - a.half_depth) * t))
     return loft(rings, segments=params.segments, name=name, front=params.forward,
                 max_spacing=GARMENT_ROW_SPACING_M)
 
@@ -381,7 +395,11 @@ SKIRT_SHAPES: dict[str, SkirtShape] = {
     "fit-and-flare": SkirtShape(hem_ratio=1.48, flare_power=1.65),
     "cocktail": SkirtShape(hem_ratio=1.22, flare_power=1.6),
     "sheath": SkirtShape(hem_ratio=1.0, flare_power=1.0),
-    "pencil": SkirtShape(hem_ratio=0.94, flare_power=1.0),
+    # Fitted through the seat, then tapered: 11% in by the hem. At 0.94 from the hip
+    # with default ease it read as a tube — 15.5 / 17.1 / 15.9 cm half-widths at waist,
+    # hip and hem on AvatarSample A, the cylinder a bare "skirt" used to be given.
+    "pencil": SkirtShape(hem_ratio=0.89, flare_power=1.15, flare_start="below-hip", waist_ease_m=0.002,
+                         hip_ease_m=0.005),
     "ball-gown": SkirtShape(hem_ratio=1.9, flare_power=1.3, flare_start="waist"),
     "straight": SkirtShape(hem_ratio=1.06, flare_power=1.2),
     "wide": SkirtShape(hem_ratio=1.3, flare_power=1.5),
@@ -499,6 +517,26 @@ def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: 
             ring.center_x *= t
             ring.center_z *= t
     return loft(rings, segments=params.segments, name=name, front=params.forward)
+
+
+#: A yoke or a low-rise skirt keeps at least this much above her crotch.
+MIN_YOKE_M = 0.06
+#: Where a skirt's waistband sits, as a fraction of her waist → hip span below the waist (P1).
+SKIRT_RISES = {"low": 0.35, "ultra-low": 0.5}
+
+
+def skirt_top(params: FitParameters) -> float:
+    """The top of a skirt: her natural waist, or lower for a low-rise one (P1).
+
+    Every skirt started at her waist, so "low-rise mini" planned a skirt no lower than a
+    pencil skirt's. The rise is the one word the prompt already parses for trousers
+    (``rise``: low, ultra-low); absent, a skirt starts exactly where it always did.
+    """
+    drop = SKIRT_RISES.get(str(params.metadata.get("rise") or ""))
+    if drop is None:
+        return params.waist_y
+    crotch = crotch_y(params, params.hip_y - (params.hip_y - params.knee_y) * 0.12)
+    return max(params.waist_y - (params.waist_y - params.hip_y) * drop, crotch + MIN_YOKE_M)
 
 
 def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25,
@@ -650,8 +688,55 @@ def _measured_leg(params: FitParameters, rings: list, *, hem_y: float, flare: fl
     return np.array(points), radii
 
 
+#: A trouser rise: where the waistband sits, as a fraction of waist → chest above her
+#: waist (positive) or of waist → hip below it (negative). "ultra-low" is on her hip bones.
+TROUSER_RISE_BANDS = {"high": 0.32, "low": -0.25, "ultra-low": -0.55}
+#: P2. How far a low-rise waistband dips at centre front and centre back (for a 1.6 m figure),
+#: and over what angle either side of the centre: a low-rise top edge follows her pelvis.
+TROUSER_TOP_DIP_M = {"front": 0.016, "back": 0.008}
+TROUSER_TOP_DIP_SPAN = 1.0
+#: P2. A low-rise waistband's depth: narrow, as denim's is, not the whole yoke.
+TROUSER_WAISTBAND_M = 0.04
+#: P2. How far a yoke runs on below her crotch (for a 1.6 m figure), over the tops of the
+#: legs, as a crotch seam does: ending exactly at the crotch it left an open slot across
+#: her front, and whatever she wore under the trousers showed through it between the legs.
+TROUSER_CROTCH_OVERLAP_M = 0.03
+
+
+def trouser_top(params: FitParameters, rise_style: str) -> float:
+    """The height of a trouser's top edge at her sides, for a rise word ("" is the default)."""
+    waist_band = TROUSER_RISE_BANDS.get(rise_style, 0.15)
+    if waist_band >= 0:
+        y_top = params.waist_y + (params.chest_y - params.waist_y) * waist_band
+    else:
+        y_top = params.waist_y + (params.waist_y - params.hip_y) * waist_band
+    crotch = crotch_y(params, params.hip_y - (params.hip_y - params.knee_y) * 0.18)
+    return max(y_top, crotch + MIN_YOKE_M)  # a yoke, however low, still has a yoke's depth
+
+
+def trouser_top_dip(phi, rise_style: str, height: float = 1.6):
+    """P2. The top edge's offset from ``trouser_top`` at angle ``phi`` (0 front, ±pi back): ≤ 0.
+
+    A low-rise waistband is not a level ring: it dips at centre front and, less, at centre
+    back, following the pelvis, and is highest over her hips. The straight rectangle it was
+    read as a belt wrapped round her. Every other rise stays level (0 everywhere).
+    """
+    phi = np.asarray(phi, dtype=np.float64)
+    if rise_style not in {"low", "ultra-low"}:
+        return np.zeros_like(phi)
+    wrapped = np.abs(_wrap(phi))
+    scale = height / 1.6
+
+    def bump(delta):
+        t = np.clip(delta / TROUSER_TOP_DIP_SPAN, 0.0, 1.0)
+        return 0.5 * (1.0 + np.cos(np.pi * t))
+
+    front, back = TROUSER_TOP_DIP_M["front"], TROUSER_TOP_DIP_M["back"]
+    return -scale * (front * bump(wrapped) + back * bump(np.pi - wrapped))
+
+
 def build_trousers(params: FitParameters, *, hem_y: float, flare: float = 1.0,
-                   name: str = "trousers") -> list[Mesh]:
+                   name: str = "trousers", shaped: bool = True) -> list[Mesh]:
     """A yoke down to her crotch and a leg per leg, cut from her measured legs.
 
     The cut is ease over the leg, read off ``flare``: slim follows the leg a
@@ -660,25 +745,38 @@ def build_trousers(params: FitParameters, *, hem_y: float, flare: float = 1.0,
     meets the yoke without a step. A body nobody measured gets the old formula.
     """
     rise_style = str(params.metadata.get("rise") or "")
-    waist_band = {"high": 0.32, "low": -0.25}.get(rise_style, 0.15)  # fraction of waist→chest
-    if waist_band >= 0:
-        y_top = params.waist_y + (params.chest_y - params.waist_y) * waist_band
-    else:
-        y_top = params.waist_y + (params.waist_y - params.hip_y) * waist_band
+    # "ultra-low" (P1): the Y2K rise that sits on her hip bones — the rise a visible thong is
+    # worn over. Every other word keeps the band it always had.
+    y_top = trouser_top(params, rise_style)
     profile = params.metadata.get("lowerBody")
     measured = isinstance(profile, dict) and bool(profile.get("legs"))
     crotch = crotch_y(params, params.hip_y - (params.hip_y - params.knee_y) * 0.18)
-    meshes: list[Mesh] = [
-        build_bodice(
-            params,
-            y_top=y_top,
-            y_bottom=crotch,
-            # Measured, the yoke starts a touch inside her and the fit takes it
-            # out to her hips; unmeasured, it keeps the old ease.
-            looseness=0.97 if measured else 1.03,
-            name=f"{name}-yoke",
-        )
-    ]
+    # The liner (``shaped`` off) is hidden under a skirt and keeps the yoke it always had.
+    yoke_bottom = crotch - (TROUSER_CROTCH_OVERLAP_M * params.height / 1.6 if shaped else 0.0)
+    curved = shaped and rise_style in {"low", "ultra-low"}
+    band_floor = y_top - TROUSER_WAISTBAND_M
+    yoke = build_bodice(
+        params,
+        y_top=y_top,
+        y_bottom=yoke_bottom,
+        # Measured, the yoke starts a touch inside her and the fit takes it
+        # out to her hips; unmeasured, it keeps the old ease.
+        looseness=0.97 if measured else 1.03,
+        name=f"{name}-yoke",
+        rows=(band_floor,) if curved else (),
+    )
+    if curved:
+        # P2. A low-rise top edge follows her pelvis (trouser_top_dip). The waistband's
+        # rows move with it as one piece, so the band is its full depth all the way round;
+        # below it the offset fades out to the crotch. ``shaped`` is off for the skirt
+        # liner, which is hidden and keeps the shape it always had.
+        points = yoke.positions.astype(np.float64)
+        dip = trouser_top_dip(front_angle(points, params), rise_style, params.height)
+        weight = np.clip((points[:, 1] - yoke_bottom) / max(band_floor - yoke_bottom, 1e-6), 0.0, 1.0)
+        points[:, 1] += dip * weight
+        yoke.positions = points.astype(np.float32)
+        yoke.compute_normals()
+    meshes: list[Mesh] = [yoke]
     segments = max(params.segments // 2, 8)
     for side in ("left", "right"):
         if measured:
@@ -993,10 +1091,19 @@ HAUL_KINDS = frozenset(
     {
         "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
         "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
+        # P1: a boned top to her waist
+        "corset",
         # hosiery foundations (wardrobe.hosiery.garter_belt)
         "suspender-belt", "waspie", "guepiere",
+        # the liner a skirt is worn over (S2, wardrobe.pipeline.generate_garment.with_skirt_liner)
+        "slip-shorts",
     }
 )
+
+#: A corset's centre-front point below its waistline, for a 1.6 m figure (P1).
+CORSET_POINT_M = 0.035
+#: Distance between boning channels round a corset (P1).
+CORSET_BONING_PITCH_M = 0.045
 
 #: How much a garment covers, as a scale on its spans. Mirrors
 #: ``wardrobe.domain.garments.COVERAGE_PRESETS``; a test holds the two equal.
@@ -1371,6 +1478,21 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         extras = (top_straps(params, top_y=bust_top, style=straps, underbust_y=underbust)
                   if straps and sleeves == "none" else [])
         return [top, *extras, *build_sleeves(params, length=sleeves)]
+    if kind == "corset":
+        # P1. A corset top: fitted from the bust to her natural waist, the hem dropping to a
+        # point at centre front, boned. The crop top it borrows from stops at the underbust;
+        # a corset's whole point is the waist it shapes, so it must reach it.
+        top_y = bust_top
+        bottom_y = params.waist_y - rise * 0.08
+        body = build_band(params, y_bottom=bottom_y, y_top=top_y, rows=10, name="corset")
+        span = top_y - bottom_y
+        neck = neckline_profile(neckline or "sweetheart", params, span * 0.35)
+        point = min(CORSET_POINT_M * params.height / 1.6, span * 0.3)
+        body = trim(body, params, y_bottom=bottom_y, y_top=top_y, top=neck,
+                    bottom=lambda phi: -point * _plateau(phi, 0.0, 0.45))
+        # Boning channels read by their shading, as knife pleats do (native assembly draws them).
+        body.metadata["boningPitchM"] = CORSET_BONING_PITCH_M
+        return [body, *top_straps(params, top_y=top_y, style=straps or "shoulder", underbust_y=underbust)]
     if kind == "tube-top":
         bottom_y = params.waist_y + torso * (0.3 + (1.0 - min(scale, 1.0)) * 0.6)
         top = build_band(params, y_bottom=min(bottom_y, underbust), y_top=bust_top, name="tube-top")
@@ -1396,6 +1518,19 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
                             join=half_at(params, params.hip_y))
         held = top_straps(params, top_y=bust_top, style=straps or "shoulder", underbust_y=underbust)
         return [bodice, skirt, *held]
+    if kind == "slip-shorts":
+        # S2. A skirt liner: fitted, opaque, and short on purpose. It ends a little
+        # below her crotch whatever the template's hem says, because it must stay
+        # hidden under the shortest skirt it is put under; a mini skirt's hem is
+        # a third of her thigh down, this is an eighth.
+        # Low-rise, too: trousers rise above the natural waist and a skirt starts at
+        # it, so a liner cut like trousers showed a band above every skirt's waist.
+        crotch = crotch_y(params, params.hip_y - thigh * 0.12)
+        # Under a low-rise skirt the liner goes lower still, or its band shows above the
+        # skirt's (with_skirt_liner passes the skirt's rise down as "ultra-low").
+        liner_rise = "ultra-low" if meta.get("rise") == "ultra-low" else "low"
+        low = replace(params, metadata={**params.metadata, "rise": liner_rise})
+        return build_trousers(low, hem_y=crotch - thigh * 0.12, flare=1.0, name="slip-shorts", shaped=False)
     if kind == "shorts":
         inseam = min(0.55 * scale, 0.55) if scale < 1.0 else 0.55
         return build_trousers(params, hem_y=max(hem_y, params.hip_y - thigh * max(inseam, 0.2)), flare=flare)
@@ -1479,6 +1614,12 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
     category = category.lower()
     sections: list[Mesh]
 
+    if category in LINGERIE_KINDS:
+        # Pattern blocks (wardrobe.lingerie): drafted on her landmarks, not lofted bands.
+        from wardrobe.lingerie.blocks import build_block  # it builds on this module
+
+        return build_block(category, params)
+
     if category == "dress":
         top_y = params.top_edge(0.6)
         sections = [
@@ -1490,7 +1631,7 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
         sections += build_sleeves(params, length=params.sleeve_length)
 
     elif category == "skirt":
-        sections = [build_skirt(params, y_top=params.waist_y, y_bottom=hem_y, flare=flare,
+        sections = [build_skirt(params, y_top=skirt_top(params), y_bottom=hem_y, flare=flare,
                                 shape=skirt_shape(params, silhouette, flare))]
 
     elif category in {"top", "shirt", "blouse"}:

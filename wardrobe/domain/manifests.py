@@ -25,6 +25,8 @@ class WardrobeLook(BaseModel):
     prompt: str | None = None
     created_at: datetime | None = Field(default=None, alias="createdAt")
     fit_passed: bool | None = Field(default=None, alias="fitPassed")
+    #: Made under an admin session's declaration: listed only to an admin session.
+    private: bool = False
 
     def to_avatar_item(self) -> dict:
         """Render as a 3D-Avatar-Chatbot ``avatars.json`` item."""
@@ -64,6 +66,10 @@ class WardrobeManifest(BaseModel):
         self.looks.append(look)
         self.updated_at = datetime.now(UTC)
         return self
+
+    def public(self) -> WardrobeManifest:
+        """This wardrobe as anyone may see it: without the looks an admin session made private."""
+        return self.model_copy(update={"looks": [look for look in self.looks if not look.private]})
 
     def get(self, look_id: str) -> WardrobeLook | None:
         return next((look for look in self.looks if look.id == look_id), None)

@@ -2,6 +2,7 @@
 
     python tools/gallery/looks.py OUT_DIR [NUMBER ...]
     python tools/gallery/looks.py OUT_DIR --avatar assets/library/AvatarSample_A.vrm [NUMBER ...]
+    python tools/gallery/looks.py OUT_DIR --dress-form [NUMBER ...]
 
 Writes OUT_DIR/g-NN.vrm for each look, the source it started from, and
 OUT_DIR/g-records.json with what each look planned and how it fitted. Then
@@ -18,6 +19,13 @@ With ``--avatar`` the looks are EVERYDAY_LOOKS on that real VRM, as it arrives:
 dressed, VRM 0.x or 1.0, its own body and skeleton. No declaration is made for
 it — the tool is not the operator — so these are the looks no adult gate
 applies to, which exercise the same fitting code on a body nobody generated.
+
+With ``--dress-form`` they run on ``dress_form()``: AvatarSample_A's own body as a
+faceless grey form, written to OUT_DIR/dress-form-a.vrm. Its licence is hers, from
+the provenance manifest (CC0). It is not declared adult: its measured shoulder and
+hip spans fall below the calibration bodies', and nobody has said how old the
+character it came from is. So it is a test body for clothes, the strip plan and the
+body check, and underwear on it is refused like underwear on any undeclared avatar.
 """
 
 import argparse
@@ -149,6 +157,67 @@ def dressed_mannequin() -> bytes:
     return document.to_bytes()
 
 
+#: The dress form's skin: a flat mid grey, as a fit-check form is.
+DRESS_FORM_GREY = [0.62, 0.62, 0.64, 1.0]
+DRESS_FORM_SHADE = [0.42, 0.42, 0.45]
+#: Material-name markers of the character, which a dress form leaves out: face, eyes, hair.
+CHARACTER_PARTS = ("_FACE", "_EYE", "_HAIR")
+
+
+def dress_form(source: bytes) -> bytes:
+    """A VRoid avatar as a fit-check dress form: her body mesh, grey, with no face and no hair.
+
+    The second test mannequin (``dress-form-a``, made from AvatarSample_A, CC0). The
+    generated mannequin is a lofted shell; this keeps a real VRoid export's topology,
+    skin weights and skeleton, and its own Tops, Bottoms and Shoes primitives, so the
+    strip plan, the body check and the fitting run on the body real avatars have.
+    What makes it a character goes: the face, eye and hair primitives are dropped (a
+    mesh left with none is detached from its nodes, as ``remove_garments`` does) and
+    every skin material loses its textures for a flat grey. That also takes off what a
+    VRoid body wears *in its skin texture*: AvatarSample_A's camisole and tights are
+    painted there, not modelled, so on her own skin lingerie always sat over them.
+    Her clothes keep their textures, which are what a job takes off. Deterministic:
+    the same source bytes give the same form.
+    """
+    doc = GltfDocument.from_bytes(source)
+    names = [str(m.get("name") or "") for m in doc.materials]
+    for index, mesh in enumerate(doc.meshes):
+        kept = [p for p in mesh["primitives"]
+                if p.get("material") is None or not any(k in names[p["material"]] for k in CHARACTER_PARTS)]
+        if kept:
+            mesh["primitives"] = kept
+            continue
+        for node in doc.nodes:
+            if node.get("mesh") == index:
+                node.pop("mesh", None)
+                node.pop("skin", None)
+    for material, name in zip(doc.materials, names, strict=True):
+        if "SKIN" not in name:
+            continue
+        pbr = material.setdefault("pbrMetallicRoughness", {})
+        pbr["baseColorFactor"] = list(DRESS_FORM_GREY)
+        pbr.pop("baseColorTexture", None)
+        material.pop("emissiveTexture", None)
+        mtoon = (material.get("extensions") or {}).get("VRMC_materials_mtoon")
+        if mtoon:
+            mtoon["shadeColorFactor"] = list(DRESS_FORM_SHADE)
+            for key in [k for k in mtoon if k.endswith("Texture")]:
+                mtoon.pop(key)
+    vrm0 = (doc.gltf.get("extensions") or {}).get("VRM") or {}
+    for prop in vrm0.get("materialProperties", []):
+        if "SKIN" in str(prop.get("name")):
+            vectors = prop.setdefault("vectorProperties", {})
+            vectors["_Color"] = list(DRESS_FORM_GREY)
+            vectors["_ShadeColor"] = [*DRESS_FORM_SHADE, 1.0]
+            prop["textureProperties"] = {}
+    meta = doc.extension("VRMC_vrm") or {}
+    if isinstance(meta.get("meta"), dict):
+        meta["meta"]["name"] = "Dress form A (from AvatarSample_A)"
+    if isinstance(vrm0.get("meta"), dict):
+        vrm0["meta"]["title"] = "Dress form A (from AvatarSample_A)"
+    return doc.to_bytes()
+
+
 def record(number: int, title: str, prompt: str, extra: dict, result, data: bytes | None) -> dict:
     """What the look planned and how it fitted: the caption compose.py prints."""
     entry = {
@@ -179,7 +248,7 @@ def record(number: int, title: str, prompt: str, extra: dict, result, data: byte
     return entry
 
 
-async def main(out: Path, avatar: Path | None, only: set[int]) -> None:
+async def main(out: Path, avatar: Path | None, only: set[int], form: bool = False) -> None:
     out.mkdir(parents=True, exist_ok=True)
     tmp = Path(tempfile.mkdtemp())
     settings = Settings(wardrobe_storage_root=str(tmp), wardrobe_engine="native", strict_licensing=True)
@@ -189,7 +258,18 @@ async def main(out: Path, avatar: Path | None, only: set[int]) -> None:
         settings=settings, store=store, jobs=InMemoryJobRepository(), wardrobes=InMemoryWardrobeRepository(),
         queue=AsyncioJobQueue(concurrency=1), catalog=catalog,
     )
-    if avatar is None:
+    if form:
+        library = AvatarLibrary.from_directory(ROOT / "assets" / "library")
+        entry = library.get("avatar-sample-a")
+        if entry is None or entry.path is None:
+            raise SystemExit("AvatarSample_A is not fetched: run tools/fetch_library.py")
+        data = dress_form(entry.path.read_bytes())
+        (out / "dress-form-a.vrm").write_bytes(data)
+        looks = [(n, t, p, {"dressed": True}) for n, t, p, _ in EVERYDAY_LOOKS]
+        sources = {"dressed": data}
+        declared = {k: v for k, v in entry.avatar_input().items() if k not in ("storageKey", "sha256")}
+        declared["avatarId"] = "dress-form-a"
+    elif avatar is None:
         looks, sources = LOOKS, {"plain": toon_mannequin().to_bytes(), "dressed": dressed_mannequin()}
         declared = {"depictsAdult": declared_adult(BODY.name)}  # assets/calibration/policy.json
     else:
@@ -235,5 +315,8 @@ if __name__ == "__main__":
     parser.add_argument("out", type=Path)
     parser.add_argument("numbers", nargs="*", type=int)
     parser.add_argument("--avatar", type=Path, help="a real VRM: runs EVERYDAY_LOOKS on it")
+    parser.add_argument("--dress-form", action="store_true",
+                        help="runs EVERYDAY_LOOKS on AvatarSample_A as a faceless grey dress form")
     args = parser.parse_args()
-    asyncio.run(main(args.out.resolve(), args.avatar.resolve() if args.avatar else None, set(args.numbers)))
+    asyncio.run(main(args.out.resolve(), args.avatar.resolve() if args.avatar else None, set(args.numbers),
+                     form=args.dress_form))

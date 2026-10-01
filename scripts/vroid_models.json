@@ -1,0 +1,17 @@
+{
+  "about": "VRoid Hub models scripts/download.py fetches. Each entry is only a request: the script reads the model's current conditions from VRoid Hub before downloading and refuses any model whose creator does not allow redistribution and modification. Being listed here declares nothing about the character; adulthood for private outfits is still the operator's declaration in assets/library/policy.json. creatorStatesAge and creatorStatement, where present, record what the model's creator says about the character's age on VRoid Hub, read when the entry was added: the basis an operator can cite for a declaration, not the declaration itself.",
+  "models": [
+    {"slug": "vroid-avatar-sample-o", "name": "AvatarSample_O", "modelId": "3390783334862270831", "presentation": "feminine"},
+    {"slug": "vroid-model-girl", "name": "Model Girl", "modelId": "3353341336249445361", "presentation": "feminine"},
+    {"slug": "vroid-celeste", "name": "Celeste", "modelId": "5295951488219248595", "presentation": "feminine"},
+    {"slug": "vroid-free-vtuber", "name": "Free To Use Vtuber Model", "modelId": "3345334325262507560", "presentation": "feminine"},
+    {"slug": "vroid-jeanne-adelaide", "name": "Jeanne-Adélaïde", "modelId": "7169770912101796294", "presentation": "feminine"},
+    {"slug": "vroid-helen", "name": "Helen", "modelId": "3591428810231326281", "presentation": "feminine"},
+    {"slug": "vroid-auralithis", "name": "Auralithis", "modelId": "1332383967291184475", "presentation": "masculine"},
+    {"slug": "vroid-azary-sheelal", "name": "Azary Sheelal", "modelId": "2128557970269162780", "presentation": "masculine"},
+    {"slug": "vroid-boy-g", "name": "Boy G", "modelId": "892080065338290893", "presentation": "masculine"},
+    {"slug": "vroid-diana", "name": "Diana", "modelId": "8051846176995162483", "presentation": "feminine", "creatorStatesAge": 25, "creatorStatement": "ディアナ（Diana） 25歳 — a monster hunter (VRoid Hub description)"},
+    {"slug": "vroid-rinna", "name": "Rinna", "modelId": "5352976366004384332", "presentation": "feminine", "creatorStatesAge": 25, "creatorStatement": "25歳のOL — a 25-year-old office worker (VRoid Hub description)"},
+    {"slug": "vroid-yukako", "name": "Yukako", "modelId": "4871024136632385560", "presentation": "feminine", "creatorStatesAge": 24, "creatorStatement": "動物が大好きな24歳のOL — a 24-year-old office worker (VRoid Hub description)"}
+  ]
+}

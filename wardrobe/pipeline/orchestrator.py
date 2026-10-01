@@ -8,6 +8,7 @@ Stage order matches docs/PIPELINE.md exactly:
 
 from __future__ import annotations
 
+import json
 import logging
 import shutil
 import tempfile
@@ -16,7 +17,14 @@ from pathlib import Path
 
 from wardrobe.config import Settings, get_settings
 from wardrobe.domain.garments import TemplateCatalog
-from wardrobe.domain.jobs import CreateJobRequest, FailureReason, JobRecord, JobState
+from wardrobe.domain.jobs import (
+    CreateJobRequest,
+    FailureReason,
+    JobRecord,
+    JobState,
+    look_id_for,
+    private_marker,
+)
 from wardrobe.domain.looks import LookResult
 from wardrobe.domain.manifests import WardrobeLook, WardrobeManifest
 from wardrobe.engines import select_engine
@@ -91,6 +99,7 @@ class Orchestrator:
     # ------------------------------------------------------------------
     async def submit(self, request: CreateJobRequest) -> JobRecord:
         record = JobRecord.queued(request)
+        await self._mark_private(record)
         await self.jobs.save(record)
         await self.broker.publish(record.id, record.events[-1])
         await self.queue.enqueue(record.id)
@@ -112,9 +121,22 @@ class Orchestrator:
     async def run_now(self, request: CreateJobRequest) -> JobRecord:
         """Run a job to completion in the caller's task (CLI and tests)."""
         record = JobRecord.queued(request)
+        await self._mark_private(record)
         await self.jobs.save(record)
         await self.execute(record)
         return record
+
+    async def _mark_private(self, record: JobRecord) -> None:
+        """Mark a private job's look before any of its files exist.
+
+        ``/v1/assets`` serves by key, and a look's files are written during the run.
+        The marker goes first, so there is no moment in which a private look's VRM
+        is stored and not yet known to be private; and it is a stored object, not
+        memory, so a restart with persistent storage does not make it public.
+        """
+        if record.request.options.private:
+            marker = private_marker(look_id_for(record.id))
+            await self.store.put(marker, b'{"private": true}\n', content_type="application/json")
 
     # ------------------------------------------------------------------
     async def execute(self, record: JobRecord) -> JobRecord:
@@ -210,6 +232,21 @@ class Orchestrator:
             content_type="application/json",
         )
 
+        # W14. What the pack export needs and only this job knows: the rating comes from
+        # the plan, and the plan lives in the job record — memory, on a Space. Written beside
+        # the look, it survives the record and lets an export say what each look is.
+        from wardrobe.targets.pack import rating_for
+
+        await self.store.put(
+            context.key("look.json"),
+            json.dumps({
+                "rating": rating_for(context.plan),
+                "garments": [g.template_id for g in context.plan.garments] if context.plan else [],
+                "prompt": record.request.outfit.prompt,
+            }).encode("utf-8"),
+            content_type="application/json",
+        )
+
         look = LookResult(
             id=context.look_id,
             name=context.plan.name if context.plan else "Generated Look",
@@ -256,13 +293,15 @@ class Orchestrator:
                 prompt=look.prompt,
                 createdAt=datetime.now(UTC),
                 fitPassed=context.fit_report.passed,
+                private=record.request.options.private,
             )
         )
         await self.wardrobes.save(manifest)
 
+        # The stored copy is servable through /v1/assets, so it lists only public looks.
         await self.store.put(
             f"wardrobes/{avatar_id}/wardrobe.json",
-            manifest.model_dump_json(by_alias=True, indent=2).encode("utf-8"),
+            manifest.public().model_dump_json(by_alias=True, indent=2).encode("utf-8"),
             content_type="application/json",
         )
 

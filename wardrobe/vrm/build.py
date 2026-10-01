@@ -165,6 +165,12 @@ def build_body_mesh(body: BodyProportions, positions: dict[str, np.ndarray]) -> 
     arm_radius = max(h * 0.028, 0.02)
     leg_radius = max(body.hip_width * 0.21, 0.04)
 
+    # Each leg starts inside the torso, not at the hip joint. The torso is capped 2% of
+    # her height below the hips and the joint is 2.5% below, so the two met across an
+    # open gap of 7-9 mm; on every calibration body the dark background showed through
+    # it as a black line round the tops of her thighs once her trousers came off.
+    leg_top = float(positions["hips"][1]) - h * 0.01
+
     for side in ("left", "right"):
         sections.append(
             sweep(
@@ -179,7 +185,8 @@ def build_body_mesh(body: BodyProportions, positions: dict[str, np.ndarray]) -> 
         sections.append(
             sweep(
                 np.array(
-                    [positions[f"{side}UpperLeg"], positions[f"{side}LowerLeg"], positions[f"{side}Foot"]]
+                    [positions[f"{side}UpperLeg"] * [1.0, 0.0, 1.0] + [0.0, leg_top, 0.0],
+                     positions[f"{side}LowerLeg"], positions[f"{side}Foot"]]
                 ),
                 [leg_radius, leg_radius * 0.72, leg_radius * 0.5],
                 segments=10,
@@ -213,13 +220,19 @@ def _normalize_to_height(positions: dict[str, np.ndarray], mesh: Mesh, target_he
     return scale
 
 
-def build_vrm(body: BodyProportions, *, spec: str = "VRM1") -> bytes:
-    """Return a complete, self-contained VRM as GLB bytes."""
+def build_vrm(body: BodyProportions, *, spec: str = "VRM1", mesh_builder=None) -> bytes:
+    """Return a complete, self-contained VRM as GLB bytes.
+
+    ``mesh_builder(body, positions) -> Mesh`` replaces the calibration body's
+    surface and keeps everything else — skeleton, skinning, VRM blocks — as it
+    is: the fashion-fit forms (``wardrobe.vrm.fashion_body``) are the same rig
+    under a better-shaped skin. Absent, the calibration body, byte for byte.
+    """
     if spec not in {"VRM0", "VRM1"}:
         raise ValueError("spec must be 'VRM0' or 'VRM1'")
 
     positions = skeleton_positions(body)
-    mesh = build_body_mesh(body, positions)
+    mesh = (mesh_builder or build_body_mesh)(body, positions)
     _normalize_to_height(positions, mesh, body.height)
     bone_names = list(SKELETON_TREE)
 
@@ -268,7 +281,10 @@ def build_vrm(body: BodyProportions, *, spec: str = "VRM1") -> bytes:
         )
         for name in bone_names
     ]
-    bind_mesh(mesh, segments, falloff=2.0)
+    # A builder may mark its torso: those vertices never take arm bones, so posing
+    # the arms does not drag the side of her chest with them. The calibration body
+    # marks none and is bound as it always was.
+    bind_mesh(mesh, segments, falloff=2.0, torso=mesh.metadata.get("bindTorso"))
 
     joint_nodes = [segment.node for segment in segments]
     ibm = np.zeros((len(joint_nodes), 16), dtype=np.float32)

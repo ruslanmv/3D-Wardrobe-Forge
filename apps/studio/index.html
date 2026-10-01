@@ -43,7 +43,7 @@
                     </div>
                 </div>
                 <div class="caps" id="caps" aria-label="What this deployment can do"></div>
-                <button class="icon-btn" id="key-btn" type="button" title="API key" aria-label="API key">
+                <button class="icon-btn" id="key-btn" type="button" title="API key" aria-label="API key" hidden>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7a5 5 0 1 1-4.9 6H7v2H5v2H2v-3l6.1-6.1A5 5 0 0 1 14 7Zm2 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" /></svg>
                 </button>
             </header>
@@ -220,11 +220,12 @@
                         <label class="field">
                             <span>Before dressing</span>
                             <select id="base-body-select">
-                                <option value="replace-outer">Take off what the new outfit covers</option>
-                                <option value="preserve">Keep it on — layer over it</option>
-                                <option value="underwear-base">Take it off, underwear first</option>
+                                <option value="replace-outer">Replace what this look covers (recommended)</option>
+                                <option value="preserve">Keep her clothes on — layer over them (styling)</option>
+                                <option value="underwear-base">Underwear underneath, then the outfit</option>
                             </select>
                         </label>
+                        <p class="hint" id="base-body-note" hidden></p>
                         <button type="button" class="secondary" id="plan-btn" disabled>Check plan</button>
                         <div class="plan" id="plan-report" hidden></div>
                     </fieldset>
@@ -256,13 +257,13 @@
                             <input type="checkbox" id="passed-only" />
                             <span>Passed fit only</span>
                         </label>
-                        <button type="button" class="secondary" id="export-btn" disabled>Export bundle</button>
+                        <button type="button" class="secondary" id="export-btn" disabled>Export pack</button>
                     </div>
                 </div>
                 <div class="looks" id="looks"></div>
                 <p class="export-hint">
-                    Unzip into <code>vendor/wardrobe/</code> in 3D-Avatar-Chatbot, or into yourfriend.online's
-                    static wardrobe — the Try-On Haul drawer lists the looks with no configuration.
+                    A wardrobe pack: every look hashed and rated. Import it in 3D-Avatar-Chatbot with
+                    Try-On ▸ Import wardrobe pack, or ship it with <code>npm run wardrobe:import</code>.
                 </p>
             </section>
         </div>
@@ -278,6 +279,149 @@
                 <menu>
                     <button value="clear" type="submit" class="ghost">Clear</button>
                     <button value="save" type="submit" class="primary">Save</button>
+                </menu>
+            </form>
+        </dialog>
+
+        <!--
+            The account menu, bottom-left as in a chat app: always there, "Guest" until
+            someone signs in. Settings is open to everyone; signing in as admin needs
+            the server's WARDROBE_ADMIN_PASSWORD, and what an admin session may do is
+            decided in apps/api/admin.py, never here.
+        -->
+        <div class="account" id="account">
+            <div class="account-menu" id="account-menu" role="menu" aria-labelledby="account-btn" hidden>
+                <div class="account-menu-head">
+                    <span class="account-glyph" data-glyph aria-hidden="true"></span>
+                    <span class="account-label">
+                        <span class="account-name" data-account-name>Guest</span>
+                        <span class="account-sub" id="account-menu-sub">Not signed in</span>
+                    </span>
+                </div>
+                <button type="button" role="menuitem" id="account-settings">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)" /></svg>
+                    Settings
+                </button>
+                <hr />
+                <button type="button" role="menuitem" id="account-signin">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l1.4-1.4-2.6-2.6H20v-2H8.8l2.6-2.6L10 7l-5 5 5 5ZM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4V5Z" transform="matrix(-1 0 0 1 24 0)" /></svg>
+                    <span>Log in</span>
+                </button>
+                <button type="button" role="menuitem" id="account-signout" class="danger" hidden>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 17l-1.4-1.4 2.6-2.6H8v-2h9.2l-2.6-2.6L16 7l5 5-5 5ZM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4V5Z" /></svg>
+                    Log out
+                </button>
+            </div>
+            <button
+                type="button"
+                class="account-btn"
+                id="account-btn"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                aria-controls="account-menu"
+            >
+                <span class="account-glyph" data-glyph aria-hidden="true"></span>
+                <span class="account-label">
+                    <span class="account-name" data-account-name>Guest</span>
+                    <span class="account-sub" id="account-sub">Not signed in</span>
+                </span>
+                <svg class="account-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14l5-5 5 5H7Z" /></svg>
+            </button>
+        </div>
+
+        <dialog id="signin-dialog" class="login" aria-labelledby="login-title">
+            <form id="signin-form" method="dialog" autocomplete="on">
+                <button type="button" class="settings-close login-close" id="signin-cancel" aria-label="Close">×</button>
+                <span class="login-mark" aria-hidden="true">👗</span>
+                <h2 id="login-title">Welcome back</h2>
+                <p class="login-sub">Log in to Wardrobe Studio</p>
+                <div class="login-off" id="login-off" role="status" hidden></div>
+                <label class="field">
+                    <span>Username</span>
+                    <input id="signin-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+                </label>
+                <label class="field">
+                    <span>Password</span>
+                    <input id="signin-password" name="password" type="password" autocomplete="current-password" required />
+                </label>
+                <p class="form-error" id="signin-error" role="alert" hidden></p>
+                <button type="submit" class="primary login-submit" id="signin-submit">Continue</button>
+                <p class="login-foot">No account needed to design — you can keep going as a guest.</p>
+            </form>
+        </dialog>
+
+        <dialog id="settings-dialog" class="settings" aria-labelledby="settings-title">
+            <div class="settings-head">
+                <h2 id="settings-title">Settings</h2>
+                <button type="button" class="settings-close" id="settings-close" aria-label="Close settings">×</button>
+            </div>
+            <div class="settings-body">
+                <nav class="settings-nav" role="tablist" aria-label="Settings sections">
+                    <button type="button" role="tab" data-section="general" aria-selected="true">General</button>
+                    <button type="button" role="tab" data-section="declarations" aria-selected="false">
+                        Private mode
+                    </button>
+                </nav>
+
+                <section class="settings-section" data-section="general" role="tabpanel">
+                    <div class="settings-row">
+                        <div>
+                            <strong>Account</strong>
+                            <small id="settings-account"></small>
+                        </div>
+                        <button type="button" class="secondary" id="settings-account-action"></button>
+                    </div>
+                    <div class="settings-row" id="settings-key-row" hidden>
+                        <div>
+                            <strong>API key</strong>
+                            <small id="settings-key"></small>
+                        </div>
+                        <button type="button" class="secondary" id="settings-key-action">Change…</button>
+                    </div>
+                    <div class="settings-row">
+                        <div>
+                            <strong>Log-in</strong>
+                            <small id="settings-admin"></small>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-section" data-section="declarations" role="tabpanel" hidden>
+                    <h3>Private mode <span class="tag">this session only</span></h3>
+                    <p>Unlocks swimwear, underwear, see-through fabric and stockings, per avatar.</p>
+                    <div class="settings-locked" id="declarations-locked">
+                        <p>Guests can't turn on private mode. Log in to use it.</p>
+                        <button type="button" class="secondary" id="declarations-signin">Log in</button>
+                    </div>
+                    <ul class="declarations" id="declarations"></ul>
+                    <p class="settings-note">
+                        What you make with it is <strong>private</strong> to admin sessions. Logging out turns
+                        everything off.
+                    </p>
+                </section>
+            </div>
+            <p class="form-error" id="settings-error" role="alert" hidden></p>
+        </dialog>
+
+        <!-- Turning private mode on for an avatar: nothing changes until both boxes are ticked. -->
+        <dialog id="confirm-dialog" class="confirm" aria-labelledby="confirm-title">
+            <form id="confirm-form" method="dialog">
+                <h2 id="confirm-title">Turn on private mode?</h2>
+                <p>
+                    For <strong id="confirm-avatar"></strong>, in this session only: swimwear, underwear,
+                    see-through fabric and stockings.
+                </p>
+                <label class="confirm-line">
+                    <input type="checkbox" id="confirm-age" />
+                    <span>I am 18 or older</span>
+                </label>
+                <label class="confirm-line">
+                    <input type="checkbox" id="confirm-depicts" />
+                    <span id="confirm-depicts-label">This avatar depicts an adult</span>
+                </label>
+                <menu>
+                    <button type="button" class="ghost" id="confirm-cancel">Cancel</button>
+                    <button type="submit" class="primary" id="confirm-ok" disabled>Turn on</button>
                 </menu>
             </form>
         </dialog>

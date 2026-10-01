@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 2,
+  "id": "swim-one-piece-v2",
+  "name": "Tailored One-Piece Swimsuit",
+  "category": "swimwear",
+  "defaultForCategory": true,
+  "mesh": "procedural:bodysuit-block",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true
+  },
+  "lingerie": {
+    "block": "bodysuit",
+    "brief": {
+      "preset": "high-leg",
+      "waistElastic": "swim-8",
+      "legElastic": "swim-8"
+    },
+    "bodysuit": {
+      "neckline": "scoop",
+      "back": "scoop"
+    },
+    "straps": {
+      "widthMm": 12
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "one-piece",
+    "one piece",
+    "swimsuit",
+    "bathing suit",
+    "maillot",
+    "one-piece swimsuit"
+  ],
+  "description": "A one-piece cut as a brief carried up to a scoop neckline: leg openings, a lined gusset, straps over the shoulders."
+}

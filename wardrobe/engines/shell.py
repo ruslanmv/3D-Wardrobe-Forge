@@ -40,7 +40,17 @@ from wardrobe.engines.geometry_checks import (
 )
 from wardrobe.errors import FittingError
 from wardrobe.geometry.mesh import Mesh
-from wardrobe.geometry.procedural import FitParameters, build_garment
+from wardrobe.geometry.procedural import (
+    TROUSER_WAISTBAND_M,
+    FitParameters,
+    build_garment,
+    front_angle,
+    skirt_top,
+    trouser_top,
+    trouser_top_dip,
+)
+from wardrobe.geometry.waistband import add_waistband
+from wardrobe.lingerie import LINGERIE_KINDS
 from wardrobe.pipeline.context import PipelineContext
 from wardrobe.vrm.inspect import VrmSpec
 from wardrobe.vrm.skinning import bones_for_coverage, build_bone_segments, connected_components
@@ -114,6 +124,22 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         profile = torso_profile(_torso(context, whole), top, knee)
         if profile is not None:
             metadata["torsoProfile"] = profile
+    if kind in LINGERIE_KINDS:
+        from wardrobe.lingerie.landmarks import measure_landmarks  # it imports this package
+
+        # A pattern block is placed on her landmarks (wardrobe.lingerie.landmarks):
+        # bust points, the fold under the bust, sternum, waist, hips, crotch.
+        torso = _torso(context, whole)
+        bone_y = {name: float(p[1]) for name, p in context.measurements.bone_positions.items()}
+        profile = torso_profile(torso, bone_y.get("neck", 1.4), bone_y.get("leftLowerLeg", 0.4))
+        if profile is not None:
+            metadata["torsoProfile"] = profile
+        marks = measure_landmarks(torso, context.measurements.bone_positions, forward=metadata["forward"],
+                                  lower=metadata.get("lowerBody"), armpit_y=metadata.get("armpitY"))
+        if marks is not None:
+            metadata["lingerieLandmarks"] = marks.to_dict()
+            for warning in marks.warnings:
+                context.warn(f"lingerie landmarks: {warning}")
     params = FitParameters(
         measurements=context.measurements,
         clearance_m=clearance,
@@ -157,6 +183,11 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     index = BodyRadialIndex(body, surroundings=torso, y_range=heights)
 
     axis_mask = on_axis_mask(mesh, context.measurements)
+    # A pattern block marks what it places itself (a brief's gusset crosses under her,
+    # where pushing out from her vertical axis means nothing): the radial passes leave it.
+    placed = mesh.metadata.get("placed")
+    if placed is not None:
+        axis_mask = axis_mask & ~placed
 
     conform = float(artifact.metadata.get("conform") or 0.0)
     leg_conform = conform
@@ -173,6 +204,8 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     # Leg-worn pieces (stocking and legging tubes, trouser and catsuit legs) are
     # off the body axis; fit them round each leg's own bones instead.
     leg_worn = ~axis_mask & (mesh.positions[:, 1] < params.hip_y + params.height * 0.03)
+    if placed is not None:
+        leg_worn &= ~placed
     if leg_worn.any():
         conform_limbs(mesh, leg_worn, legs if legs is not None and legs.shape[0] else whole,
                       context.measurements.bone_positions, clearance,
@@ -183,9 +216,14 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     pushed = resolve_clearance(mesh, index, clearance, axis_mask)
     smooth_radial(mesh, index, clearance, axis_mask)
     settle_faces(mesh, index, clearance, axis_mask)
+    if kind in LINGERIE_KINDS:
+        from wardrobe.lingerie.fit import after_shell as seat_placed  # it imports this package
+
+        seat_placed(context, mesh, clearance)
     if pleats:
         # Set from just below the waistband on a skirt, from the hips on a dress.
-        pleat_from = params.waist_y - 0.03 if kind == "skirt" else params.hip_y
+        # From just below the skirt's own top: a low-rise skirt starts below her waist (P1).
+        pleat_from = skirt_top(params) - 0.03 if kind == "skirt" else params.hip_y
         apply_pleats(mesh, index, count=pleats, from_y=pleat_from, mask=axis_mask, clearance_m=clearance,
                      amplitude=float(artifact.metadata.get("pleatDepth") or 0.03),
                      retexture=context.plan.material.pattern == "none")
@@ -195,6 +233,20 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
                     from_y=params.hip_y, mask=axis_mask, clearance_m=clearance)
     after = measure_clearance(mesh, index, clearance, axis_mask)
     after.resolved = pushed
+    if kind == "skirt":
+        # Last, from the finished shape: a band built before fitting is pressed back
+        # into the skirt by the passes above (wardrobe.geometry.waistband).
+        mesh = add_waistband(mesh, index.axis_x, index.axis_z)
+    elif kind == "trousers" and str(params.metadata.get("rise") or "") in {"low", "ultra-low"}:
+        # P2. Low-rise jeans get a narrow waistband that follows their curved top edge. The
+        # yoke alone read as a thick blue belt: nothing marked where the band ended and the
+        # jeans began. Other rises keep the trousers they always had.
+        rise = str(params.metadata["rise"])
+        top = trouser_top(params, rise)
+        mesh = add_waistband(
+            mesh, index.axis_x, index.axis_z, depth_m=TROUSER_WAISTBAND_M + 0.002, section="trousers-yoke",
+            top_edge=lambda points: top + trouser_top_dip(front_angle(points, params), rise, params.height),
+        )
 
     # The shell's UVs are metres of fabric; one pattern tile covers its physical size.
     scale = float(context.plan.material.texture_scale or 0.0)

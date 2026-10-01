@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "id": "under-g-string-v2",
+  "name": "Tailored G-String",
+  "category": "underwear",
+  "mesh": "procedural:brief-block",
+  "coverage": [
+    "hips"
+  ],
+  "anchors": [
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true
+  },
+  "lingerie": {
+    "block": "brief",
+    "brief": {
+      "preset": "g-string"
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "tailored g-string",
+    "tailored g string",
+    "g-string",
+    "g string"
+  ],
+  "description": "A G-string: a small front panel, string sides, a string back.",
+  "optIn": true
+}

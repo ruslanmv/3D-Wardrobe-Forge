@@ -68,7 +68,7 @@ def _params(measured, **metadata):
 
 
 @pytest.mark.parametrize(("silhouette", "low", "high"), [
-    ("a-line", 1.25, 1.42), ("fit-and-flare", 1.38, 1.58), ("pencil", 0.88, 1.0), ("sheath", 0.95, 1.05),
+    ("a-line", 1.25, 1.42), ("fit-and-flare", 1.38, 1.58), ("pencil", 0.86, 0.92), ("sheath", 0.95, 1.05),
 ])
 def test_the_hem_is_the_silhouettes_ratio_of_her_full_hip(measured, silhouette, low, high):
     params = _params(measured)

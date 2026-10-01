@@ -1,4 +1,4 @@
-.PHONY: help install dev api worker test test-unit test-e2e test-blender lint fmt fixtures templates library studio assets assets-demo validate-assets docker clean
+.PHONY: help install dev api worker test test-unit test-e2e test-blender lint fmt fixtures templates library studio assets assets-demo validate-assets docker space clean
 
 PYTHON ?= python
 PORT ?= 8080
@@ -21,6 +21,7 @@ help:
 	@echo "assets        build a yourfriend.online bundle (AVATAR=... PROMPT=...)"
 	@echo "assets-demo   build a demo yourfriend.online bundle from a generated fixture"
 	@echo "validate-assets validate the default static bundle manifests"
+	@echo "space         deploy committed HEAD to the Hugging Face Space (HF_TOKEN=..., HF_SPACE_REPO=...)"
 
 install:
 	$(PYTHON) -m pip install -e ".[dev,preview]"
@@ -85,6 +86,9 @@ validate-assets:
 
 docker:
 	docker compose build
+
+space:
+	sh deploy/huggingface/deploy.sh
 
 clean:
 	rm -rf .pytest_cache .ruff_cache build dist *.egg-info output

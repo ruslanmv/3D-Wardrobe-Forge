@@ -16,6 +16,28 @@ class OutfitMode(StrEnum):
     GENERATED = "generated"
 
 
+class VisibleThongOptions(BaseModel):
+    """P1. A thong worn to show above the waistband of low-rise trousers ("whale tail").
+
+    Two garments, placed against each other: the thong's waistline is raised and the
+    trousers' lowered, so its side straps (and the V at the back) sit above their
+    waistband. ``style`` names the three usual amounts; ``thongRise`` and ``jeansRise``
+    set either side directly and win over it. It moves two waistlines and nothing else:
+    every garment is planned and gated as if typed, so the thong is underwear.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    #: subtle: straps just clear the waistband · classic: the Y2K whale tail · full: on the hips
+    style: Literal["subtle", "classic", "full"] = "classic"
+    #: The thong's waistline as a fraction of her crotch → waist span (wardrobe.lingerie.specs).
+    thong_rise: float | None = Field(default=None, alias="thongRise", ge=0.2, le=1.15)
+    #: The trousers' rise.
+    jeans_rise: Literal["low", "ultra-low"] | None = Field(default=None, alias="jeansRise")
+    #: P2. How far the side straps rise above the jeans' waistband, overriding the style's.
+    strap_above_mm: float | None = Field(default=None, alias="strapAboveMm", ge=10.0, le=90.0)
+
+
 class OutfitRequest(BaseModel):
     """What the caller asked for, in their own words."""
 
@@ -47,7 +69,10 @@ class OutfitRequest(BaseModel):
     hosiery: HosieryOptions | None = None
     suspender_belt: SuspenderBeltOptions | None = Field(default=None, alias="suspenderBelt")
     reveal: RevealOptions | None = None
-    #: A named hosiery look (wardrobe.hosiery.presets); explicit fields above win over it.
+    #: P1. A thong placed to show above low-rise trousers (wardrobe.pipeline.look_presets).
+    visible_thong: VisibleThongOptions | None = Field(default=None, alias="visibleThong")
+    #: A named look (wardrobe.pipeline.look_presets, wardrobe.hosiery.presets); explicit
+    #: fields above win over it.
     preset: str | None = Field(default=None, max_length=64)
 
 
@@ -122,6 +147,15 @@ class StylePlan(BaseModel):
     leg_cut: str = Field(default="", alias="legCut")
     #: "" | high | low — where briefs' waistband sits.
     rise: str = ""
+    #: P1. Where a pattern-block brief's waistline sits, as a fraction of her crotch → waist
+    #: span (wardrobe.lingerie.specs.RISES), overriding the template's. Set only by a look
+    #: that places underwear against another garment's waistband (the visible-thong block);
+    #: None everywhere else, so every other brief is drafted exactly as its template says.
+    brief_rise: float | None = Field(default=None, alias="briefRise", ge=0.2, le=1.15)
+    #: P2. A brief's waistline placed against the jeans over it (wardrobe.lingerie.blocks
+    #: whale_tail_targets): strapAboveMm, frontBelowMm, backAboveMm, strapMm, jeansRise. Set
+    #: only by the visible-thong block; None everywhere else.
+    whale_tail: dict | None = Field(default=None, alias="whaleTail")
 
     def to_dict(self) -> dict:
         return self.model_dump(by_alias=True)

@@ -3,14 +3,19 @@
  *
  * Same origin, so there is no base URL to configure on the Space. The one piece
  * of state is an optional API key, for a deployment running
- * `WARDROBE_AUTH_MODE=api_key`; it lives in this browser's localStorage and is
- * sent as a Bearer token on every call.
+ * `WARDROBE_AUTH_MODE=api_key` that does not trust this page (F5: the Studio a
+ * Space serves is trusted, and never asked); it lives in this browser's
+ * localStorage and is sent as a Bearer token on every call.
  *
  * Binary assets — the avatar, a look's VRM, its preview — are fetched through
  * `blobUrl()` rather than put straight into `<img src>` or a loader URL. An
  * `<img>` cannot send an Authorization header, so on a keyed deployment every
  * picture would 401. Going through fetch makes keyed and open deployments
  * behave the same.
+ *
+ * An admin session's token (the account menu, bottom-left) is the second piece
+ * of state. It lives in sessionStorage, so it dies with the tab, and it goes in
+ * its own header: a keyed Space needs the API key and the session together.
  */
 
 const KEY_STORAGE = 'wardrobe_studio_api_key';
@@ -37,6 +42,26 @@ export const auth = {
     },
 };
 
+const ADMIN_STORAGE = 'wardrobe_studio_admin';
+
+export const admin = {
+    get token() {
+        try {
+            return sessionStorage.getItem(ADMIN_STORAGE) || '';
+        } catch (_) {
+            return '';
+        }
+    },
+    set token(value) {
+        try {
+            if (value) sessionStorage.setItem(ADMIN_STORAGE, value);
+            else sessionStorage.removeItem(ADMIN_STORAGE);
+        } catch (_) {
+            /* storage blocked: the session will not survive a reload, which is acceptable */
+        }
+    },
+};
+
 export class ApiError extends Error {
     constructor(message, status, detail) {
         super(message);
@@ -50,6 +75,8 @@ function headers(extra = {}) {
     const out = { Accept: 'application/json', ...extra };
     const key = readKey();
     if (key) out.Authorization = `Bearer ${key}`;
+    const session = admin.token;
+    if (session) out['X-Wardrobe-Admin'] = session;
     return out;
 }
 
@@ -69,6 +96,8 @@ async function request(path, { method = 'GET', body, expect = 'json' } = {}) {
             (inner && typeof inner === 'object' && inner.message) ||
             (typeof inner === 'string' ? inner : null) ||
             `${method} ${path} failed (${response.status})`;
+        // The server no longer knows this session (expired, signed out, restarted).
+        if (response.status === 401 && inner && inner.reason === 'admin_required') admin.token = '';
         throw new ApiError(message, response.status, inner);
     }
     if (response.status === 204) return null;
@@ -103,9 +132,27 @@ export const api = {
             method: 'DELETE',
         }),
 
+    /** W14. The wardrobe as a v2 pack: what 3D-Avatar-Chatbot imports, hashed and rated. */
+    pack: (avatarId, passedOnly) =>
+        request(`/v1/wardrobes/${encodeURIComponent(avatarId)}/pack.zip?passedOnly=${passedOnly ? 'true' : 'false'}`, {
+            expect: 'blob',
+        }),
+
     bundle: (avatarId, passedOnly) =>
         request(`/v1/wardrobes/${encodeURIComponent(avatarId)}/bundle.zip${passedOnly ? '?passedOnly=true' : ''}`, {
             expect: 'blob',
+        }),
+
+    /** Whether there is an admin, and this tab's session if it has one. */
+    adminStatus: () => request('/v1/admin'),
+    adminSignIn: (username, password) =>
+        request('/v1/admin/session', { method: 'POST', body: { username, password } }),
+    adminSignOut: () => request('/v1/admin/session', { method: 'DELETE' }),
+    /** Declare, for this session only, that a library avatar depicts an adult (or withdraw it). */
+    adminDeclare: (slug, depictsAdult, ageConfirmed = false) =>
+        request(`/v1/admin/declarations/${encodeURIComponent(slug)}`, {
+            method: 'PUT',
+            body: { depictsAdult, ageConfirmed },
         }),
 
     /** An object URL for a protected asset. The caller owns it and must revoke it. */

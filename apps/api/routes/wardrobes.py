@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 
+from apps.api.admin import AdminDep
 from apps.api.dependencies import OrchestratorDep, SettingsDep
 from wardrobe.domain.manifests import WardrobeManifest
 
@@ -21,11 +22,11 @@ async def list_wardrobes(orchestrator: OrchestratorDep) -> list[str]:
 
 
 @router.get("/wardrobes/{avatar_id}", response_model=WardrobeManifest)
-async def get_wardrobe(avatar_id: str, orchestrator: OrchestratorDep) -> WardrobeManifest:
+async def get_wardrobe(avatar_id: str, orchestrator: OrchestratorDep, admin: AdminDep) -> WardrobeManifest:
     manifest = await orchestrator.wardrobes.get(avatar_id)
     if manifest is None:
         raise HTTPException(status_code=404, detail="wardrobe not found")
-    return manifest
+    return manifest if admin is not None else manifest.public()
 
 
 @router.get("/wardrobes/{avatar_id}/avatars.json")
@@ -33,21 +34,27 @@ async def get_wardrobe_as_avatar_manifest(
     avatar_id: str,
     orchestrator: OrchestratorDep,
     settings: SettingsDep,
+    admin: AdminDep,
     base_path: str = Query(default="", alias="basePath"),
 ) -> dict:
     """The wardrobe as a 3D-Avatar-Chatbot avatar manifest."""
     manifest = await orchestrator.wardrobes.get(avatar_id)
     if manifest is None:
         raise HTTPException(status_code=404, detail="wardrobe not found")
+    if admin is None:
+        manifest = manifest.public()
     return manifest.to_avatar_manifest(base_path or settings.public_base_url)
 
 
 @router.delete("/wardrobes/{avatar_id}/looks/{look_id}", status_code=204)
-async def remove_look(avatar_id: str, look_id: str, orchestrator: OrchestratorDep) -> None:
+async def remove_look(avatar_id: str, look_id: str, orchestrator: OrchestratorDep, admin: AdminDep) -> None:
     """Drop a look from the wardrobe. The source look can never be removed."""
     manifest = await orchestrator.wardrobes.get(avatar_id)
     if manifest is None:
         raise HTTPException(status_code=404, detail="wardrobe not found")
+    look = manifest.get(look_id)
+    if look is not None and look.private and admin is None:
+        raise HTTPException(status_code=404, detail="look not found in this wardrobe")
     if not manifest.remove(look_id):
         raise HTTPException(status_code=404, detail="look not found in this wardrobe")
     await orchestrator.wardrobes.save(manifest)

@@ -125,8 +125,8 @@ def test_a_legging_over_a_patch_of_unsampled_leg_is_still_outside_it():
     [
         # Both tied with the Lingerie Set ("lace") or the Oversized Coat and fell
         # to alphabetical order; a garment named outright now wins.
-        ("black lace bodysuit", "under-bodysuit-v1"),
-        ("black unlined lace high-leg bodysuit", "under-bodysuit-v1"),
+        ("black lace bodysuit", "under-bodysuit-v2"),
+        ("black unlined lace high-leg bodysuit", "under-bodysuit-v2"),
         ("black cropped jacket", "jacket-cropped-cardigan-v1"),
     ],
 )
@@ -140,7 +140,7 @@ def test_matching_carries_the_fabric_not_only_the_colour(template_catalog: Templ
 
     garments = plan_outfit_stack(OutfitRequest(prompt="burgundy mesh bralette + matching briefs"), template_catalog)
     bralette, briefs = garments.garments
-    assert briefs.template_id == "under-briefs-v1"
+    assert briefs.template_id == "under-briefs-v2"
     assert briefs.material.opacity == bralette.material.opacity < 1.0
     assert briefs.material.alpha_mode == bralette.material.alpha_mode
 

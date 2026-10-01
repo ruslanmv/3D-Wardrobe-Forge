@@ -1,26 +1,31 @@
 {
  "AvatarSample_A/01": {
   "Black Cropped Tee": "5e4de8e31227df2221f249b24dbef10f2fc39cf8a81b2174dd1820adbbabb239",
-  "Blue Straight Jeans": "67885bbbc1dd56b809a09c51382cd8ca30f382070026da1bfc5f4a7c00a58c82"
+  "Blue Straight Jeans": "b5a826f9853b1145ad4fbb37126edc99aa62291d1a74eb4560ec0a69cd944d2b"
  },
  "AvatarSample_A/02": {
-  "Red Bodycon Mini Dress": "a9e451ecdc05fc8be3290248ebadf4564004f7d83be5879bd851bea44e88eeb4"
+  "Black Slip Shorts": "9cac754ee65e3617a2204d0d6d3ed2daaf4fbc216036927b22272850bc54aeaa",
+  "Red Bodycon Mini Dress": "5aae663eb84b52d2191f68757fb5c5a0134dfb02265c6bce9bca620171166dd1"
  },
  "AvatarSample_A/03": {
-  "Pink Sequin Bodycon Mini Dress": "7883243c89f2ebc3156df71cb8880fa41774d59e59799bb350eae10494b1bb88"
+  "Black Slip Shorts": "9cac754ee65e3617a2204d0d6d3ed2daaf4fbc216036927b22272850bc54aeaa",
+  "Pink Sequin Bodycon Mini Dress": "78d9710b4f1a1e003f002d4569f5f66de50bdb310c7939cc8296838d578024b4"
  },
  "AvatarSample_A/04": {
-  "Silver Metallic Bodycon Mini Dress": "ee05f6a9a3ab990c437f6edf9fc6613c79abe99791faa2c6cd56ca2df111b684"
+  "Black Slip Shorts": "9cac754ee65e3617a2204d0d6d3ed2daaf4fbc216036927b22272850bc54aeaa",
+  "Silver Metallic Bodycon Mini Dress": "ec2a7275f66cf592cf99af12fdd3412691bfd01435ce33fc0f8829db9b30a772"
  },
  "AvatarSample_A/05": {
-  "Black Lace Bodycon Mini Dress": "60cbe85f1031eb7292e255b7eae9d57e062f906431eb222d838ce977b1a7fbef"
+  "Black Lace Bodycon Mini Dress": "20b802d3e762b468ee94dfee81e62ea39b9b9d6790ef17368f17f3c91ece3297",
+  "Black Slip Shorts": "9cac754ee65e3617a2204d0d6d3ed2daaf4fbc216036927b22272850bc54aeaa"
  },
  "AvatarSample_A/06": {
-  "Champagne Slip Dress": "b1af4f255d87ceb3935ffbd5046d01f6f58d1c6f340375bd1d8625e4478be02a"
+  "Black Slip Shorts": "9cac754ee65e3617a2204d0d6d3ed2daaf4fbc216036927b22272850bc54aeaa",
+  "Champagne Slip Dress": "1961901239c39080332ee40c0c1a9707fa432de59bb249aa689483ab50154f49"
  },
  "AvatarSample_A/07": {
-  "Blue Denim Shorts": "54878ca6e865b9cf83c842091273af0f2d822ac02e736e8366252006afdc56b2",
-  "White Cropped Tee": "d4dd24180837f4c0614e4d05086ae270a4a37a8b1cd2b96e62ab7ee47c541e09"
+  "Blue Denim Shorts": "b10178939327c298d67b48980031c7f043c48082c1eff14b88d335bad68f285c",
+  "White Cropped Tee": "cdbb9ce89d6dddcbf7783b4781368019cc1ff8a66115f2335a16e9604d612e69"
  },
  "AvatarSample_A/08": {
   "Black Cropped Tee": "daba96451d7cc1938701244a291b2405d70b5b4e69888101f871f31107cd6564",
@@ -30,51 +35,61 @@
   "Black Glossy Catsuit": "20a8b6d044bc78d36f79f4808becd3896c44c36b9cafe89a6924fb8ec47f86bb"
  },
  "AvatarSample_A/10": {
-  "Navy Pleated Mini Skirt": "0e8d152f8f5bfec4ae45c995f984efaebc53a907fed93b79342cb828071037fe",
-  "White Halter Crop Top": "e9ae7f302cb37ab7afae335044ee754bd77b2dcba192cfb904716c1299931331"
+  "Black Slip Shorts": "9cac754ee65e3617a2204d0d6d3ed2daaf4fbc216036927b22272850bc54aeaa",
+  "Navy Pleated Mini Skirt": "0f2ebe19704f2cb9c8093f00e5066dfc16898a4d753bbeef54622706cdd740cb",
+  "White Halter Crop Top": "e43cddcaa3044f770014634071af5735804cb3d10a742e262b4ce3ab3cf28781"
  },
  "AvatarSample_A/11": {
-  "Black Cropped Cardigan": "232c51e063c329910694387ad96fb7b25f38d0d11561e002c45f9a2239bd34e5",
-  "Black Thigh-High Stockings": "21861e5298675777eb3a9d9b083c30051dff3fd830c96a52d2e09a5970d74f06",
-  "Red Skater Mini Dress": "aafddf0e3193777cbd2e14eabfbe33eb20102485e8a7e5c008c57f2b759ad6f1"
+  "Black Cropped Cardigan": "c30d80b264fe8271a00cc4fa9f52a1ab9faa3d6882c2b2d18f242fe7cc63ad6e",
+  "Black Slip Shorts": "9cac754ee65e3617a2204d0d6d3ed2daaf4fbc216036927b22272850bc54aeaa",
+  "Black Thigh-High Stockings": "d667748da25899265c1017cd09883379939b1a46729e80f593bdb584e1091be7",
+  "Red Skater Mini Dress": "41b9696aed416d972c3109cf9a6781a607bc0fa871093eeb593fecb520ccbe50"
  },
  "AvatarSample_A/12": {
-  "Yellow Maxi Sundress": "f34d1b4afaa7e977e4b2e2ee2674f832d7c256e1f1da5fc73bbe483b1350ba43"
+  "Black Slip Shorts": "9cac754ee65e3617a2204d0d6d3ed2daaf4fbc216036927b22272850bc54aeaa",
+  "Yellow Maxi Sundress": "5d648e1e1eee0636556f527d232af74c4ce1d18c202bf4f434d017a19d95c776"
  },
  "AvatarSample_A/13": {
-  "Blue Baggy Jeans": "03aec7d033408bb27b252c04d2b7ead36b6f65bcc350f9127e3e82843266d859",
-  "White Tube Top": "dba53a7fc60ca78dc951c97f2305a617185855341560b2cefd130cdbc68b93ad"
+  "Blue Baggy Jeans": "6eddf96a0a2a13c00bc372d42b1fdfe7675562bb987f2c096c2356ea08bbadc4",
+  "White Tube Top": "f0556d1412458d828b121c636d9739c99426f61d0572b4569d562778dbe44b1d"
  },
  "AvatarSample_A/14": {
-  "Beige Lightweight Trench": "07c954f2a044290bc7b5cdf16120383ab80218133d5899cff730a4a17e880c70",
-  "Black Bodycon Mini Dress": "27ea5fd4e9db8e8f7c89a1ada898ec070de13f29a1d55a6210932c832b62bf86"
+  "Beige Lightweight Trench": "3f9668c81374f18b5baae8b2d75c3c85392c2ae81fe23e87da7c95b155229208",
+  "Black Bodycon Mini Dress": "3c75620543250f4044d3ef259b56f94870e77b2d7f0c75f002c8df19abbcf2be",
+  "Black Slip Shorts": "9cac754ee65e3617a2204d0d6d3ed2daaf4fbc216036927b22272850bc54aeaa"
  },
  "AvatarSample_A/15": {
-  "Black Cropped Tee": "e4a9c5eb9c496a0496b79375a48de5828649ed913586e98185486a05f1637bc9",
-  "White Tiered Maxi Skirt": "86cdcbe223790cf8e930ba96dd7035fbaa868e2bed2c53dcf0fa029b27322f52"
+  "Black Cropped Tee": "3c5bff39badc6454c4deec5e94bdd6b8d88f919ace1da38983dd662b83129083",
+  "Black Slip Shorts": "9cac754ee65e3617a2204d0d6d3ed2daaf4fbc216036927b22272850bc54aeaa",
+  "White Tiered Maxi Skirt": "7d4d543a93a7122bc5c84a03eace752d7738dfd4a224dfcbbed0db599fd02c72"
  },
  "AvatarSample_B/01": {
   "Black Cropped Tee": "7cfde85ec5bc8f9801bf702af8ecfa5afcf62cd0fdb64a85fd8102c2d55b1594",
-  "Blue Straight Jeans": "129aa13fb6b4fc6d9fdff9233af2a0324c104c1bed31116ce7edbe84d3083590"
+  "Blue Straight Jeans": "23fe799e2bc9bc074f7842593adc979a44fdeff7f6f5fcb52459a25fb628d49a"
  },
  "AvatarSample_B/02": {
-  "Red Bodycon Mini Dress": "4269dad4f8d64a01c796a13d6fc862a6a53c807502f4f8e3235183c8d6e562ba"
+  "Black Slip Shorts": "9e78537f61d5c3279862504ee796b09fc014ae512d3315d0ebd1eaa7e76225ac",
+  "Red Bodycon Mini Dress": "03a042cf98fab9b9acbce7c859ee9aeea994538a68100d000c0f1b6ee9e0acd2"
  },
  "AvatarSample_B/03": {
-  "Pink Sequin Bodycon Mini Dress": "95501e3a6ffa436bc909391e4838198f0785f23c6b66829dfa062dc7a8ff1ff2"
+  "Black Slip Shorts": "9e78537f61d5c3279862504ee796b09fc014ae512d3315d0ebd1eaa7e76225ac",
+  "Pink Sequin Bodycon Mini Dress": "b33e19541b02cb37c642d4ad9bb6fa2d5b6aef9cbd5b069db8be0263904575ea"
  },
  "AvatarSample_B/04": {
-  "Silver Metallic Bodycon Mini Dress": "9555dd71da1024c5831acde262c119fd712360fb67763758873a794eaac411aa"
+  "Black Slip Shorts": "9e78537f61d5c3279862504ee796b09fc014ae512d3315d0ebd1eaa7e76225ac",
+  "Silver Metallic Bodycon Mini Dress": "5eaf184f16c79771718182f5a2663f6e753f8577b6f12095306cdfa8fb8701b1"
  },
  "AvatarSample_B/05": {
-  "Black Lace Bodycon Mini Dress": "9fac31edc943641ae8aafcc253087fc89bbe78850e976bcf38222350fc9d90cf"
+  "Black Lace Bodycon Mini Dress": "94946b20e78ce64e3278b3a028b9e2098679f56aea3dc811dc363d7fdd482142",
+  "Black Slip Shorts": "9e78537f61d5c3279862504ee796b09fc014ae512d3315d0ebd1eaa7e76225ac"
  },
  "AvatarSample_B/06": {
-  "Champagne Slip Dress": "a4eef143beea4662c2924bd5b4f3e8f0d687e0b1e3fafde4a877d6f5cf7afc79"
+  "Black Slip Shorts": "9e78537f61d5c3279862504ee796b09fc014ae512d3315d0ebd1eaa7e76225ac",
+  "Champagne Slip Dress": "a071598ec802f785d6be0a85029b787397df9003eb7477a1b6b1d366b387cf82"
  },
  "AvatarSample_B/07": {
-  "Blue Denim Shorts": "33393fc3831b415653b533fd0fdf749edf8a888e6bfb6dffeedf30e6a72e5fc2",
-  "White Cropped Tee": "587bf04635457fef9c33bc6efa514583a3bea133839ab00a7d88c4ea1501a93a"
+  "Blue Denim Shorts": "b858020dbb6080bf0efd6d6e2ab0b052ceb8141767b2369c6ce6d009ac8cb7b6",
+  "White Cropped Tee": "606323753b2a032f9d9df3b863a033bfdb14a1b5cb27dcdbb693d57d9a893adb"
  },
  "AvatarSample_B/08": {
   "Black Cropped Tee": "9b15be48ef4d98d5a9ed567584c5c182be38bbf97f5e51611bb0d713acdff7a2",
@@ -84,51 +99,61 @@
   "Black Glossy Catsuit": "23963e7d373e63988e9f0c44d7af77708ec11af599860d75c9d13bd0efc6d222"
  },
  "AvatarSample_B/10": {
-  "Navy Pleated Mini Skirt": "e6ace20c989761e46e86e0a808947f80d7de48e7b7eed07ef0d45162a37cb78a",
-  "White Halter Crop Top": "7cd836fd9dcc5214d48a44053c45144b16f1c24a165f51ba8c5ecf8399e46160"
+  "Black Slip Shorts": "9e78537f61d5c3279862504ee796b09fc014ae512d3315d0ebd1eaa7e76225ac",
+  "Navy Pleated Mini Skirt": "cb4cbec11b7b3e6da7c5cde1b2c66be7adfc4930e7f9d737ac8f21db73d213e4",
+  "White Halter Crop Top": "c7d29d05d8f43f4ac6336c6fa5c0d03f3a05d8e0f5c08f0489ccda363f553379"
  },
  "AvatarSample_B/11": {
-  "Black Cropped Cardigan": "cd36a23b2b0659f7d67b7b1b7e9a6f576d8032a7c18201e196461556a149b8a6",
-  "Black Thigh-High Stockings": "9aec6ce0e8e395d7e382cda50c487a7f9766a540a816d73f55c88858ab1fcef3",
-  "Red Skater Mini Dress": "f886186170fc6c51b959e9c7daaf17fc75491ff99337b9613d0fc4a50b151b7d"
+  "Black Cropped Cardigan": "7e72bd75828733c0766d00900bc86e53f537fb4a2db516da4c17a8fde8ccaddd",
+  "Black Slip Shorts": "9e78537f61d5c3279862504ee796b09fc014ae512d3315d0ebd1eaa7e76225ac",
+  "Black Thigh-High Stockings": "11740bc0eda749082acc793e2fab88c0538c0e362e1d3870df2c2baa56b76a48",
+  "Red Skater Mini Dress": "5f35380cea67d6147a9147e38166b580e3711ef976c76518acb5776c45534fbe"
  },
  "AvatarSample_B/12": {
-  "Yellow Maxi Sundress": "8c509cc85ee43d0bd67509bd0b88f206306e12d3c279f2f6025291f4e46db652"
+  "Black Slip Shorts": "9e78537f61d5c3279862504ee796b09fc014ae512d3315d0ebd1eaa7e76225ac",
+  "Yellow Maxi Sundress": "af1c2a70944e4e4e53c9c5c841f69287f5d4d60a2cf2396332cba41af9391915"
  },
  "AvatarSample_B/13": {
-  "Blue Baggy Jeans": "f214fd600bc09aa9346a998b1cb818b0f48f889471d4f3cb093630e8b554cce3",
-  "White Tube Top": "09155217189adb2b22124207136e29e97902a66d0e9494ae3bed19f9ac4f939b"
+  "Blue Baggy Jeans": "741778c8343b7b736ae5d145ce97b2ae7ce974937736a369a5d81b9777677f9b",
+  "White Tube Top": "3883558f815604878e0e9a90d4122e82ff88acf5cd3f3f74fd383e87a00404ce"
  },
  "AvatarSample_B/14": {
-  "Beige Lightweight Trench": "1b38694f7b650814881b155f92b5936bc7517cb7a5e85e04be20b2c4a2d868ca",
-  "Black Bodycon Mini Dress": "2b817c5d2673bde6752d29f853ee2294b169dec568df78e879a95a02c45a2029"
+  "Beige Lightweight Trench": "86d50db30923f4bb97c9d6d62246bf1fb4a7e9725c505a47d1296713989a858a",
+  "Black Bodycon Mini Dress": "f5ce7328eb752bf07529e5876b943491ac043110c576b4589db4fe6301caebec",
+  "Black Slip Shorts": "9e78537f61d5c3279862504ee796b09fc014ae512d3315d0ebd1eaa7e76225ac"
  },
  "AvatarSample_B/15": {
-  "Black Cropped Tee": "fef250750107116994d99ed797e4d56eaaed263b4af47ca6f62a14a66617a11f",
-  "White Tiered Maxi Skirt": "8559a25d8a91d7cea6880776ec6a88392a86b69b09c4607fdea45f4574901c05"
+  "Black Cropped Tee": "6b3563d5d1780aa22de8e9e1484cd9cdeb728df2262f84516cb18ba8cdca4628",
+  "Black Slip Shorts": "9e78537f61d5c3279862504ee796b09fc014ae512d3315d0ebd1eaa7e76225ac",
+  "White Tiered Maxi Skirt": "7b86a9c5a219f601ef04746e38e5e6d040167370df306e0d090df02d58bb5291"
  },
  "AvatarSample_C/01": {
   "Black Cropped Tee": "fb03a0f6b7807c958d1e0368fcd5383dab6bd87cde3410903a75794774c177c8",
-  "Blue Straight Jeans": "8d6f03fb6cd8b8259b03f9df29443b29a1e4e88156537c73f5a54ec9f86bc375"
+  "Blue Straight Jeans": "18603e0e14feffeba37b35399602be90515d316898322f6be3255e3889c8c93c"
  },
  "AvatarSample_C/02": {
-  "Red Bodycon Mini Dress": "952b433baa1eff9bd64b5a1212ce84f1db21ce5cfdf268e9ccc20ebb8187c3f2"
+  "Black Slip Shorts": "6ac3d45075f218a1f05b88111fb97f715a7b1ac4bdb0aedd3e7781bbdd834c19",
+  "Red Bodycon Mini Dress": "6e7d6e5ada8a93c93b8186878967e9b6ca3cab7d3c8c223964d89b687c408979"
  },
  "AvatarSample_C/03": {
-  "Pink Sequin Bodycon Mini Dress": "c688452efa826a19a2e66f415c7adba1cfdb3f0849131aa6bc8b3d411bc3b0ee"
+  "Black Slip Shorts": "6ac3d45075f218a1f05b88111fb97f715a7b1ac4bdb0aedd3e7781bbdd834c19",
+  "Pink Sequin Bodycon Mini Dress": "5622378900b7638397bc91a71e7e23e0497058e8a5fbbcf371f0c8d8b97a5c6c"
  },
  "AvatarSample_C/04": {
-  "Silver Metallic Bodycon Mini Dress": "6fd54cbc8991daca539a79703988e1829b5bdf9544bb56cb1222b5971b7c6b8e"
+  "Black Slip Shorts": "6ac3d45075f218a1f05b88111fb97f715a7b1ac4bdb0aedd3e7781bbdd834c19",
+  "Silver Metallic Bodycon Mini Dress": "9567a75051c48e4534bad4558cf8b5bed195c9053352365e07ba85346da2d721"
  },
  "AvatarSample_C/05": {
-  "Black Lace Bodycon Mini Dress": "24c3a774b83f7046c27b9ca49e498254a3c500f8589732e7f1ba7b2692765eba"
+  "Black Lace Bodycon Mini Dress": "05dda42b52aed1127e9587bb31aa1ccad993aac898421a690fab94af190bc9a1",
+  "Black Slip Shorts": "6ac3d45075f218a1f05b88111fb97f715a7b1ac4bdb0aedd3e7781bbdd834c19"
  },
  "AvatarSample_C/06": {
-  "Champagne Slip Dress": "dba9eaa77f88c9aeb3f998535ad31193bc6cfda14c6ea3d77d58c4234d90048e"
+  "Black Slip Shorts": "6ac3d45075f218a1f05b88111fb97f715a7b1ac4bdb0aedd3e7781bbdd834c19",
+  "Champagne Slip Dress": "49177d96b97d251c9bbc352dddbde5240b7f30d2d32db607b8a13f614ad49a88"
  },
  "AvatarSample_C/07": {
-  "Blue Denim Shorts": "967661af8954c4698a220b072d22b71e387befae088429b179986b3189f1a87f",
-  "White Cropped Tee": "2e0a1c0eafeed65c8739e054424de0dfbe879fe89792258ab8136c4e0ecafa20"
+  "Blue Denim Shorts": "42f87b3fdc4552e0b24a624c44b4bf3a010580f3bf3ddfcde5faba43083bce60",
+  "White Cropped Tee": "ce83cfc29a6d6244afe6a965a4ae806cbed039e5ced760e2eb4ff42409a4644b"
  },
  "AvatarSample_C/08": {
   "Black Cropped Tee": "26c6cb510fcec0936cf67211172d2b1dcec36bfaa9fa2b7ceec2ef89245f9fa2",
@@ -138,32 +163,37 @@
   "Black Glossy Catsuit": "4b6b344273aa2f807f955dfa83c12f5a2fc5ee6dc39b1e5f16b67aaa9940303e"
  },
  "AvatarSample_C/10": {
-  "Navy Pleated Mini Skirt": "204672d3b4bb584f8ad564693a0e75361ca9bef4e38faef66c6a5d3cea55b81e",
-  "White Halter Crop Top": "3d531b76ef5de83cf65d608db2aeb596b138f6c2c0c1ae6fe839c4ca67e81748"
+  "Black Slip Shorts": "6ac3d45075f218a1f05b88111fb97f715a7b1ac4bdb0aedd3e7781bbdd834c19",
+  "Navy Pleated Mini Skirt": "04d7764e0f56418bad5ab14b31bfd9ddd94944ef1a1a344530cb68694c6134f1",
+  "White Halter Crop Top": "2eea077a23d9582e162b5dd0179e597cf4de9f45e36fc2896c1a41849b9592d5"
  },
  "AvatarSample_C/11": {
-  "Black Cropped Cardigan": "dd2fa95e26c074fc602c205371f754941e7ac6ff20bf0f2f1b69c9df91c2e724",
-  "Black Thigh-High Stockings": "10768ebc448eb150003ba1b44953bf6fea744d299eea9d21cf00223acacd68d1",
-  "Red Skater Mini Dress": "1b484faaf75bcff04ba57ccb5022bd053ce1b16598522453b61765a11844e957"
+  "Black Cropped Cardigan": "0262bef8a44987cac206468bd5e5ae0c15898c4c0c37a1f29349421361e60bca",
+  "Black Slip Shorts": "6ac3d45075f218a1f05b88111fb97f715a7b1ac4bdb0aedd3e7781bbdd834c19",
+  "Black Thigh-High Stockings": "1fd5225ab6927591f9a8b0d5994d126db64d326c9087d23216d7c100796fb3f9",
+  "Red Skater Mini Dress": "2fc81d143a89271138d645a61604db5dcf1adce4b07eebd0fad3a534e4079258"
  },
  "AvatarSample_C/12": {
-  "Yellow Maxi Sundress": "e02811cda23b012b71582397658ad4145420ae9c1d827657b5c329db4d01fc00"
+  "Black Slip Shorts": "6ac3d45075f218a1f05b88111fb97f715a7b1ac4bdb0aedd3e7781bbdd834c19",
+  "Yellow Maxi Sundress": "1b1bd7958c98d8e72c762c8b8a6bd89f346b64918cbe0b2eec5ceca49bab3a4c"
  },
  "AvatarSample_C/13": {
-  "Blue Baggy Jeans": "87b1c2dfe5aafa17e1d41ae059b2b70da6ccf0966d8da50d484599ae2e39b075",
-  "White Tube Top": "c78d98e866a28ec18acd9230c92f418e4f0a10fe6ceab3459bc4fb4c02f77e08"
+  "Blue Baggy Jeans": "7b57b3db45f0133aa411cf34bbe7a27d3977faf49da5a234c10eba940ec3aa89",
+  "White Tube Top": "00e0e22cd74f7ce7e349189a3d304d30eeeb92bb2b115ebb730da8677f54cec9"
  },
  "AvatarSample_C/14": {
-  "Beige Lightweight Trench": "cf865287a4b5c4d89c3e8bf1ea9d1561671936b4c7d59f89a537c0edf0a246c5",
-  "Black Bodycon Mini Dress": "b0f70d4bd1135b9d74ecb9f1fec0e41550fffb389a1e55a5d331b284bd2757f3"
+  "Beige Lightweight Trench": "854e827ac66d3b5d68dfdf786b01c553e209f3f1b20b40a505862c6aa77626e1",
+  "Black Bodycon Mini Dress": "ae37822edd06ff92884398dfeeb05fcba9db301590317584c257ce0b3ab05f06",
+  "Black Slip Shorts": "6ac3d45075f218a1f05b88111fb97f715a7b1ac4bdb0aedd3e7781bbdd834c19"
  },
  "AvatarSample_C/15": {
-  "Black Cropped Tee": "00028e32024b480c0e3ff2bd687441f7c120b0f1609051b3055d358303699423",
-  "White Tiered Maxi Skirt": "78cb454276efcdf919f72901c141571c838b75d0377b12df713220a81b120813"
+  "Black Cropped Tee": "e1406f5d0ea70b96262db0047d9defb7f14a11648228b0d17fd14bd61ed802ac",
+  "Black Slip Shorts": "6ac3d45075f218a1f05b88111fb97f715a7b1ac4bdb0aedd3e7781bbdd834c19",
+  "White Tiered Maxi Skirt": "d58c801b0d1bd98d26993a05589a6cd907c9f73ae17618b7f3fd229948265e37"
  },
  "fem_vroid/01": {
   "Black Cropped Tee": "74f60a89a68815157fc9c720badb9b5f1ed458c687113dc67b83182c492a1441",
-  "Blue Straight Jeans": "05f60e1dc36a00acf1a0336c0bfb7bf28a79d04f3a1b1f9c6818ac4ef0348ca8"
+  "Blue Straight Jeans": "7f08b0062944ac35aef9413fc19b78393c046dc7c9aac143fe643d8378e30f6a"
  },
  "fem_vroid/02": {
   "Red Bodycon Mini Dress": "134592740a42b56493bad9b18261ef65358cb613a5632a66602889699c2bbf05"
@@ -181,8 +211,8 @@
   "Champagne Slip Dress": "646b7953e657720a245b862594645c6d5fb40cd39168a866b9da8b80320ec7bf"
  },
  "fem_vroid/07": {
-  "Blue Denim Shorts": "4ce370bd0b6defc3834f45eb97f2965daa12f9bd91832d26f860be073d7a7369",
-  "White Cropped Tee": "9338aec415f96330f15de92f219e1e5a1cb91041f9a92d3457799659e3f99c4d"
+  "Blue Denim Shorts": "997290b5240b8c82e2f3cdefe79c01682ee7aec45e401f7f1695bb0fd029a50e",
+  "White Cropped Tee": "49b0e80a8a0a0ac259b611b99e00682c6aaee275df0f5b0b49242ffa08d9c83f"
  },
  "fem_vroid/08": {
   "Black Cropped Tee": "86e3a9c3e66eb157e207809879ebd240e9b7071e8264c8f3d191ab54912b4afc",
@@ -192,8 +222,8 @@
   "Black Glossy Catsuit": "41ff61704a0d47d6a2e5d7bfe02be80a7562e8e81e8dbc5eac15008c55819766"
  },
  "fem_vroid/10": {
-  "Navy Pleated Mini Skirt": "078b5e757e385b61a1e7f17f1c93c80809b66aa432adb852e7252977daa8c918",
-  "White Halter Crop Top": "8d4fee4359420dcce171b86b315bccc449d565d57fbf4368881b6deae6d989cc"
+  "Navy Pleated Mini Skirt": "be7d9ff7bc733122ecdf36b7ada51b65fd77c3ff7f88195bc91fe5f48d0f089f",
+  "White Halter Crop Top": "8f2c5e87a46b71ba90aa14529ba210ad0bfbbf585e89f92c1fd22804e995b436"
  },
  "fem_vroid/11": {
   "Black Cropped Cardigan": "cb4e3e5e52212621de6af0905c70b3d038783385a29015e5b80ec9d4e23eb148",
@@ -204,96 +234,97 @@
   "Yellow Maxi Sundress": "6d6775b132560cf30efe865977b6541814b0e68514e7d114893789f64b744f89"
  },
  "fem_vroid/13": {
-  "Blue Baggy Jeans": "6b8fcbee7f0349e3c5c59dc91bc468154a372132ea729d69db6044537335613b",
-  "White Tube Top": "102aa0a3676fb6b6694c7b0f8e87693f286aec872c47efec3f504316dcdab851"
+  "Blue Baggy Jeans": "200362974a4042786200482d6de11cdef39a1165e3092858c42e16337e69babf",
+  "White Tube Top": "41888c0d369afba5c8dd44aa379b40bda31383f365510163e5bbaccbc8200215"
  },
  "fem_vroid/14": {
   "Beige Lightweight Trench": "a839038dc56af8a9be591ce7902de63d36ae73fcfacf3a8a0ff81ffe0875f863",
   "Black Bodycon Mini Dress": "59956fbbfe8d1c142bc1cd744ba16fb5b8bfac808b8378160a60f57ec87a24d8"
  },
  "fem_vroid/15": {
-  "Black Cropped Tee": "95769742f66ffdeb523314a6953fb54827ccb91d9baaac5638d4d02129272e4e",
-  "White Tiered Maxi Skirt": "b7c02068b04ae791df7b5d4e55fd058c82d779be983a7b10ecd1940dedc69c63"
+  "Black Cropped Tee": "16e0793261db1b64fb9e569f08a99677bffe61c6cb68d4fecb88a794555ae0b3",
+  "White Tiered Maxi Skirt": "1042b13c986b67204c32d1231c93b775832d3d2ebd21429d962848e5c82eeb71"
  },
  "mannequin/01": {
   "Black Cropped Tee": "4530e4eb2c94ec479c3a8b848b3247a81671812f6e31e244d6e737880a5a765e",
-  "Blue Straight Jeans": "f1458c58c1749bc62e8a6849b1d9f69f772635ccfa8d7e47fca9ee8a4c229efa"
+  "Blue Straight Jeans": "b0c9c02c12ac7f99ed83a8be4919a11d40d4d26bca7e1b196b021ac9a2a5d342"
  },
  "mannequin/02": {
-  "Black Bralette": "b4140733fe5a117330e8c3b32171fb767aacb825ec6d012a082cb07efaf9a358",
-  "Black Briefs": "b89e30410a8420234d124d10febdc89d2574ff6654ef8eecb67f1652f0b7d44f"
+  "Black Tailored Briefs": "d52c76947ac70effe3b225307a9e2d77a4684b4a85b4d610b04fe8d10d3bd282",
+  "Black Tailored Triangle Bralette": "1673dcbd2183e13d851885efcae9f8877f29043822aa29aa3101e2dab0dbeba4"
  },
  "mannequin/03": {
-  "Black Lace Bralette": "63339d41ba14405e6305cb43856649b396dc25b83e61e32fbbedc59109a85192",
-  "Black Lace Briefs": "ae34081c2df4074806fe38667ce9944777e5066e2601a927c2f656bb51625bbe"
+  "Black Lace Tailored High-Leg Briefs": "a099e9209d7ede41bd36cf911de8b69714b14c1e28a97217413afcc49a0dff81",
+  "Black Lace Tailored Triangle Bralette": "a4f0af8d406ac142959c039d3091c7c81cdfca588e875f89a87147beb954db3d"
  },
  "mannequin/04": {
-  "Burgundy Sheer Bralette": "64cead1036ba9f2833a747482177326d65aa45f2608a3534f356660781594103",
-  "Burgundy Sheer Briefs": "a80aacd079cc64378b190561fc38da0c0a19d8f44b7618e22af55def6e77a475"
+  "Burgundy Sheer Tailored Briefs": "975ae87b8488381ac1cb12c8f770c86604a66a3684ed69357af2d745e2cf952c",
+  "Burgundy Sheer Tailored Triangle Bralette": "6e0c73d1e6be1a7bf10303bead04527a80602569aef5077ebaf3e131f17964f0"
  },
  "mannequin/05": {
-  "Black Bralette": "5c6a7642b88a6a4a334e82d986247539070cb011afbe22253495101213d56dd5",
-  "Black Micro Briefs": "0b4f1f4e925e995d4d625a18e80f04b0bc1722cdb41cde48a3bf21bfbcb02639"
+  "Black Micro Tailored Briefs": "f590b278676980aff0ed542529422d843cd2ad4277418bfcd96c954eaf73669f",
+  "Black Tailored Triangle Bralette": "a95c9dcb4b7fb78fccb88053f6140e7d393c4bad7bb4e65fd6b35a37e589f04e"
  },
  "mannequin/06": {
-  "Black Bralette": "7b6ffce17274f491242ff9ea6df8e9bef0e0721141f26de743109603383082a0",
-  "Black Briefs": "85419f7919a680075cecbc40612cdf03d2b8b34bcf26b310c4c4c995488014d0",
-  "Red Sheer Bodycon Mini Dress": "1e314f3923777a3900bdb73db0c2f3dd841f538060db2e9ea5f6c15165694c52"
+  "Black Tailored Briefs": "0dfe643c05518ceb028440c57bf78a90c787d2d2f28213ae62099650b4cf04da",
+  "Black Tailored Triangle Bralette": "a95c9dcb4b7fb78fccb88053f6140e7d393c4bad7bb4e65fd6b35a37e589f04e",
+  "Red Sheer Bodycon Mini Dress": "b408744608d4ae82ecec9f6d2ad57165f793865a0e1eaa4a9255d932033652ea"
  },
  "mannequin/07": {
-  "Black Bralette": "7b6ffce17274f491242ff9ea6df8e9bef0e0721141f26de743109603383082a0",
-  "Black Briefs": "85419f7919a680075cecbc40612cdf03d2b8b34bcf26b310c4c4c995488014d0",
-  "Red Bodycon Mini Dress": "2140ce5f6489704fcb39dbb30f7f93a728dc1953b3e0fa9e63e1134f59777a98"
+  "Black Tailored Briefs": "0dfe643c05518ceb028440c57bf78a90c787d2d2f28213ae62099650b4cf04da",
+  "Black Tailored Triangle Bralette": "a95c9dcb4b7fb78fccb88053f6140e7d393c4bad7bb4e65fd6b35a37e589f04e",
+  "Red Bodycon Mini Dress": "11d7888df712ec2657b115bb8ff3b50d8b4a935d9fda16d8947cb9db24205048"
  },
  "mannequin/08": {
-  "Black Fishnet Thigh-High Stockings": "0db80bbaea637eac4246ec3f458cc22b8237f87facc3cd9d84ac80f620dd2d48"
+  "Black Fishnet Thigh-High Stockings": "783e9480369394882cb47f96be96d63ce49710e64f9843a83b5c137b6360f2e3"
  },
  "mannequin/09": {
-  "Black Lace Bodysuit": "046366492c5d37625c77ef1df1689015a00bbfef2d47688b80332281ed1f432d"
+  "Black Lace Tailored Bodysuit": "91a39e4af42e5f496ec5928dccf0c137598abd363147120be553dd912c06e3e8"
  },
  "mannequin/10": {
-  "Red Glossy One-Piece Swimsuit": "d3c177e79857b1ec56bf76be4c199e1b6455e59e65859a831aac6b300cd529c2"
+  "Red Glossy Tailored One-Piece Swimsuit": "d56afb01dcad49d350060108760e779d09c8cdab9a7c55cc853d70b05e836753"
  },
  "mannequin/11": {
-  "Black Micro Triangle Bikini": "0dffd8f690053d062a3b4e94b3375f0736f13e06a5f944202d83e92d6dd006c2"
+  "Black Micro Tailored Bikini Top": "93e42969c1f9051da773f3bd3287a8e2307263272d9eb13edc166e9bd265eea3",
+  "Black Micro Tailored String Bikini Bottoms": "ec78ef02d34eed735a3dcd3bc909ce242aa307a2244ac3664b13ea4bf0d81cc2"
  },
  "mannequin/12": {
   "Black Cropped Tee": "54ab94482402781a563fb0f5533d299e1108c775926d8da8f0d490b2ba4944a7",
-  "Neon Green Latex Leggings": "8ea5763e69b42d7205195742f6f3380b0f282de3fecad424e667b84e640784c0"
+  "Neon Green Latex Leggings": "2025d1332f0d778fa61d254732dfa3f22ac42d1a787d7fd3d4eb8aea38098651"
  },
  "mannequin/13": {
-  "Pink Sequin Bodycon Mini Dress": "4bef41b5ada73c77f0dbad6cbaa557abafb312c8b78fe2830e9d21fa9844b7c2"
+  "Pink Sequin Bodycon Mini Dress": "ec343b862276c0bfccebfba15d7caee5f1248ac3dac51bbbd287f549319615f9"
  },
  "mannequin/14": {
-  "Blue Denim Shorts": "da58bbe433530baf85eacd07c50df92f80fc30b09340b36a55d2a8e1ea1c6252",
-  "White Cropped Tee": "7bad77d3dbb2ddbe4ba46ffb3c7a86f44bbe2bae53edd92c5b04b810c173f902"
+  "Blue Denim Shorts": "a6a7642934b6e0bc7b6e1f0e454a9df633935bcc5dd9f5109c348c101c6dfa50",
+  "White Cropped Tee": "1256178203e1b9e02a6441a180b33f21500dc70cc4acf3707c8134e03e849de8"
  },
  "mannequin/15": {
-  "Black Bralette": "7b6ffce17274f491242ff9ea6df8e9bef0e0721141f26de743109603383082a0",
-  "Black Translucent Lace Crop Cami": "280096c11404ab2472ca0db2958c1866fb6ef8ce6a1345b903e9bee422c617a3"
+  "Black Tailored Full-Cup Bra": "18b715dcf7cdb78deb9a9c39a2ec162bc532b0a01523f60d43c55b125743a754",
+  "Black Translucent Lace Crop Cami": "a2c3c95cda1a444b904b7f22162debf544c5972c95eac0f245bb83c310557f79"
  },
  "mannequin/16": {
-  "Black Lace Bodycon Mini Dress": "8d26fbec7b86080a09b03c6be55611c3afb1c534a7810b5f2117f202a51e4fb5"
+  "Black Lace Bodycon Mini Dress": "2f13c65b31e924d333eb1e60c52645afa279260769fff04e03734395429380a3"
  },
  "mannequin/17": {
-  "Champagne Slip Dress": "81ae1cf9b2d505ef50b594082e3547d55c1fc93f4a6f5ca8a20e2d8cf2ac891f"
+  "Champagne Slip Dress": "140867ce717b84129ec714e70535ceb34b179e55dd40c93496694e9601da1d06"
  },
  "mannequin/18": {
-  "Black Glossy Catsuit": "57db1f3bc0a2b4f93e62843928308869137d612267ac1ca211ee46089093ee22"
+  "Black Glossy Catsuit": "6db6a1bfaa33d063b220370c11b70d70fbb7a7e119269f511986977d6439cff8"
  },
  "mannequin/19": {
-  "Black Briefs": "02ea0123cda70592bafd3bd321e8773edce3f3b5bd6d57e57ebe3a4fb218080f",
-  "Black Cropped Cardigan": "3eedcf5a48f2a9647887576c5e3939172d9140f5cbc1502f436d10eeeebf5824",
-  "Black Lace Bralette": "63339d41ba14405e6305cb43856649b396dc25b83e61e32fbbedc59109a85192",
-  "Black Thigh-High Stockings": "09fa088fa1bec3216aed887df915912829f926c8d0eb8a304780997737a25650",
-  "Red Sheer Skater Mini Dress": "b3bf6dc47a816e920fe49b47de5c5c728e423de8e80b7f729abf5397f2247eb6"
+  "Black Cropped Cardigan": "eed3b65d6ac83cd8ec7337ca6d4edd52920ebf1fe8632fac1c55b330b67da4e9",
+  "Black Lace Tailored Triangle Bralette": "a4f0af8d406ac142959c039d3091c7c81cdfca588e875f89a87147beb954db3d",
+  "Black Tailored Briefs": "baa0a85cf8a39690e8798bd84b00586b0d085329d4a7690694638c669746e420",
+  "Black Thigh-High Stockings": "b5b40dc3cba5f6a734001398c93dcc7288324705a5d2792add324a5cecbdd6a9",
+  "Red Sheer Skater Mini Dress": "86430edd059accd2aeea97c31406c8b819aa0e0eef344088adc83eabda3034b4"
  },
  "mannequin/20": {
-  "Black Bralette": "7b6ffce17274f491242ff9ea6df8e9bef0e0721141f26de743109603383082a0",
-  "Black Briefs": "85419f7919a680075cecbc40612cdf03d2b8b34bcf26b310c4c4c995488014d0",
-  "Red Bodycon Mini Dress": "2140ce5f6489704fcb39dbb30f7f93a728dc1953b3e0fa9e63e1134f59777a98"
+  "Black Tailored Briefs": "0dfe643c05518ceb028440c57bf78a90c787d2d2f28213ae62099650b4cf04da",
+  "Black Tailored Triangle Bralette": "a95c9dcb4b7fb78fccb88053f6140e7d393c4bad7bb4e65fd6b35a37e589f04e",
+  "Red Bodycon Mini Dress": "11d7888df712ec2657b115bb8ff3b50d8b4a935d9fda16d8947cb9db24205048"
  },
  "mannequin/21": {
-  "Silver Metallic Bodycon Mini Dress": "424b7d2c273ea271def0d3cbd1793eebbc9334e890afbe63375050211397377b"
+  "Silver Metallic Bodycon Mini Dress": "2ee6d4aedcc5258318e4bb5b7474c979d38c407ec67a872611d883a65c61eca1"
  }
 }

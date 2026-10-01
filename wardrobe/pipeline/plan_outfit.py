@@ -118,6 +118,9 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     "top": (
         "top", "shirt", "blouse", "tee", "t-shirt", "sweater", "hoodie", "jumper", "crop top", "tube top",
         "halter top", "cami", "crop cami", "cami top", "tank top",
+        # P1: the boned top (top-corset-v1). The lingerie foundations keep their own words
+        # (guêpière, waspie); a sheer or lace corset is still gated by its material.
+        "corset", "corset top", "bustier", "bustier top",
     ),
     "shoes": ("shoes", "boots", "heels", "sneakers", "trainers", "sandals"),
     # try-on haul. The planner takes the longest phrase that matches, so a word
@@ -130,6 +133,7 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     ),
     "underwear": (
         "underwear", "lingerie", "bra", "bralette", "panties", "briefs", "knickers", "bodysuit", "teddy",
+        "thong", "tanga", "g-string", "g string", "v-string", "v string", "boyshorts", "boyshort",
         "garter belt", "suspender belt", "garter", "garters", "garter set",
         # hosiery foundations: words no other category claims (see wardrobe.hosiery)
         "waspie", "waist cincher", "guêpière", "guepiere",
@@ -232,6 +236,8 @@ NECKLINE_KEYWORDS: dict[str, tuple[str, ...]] = {
 RISE_KEYWORDS: dict[str, tuple[str, ...]] = {
     "high": ("high-waisted", "high waisted", "high-rise", "high rise", "high-waist"),
     "low": ("low-rise", "low rise", "hipster", "low-slung"),
+    # P1: on her hip bones. Longer phrases than "low-rise", so the parser takes these first.
+    "ultra-low": ("ultra-low", "ultra low", "ultra-low-rise", "super low-rise", "extra low-rise"),
 }
 
 BACK_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -400,6 +406,12 @@ def _shade(rgba: tuple[float, float, float, float], text: str) -> tuple[float, f
 # ----------------------------------------------------------------------
 # template selection
 # ----------------------------------------------------------------------
+#: What naming an opt-in template's own tag adds to its score.
+OPT_IN_NAMED = 3.0
+#: What each further word of the longest opt-in tag named adds: less than any other signal.
+OPT_IN_SPECIFIC = 0.25
+
+
 def score_template(template: GarmentTemplate, parsed: ParsedPrompt, text: str) -> float:
     score = 0.0
     if parsed.category and template.category == parsed.category:
@@ -410,9 +422,20 @@ def score_template(template: GarmentTemplate, parsed: ParsedPrompt, text: str) -
         score += 2.0
     if parsed.sleeve and template.sleeve == parsed.sleeve:
         score += 1.5
+    longest = 0
     for tag in template.tags:
         if re.search(rf"(?<!\w){re.escape(tag.lower())}(?!\w)", text):
             score += 1.0
+            longest = max(longest, len(tag.split()))
+            # An opt-in template is only ever chosen by name, so a prompt that names it
+            # meant it: "tailored high-leg briefs" is the tailored block, not the band
+            # brief that shares "high-leg briefs" and "briefs" with the prompt.
+            if template.opt_in:
+                score += OPT_IN_NAMED
+    if template.opt_in and longest > 1:
+        # Of two opt-in templates named, the more specific name: "high-waist thong" is the
+        # High-Waist Thong, not the Thong it also contains, which the id order used to pick.
+        score += OPT_IN_SPECIFIC * (longest - 1)
     # A garment named outright beats one that only shares a word with the prompt:
     # "lace bodysuit" is the Bodysuit, not the Lingerie Set tagged "lace". Ties
     # used to fall to the template id's alphabetical order.
@@ -435,8 +458,41 @@ def select_template(catalog: TemplateCatalog, parsed: ParsedPrompt, text: str) -
     if not candidates:
         raise PlanningError("no garment templates are installed")
 
+    # A prompt that names the category and nothing else gets the category's default.
+    # Scoring cannot answer it: "skirt" scores A-line, maxi and pencil the same, and
+    # the tie used to fall to the template id sorted backwards — skirt-pencil-v1, a
+    # knee-length tube, for every "skirt" and every Studio "Planner chooses".
+    if parsed.category and _names_only_the_category(candidates, parsed, text):
+        default = next((t for t in candidates if t.default_for_category), None)
+        if default is not None:
+            return default
+    # Otherwise the best score. A tie among scored templates still falls to the id
+    # order it always did: the prompt named something (a tag, a cut, a length), and a
+    # default preferred over it would outvote it — "slip shorts" ties the Denim Shorts'
+    # generic "shorts" tag, and the default would have put her in denim.
     ranked = sorted(candidates, key=lambda t: (score_template(t, parsed, text), t.id), reverse=True)
     return ranked[0]
+
+
+def _names_only_the_category(candidates: list[GarmentTemplate], parsed: ParsedPrompt, text: str) -> bool:
+    """True when nothing in the prompt but the category's own word could tell templates apart.
+
+    A colour, a fabric or a finish colours whatever is chosen; they do not choose.
+    A silhouette, a hem, a sleeve, a formality or any template's own tag does, so
+    "pencil skirt", "mini skirt" and "work skirt" are still scored.
+    """
+    if any((parsed.silhouette, parsed.hem, parsed.sleeve, parsed.formality)):
+        return False
+    generic = set(CATEGORY_KEYWORDS.get(parsed.category or "", ())[:1])
+    for template in candidates:
+        if re.search(rf"(?<!\w){re.escape(template.name.lower())}(?!\w)", text):
+            return False  # "tiered maxi skirt" names a template outright
+        for tag in template.tags:
+            if tag.lower() in generic:
+                continue
+            if re.search(rf"(?<!\w){re.escape(tag.lower())}(?!\w)", text):
+                return False
+    return True
 
 
 def display_name(prompt: str, parsed: ParsedPrompt, template: GarmentTemplate | None = None) -> str:

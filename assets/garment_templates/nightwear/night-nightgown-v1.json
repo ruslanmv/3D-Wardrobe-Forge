@@ -3,6 +3,7 @@
   "id": "night-nightgown-v1",
   "name": "Satin Nightgown",
   "category": "nightwear",
+  "defaultForCategory": true,
   "mesh": "procedural:slip-dress",
   "coverage": [
     "chest",

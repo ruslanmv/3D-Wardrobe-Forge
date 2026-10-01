@@ -68,6 +68,7 @@ class FailureReason(StrEnum):
     INTIMATE_NOT_PERMITTED = "intimate_garments_not_permitted_by_model"
     ADULT_DECLARATION_REQUIRED = "requires_adult_declaration"
     BODY_INCOMPLETE = "source_body_incomplete_under_clothing"
+    FOUNDATION_OVER_CLOTHING = "foundation_would_sit_over_worn_clothing"
     INTERNAL = "internal_error"
 
 
@@ -90,6 +91,10 @@ class JobOptions(BaseModel):
     base_body: Literal["preserve", "replace-outer", "underwear-base"] | None = Field(
         default=None, alias="baseBody"
     )
+    #: Set by the server, never by a caller: the job relied on an admin session's
+    #: adult declaration, so it and its look are shown only to an admin session
+    #: (apps/api/admin.py). The public job routes force it off.
+    private: bool = False
 
     @property
     def base_body_mode(self) -> str:
@@ -197,11 +202,24 @@ _REJECTION_REASONS = frozenset(
         FailureReason.INTIMATE_NOT_PERMITTED,
         FailureReason.ADULT_DECLARATION_REQUIRED,
         FailureReason.BODY_INCOMPLETE,
+        FailureReason.FOUNDATION_OVER_CLOTHING,
     }
 )
 
 
+def look_id_for(job_id: str) -> str:
+    """The id of the look a job makes. Derived, so a look's files are known from its job alone."""
+    return f"look_{job_id.removeprefix('job_')[:16]}"
+
+
+def private_marker(look_id: str) -> str:
+    """Where a private look is marked as such (``JobOptions.private``), beside its files."""
+    return f"looks/{look_id}/private.json"
+
+
 __all__ = [
+    "look_id_for",
+    "private_marker",
     "JobState",
     "TERMINAL_STATES",
     "PROGRESS_ORDER",

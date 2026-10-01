@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import pytest
 
-from wardrobe.config import Settings
+from wardrobe.config import REPO_ROOT, Settings
 
 
 def test_local_profile_keeps_zero_config_development():
     Settings().validate_deployment()
+
+
+def test_local_storage_default_is_writable_project_directory(monkeypatch) -> None:
+    monkeypatch.delenv("WARDROBE_STORAGE_ROOT", raising=False)
+    settings = Settings(_env_file=None)
+    assert settings.storage_root_path == REPO_ROOT / ".wardrobe"
 
 
 def test_production_profile_rejects_ephemeral_unauthenticated_defaults():

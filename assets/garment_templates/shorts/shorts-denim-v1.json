@@ -3,6 +3,7 @@
   "id": "shorts-denim-v1",
   "name": "Denim Shorts",
   "category": "shorts",
+  "defaultForCategory": true,
   "mesh": "procedural:shorts",
   "coverage": [
     "hips",

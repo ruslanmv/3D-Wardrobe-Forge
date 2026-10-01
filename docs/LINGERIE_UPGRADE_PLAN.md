@@ -1,6 +1,25 @@
 # Lingerie quality upgrade plan
 
-> Status: **plan only**, nothing here is implemented yet. It answers the visual
+> Status: in progress. **L3b done**: the bottom-pattern grammar
+> (`BriefSpec` in `wardrobe/lingerie/specs.py`, `BOTTOM_PRESETS`): rise, side
+> type/width, leg cut, front/back coverage (solved exactly), V-shaping,
+> back-centre width, leg extension; sixteen presets, tie bows, boyshort legs;
+> tested in `tests/unit/test_bottom_grammar.py`. **L4 done**: the bra block — cups on her bust points
+> (triangle, balconette, plunge, full), a gore on her sternum, a level band
+> under the fold with wings, ribbon straps from the cups' published anchors
+> (`wardrobe/lingerie/blocks/bra.py`, `surface.py`); every placed vertex is
+> pushed clear of her posed surface after the shell (`fit.after_shell`).
+> **L3 done**: the brief block — front and back panels, a
+> gusset across the crotch seated on her posed surface, three openings
+> (`wardrobe/lingerie/blocks/brief.py`, `fit.py`, `seams.py`), with tailored
+> brief, high-leg, string, thong and bikini-bottom templates (schemaVersion 2,
+> opt-in). **L2 done**: flat ribbon straps between anchors
+> (`wardrobe/lingerie/straps.py`, `contract.py`, `specs.py`; the ribbon moved to
+> `wardrobe/geometry/ribbon.py`). **L1 done**: the fashion-fit forms
+> (`wardrobe/vrm/fashion_body.py`, declared adult in
+> `assets/calibration/policy.json`) and the landmarks
+> (`wardrobe/lingerie/landmarks.py`), tested in `tests/unit/test_fashion_form.py`.
+> It answers the visual
 > review of looks #2–#11 (clearance passed, but the garments were not built the
 > way lingerie is built) and follows the owner's priority order. Every file and
 > function it names was read in this repository.
@@ -148,6 +167,7 @@ The hash baseline stays untouched in every phase: v1 kinds and templates keep th
 - **What it is:** the L3 lower block (gusset and leg openings) joined to a torso built from L4 landmarks: bust shaping by darts in `(phi, y)`, `neckline_profile` / `back_profile` reused as pattern-space curves, and an optional shelf bra.
 - **Files:** `blocks/bodysuit.py`; `swim-one-piece-v2.json` and `under-bodysuit-v2.json`.
 - **Tests:** all brief metrics; bust shaping keeps at least 5 mm clearance at the apex with no bridging, meaning the surface follows the depth map within ease + 5 mm between the apexes; boundary loops = neck/armholes + 2 legs.
+- **Landed (L5):** `blocks/bodysuit.py` is `build_brief` with its top edge raised to a neckline (`top_line`): the same gusset, leg openings and coverage-solved leg line, the leg line still solved against the brief's own waistline. Necklines `scoop` / `plunge` / `high` / `square`, backs `high` / `scoop` / `low`, armholes and strap points from her landmarks; ribbon straps sewn at the neckline's peaks. Above the fold the panels are placed (the radial passes met her arms there, as the bra band found), laid on the depth map with 3 mm bust ease tapered to nothing at the fold, and pushed out after the shell. Templates `swim-one-piece-v2` (high-leg, scoop, category default) and `under-bodysuit-v2` (cheeky, plunge, low back) take the plain words from v1; `legCut: high` cuts a plain one high. **One deviation from this plan:** between the bust points the fabric *bridges* (each row's upper hull) rather than following the depth map with darts — that is how a one-piece without cups is cut; a dart-shaped or shelf-bra variant is still to do. Two fixes outside the block, both found by it: the depth map had isolated pits (vertex-sampled cells holding only a side vertex, 8 mm read where her surface is 80 mm), now filled (`surface._fill_pits`); and a `symmetric` column layout for the block, since the brief's layout is a fraction of a degree asymmetric, which moved one strap 18 mm.
 
 ### L6: Stockings and tights with feet (M)
 
@@ -240,6 +260,11 @@ The hash baseline stays untouched in every phase: v1 kinds and templates keep th
 - **Compatibility:**
   - Don't edit `build_band`, `half_at`, `cups_profile`, `briefs_profile`, `with_elastic`, `_strap_radius`, `build_straps` or the v1 templates.
   - Don't remove `optIn` from v2 templates or flip the stocking `foot` default without a separately reviewed hash re-baseline.
+    That review happened for the briefs and bras (L3d, after the lingerie sweep): every v1 band piece read as a tube,
+    and plain words planned them. "bra", "bralette", "briefs", "panties" and "underwear" now plan the tailored
+    blocks, `under-briefs-v2` is the underwear default (no longer opt-in), and "minimal"/"micro" coverage name
+    cheeky/G-string cuts on a plain brief. Exactly the nine mannequin looks that name them moved, re-baselined after a
+    before/after render; the v1 templates keep their code and are reachable by id.
 - **Physics:** no cloth simulation. Measure tension on posed bodies with `taut_length`, never on skinned garment vertices (the lesson recorded in `suspender_straps.py`).
 - **Real avatars:** VRoid bust and crotch topology varies. Landmark detection must fall back to formula landmarks with a warning, not fail the job. Keep L9 rules as warnings until they are tuned on all 4 real avatars.
 - **Scope:** don't start the pattern kernel, Postgres or Studio before L1–L5 land. Build seams and specs so they can be lifted into `wardrobe/patterns/` later, not a parallel system.

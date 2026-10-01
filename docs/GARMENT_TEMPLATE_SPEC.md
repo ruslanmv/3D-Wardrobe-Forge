@@ -82,6 +82,7 @@ template.
 | `fit.bodyClearanceMm` | 0–40 | fabric-to-body spacing; 5–8 fitted, 12–18 outerwear |
 | `materials.supportsMetallic` | bool | when false, a "metallic" prompt is ignored for this template |
 | `tags` | free text | matched against the prompt during selection |
+| `defaultForCategory` | bool | the category's answer to a prompt that names nothing else ("skirt", "navy skirt", the Studio's "Planner chooses"); exactly one per category with a choice, never an opt-in template |
 
 ## How a template is chosen
 
@@ -96,7 +97,49 @@ template.
 +1.5 formality register matches a tag
 ```
 
-Ties break on `id`, so selection is deterministic.
+A prompt that names the category and nothing else — no silhouette, hem, sleeve,
+formality, template tag or template name; a colour or a fabric does not count —
+skips scoring and gets the category's `defaultForCategory` template. Scoring
+cannot answer it: "skirt" scores the A-line, maxi and pencil skirts the same,
+and that tie used to fall to the template id sorted backwards, so every bare
+"skirt" was the pencil, a knee-length tube, chosen by its file name.
+
+Ties among scored templates still break on `id`, so selection is deterministic.
+The default is deliberately not a tie-break there: "slip shorts" ties the
+Denim Shorts' generic `shorts` tag, and preferring the default would put her in
+denim. Renaming a template cannot change what a bare category gets —
+`tests/unit/test_planner.py` renames the pencil skirt both ways to prove it.
+
+| Category | Default |
+| --- | --- |
+| skirt | `skirt-a-line-v1` |
+| dress | `dress-a-line-v1` |
+| top | `top-tee-v1` |
+| trousers | `trousers-straight-v1` |
+| jacket | `jacket-blazer-v1` |
+| shorts | `shorts-denim-v1` |
+| nightwear | `night-nightgown-v1` |
+| shoes | `shoes-flats-v1` |
+| legwear | `legwear-tights-v1` |
+| swimwear | `swim-one-piece-v2`, the bodysuit block (still behind the adult gate) |
+| underwear | `under-lingerie-set-v1`, planned as its parts: `under-bralette-v2` + `under-briefs-v2` (still behind the adult gate) |
+
+**A bare "underwear" is the whole set (L5b).** It used to be the tailored briefs,
+which cover only her lower half, so the strip plan — correctly — took off her
+bottoms and left her top on. The strip plan is unchanged: a garment of hers comes
+off because the new outfit replaces what it covered. What changed is what the
+generic word asks for. A piece named outright is still that piece: "briefs" and
+"thong" replace her bottoms only, "bralette" her top only, "bodysuit" both.
+
+A set named by one of its phrases of more than one word — "bra and panties",
+"bra and briefs", "lingerie set" — is that set whatever single words inside the
+phrase score (`_named_set` in `plan_outfit_stack.py`); scored word by word,
+"bra and panties" was a full-cup bra alone.
+
+Every procedural skirt (`procedural:skirt`) is given a waistband after fitting
+(`wardrobe/geometry/waistband.py`): its top rows, 3 mm proud, drawn a shade
+darker as a second primitive. It is built from the fitted shell rather than
+beside it because fitting would press it back into the skirt.
 
 ## Adding a garment
 

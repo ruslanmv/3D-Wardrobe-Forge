@@ -6,12 +6,13 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from apps.api.dependencies import require_api_key
+from apps.api.dependencies import SettingsDep, key_status, require_api_key
+from apps.api.routes.admin import router as admin_router
 from apps.api.routes.avatars import router as avatars_router
 from apps.api.routes.generate import router as generate_router
 from apps.api.routes.jobs import router as jobs_router
@@ -67,11 +68,16 @@ app = FastAPI(
 
 # The browser client is served from a different origin to the forge.
 settings = get_settings()
+# F5. A trusted page must also get past CORS, or the fallback would admit a request
+# the browser then refuses to read. A wildcard already admits it.
+cors_origins = list(settings.wardrobe_allowed_origins)
+if "*" not in cors_origins:
+    cors_origins += [origin for origin in settings.wardrobe_trusted_origins if origin not in cors_origins]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.wardrobe_allowed_origins,
+    allow_origins=cors_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -82,6 +88,7 @@ app.include_router(looks_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(wardrobes_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(generate_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(studio_router, prefix="/v1", dependencies=api_dependencies)
+app.include_router(admin_router, prefix="/v1", dependencies=api_dependencies)
 
 # The Studio is a static, build-free editor. It is served unauthenticated because
 # it is only markup and scripts; every call it makes goes through /v1, which is not.
@@ -100,9 +107,15 @@ def health() -> dict:
 
 
 @app.get("/v1/capabilities", tags=["service"])
-def capabilities() -> dict:
-    """What this deployment can actually do, for the client to adapt to."""
-    settings = get_settings()
+def capabilities(
+    request: Request, settings: SettingsDep, authorization: str | None = Header(default=None)
+) -> dict:
+    """What this deployment can actually do, for the client to adapt to.
+
+    ``auth`` is answered for the caller: whether this deployment wants a key and
+    whether *this* page needs one (F5). The Studio shows its key controls only
+    when it does; yourfriend.online and the Studio itself never need one.
+    """
     orchestrator = get_orchestrator()
     blender = BlenderEngine.available(settings)
 
@@ -121,6 +134,7 @@ def capabilities() -> dict:
         "outputVersions": ["source", "VRM0", "VRM1"],
         "maxAvatarBytes": settings.max_avatar_bytes,
         "strictLicensing": settings.strict_licensing,
+        "auth": {k: v for k, v in key_status(request, settings, authorization).items() if k != "authorized"},
     }
 
 

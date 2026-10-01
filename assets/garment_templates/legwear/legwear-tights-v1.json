@@ -3,6 +3,7 @@
   "id": "legwear-tights-v1",
   "name": "Tights",
   "category": "legwear",
+  "defaultForCategory": true,
   "mesh": "procedural:tights",
   "coverage": [
     "waist",

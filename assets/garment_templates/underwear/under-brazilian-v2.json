@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 2,
+  "id": "under-brazilian-v2",
+  "name": "Tailored Brazilian Briefs",
+  "category": "underwear",
+  "mesh": "procedural:brief-block",
+  "coverage": [
+    "hips"
+  ],
+  "anchors": [
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true
+  },
+  "lingerie": {
+    "block": "brief",
+    "brief": {
+      "preset": "brazilian"
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "tailored brazilian briefs",
+    "tailored brazilian brief",
+    "tailored brazilian"
+  ],
+  "description": "Brazilian briefs: a V-shaped back, narrower than cheeky, wider than a thong.",
+  "optIn": true
+}

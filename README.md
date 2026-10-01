@@ -136,6 +136,30 @@ curl -X POST localhost:8080/v1/jobs -H 'content-type: application/json' -d '{
   "options": {"previewBackend": "auto"}}'
 ```
 
+### Lingerie bottoms: one pattern grammar
+
+A brief is cut from three pieces: front and back panels, and a gusset that
+crosses under the crotch. That gives exactly three openings. Styles are not
+separate meshes. Each is a preset over independent pattern rules:
+
+- rise
+- side type and width
+- leg-cut height
+- front and back coverage
+- V-shaping at front and back
+- back-centre width
+
+"String" is how the sides are made and "thong" is how much back there is, so a
+string bikini keeps a real back: 60% coverage, against a thong's 18%. Coverage
+is solved, not approximated: a Brazilian specified at 42% measures 42%. The
+presets are classic, high-leg, French-cut, hipster, boyshort, high-waist,
+cheeky, Brazilian, tanga, thong, high-waist thong, G-string, V-string, string,
+string bikini and bikini. `tools/gallery/bottoms.py` renders every preset,
+front, side and back, through the real pipeline, on a fashion-fit form that
+`assets/calibration/policy.json` declares adult. It is intimate wear, so it goes
+through the adult gate like any request. The plan and progress are in
+[docs/LINGERIE_UPGRADE_PLAN.md](docs/LINGERIE_UPGRADE_PLAN.md).
+
 ### Reference look: red bodycon, stockings and suspenders
 
 ![The red bodycon reference look: on the adult mannequin with sheer stockings, a suspender belt and flat straps clipped below the hem; on AvatarSample A with the same dress and light taupe satin thigh-highs over her own loafers](docs/images/red-dress.webp)
@@ -195,6 +219,10 @@ make studio        # fetches and verifies the avatar library, then serves
                    # → http://127.0.0.1:8080/studio/
 ```
 
+Local job state and generated artifacts are written to the repository's ignored
+`.wardrobe/` directory by default. Set `WARDROBE_STORAGE_ROOT` to use a different
+location.
+
 **The avatars are proven, not trusted.** `assets/library/models.json` pins each
 file by size and SHA-256. It is yourfriend's provenance manifest, with one
 correction: the `presentation` of AvatarSample B and C was swapped there, and
@@ -208,6 +236,18 @@ The Studio posts to `POST /v1/library/{slug}/jobs`, where the *server* fills in
 the avatar and the terms its provenance manifest grants (CC0 → modification and
 redistribution allowed). An embedded prohibition is still checked first and still
 wins.
+
+**Swimwear, underwear, see-through fabric and stockings need a declaration.** An
+avatar is unlocked for them only when someone has declared that it depicts an
+adult; nothing is inferred from how a model looks. The operator can declare an
+avatar for everyone in `assets/library/policy.json`. Alternatively, with
+`WARDROBE_ADMIN_PASSWORD` set, they can log in (username `admin`) from the
+account button at the bottom left (everyone else is a Guest) and turn on **Private mode** for it in
+**Settings**, for that session only, after confirming they are 18 or older and
+that the avatar depicts an adult. Looks made
+under a session's declaration are private to admin sessions, and signing out
+withdraws every declaration. [deploy/huggingface/README.md](deploy/huggingface/README.md#admin-sign-in)
+has the details.
 
 ---
 
@@ -284,7 +324,8 @@ the same pipeline.
 | `POST /v1/jobs` · `POST /v1/generate` | request a look |
 | `GET /v1/jobs/{id}` · `…/events` | poll or stream progress |
 | `GET /v1/wardrobes/{avatar}` | every look an avatar has |
-| `GET /v1/wardrobes/{avatar}/bundle.zip` | **the whole wardrobe as a static bundle** (`?passedOnly=true` drops failed fits) |
+| `GET /v1/wardrobes/{avatar}/pack.zip` | **the wardrobe as a v2 pack** — hashed, rated, what the chatbot imports (`?passedOnly=false` keeps failed fits) |
+| `GET /v1/wardrobes/{avatar}/bundle.zip` | the wardrobe as the older v1 static bundle (`?passedOnly=true` drops failed fits) |
 | `GET /v1/library` · `POST /v1/library/{slug}/jobs` | the Studio's avatar library, and jobs on it |
 | `GET /v1/vocabulary` | the colours, cuts and lengths the planner understands |
 | `GET /v1/templates` · `GET /v1/capabilities` | the garment library · what this deployment can do |

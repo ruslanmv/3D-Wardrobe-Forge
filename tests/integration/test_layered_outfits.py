@@ -4,7 +4,11 @@ The acceptance table these follow:
 
     Tops + Bottoms -> bra + briefs + dress      source clothes gone, all three new pieces present
     Onepiece -> bra + briefs + dress            onepiece removed: the stack covers upper + lower
-    Onepiece -> bra only                        onepiece retained
+    Onepiece -> bra only                        refused: the bra would go over the dress
+                    ... underwear-base          a neutral pair of briefs added; the onepiece comes off
+                    ... preserve                layered over it on purpose, reported as "layered"
+    Tops + Bottoms -> a v2 lingerie-block bra   tops off, bottoms kept (the kind has regions)
+    Tops + Bottoms -> "underwear"               both off: the plain word is the whole set (L5b)
     incomplete body under the onepiece          fails closed; nothing is invented
     an unknown mesh called "Cloth123"           never removed
     modification prohibited / no adult decl.    rejected before anything is stripped
@@ -91,11 +95,103 @@ async def test_a_one_piece_comes_off_for_a_stack_that_covers_what_it_covered(orc
     assert ONEPIECE not in primitive_materials(output)
 
 
-async def test_a_bra_alone_does_not_take_a_one_piece_off(orchestrator, store, body):
-    record, output = await dress(orchestrator, store, dress_like_vroid(body, slots=("Onepiece",)), "black bralette")
+async def test_a_bra_alone_is_never_fitted_over_a_one_piece(orchestrator, store, body):
+    """It cannot take the dress off (nothing would be on her hips), so it is refused, not layered."""
+    source = dress_like_vroid(body, slots=("Onepiece",))
+    record, output = await dress(orchestrator, store, source, "black bralette")
+    assert record.state is JobState.REJECTED and record.reason is FailureReason.FOUNDATION_OVER_CLOTHING
+    assert output is None and "Underwear underneath, then the outfit" in str(record.error)
+
+    record, output = await dress(orchestrator, store, source, "black bralette", baseBody="underwear-base")
     assert record.state is JobState.COMPLETED, record.error
-    assert record.fit_report.replaced_garments == []
+    assert record.fit_report.replaced_garments == ["onepiece"] and ONEPIECE not in primitive_materials(output)
+    assert [g.category for g in record.plan.garments] == ["underwear", "underwear"]  # neutral briefs added
+    assert record.fit_report.base_body["layerOrder"] == "passed"
+
+    record, output = await dress(orchestrator, store, source, "black bralette", baseBody="preserve")
+    assert record.state is JobState.COMPLETED, record.error
     assert ONEPIECE in primitive_materials(output)
+    assert record.fit_report.base_body["layerOrder"] == "layered"  # asked for, and said so
+
+
+async def test_a_lingerie_block_bra_takes_her_top_off_and_keeps_her_bottoms(orchestrator, store, body):
+    """The v2 lingerie kinds had no regions: nothing came off, and the bralette went over her top."""
+    await store.put("sources/layered.vrm", dress_like_vroid(body))
+    payload = job_request("sources/layered.vrm", "underwear")
+    payload["avatar"]["depictsAdult"] = True
+    payload["outfit"].update({"category": "underwear", "templateId": "under-bralette-v2"})
+    record = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
+    assert record.state is JobState.COMPLETED, record.error
+    assert record.plan.garments[0].template_id == "under-bralette-v2"
+    assert record.fit_report.replaced_garments == ["tops"]
+    worn = primitive_materials(await store.get(f"looks/{record.look.id}/look.vrm"))
+    assert TOPS not in worn and BOTTOMS in worn
+    assert record.fit_report.base_body["layerOrder"] == "passed"
+
+
+@pytest.mark.parametrize(
+    ("prompt", "category", "templates", "remove"),
+    [
+        ("underwear", "underwear", ["under-bralette-v2", "under-briefs-v2"], ["tops", "bottoms"]),
+        ("underwear", None, ["under-bralette-v2", "under-briefs-v2"], ["tops", "bottoms"]),
+        ("lingerie set", None, ["under-bralette-v2", "under-briefs-v2"], ["tops", "bottoms"]),
+        ("bra and panties", None, ["under-bralette-v2", "under-briefs-v2"], ["tops", "bottoms"]),
+        ("briefs", None, ["under-briefs-v2"], ["bottoms"]),
+        ("thong", None, ["under-thong-v2"], ["bottoms"]),
+        ("bralette", None, ["under-bralette-v2"], ["tops"]),
+        ("bodysuit", None, ["under-bodysuit-v2"], ["tops", "bottoms"]),
+    ],
+)
+def test_check_plan_says_what_each_underwear_request_replaces(template_catalog, body, prompt, category, templates,
+                                                             remove):
+    """L5b. Designer → Underwear → "Planner chooses" took off her bottoms and left her top.
+
+    The plan was Tailored Briefs alone, and the strip plan did what it must with a lower
+    garment. The rule stays — a garment comes off because the new outfit replaces what it
+    covered — and the generic request is now the whole set. What "Check plan" reports, before
+    anything is built, is what the job does.
+    """
+    from apps.api.routes.studio import plan_report
+    from wardrobe.domain.looks import OutfitRequest
+
+    report = plan_report(dress_like_vroid(body), OutfitRequest(prompt=prompt, category=category), "replace-outer",
+                         template_catalog, depicts_adult=True)
+    assert [g["template"] for g in report["garments"]] == templates
+    assert sorted(report["remove"]) == sorted(remove)
+    assert report["allowed"] and report["layerOrder"] == "passed"
+
+
+async def test_underwear_takes_her_top_and_bottoms_off_and_fits_the_set(orchestrator, store, body):
+    """The screenshot's job, as the Studio sends it: the Underwear chip, the planner choosing."""
+    await store.put("sources/layered.vrm", dress_like_vroid(body))
+    payload = job_request("sources/layered.vrm", "underwear")
+    payload["avatar"]["depictsAdult"] = True
+    payload["outfit"]["category"] = "underwear"
+    record = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
+    assert record.state is JobState.COMPLETED, record.error
+    assert [g.template_id for g in record.plan.garments] == ["under-bralette-v2", "under-briefs-v2"]
+    assert sorted(record.fit_report.replaced_garments) == ["bottoms", "tops"]
+    assert sorted(record.fit_report.base_body["removedSlots"]) == ["bottoms", "tops"]
+    output = await store.get(f"looks/{record.look.id}/look.vrm")
+    worn = primitive_materials(output)
+    assert TOPS not in worn and BOTTOMS not in worn
+    roles = [node["extras"]["wardrobeForge"]["role"] for node in garment_nodes(output)]
+    assert roles == ["foundation", "foundation"]  # the bralette and the briefs, both on her body
+    assert record.fit_report.passed
+
+
+def test_every_underwear_and_swimwear_shape_says_what_it_covers():
+    """A foundation whose shape covers no region takes nothing off and is fitted over her clothes."""
+    from pathlib import Path
+
+    from wardrobe.domain.garments import TemplateCatalog
+    from wardrobe.vrm.garments import KIND_REGIONS
+
+    catalog = TemplateCatalog.from_directory(Path(__file__).resolve().parents[2] / "assets" / "garment_templates")
+    accessories = {"suspender-belt"}  # worn with briefs, over them; it replaces nothing
+    shapeless = sorted({t.procedural_kind for t in catalog.all() if t.category in {"underwear", "swimwear"}}
+                       - set(KIND_REGIONS) - accessories)
+    assert shapeless == []
 
 
 async def test_an_unrecognised_mesh_is_never_removed(orchestrator, store, body):
@@ -158,6 +254,8 @@ async def test_preserve_layers_over_everything(orchestrator, store, body):
     record, output = await dress(orchestrator, store, dress_like_vroid(body), LINGERIE_DRESS, baseBody="preserve")
     assert record.state is JobState.COMPLETED, record.error
     assert TOPS in primitive_materials(output) and BOTTOMS in primitive_materials(output)
+    assert record.fit_report.base_body["layerOrder"] == "layered"
+    assert record.fit_report.base_body["bodyPreparation"] == "not-requested"
 
 
 # ----------------------------------------------------------------------

@@ -10,9 +10,52 @@ A Space is appropriate for demos and low/medium traffic. Production should use d
 
 ## Docker Space
 
-Create a Docker Space and copy `SPACE_README.md` to the Space repository as its root `README.md`. Mirror this repository's application files and Dockerfile, or configure your deployment automation to build from this repository.
+The Space is [ruslanmv/3D-Wardrobe-Forge](https://huggingface.co/spaces/ruslanmv/3D-Wardrobe-Forge). Deploy with:
 
-Recommended Space variables/secrets:
+```bash
+HF_TOKEN=hf_... make space                        # or: sh deploy/huggingface/deploy.sh
+HF_TOKEN=hf_... HF_SPACE_REPO=you/your-space make space
+DRY_RUN=1 make space                              # stage only, and list what would go
+```
+
+`deploy.sh` uploads the **committed HEAD**, not the working tree: a `git archive` of
+exactly what the Dockerfile copies (`Dockerfile`, `pyproject.toml`, `LICENSE`,
+`apps`, `wardrobe`, `worker`, `tools`, `assets`), with `SPACE_README.md` as the
+Space's root `README.md` — its front matter is what makes it a Docker Space on
+port 8080. The upload mirrors, so files removed here are removed there, and the
+Space commit names the source commit. It then sets the Space variables
+`WARDROBE_PROFILE=space`, `WARDROBE_JOB_CONCURRENCY=1`, `WARDROBE_QUEUE_CAP=8` and
+`PUBLIC_BASE_URL` (read from the Space's domain). Use a write token, and prefer a fine-grained one scoped
+to the Space.
+
+The Space builds the image itself; the first build takes a few minutes, most of
+it `pip install` and fetching the avatar library.
+
+Out of the box the Space is an open demo (`WARDROBE_AUTH_MODE=none`). To require
+a key, add `WARDROBE_AUTH_MODE=api_key` as a variable and `WARDROBE_API_KEY` as a
+**secret** in the Space settings.
+
+**A keyed Space still lets its trusted pages in without the key.** The key is for
+callers that can keep a secret — a server. Two kinds of page cannot, and are trusted
+instead: the pages listed in `WARDROBE_TRUSTED_ORIGINS` (default
+`["https://yourfriend.online","https://www.yourfriend.online"]`), and the Studio this
+Space serves (`WARDROBE_TRUST_SAME_ORIGIN=true`). Neither ever sees a key prompt: the
+Studio shows its key button only when `/v1/capabilities` says this page needs one.
+Trust is read from the browser's `Origin` header, which a page on another site cannot
+forge — so no other website can spend the Space — but which a script outside a browser
+can send. It keeps other sites out; it is not a password. Set
+`WARDROBE_TRUSTED_ORIGINS=[]` and `WARDROBE_TRUST_SAME_ORIGIN=false` for a Space where
+only the key opens it.
+
+**Because trusted pages need no key, a public Space should limit job creation.**
+`WARDROBE_RATE_LIMIT_PER_MINUTE` caps the looks one visitor can start per minute and
+`WARDROBE_QUEUE_CAP` the looks waiting or running at once; past either, the API answers
+429 with `Retry-After`. Only routes that start a fit are limited — polling a job, listing
+templates and loading a look never are. A Space sits behind one proxy, so set
+`WARDROBE_FORWARDED_HOPS=1` to count visitors by the address it forwards rather than by
+the proxy's. Both limits are off (0) unless set.
+
+Variables for a keyed or cross-origin Space:
 
 ```text
 WARDROBE_PROFILE=space
@@ -22,6 +65,9 @@ WARDROBE_JOB_BACKEND=memory
 WARDROBE_STORAGE_BACKEND=local
 PUBLIC_BASE_URL=https://<space-subdomain>.hf.space
 WARDROBE_ALLOWED_ORIGINS=["https://yourfriend.online"]
+WARDROBE_RATE_LIMIT_PER_MINUTE=6
+WARDROBE_QUEUE_CAP=8
+WARDROBE_FORWARDED_HOPS=1
 WARDROBE_AUTH_MODE=api_key
 WARDROBE_API_KEY=<secret>
 ```
@@ -50,9 +96,10 @@ the conditions its provenance manifest grants (`CC0` → modification and
 redistribution allowed). An embedded prohibition is still checked first and
 still wins.
 
-**With `WARDROBE_AUTH_MODE=api_key`**, the Studio's key button stores the key in
-that browser and sends it as a Bearer token. Every asset — avatar, look,
-preview — is fetched with it, so a keyed Space works the same as an open one.
+**With `WARDROBE_AUTH_MODE=api_key`**, the Studio served by the Space is trusted and
+asks for nothing. Opened from anywhere else, its key button stores the key in that
+browser and sends it as a Bearer token. Every asset — avatar, look, preview — is
+fetched with it, so a keyed Space works the same as an open one.
 
 **Exporting.** `GET /v1/wardrobes/{avatar}/bundle.zip` (`?passedOnly=true` to drop
 looks whose fit failed) is the Studio's Export button. Unzip it into
@@ -65,6 +112,48 @@ regardless of `USER`; the image creates that user and gives it `/data/wardrobe`.
 wardrobe index is in memory, so a restart empties every wardrobe. Export what you
 want to keep. Attaching persistent storage and a durable job backend is the
 production profile below.
+
+## Admin sign-in
+
+The Studio has an account button at the bottom left, as in a chat app. Everyone
+starts as **Guest**; the dropdown has **Settings** and **Log in**. Log in with
+the username `admin` (or `WARDROBE_ADMIN_USERNAME`) and the password in the
+`WARDROBE_ADMIN_PASSWORD` secret; until that secret is set, Settings says how to
+set it up.
+
+1. In the Space's **Settings → Variables and secrets**, add a **secret** named
+   `WARDROBE_ADMIN_PASSWORD`, at least 12 characters long. A shorter one is
+   refused, and a warning is logged.
+2. Restart the Space. Then open the Studio, click the account button, choose
+   **Log in**, and enter `admin` and the password.
+3. In **Settings → Private mode**, turn the switch on for an avatar. A popup
+   asks you to confirm two things: that you are 18 or older, and that the avatar
+   depicts an adult. Nothing turns on until both are ticked, and the server
+   refuses it without the age confirmation. Swimwear, underwear, see-through
+   fabric and stockings then open for that avatar, in that session. Guests
+   cannot turn private mode on.
+
+What it is, exactly (`apps/api/admin.py`):
+
+- **Per avatar, per session.** Signing in unlocks nothing by itself. Each
+  declaration is logged. Signing out, the session ending (8 hours by default,
+  `WARDROBE_ADMIN_SESSION_HOURS`), closing the tab or a restart withdraws them
+  all. Nothing is written to `policy.json`.
+- **The gate still runs.** A model whose own terms forbid sexual use
+  (`sexualUssageName: Disallow`) is still refused, whatever is declared.
+  Avatars nobody declared are refused as before.
+- **What it makes is private.** Jobs that relied on a session's declaration
+  are hidden from everyone without an admin session, along with their looks.
+  So are sets built on top of those looks. This covers the job list, the job
+  and look lookups, the wardrobe and its `avatars.json`, the export bundle and
+  the files under `/v1/assets` (checked against a marker stored beside the
+  look, so a restart does not expose it). A look's unguessable URL does not
+  open it without the session. With S3 storage, the files are served by signed
+  S3 URLs instead, so keep the local backend on a Space that uses this.
+- **Log-in is hardened.** A wrong username and a wrong password get the same
+  answer. Tokens are random, live in the tab's
+  `sessionStorage` and are held on the server only as a hash. Five failed
+  attempts from one client lock it out for 15 minutes.
 
 ## Production
 
