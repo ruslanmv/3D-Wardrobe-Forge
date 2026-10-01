@@ -173,7 +173,7 @@ def test_the_manifest_merges_by_slug(tmp_path):
 def _fake_hub(monkeypatch, body: bytes):
     calls = []
 
-    def request(method, url, *, token=None, form=None, body=None, redirects=True):
+    def request(method, url, *, token=None, form=None, body=None, redirects=True, extra_headers=None):
         calls.append((method, url.replace(dl.HUB, ""), token, redirects))
         if url.endswith("/api/download_licenses"):
             return 200, {}, json.dumps({"data": {"id": "L1"}}).encode()
@@ -213,6 +213,19 @@ def test_a_download_follows_the_redirect_without_the_token_and_invalidates_the_l
     assert fetched == ["https://s3.example/file?sig=1"]  # plain urlopen: no bearer to the presigned URL
     assert ("GET", "/api/download_licenses/L1/download", "TOKEN", False) in calls  # redirect not followed
     assert calls[-1][:2] == ("DELETE", "/api/download_licenses/L1")
+    assert not list(tmp_path.glob("*.part"))
+
+
+def test_a_gzip_wrapped_download_is_expanded_before_glb_validation(tmp_path, monkeypatch):
+    import gzip
+
+    from wardrobe.vrm.build import CALIBRATION_BODIES, build_vrm
+
+    raw = build_vrm(CALIBRATION_BODIES[0], spec="VRM1")
+    _fake_hub(monkeypatch, gzip.compress(raw))
+    target = dl.download({"slug": "vroid-helen", "modelId": "359"}, "TOKEN", tmp_path)
+    assert target.read_bytes() == raw
+    assert dl.glb_json(target)
     assert not list(tmp_path.glob("*.part"))
 
 
