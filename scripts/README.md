@@ -33,7 +33,7 @@ which must be registered on the application), and saves the token to
 available to other users, and its creator allows both redistribution and
 modification — this repository re-cuts the file to dress it and serves the
 looks it makes. The list is a request, not a permission: the check runs against
-VRoid Hub every time. Where a creator links extra terms (Celeste, Auralithis),
+VRoid Hub every time. Where a creator links extra terms (for example Celeste),
 the script prints the link; read it.
 
 **What it writes.**
