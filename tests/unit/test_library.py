@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 
 from tests.library_support import write_library
 from wardrobe.domain.avatars import LicenseAttestation
@@ -71,6 +72,45 @@ def test_a_manifest_cannot_reach_outside_the_library(tmp_path, vrm_bytes):
     (avatar,) = AvatarLibrary.from_directory(root).avatars
     assert avatar.file == "secret.vrm"
     assert not avatar.available  # looked for lib/secret.vrm, not ../secret.vrm
+
+
+def test_nested_download_collection_is_discovered_with_vroid_provenance(tmp_path, vrm_bytes):
+    root = write_library(tmp_path / "library", {"Mira.vrm": vrm_bytes})
+    vroid = write_library(
+        root / "vroid",
+        {"vroid-helen.vrm": vrm_bytes},
+        license="VRoid Hub conditions of use; see licenses/vroid-helen.json",
+        overrides={
+            "vroid-helen.vrm": {
+                "name": "Helen",
+                "creator": "Mhiyamin",
+                "vroidModelId": "3591428810231326281",
+                "presentation": "feminine",
+            }
+        },
+    )
+    (vroid / "licenses").mkdir()
+    (vroid / "licenses" / "vroid-helen.json").write_text(
+        json.dumps(
+            {
+                "license": {
+                    "modification": "allowModificationRedistribution",
+                    "redistribution": True,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    library = AvatarLibrary.from_directory(root)
+    assert [avatar.slug for avatar in library.avatars] == ["mira", "vroid-helen"]
+    helen = library.get("vroid-helen")
+    assert helen.available and helen.path.parent == vroid
+    assert helen.creator == "Mhiyamin"
+    assert helen.vroid_model_id == "3591428810231326281"
+    assert helen.collection == "vroid"
+    assert helen.granted_conditions == {"modification": "allow", "redistribution": "allow"}
+    assert helen.avatar_input()["license"]["conditionsOfUse"]["modification"] == "allow"
 
 
 async def test_seeding_is_idempotent(tmp_path, vrm_bytes, store):
