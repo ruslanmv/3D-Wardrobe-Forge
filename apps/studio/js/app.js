@@ -487,7 +487,6 @@ function renderCaps() {
 function renderLibrary(library) {
     const available = state.library.filter((avatar) => avatar.available).length;
     $('library-note').textContent = `${available} of ${state.library.length}`;
-    $('provenance').textContent = library.licenseNote || '';
     $('avatar-list').replaceChildren(
         ...state.library.map((avatar) => {
             const badge =
