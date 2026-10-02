@@ -49,7 +49,7 @@ Bottoms:
 |---|---|
 | Bra + briefs | Upper back, spine, lower back, hip, rib, thigh eligible where the fitted pieces leave skin |
 | Low-back bodysuit / swimsuit (`back: low`) | Upper back and spine eligible |
-| "Backless dress" today | **Not** eligible: no dress block cuts a low back yet (only `wardrobe/lingerie/blocks/bodysuit.py` reads `back`), so the fitted dress covers it. It becomes eligible the day a dress honours `back: low` in its geometry, with no body-art change. |
+| "Backless dress" | Upper back eligible — measured, not assumed: the A-line dress the planner picks for it leaves her back bare in its geometry. A dress whose geometry is closed (the bodycon below) is not, whatever the prompt says. |
 | Crop top + shorts | Lower back, hip, thigh eligible |
 | Cardigan + trousers | Nothing eligible (no hoodie template exists; a long cardigan stands in) |
 | Jacket + long trousers | Nothing eligible |
@@ -113,10 +113,13 @@ Read before designing; each shapes a decision below.
   `bodyArt` silently, so the Studio asks `/v1/capabilities` first.
 - **No identifier is derived from the request.** A pack look's `recipeId` is its
   look id (`apps/api/routes/studio.py:436`).
-- **"Backless" is parsed but mostly not built.** `BACK_KEYWORDS["low"]` in
-  `plan_outfit.py` gives `style.back = "low"`, but only the bodysuit block reads
-  it. Deciding exposure from the plan's words would put a tattoo under a closed
-  dress; measuring the fitted geometry does not.
+- **"Backless" is a word; the geometry is the answer.** `BACK_KEYWORDS["low"]`
+  in `plan_outfit.py` gives `style.back = "low"`, and whether a garment is then
+  cut open at the back depends on its block. Measured in BA2: the A-line dress
+  the planner picks for "red backless dress" leaves her upper back bare, the
+  bodycon mini dress does not. Deciding exposure from the prompt's words would be
+  right for one and wrong for the other; measuring the fitted geometry is right
+  for both.
 - **The chatbot drops unknown provenance.** `3D-Avatar-Chatbot
   src/wardrobe/WardrobePackValidator.js` (lines 207–242) rebuilds `provenance`
   from a field list, so `provenance.bodyArt` is carried by pack schema 2 and
