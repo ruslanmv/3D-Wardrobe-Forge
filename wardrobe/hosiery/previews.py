@@ -173,7 +173,8 @@ def render_web(views: list[dict]) -> dict[str, bytes]:
             vrm = work / f"{view['name']}.vrm"
             vrm.write_bytes(view["vrm"])
             spec.append({"file": vrm.name, "out": f"{view['name']}.png", "yaw": view.get("yaw", 0),
-                         "focus": view.get("focus"), "size": list(view.get("size", PROFILE))})
+                         "focus": view.get("focus"), "size": list(view.get("size", PROFILE)),
+                         "elev": view.get("elev", 0)})
         (work / "views.json").write_text(json.dumps(spec))
         done = subprocess.run(["node", str(VIEWS_SCRIPT), str(work)], capture_output=True, timeout=600,
                               cwd=str(ROOT), env=os.environ.copy())

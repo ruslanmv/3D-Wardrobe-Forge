@@ -701,6 +701,71 @@ TROUSER_WAISTBAND_M = 0.04
 #: legs, as a crotch seam does: ending exactly at the crotch it left an open slot across
 #: her front, and whatever she wore under the trousers showed through it between the legs.
 TROUSER_CROTCH_OVERLAP_M = 0.03
+#: T1. A crotch gusset sits this far inside the ring it closes, so it never shows at that
+#: ring's edge from the front or the side: only from below, between the legs.
+GUSSET_INSET = 0.985
+#: ... and has this many rings from its rim to its centre, so it shades as cloth, not a fan.
+GUSSET_RINGS = 4
+
+
+def crotch_gusset(piece: Mesh, *, name: str) -> Mesh | None:
+    """T1. Close the bottom of a yoke or waistband between the legs, as a gusset does.
+
+    Trousers and leggings were a tube round her hips stopping at (or a little below) her
+    crotch, and a tube per leg below it. Nothing joined the two between the legs: from the
+    front the gap hid behind the thighs, but from below — the view a phone held low has —
+    it opened on a triangle of her own body, or of whatever she wore underneath, up
+    between the legs. A real pair is closed there by its crotch seam or a gusset.
+
+    This is that piece: the tube's own bottom ring, drawn a hair inside it and filled to its
+    centre. The legs pass through it, so it shows only between them. It is marked placed,
+    so the radial fit (which would push it out to her thighs' surface) leaves it flat.
+    """
+    points = piece.positions.astype(np.float64)
+    if points.shape[0] < 6:
+        return None
+    floor = float(points[:, 1].min())
+    rim = points[np.abs(points[:, 1] - floor) < 1e-4]
+    if rim.shape[0] < 6:
+        return None
+    centre = rim.mean(axis=0)
+    order = np.argsort(np.arctan2(rim[:, 2] - centre[2], rim[:, 0] - centre[0]))
+    rim = rim[order]
+    # Rim points duplicated by the loft's UV seam would fold a zero-width wedge into the fan.
+    keep = np.ones(rim.shape[0], dtype=bool)
+    keep[1:] = np.linalg.norm(np.diff(rim, axis=0), axis=1) > 1e-6
+    rim = rim[keep]
+    count = rim.shape[0]
+    rings = [
+        centre + (rim - centre) * (GUSSET_INSET * (GUSSET_RINGS - k) / GUSSET_RINGS)
+        for k in range(GUSSET_RINGS)
+    ]
+    positions = np.vstack(rings + [centre[None, :]])
+    triangles = []
+    for k in range(GUSSET_RINGS - 1):
+        a, b = k * count, (k + 1) * count
+        for i in range(count):
+            j = (i + 1) % count
+            triangles += [(a + i, b + i, a + j), (a + j, b + i, b + j)]
+    last, tip = (GUSSET_RINGS - 1) * count, GUSSET_RINGS * count
+    for i in range(count):
+        triangles.append((last + i, tip, last + (i + 1) % count))
+    tris = np.array(triangles, dtype=np.uint32)
+    # Facing down and out: the side that is seen from below.
+    first = positions[tris[0]]
+    if np.cross(first[1] - first[0], first[2] - first[0])[1] > 0:
+        tris = tris[:, ::-1]
+    uvs = np.column_stack([positions[:, 0] - centre[0], positions[:, 2] - centre[2]])
+    gusset = Mesh(
+        positions=positions.astype(np.float32),
+        indices=tris.reshape(-1).copy(),
+        uvs=uvs.astype(np.float32),
+        metadata={"sections": [(name, 0, tris.shape[0])]},
+    )
+    gusset.compute_normals()
+    gusset.metadata["placed"] = np.ones(gusset.vertex_count, dtype=bool)
+    gusset.metadata["gusset"] = np.ones(gusset.vertex_count, dtype=bool)
+    return gusset
 
 
 def trouser_top(params: FitParameters, rise_style: str) -> float:
@@ -777,6 +842,10 @@ def build_trousers(params: FitParameters, *, hem_y: float, flare: float = 1.0,
         yoke.positions = points.astype(np.float32)
         yoke.compute_normals()
     meshes: list[Mesh] = [yoke]
+    if shaped:
+        gusset = crotch_gusset(yoke, name=f"{name}-gusset")
+        if gusset is not None:
+            meshes.append(gusset)
     segments = max(params.segments // 2, 8)
     for side in ("left", "right"):
         if measured:
@@ -1553,8 +1622,12 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
     if kind == "leggings":
         waistband = build_band(params, y_bottom=crotch_y(params, params.hip_y - thigh * 0.12),
                                y_top=low_rise + rise * 0.3, rows=5, name="leggings-waist")
-        return [waistband, *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="leggings",
-                                          ankle=True)]
+        gusset = crotch_gusset(waistband, name="leggings-gusset")
+        return [
+            waistband,
+            *([gusset] if gusset is not None else []),
+            *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="leggings", ankle=True),
+        ]
     if kind == "tights":
         # Leggings' shape, down over the feet, and a layer rather than a garment
         # of its own: KIND_REGIONS leaves tights out, so they go under her skirt

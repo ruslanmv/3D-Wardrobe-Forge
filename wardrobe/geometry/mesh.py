@@ -85,6 +85,10 @@ def section_ranges(mesh: Mesh) -> list[tuple[str, int, int]]:
     return [(str(mesh.metadata.get("section", "garment")), 0, mesh.triangle_count)]
 
 
+#: Metadata entries that are one boolean per vertex, merged per vertex by ``concatenate``.
+VERTEX_MASKS = ("placed", "gusset")
+
+
 def concatenate(meshes: list[Mesh]) -> Mesh:
     """Merge meshes into one, offsetting indices. Attributes must be uniform."""
     meshes = [m for m in meshes if m.vertex_count]
@@ -119,6 +123,20 @@ def concatenate(meshes: list[Mesh]) -> Mesh:
             sections.append((name, start + first, count))
         start += mesh.triangle_count
     metadata["sections"] = sections
+    # Per-vertex masks: "placed" (a pattern placed it; wardrobe.engines.shell leaves it out of
+    # the radial passes) and "gusset" (T1, a crotch gusset). One piece's mask copied over the
+    # merged mesh by ``update`` would be the wrong length, and every other piece's would be
+    # lost; merge them per vertex.
+    for key in VERTEX_MASKS:
+        if any(m.metadata.get(key) is not None for m in meshes):
+            metadata[key] = np.concatenate(
+                [
+                    np.asarray(m.metadata[key], dtype=bool)
+                    if m.metadata.get(key) is not None
+                    else np.zeros(m.vertex_count, dtype=bool)
+                    for m in meshes
+                ]
+            )
 
     return Mesh(
         positions=positions,

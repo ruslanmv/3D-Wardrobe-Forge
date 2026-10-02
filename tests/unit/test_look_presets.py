@@ -271,6 +271,36 @@ def test_low_rise_jeans_have_a_crotch_that_covers(body):
     assert abs(float(liner.positions[:, 1].min()) - crotch) < 1e-4  # the hidden liner keeps its yoke
 
 
+@pytest.mark.parametrize("kind", ["trousers", "jeans", "leggings"])
+def test_trousers_and_leggings_are_closed_between_the_legs(body, kind):
+    """T1. From below, the crotch is fabric: a gusset caps the tube where the legs leave it.
+
+    Before it, a low camera saw up between the legs to her own body. The gusset is marked
+    placed (the radial fit would push it out to her thighs) and flagged so the shell can
+    light it as the front and back of the garment rather than as a floor seen from below.
+    """
+    mesh = build_garment(kind, FitParameters(measurements=body))
+    gusset = np.asarray(mesh.metadata.get("gusset"), dtype=bool)
+    placed = np.asarray(mesh.metadata.get("placed"), dtype=bool)
+    assert gusset.shape == (mesh.vertex_count,) and gusset.any()
+    assert placed[gusset].all()
+    cap = mesh.positions[gusset]
+    assert float(np.ptp(cap[:, 1])) < 1e-3  # one flat panel at the bottom of the tube
+    # The middle of her, between the legs, is under a triangle of it.
+    tris = mesh.indices.reshape(-1, 3)
+    tris = tris[gusset[tris].all(axis=1)]
+    centre = cap[:, [0, 2]].mean(axis=0)
+    a, b, c = (mesh.positions[tris[:, i]][:, [0, 2]] for i in range(3))
+
+    def side(p, q, r):
+        return (p[:, 0] - r[0]) * (q[:, 1] - r[1]) - (q[:, 0] - r[0]) * (p[:, 1] - r[1])
+
+    d1, d2, d3 = side(a, b, centre), side(b, c, centre), side(c, a, centre)
+    inside = ~(((d1 < 0) | (d2 < 0) | (d3 < 0)) & ((d1 > 0) | (d2 > 0) | (d3 > 0)))
+    assert inside.any()
+    assert float(cap[:, 0].min()) < -0.03 and float(cap[:, 0].max()) > 0.03  # it reaches both legs
+
+
 def test_an_undeclared_avatar_is_refused_the_thong_and_given_the_corset():
     record, _ = _dress({"prompt": "visible_thong_low_rise_jeans", "preset": "visible_thong_low_rise_jeans"},
                        declared=False)

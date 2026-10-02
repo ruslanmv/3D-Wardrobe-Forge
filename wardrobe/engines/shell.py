@@ -248,6 +248,8 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
             top_edge=lambda points: top + trouser_top_dip(front_angle(points, params), rise, params.height),
         )
 
+    _light_gusset(mesh, params.forward)
+
     # The shell's UVs are metres of fabric; one pattern tile covers its physical size.
     scale = float(context.plan.material.texture_scale or 0.0)
     if scale > 0.0 and mesh.uvs is not None:
@@ -279,6 +281,36 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         after=after,
         verdict=verdict,
     )
+
+
+#: T1. How far down a crotch gusset's shading normals tip from horizontal (about 20 degrees).
+GUSSET_NORMAL_DOWN = 0.35
+
+
+def _light_gusset(mesh: Mesh, forward: float) -> None:
+    """T1. Shade a crotch gusset as the cloth curving under her that it stands for.
+
+    The gusset is flat and faces straight down, so a toon material lit from above gives it
+    nothing but its shade colour: a black patch between the legs of beige trousers. Its
+    normals are set as a crotch seam's would be — the front half facing forward, the back
+    half back, both tipped down — so it takes the light the fabric round it takes. Last,
+    after every pass that recomputes normals; the shape is left exactly as it is.
+    """
+    mask = mesh.metadata.get("gusset")
+    if mask is None or mesh.normals is None:
+        return
+    mask = np.asarray(mask, dtype=bool)
+    if mask.shape[0] < mesh.vertex_count:  # a pass appended vertices (add_waistband): none are gusset
+        mask = np.concatenate([mask, np.zeros(mesh.vertex_count - mask.shape[0], dtype=bool)])
+    mask = mask[: mesh.vertex_count]
+    if not mask.any():
+        return
+    z = mesh.positions[mask, 2].astype(np.float64)
+    centre = (z.max() + z.min()) * 0.5
+    side = np.where((z - centre) * forward >= 0.0, forward, -forward)
+    normals = np.column_stack([np.zeros_like(z), np.full_like(z, -GUSSET_NORMAL_DOWN), side])
+    normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+    mesh.normals[mask] = normals.astype(np.float32)
 
 
 #: Below this many body points the classification is too sparse to trust, and

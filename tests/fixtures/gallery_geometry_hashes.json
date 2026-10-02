@@ -1,7 +1,7 @@
 {
  "AvatarSample_A/01": {
   "Black Cropped Tee": "5e4de8e31227df2221f249b24dbef10f2fc39cf8a81b2174dd1820adbbabb239",
-  "Blue Straight Jeans": "b5a826f9853b1145ad4fbb37126edc99aa62291d1a74eb4560ec0a69cd944d2b"
+  "Blue Straight Jeans": "faac801b1e8ae07dfe344bcf05320294d3ecf38c3c3f58fa65dfdeebdade69ef"
  },
  "AvatarSample_A/02": {
   "Black Slip Shorts": "9cac754ee65e3617a2204d0d6d3ed2daaf4fbc216036927b22272850bc54aeaa",
@@ -24,12 +24,12 @@
   "Champagne Slip Dress": "1961901239c39080332ee40c0c1a9707fa432de59bb249aa689483ab50154f49"
  },
  "AvatarSample_A/07": {
-  "Blue Denim Shorts": "b10178939327c298d67b48980031c7f043c48082c1eff14b88d335bad68f285c",
-  "White Cropped Tee": "cdbb9ce89d6dddcbf7783b4781368019cc1ff8a66115f2335a16e9604d612e69"
+  "Blue Denim Shorts": "048383027db13d28d02e926fdc837eb9c23d920c86b0efcfbe3fc36b6e532b60",
+  "White Cropped Tee": "5965fc461240b2aa2b9ddf3260144b940751cd03cf3faf8495620795025462a4"
  },
  "AvatarSample_A/08": {
-  "Black Cropped Tee": "daba96451d7cc1938701244a291b2405d70b5b4e69888101f871f31107cd6564",
-  "Neon Green Latex Leggings": "1cacb223e50172ad601db20b9bfa0851a3ab50f9bc457e06fc001d7ba271156b"
+  "Black Cropped Tee": "4d8f95f5ba55d40036e8931cba43bf4e458c3e76e1e149a79773af20b9b5a21a",
+  "Neon Green Latex Leggings": "1284e57c9255c09ded0028ac75e9cd422d1b86336d61bfc92d046107f4c7b6ae"
  },
  "AvatarSample_A/09": {
   "Black Glossy Catsuit": "20a8b6d044bc78d36f79f4808becd3896c44c36b9cafe89a6924fb8ec47f86bb"
@@ -50,8 +50,8 @@
   "Yellow Maxi Sundress": "5d648e1e1eee0636556f527d232af74c4ce1d18c202bf4f434d017a19d95c776"
  },
  "AvatarSample_A/13": {
-  "Blue Baggy Jeans": "6eddf96a0a2a13c00bc372d42b1fdfe7675562bb987f2c096c2356ea08bbadc4",
-  "White Tube Top": "f0556d1412458d828b121c636d9739c99426f61d0572b4569d562778dbe44b1d"
+  "Blue Baggy Jeans": "b5bd0268379b78ec0a1d7a0b9c06bfa085d87d0e02f0d6a694d01622118d2720",
+  "White Tube Top": "74f8fba67f1223ea8aea4f63678e3ddf44ce6f9940948f2a2c8cce70ce73c864"
  },
  "AvatarSample_A/14": {
   "Beige Lightweight Trench": "3f9668c81374f18b5baae8b2d75c3c85392c2ae81fe23e87da7c95b155229208",
@@ -65,7 +65,7 @@
  },
  "AvatarSample_B/01": {
   "Black Cropped Tee": "7cfde85ec5bc8f9801bf702af8ecfa5afcf62cd0fdb64a85fd8102c2d55b1594",
-  "Blue Straight Jeans": "23fe799e2bc9bc074f7842593adc979a44fdeff7f6f5fcb52459a25fb628d49a"
+  "Blue Straight Jeans": "74e7ed142706fe082c53d23900a753cf267a816a3e734b58ad46113cd581519f"
  },
  "AvatarSample_B/02": {
   "Black Slip Shorts": "9e78537f61d5c3279862504ee796b09fc014ae512d3315d0ebd1eaa7e76225ac",
@@ -88,12 +88,12 @@
   "Champagne Slip Dress": "a071598ec802f785d6be0a85029b787397df9003eb7477a1b6b1d366b387cf82"
  },
  "AvatarSample_B/07": {
-  "Blue Denim Shorts": "b858020dbb6080bf0efd6d6e2ab0b052ceb8141767b2369c6ce6d009ac8cb7b6",
-  "White Cropped Tee": "606323753b2a032f9d9df3b863a033bfdb14a1b5cb27dcdbb693d57d9a893adb"
+  "Blue Denim Shorts": "5e09f7797c3984776a747ea05b409d55eebb23f909460b57c79259a60b02b2a3",
+  "White Cropped Tee": "dbd8c5e3b2d702a7a3675664c20f854bd7c664732b7788b6782710fdf431998d"
  },
  "AvatarSample_B/08": {
-  "Black Cropped Tee": "9b15be48ef4d98d5a9ed567584c5c182be38bbf97f5e51611bb0d713acdff7a2",
-  "Neon Green Latex Leggings": "a5e5b495ef3a6b34881659db2daab9eb54eda790f269af8ad30f26a01b04f3f2"
+  "Black Cropped Tee": "a7cefb526743460debc11c93abdb895282184029acf2f4a0e9799d6fedabf9cf",
+  "Neon Green Latex Leggings": "b5ec80ec765d5fa5314e38147fb9ef597bf0105a043ea6ffbf4fad9a7adcd37c"
  },
  "AvatarSample_B/09": {
   "Black Glossy Catsuit": "23963e7d373e63988e9f0c44d7af77708ec11af599860d75c9d13bd0efc6d222"
@@ -114,8 +114,8 @@
   "Yellow Maxi Sundress": "af1c2a70944e4e4e53c9c5c841f69287f5d4d60a2cf2396332cba41af9391915"
  },
  "AvatarSample_B/13": {
-  "Blue Baggy Jeans": "741778c8343b7b736ae5d145ce97b2ae7ce974937736a369a5d81b9777677f9b",
-  "White Tube Top": "3883558f815604878e0e9a90d4122e82ff88acf5cd3f3f74fd383e87a00404ce"
+  "Blue Baggy Jeans": "a2439c4ae10b8fc6221db5558c7a2b41fef1c236ae0cae446c64c406d4ed6d72",
+  "White Tube Top": "ceeb0a0ba1c2dafd420f1a93209c54dc879d6a5c054639d1b0fcba5990f8051f"
  },
  "AvatarSample_B/14": {
   "Beige Lightweight Trench": "86d50db30923f4bb97c9d6d62246bf1fb4a7e9725c505a47d1296713989a858a",
@@ -129,7 +129,7 @@
  },
  "AvatarSample_C/01": {
   "Black Cropped Tee": "fb03a0f6b7807c958d1e0368fcd5383dab6bd87cde3410903a75794774c177c8",
-  "Blue Straight Jeans": "18603e0e14feffeba37b35399602be90515d316898322f6be3255e3889c8c93c"
+  "Blue Straight Jeans": "49671ad9716fa79f5f4921f56a36aee1b47647ee36bcca748ce40e7e545bdd72"
  },
  "AvatarSample_C/02": {
   "Black Slip Shorts": "6ac3d45075f218a1f05b88111fb97f715a7b1ac4bdb0aedd3e7781bbdd834c19",
@@ -152,12 +152,12 @@
   "Champagne Slip Dress": "49177d96b97d251c9bbc352dddbde5240b7f30d2d32db607b8a13f614ad49a88"
  },
  "AvatarSample_C/07": {
-  "Blue Denim Shorts": "42f87b3fdc4552e0b24a624c44b4bf3a010580f3bf3ddfcde5faba43083bce60",
-  "White Cropped Tee": "ce83cfc29a6d6244afe6a965a4ae806cbed039e5ced760e2eb4ff42409a4644b"
+  "Blue Denim Shorts": "22861e753236d072297872e940a92d2096c4435f750e07d80c9594e716d9e00a",
+  "White Cropped Tee": "d265688be3342b79bc746987f95687612d0fed3dc05f9b0ca3a7c7be3d3825a0"
  },
  "AvatarSample_C/08": {
-  "Black Cropped Tee": "26c6cb510fcec0936cf67211172d2b1dcec36bfaa9fa2b7ceec2ef89245f9fa2",
-  "Neon Green Latex Leggings": "b4caec4b675fab90e3d70b910fdb819fc27c3db401bb01be272195a3566d5378"
+  "Black Cropped Tee": "98b3ba475fbffe0a144096426deaebd4d14f91fcd38e8dddc26bdd0517a24ff8",
+  "Neon Green Latex Leggings": "a5dba094ff190d1e566f248cd894132ed9df4981fddde9e3edc0df6e0181198d"
  },
  "AvatarSample_C/09": {
   "Black Glossy Catsuit": "4b6b344273aa2f807f955dfa83c12f5a2fc5ee6dc39b1e5f16b67aaa9940303e"
@@ -178,8 +178,8 @@
   "Yellow Maxi Sundress": "1b1bd7958c98d8e72c762c8b8a6bd89f346b64918cbe0b2eec5ceca49bab3a4c"
  },
  "AvatarSample_C/13": {
-  "Blue Baggy Jeans": "7b57b3db45f0133aa411cf34bbe7a27d3977faf49da5a234c10eba940ec3aa89",
-  "White Tube Top": "00e0e22cd74f7ce7e349189a3d304d30eeeb92bb2b115ebb730da8677f54cec9"
+  "Blue Baggy Jeans": "ebf5f0880e7cb3de2590e59fb2199c44adf36b207c9e81addd151dc9d4660732",
+  "White Tube Top": "dd5da870baa297c6188411b98c1cf2ea92e7eb3d37b8f7d00008a04e3f7015e9"
  },
  "AvatarSample_C/14": {
   "Beige Lightweight Trench": "854e827ac66d3b5d68dfdf786b01c553e209f3f1b20b40a505862c6aa77626e1",
@@ -193,7 +193,7 @@
  },
  "fem_vroid/01": {
   "Black Cropped Tee": "74f60a89a68815157fc9c720badb9b5f1ed458c687113dc67b83182c492a1441",
-  "Blue Straight Jeans": "7f08b0062944ac35aef9413fc19b78393c046dc7c9aac143fe643d8378e30f6a"
+  "Blue Straight Jeans": "fbf55e45dc22cad973cebc352515b2840e609d7d4db677c84e93e8dada46d156"
  },
  "fem_vroid/02": {
   "Red Bodycon Mini Dress": "134592740a42b56493bad9b18261ef65358cb613a5632a66602889699c2bbf05"
@@ -211,12 +211,12 @@
   "Champagne Slip Dress": "646b7953e657720a245b862594645c6d5fb40cd39168a866b9da8b80320ec7bf"
  },
  "fem_vroid/07": {
-  "Blue Denim Shorts": "997290b5240b8c82e2f3cdefe79c01682ee7aec45e401f7f1695bb0fd029a50e",
-  "White Cropped Tee": "49b0e80a8a0a0ac259b611b99e00682c6aaee275df0f5b0b49242ffa08d9c83f"
+  "Blue Denim Shorts": "fd4ff2914e559e85706c0e6482e267232658e8c89e96738233566eebda71533a",
+  "White Cropped Tee": "de48619a0a0b951bd08d239a370dfaf52af1d866095a530b9c296809094dbcf1"
  },
  "fem_vroid/08": {
-  "Black Cropped Tee": "86e3a9c3e66eb157e207809879ebd240e9b7071e8264c8f3d191ab54912b4afc",
-  "Neon Green Latex Leggings": "d1a1e5b58d7b05d85bcf3701ecff0c85208f7eda5634fd238444e920f3fcb15c"
+  "Black Cropped Tee": "4a18503f153c5b7191bffcaa85131563751eafbc4d0c6c5a00e7ed340ad62be9",
+  "Neon Green Latex Leggings": "979c9dbe897fe387f4d56b8070260de2677fe3b085a63bff4a8ea29a46402d0d"
  },
  "fem_vroid/09": {
   "Black Glossy Catsuit": "41ff61704a0d47d6a2e5d7bfe02be80a7562e8e81e8dbc5eac15008c55819766"
@@ -234,8 +234,8 @@
   "Yellow Maxi Sundress": "6d6775b132560cf30efe865977b6541814b0e68514e7d114893789f64b744f89"
  },
  "fem_vroid/13": {
-  "Blue Baggy Jeans": "200362974a4042786200482d6de11cdef39a1165e3092858c42e16337e69babf",
-  "White Tube Top": "41888c0d369afba5c8dd44aa379b40bda31383f365510163e5bbaccbc8200215"
+  "Blue Baggy Jeans": "67b842cdff3fbd1b052f8ac35629bea50e1edb83f5414f214c872ff7440e3ca2",
+  "White Tube Top": "97fb0667bb67976b4576e4e18b51d1bdff2f108451b72cadadf0052891764ff3"
  },
  "fem_vroid/14": {
   "Beige Lightweight Trench": "a839038dc56af8a9be591ce7902de63d36ae73fcfacf3a8a0ff81ffe0875f863",
@@ -247,7 +247,7 @@
  },
  "mannequin/01": {
   "Black Cropped Tee": "4530e4eb2c94ec479c3a8b848b3247a81671812f6e31e244d6e737880a5a765e",
-  "Blue Straight Jeans": "b0c9c02c12ac7f99ed83a8be4919a11d40d4d26bca7e1b196b021ac9a2a5d342"
+  "Blue Straight Jeans": "1a59d6d331b494036e216ecffeb5ffb66b628a5b8d60204e23c0fbd8d30d8a0e"
  },
  "mannequin/02": {
   "Black Tailored Briefs": "d52c76947ac70effe3b225307a9e2d77a4684b4a85b4d610b04fe8d10d3bd282",
@@ -289,15 +289,15 @@
   "Black Micro Tailored String Bikini Bottoms": "ec78ef02d34eed735a3dcd3bc909ce242aa307a2244ac3664b13ea4bf0d81cc2"
  },
  "mannequin/12": {
-  "Black Cropped Tee": "54ab94482402781a563fb0f5533d299e1108c775926d8da8f0d490b2ba4944a7",
-  "Neon Green Latex Leggings": "2025d1332f0d778fa61d254732dfa3f22ac42d1a787d7fd3d4eb8aea38098651"
+  "Black Cropped Tee": "fd59cfad6d1cad4d971b19605f75f7b99c3632505dc3f7299afbf39a020e8f0c",
+  "Neon Green Latex Leggings": "2480cea22135ecf99bae79de55013aea82df2611f109a1d3df683e97ebda1a79"
  },
  "mannequin/13": {
   "Pink Sequin Bodycon Mini Dress": "ec343b862276c0bfccebfba15d7caee5f1248ac3dac51bbbd287f549319615f9"
  },
  "mannequin/14": {
-  "Blue Denim Shorts": "a6a7642934b6e0bc7b6e1f0e454a9df633935bcc5dd9f5109c348c101c6dfa50",
-  "White Cropped Tee": "1256178203e1b9e02a6441a180b33f21500dc70cc4acf3707c8134e03e849de8"
+  "Blue Denim Shorts": "c8a7a38c037fb550387d72975bd5106e8ca49899b99ca4b69a9088e84cf33bdd",
+  "White Cropped Tee": "ae954d613201f19dccb131bb54c9f94af3c1da5fe39e4ed9f471fac4ff52bdec"
  },
  "mannequin/15": {
   "Black Tailored Full-Cup Bra": "18b715dcf7cdb78deb9a9c39a2ec162bc532b0a01523f60d43c55b125743a754",
