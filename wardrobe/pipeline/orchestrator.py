@@ -15,6 +15,7 @@ import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
+from wardrobe.body_art.catalog import BodyArtCatalog
 from wardrobe.config import Settings, get_settings
 from wardrobe.domain.garments import TemplateCatalog
 from wardrobe.domain.jobs import (
@@ -74,6 +75,8 @@ class Orchestrator:
 
         self.queue = queue or create_job_queue(self.settings)
         self.catalog = catalog or TemplateCatalog.from_directory(self.settings.template_root_path)
+        # BA1. The tattoo designs; read by the body-art stages only, after the outfit is assembled.
+        self.body_art = BodyArtCatalog.from_directory(self.settings.body_art_root_path)
         self.broker = broker or default_broker
         self._started = False
 

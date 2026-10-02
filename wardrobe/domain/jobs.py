@@ -7,8 +7,9 @@ from enum import StrEnum
 from typing import Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wardrobe.body_art.contract import BodyArtRequest, check_items
 from wardrobe.domain.avatars import AvatarAnalysis, AvatarInput
 from wardrobe.domain.looks import FitReport, LookResult, OutfitPlan, OutfitRequest
 
@@ -109,6 +110,18 @@ class CreateJobRequest(BaseModel):
     avatar: AvatarInput
     outfit: OutfitRequest
     options: JobOptions = Field(default_factory=JobOptions)
+    #: BA1. Tattoos she would like, on skin the finished outfit leaves visible. A sibling
+    #: of ``outfit``, never inside it: the planner copies the outfit request into every
+    #: layer. Read only after the outfit is assembled; a tattoo the clothes would hide is
+    #: not made (docs/BODY_ART_PLAN.md). Empty — the default — changes nothing.
+    body_art: list[BodyArtRequest] = Field(default_factory=list, alias="bodyArt", max_length=4)
+    #: Placements whose Forge tattoo to take off.
+    body_art_remove: list[str] = Field(default_factory=list, alias="bodyArtRemove", max_length=8)
+
+    @model_validator(mode="after")
+    def _body_art_list(self) -> CreateJobRequest:
+        check_items(self.body_art, self.body_art_remove)
+        return self
 
 
 class JobEvent(BaseModel):
