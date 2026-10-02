@@ -1,0 +1,58 @@
+{
+  "generated_at_utc": "2026-10-02T08:00:43+00:00",
+  "license_note": " Each creator's conditions, checked at download time, are in licenses/<slug>.json. The VRM files are not committed; run the script to fetch them.",
+  "items": [
+    {
+      "slug": "vroid-avatar-sample-o",
+      "name": "AvatarSample_O",
+      "file": "vroid-avatar-sample-o.vrm",
+      "presentation": "feminine",
+      "source": "https://hub.vroid.com/en/characters/2082401201932290880/models/3390783334862270831",
+      "license": "CC0",
+      "licenseConditions": {
+        "modification": "allow",
+        "redistribution": "allow"
+      },
+      "creator": "雨衣 ネモ",
+      "vroidModelId": "3390783334862270831",
+      "bytes": 13409316,
+      "sha256": "e5c0395b59b636e6e0731ba872f4885d1bf1b69eba5f2904e68c16bd105e1697",
+      "glb_version": 2
+    },
+    {
+      "slug": "vroid-model-girl",
+      "name": "Model Girl",
+      "file": "vroid-model-girl.vrm",
+      "presentation": "feminine",
+      "source": "https://hub.vroid.com/en/characters/7589991019940102131/models/3353341336249445361",
+      "license": "CC0",
+      "licenseConditions": {
+        "modification": "allow",
+        "redistribution": "allow"
+      },
+      "creator": "羅銥.",
+      "vroidModelId": "3353341336249445361",
+      "bytes": 14143048,
+      "sha256": "1a298a534c54c8f6d74ddf78de06ac1c9ecef88972552d18b9d5bf01cb7a42bb",
+      "glb_version": 2
+    },
+    {
+      "slug": "vroid-rinna",
+      "name": "Rinna",
+      "file": "vroid-rinna.vrm",
+      "presentation": "feminine",
+      "source": "https://hub.vroid.com/en/characters/7324249457020862693/models/5352976366004384332",
+      "license": "CC0",
+      "licenseConditions": {
+        "modification": "allow",
+        "redistribution": "allow"
+      },
+      "creator": "キャラクター紹介サイト管理人",
+      "vroidModelId": "5352976366004384332",
+      "bytes": 16724052,
+      "sha256": "d88320f4b0059af84ce75aed66672f4602caa376e4bd41ba454e657083b54d51",
+      "glb_version": 2
+    }
+
+  ]
+}

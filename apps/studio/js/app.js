@@ -81,6 +81,9 @@ const state = {
 };
 
 let viewer = null;
+let importFile = null;
+let importInspection = null;
+let libraryRefreshAt = 0;
 
 // ---------------------------------------------------------------- helpers
 function el(tag, props = {}, ...children) {
@@ -208,6 +211,31 @@ function bindChrome() {
     });
     $('key-btn').classList.toggle('has-key', Boolean(auth.key));
 
+    window.addEventListener('focus', () => refreshLibraryFromServer());
+    $('import-vrm-btn').addEventListener('click', openImportDialog);
+    $('import-close').addEventListener('click', closeImportDialog);
+    $('import-cancel').addEventListener('click', closeImportDialog);
+    $('import-file').addEventListener('change', () => inspectImportFile($('import-file').files[0] || null));
+    $('import-attest-check').addEventListener('change', updateImportSubmit);
+    $('import-form').addEventListener('submit', importAvatar);
+    const drop = $('import-drop');
+    for (const eventName of ['dragenter', 'dragover']) {
+        drop.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            drop.classList.add('drag');
+        });
+    }
+    for (const eventName of ['dragleave', 'drop']) {
+        drop.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            drop.classList.remove('drag');
+        });
+    }
+    drop.addEventListener('drop', (event) => {
+        const file = event.dataTransfer && event.dataTransfer.files ? event.dataTransfer.files[0] : null;
+        if (file) inspectImportFile(file);
+    });
+
     $('design-form').addEventListener('submit', (event) => {
         event.preventDefault();
         generate();
@@ -224,6 +252,189 @@ function bindChrome() {
         $('plan-report').hidden = true;
         renderBaseBodyNote();
     });
+}
+
+// ---------------------------------------------------------------- VRM import
+function formatBytes(bytes) {
+    if (!Number.isFinite(bytes)) return '';
+    if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} MB`;
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${bytes} B`;
+}
+
+function resetImportDialog() {
+    importFile = null;
+    importInspection = null;
+    $('import-file').value = '';
+    $('import-file-card').hidden = true;
+    $('import-analysis').hidden = true;
+    $('import-presentation-field').hidden = true;
+    $('import-attestation').hidden = true;
+    $('import-attest-check').checked = false;
+    $('import-presentation').value = 'avatar';
+    $('import-error').hidden = true;
+    $('import-error').textContent = '';
+    $('import-submit').disabled = true;
+    $('import-submit').textContent = 'Import avatar';
+    $('import-file-state').className = 'import-file-state';
+    const limit = state.caps && state.caps.maxAvatarBytes;
+    $('import-limit').textContent = limit ? `VRM · up to ${formatBytes(limit)}` : 'VRM files only';
+}
+
+function openImportDialog() {
+    resetImportDialog();
+    $('import-dialog').showModal();
+}
+
+function closeImportDialog() {
+    $('import-dialog').close();
+    resetImportDialog();
+}
+
+function setImportError(message) {
+    $('import-error').textContent = message || '';
+    $('import-error').hidden = !message;
+}
+
+function updateImportSubmit() {
+    const decision = importInspection && importInspection.license;
+    const allowed =
+        Boolean(importFile && importInspection && importInspection.usable) &&
+        Boolean(
+            decision &&
+                (decision.allowed || (decision.requiresAttestation && $('import-attest-check').checked))
+        );
+    $('import-submit').disabled = !allowed;
+}
+
+async function inspectImportFile(file) {
+    if (!file) return;
+    importFile = file;
+    importInspection = null;
+    setImportError('');
+    $('import-file-card').hidden = false;
+    $('import-file-name').textContent = file.name || 'avatar.vrm';
+    $('import-file-size').textContent = formatBytes(file.size);
+    $('import-file-state').textContent = 'Checking…';
+    $('import-file-state').className = 'import-file-state';
+    $('import-analysis').hidden = true;
+    $('import-presentation-field').hidden = true;
+    $('import-attestation').hidden = true;
+    $('import-attest-check').checked = false;
+    $('import-submit').disabled = true;
+
+    const limit = state.caps && state.caps.maxAvatarBytes;
+    if (limit && file.size > limit) {
+        $('import-file-state').textContent = 'Too large';
+        $('import-file-state').className = 'import-file-state bad';
+        setImportError(`This file is ${formatBytes(file.size)}; this deployment accepts up to ${formatBytes(limit)}.`);
+        return;
+    }
+
+    const token = file;
+    try {
+        const result = await api.inspectAvatar(file);
+        if (importFile !== token) return;
+        importInspection = result;
+        const analysis = result.analysis || {};
+        const decision = result.license || {};
+
+        $('import-spec').textContent = analysis.spec || '—';
+        $('import-meshes').textContent = String(analysis.meshCount ?? '—');
+        $('import-materials').textContent = String(analysis.materialCount ?? '—');
+        $('import-analysis').hidden = false;
+        $('import-presentation-field').hidden = false;
+
+        const licenseNode = $('import-license');
+        if (!result.usable) {
+            $('import-file-state').textContent = 'Not usable';
+            $('import-file-state').className = 'import-file-state bad';
+            licenseNode.className = 'import-license bad';
+            licenseNode.textContent = 'The model is a VRM, but its humanoid rig is incomplete for fitting garments.';
+        } else if (decision.allowed) {
+            $('import-file-state').textContent = 'Ready';
+            $('import-file-state').className = 'import-file-state ok';
+            licenseNode.className = 'import-license ok';
+            licenseNode.textContent = decision.message || 'Modification permission is present in the model.';
+        } else if (decision.requiresAttestation) {
+            $('import-file-state').textContent = 'Permission needed';
+            $('import-file-state').className = 'import-file-state';
+            licenseNode.className = 'import-license warn';
+            licenseNode.textContent =
+                'The VRM does not state whether modification is allowed. Confirm permission below to add it to the Studio.';
+            $('import-attestation').hidden = false;
+        } else {
+            $('import-file-state').textContent = 'Blocked';
+            $('import-file-state').className = 'import-file-state bad';
+            licenseNode.className = 'import-license bad';
+            licenseNode.textContent = decision.message || 'This model does not permit modification.';
+        }
+        updateImportSubmit();
+    } catch (error) {
+        if (importFile !== token) return;
+        $('import-file-state').textContent = 'Invalid';
+        $('import-file-state').className = 'import-file-state bad';
+        setImportError(describe(error));
+    }
+}
+
+async function importAvatar(event) {
+    event.preventDefault();
+    updateImportSubmit();
+    if ($('import-submit').disabled || !importFile) return;
+
+    const button = $('import-submit');
+    button.disabled = true;
+    button.textContent = 'Importing…';
+    setImportError('');
+    try {
+        const result = await api.importAvatar(importFile, {
+            presentation: $('import-presentation').value,
+            attestModification: $('import-attest-check').checked,
+        });
+        state.library = result.library.avatars || [];
+        renderLibrary(result.library);
+        const avatar = result.avatar;
+        $('import-dialog').close();
+        importFile = null;
+        importInspection = null;
+
+        $('library').closest('.app').dataset.tab = 'design';
+        document
+            .querySelectorAll('[data-tab-target]')
+            .forEach((node) => node.setAttribute('aria-selected', String(node.dataset.tabTarget === 'design')));
+        await selectAvatar(avatar.slug);
+        setStatus(result.duplicate ? `${avatar.name} is already in the library.` : `${avatar.name} imported.`);
+    } catch (error) {
+        setImportError(describe(error));
+        button.disabled = false;
+        button.textContent = 'Import avatar';
+    }
+}
+
+async function refreshLibraryFromServer() {
+    if (!state.library.length) return;
+    const now = Date.now();
+    if (now - libraryRefreshAt < 2000) return;
+    libraryRefreshAt = now;
+
+    const before = state.library
+        .map((avatar) => `${avatar.slug}:${avatar.sha256}:${avatar.available}`)
+        .join('|');
+    try {
+        const library = await api.library();
+        const after = (library.avatars || [])
+            .map((avatar) => `${avatar.slug}:${avatar.sha256}:${avatar.available}`)
+            .join('|');
+        state.library = library.avatars || [];
+        if (state.avatar) {
+            state.avatar = state.library.find((avatar) => avatar.slug === state.avatar.slug) || state.avatar;
+        }
+        renderLibrary(library);
+        if (after !== before) setStatus('Avatar library updated.');
+    } catch (_) {
+        // A focus refresh is convenience only; boot and explicit actions surface API errors.
+    }
 }
 
 // ---------------------------------------------------------------- capabilities
@@ -252,8 +463,13 @@ function renderLibrary(library) {
     $('library-note').textContent = `${available} of ${state.library.length}`;
     $('provenance').textContent = library.licenseNote || '';
     $('avatar-list').replaceChildren(
-        ...state.library.map((avatar) =>
-            el(
+        ...state.library.map((avatar) => {
+            const badge =
+                avatar.collection === 'imports' && (!avatar.license || avatar.license === 'Embedded VRM terms')
+                    ? 'Imported'
+                    : avatar.license;
+            const byline = avatar.creator ? ` · ${avatar.creator}` : '';
+            return el(
                 'li',
                 {},
                 el(
@@ -263,7 +479,9 @@ function renderLibrary(library) {
                         type: 'button',
                         'data-slug': avatar.slug,
                         disabled: !avatar.available,
-                        title: avatar.problem || `${avatar.license} · sha256 ${avatar.sha256.slice(0, 12)}…`,
+                        title:
+                            avatar.problem ||
+                            `${avatar.license}${avatar.creator ? ` · by ${avatar.creator}` : ''} · sha256 ${avatar.sha256.slice(0, 12)}…`,
                         onclick: () => {
                             selectAvatar(avatar.slug);
                             $('library').closest('.app').dataset.tab = 'design';
@@ -280,17 +498,17 @@ function renderLibrary(library) {
                         el('span', {
                             class: 'avatar-sub',
                             text: avatar.available
-                                ? `${avatar.presentation || 'avatar'} · ${(avatar.sizeBytes / 1048576).toFixed(1)} MB`
+                                ? `${avatar.presentation || 'avatar'} · ${(avatar.sizeBytes / 1048576).toFixed(1)} MB${byline}`
                                 : avatar.problem,
                         })
                     ),
                     el('span', {
                         class: `avatar-badge${avatar.available ? '' : ' missing'}`,
-                        text: avatar.available ? avatar.license : 'missing',
+                        text: avatar.available ? badge : 'missing',
                     })
                 )
-            )
-        )
+            );
+        })
     );
 }
 

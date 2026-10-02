@@ -72,6 +72,11 @@ class LibraryAvatar:
     license: str
     source: str
     presentation: str | None = None
+    creator: str | None = None
+    vroid_model_id: str | None = None
+    collection: str = "library"
+    license_conditions: dict[str, str] | None = None
+    user_attests_modification_allowed: bool = False
     path: Path | None = None
     problem: str | None = None
     depicts_adult: bool = False
@@ -87,7 +92,9 @@ class LibraryAvatar:
 
     @property
     def granted_conditions(self) -> dict[str, str] | None:
-        """What the provenance manifest's licence permits, or None when we cannot say."""
+        """What the provenance records permit, or None when we cannot say."""
+        if self.license_conditions:
+            return dict(self.license_conditions)
         conditions = LICENSE_CONDITIONS.get(self.license.strip().upper())
         return dict(conditions) if conditions else None
 
@@ -106,9 +113,10 @@ class LibraryAvatar:
         if self.depicts_adult:
             payload["depictsAdult"] = True
         conditions = self.granted_conditions
-        if conditions:
+        if conditions or self.user_attests_modification_allowed:
             payload["license"] = {
-                "conditionsOfUse": conditions,
+                "conditionsOfUse": conditions or {},
+                "userAttestsModificationAllowed": self.user_attests_modification_allowed,
                 "source": f"library:{self.slug}",
                 "note": f"{self.license} per provenance manifest; upstream {self.source}",
             }
@@ -122,6 +130,9 @@ class LibraryAvatar:
             "presentation": self.presentation,
             "license": self.license,
             "source": self.source,
+            "creator": self.creator,
+            "vroidModelId": self.vroid_model_id,
+            "collection": self.collection,
             "sha256": self.sha256,
             "sizeBytes": self.size_bytes,
             "available": self.available,
@@ -142,30 +153,69 @@ class AvatarLibrary:
 
     @classmethod
     def from_directory(cls, root: str | Path) -> AvatarLibrary:
+        """Load the root manifest plus one-level collection manifests.
+
+        The VRoid downloader writes assets/library/vroid/models.json and Studio
+        imports write assets/library/imports/models.json. Every collection is
+        merged into the same verified avatar list.
+        """
         root = Path(root)
-        manifest_path = root / MANIFEST_NAME
         try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            items = manifest["items"]
-        except (OSError, ValueError, KeyError, TypeError) as exc:
+            manifest_paths: list[Path] = []
+            primary = root / MANIFEST_NAME
+            if primary.is_file():
+                manifest_paths.append(primary)
+            manifest_paths.extend(
+                path
+                for path in sorted(root.glob(f"*/{MANIFEST_NAME}"))
+                if path.is_file() and path not in manifest_paths
+            )
+        except OSError as exc:
             logger.warning("avatar library unavailable at %s: %s", root, exc)
             return cls(root=root, problem=f"library manifest unreadable: {exc}")
 
+        if not manifest_paths:
+            problem = f"library manifest unreadable: {root / MANIFEST_NAME} does not exist"
+            logger.warning("avatar library unavailable at %s: %s", root, problem)
+            return cls(root=root, problem=problem)
+
         declared = cls._declarations(root)
-        avatars = []
-        for item in items:
+        avatars: list[LibraryAvatar] = []
+        notes: list[str] = []
+        seen: set[str] = set()
+        for manifest_path in manifest_paths:
             try:
-                avatar = cls._verify(root, item)
-                if declared.get(avatar.slug, {}).get("depictsAdult") is True:
-                    avatar = replace(avatar, depicts_adult=True)
-                avatars.append(avatar)
-            except (KeyError, TypeError) as exc:
-                logger.warning("skipping malformed library entry %r: %s", item, exc)
-        library = cls(root=root, avatars=avatars, license_note=manifest.get("license_note"))
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                items = manifest["items"]
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                logger.warning("ignoring unreadable avatar manifest %s: %s", manifest_path, exc)
+                continue
+
+            note = manifest.get("license_note")
+            if note and str(note) not in notes:
+                notes.append(str(note))
+            for item in items:
+                try:
+                    avatar = cls._verify(root, item, manifest_dir=manifest_path.parent)
+                    if avatar.slug in seen:
+                        logger.warning(
+                            "ignoring duplicate avatar slug %s from %s", avatar.slug, manifest_path
+                        )
+                        continue
+                    seen.add(avatar.slug)
+                    if declared.get(avatar.slug, {}).get("depictsAdult") is True:
+                        avatar = replace(avatar, depicts_adult=True)
+                    avatars.append(avatar)
+                except (KeyError, TypeError) as exc:
+                    logger.warning("skipping malformed library entry %r in %s: %s", item, manifest_path, exc)
+
+        if not avatars:
+            return cls(root=root, problem="library manifests contained no readable avatar entries")
+        library = cls(root=root, avatars=avatars, license_note=" · ".join(notes) or None)
         missing = [avatar.file for avatar in avatars if not avatar.available]
         if missing:
             logger.warning(
-                "%d of %d library avatars unavailable (%s) — run tools/fetch_library.py",
+                "%d of %d library avatars unavailable (%s)",
                 len(missing),
                 len(avatars),
                 ", ".join(missing),
@@ -186,9 +236,43 @@ class AvatarLibrary:
             return {}
 
     @staticmethod
-    def _verify(root: Path, item: dict) -> LibraryAvatar:
-        file_name = Path(item["file"]).name  # a manifest cannot point outside the library
-        path = root / file_name
+    def _sidecar_conditions(manifest_dir: Path, item: dict) -> dict[str, str] | None:
+        """Normalise downloader/import provenance into the licensing gate shape."""
+        supplied = item.get("licenseConditions")
+        if isinstance(supplied, dict):
+            return {str(key): str(value) for key, value in supplied.items()}
+
+        try:
+            record = json.loads(
+                (manifest_dir / "licenses" / f"{item['slug']}.json").read_text(encoding="utf-8")
+            )
+            terms = record.get("license") or {}
+        except (OSError, ValueError, TypeError, AttributeError):
+            return None
+
+        conditions: dict[str, str] = {}
+        modification = str(terms.get("modification") or "").strip().lower()
+        if modification in {
+            "allow", "allow_modification", "allow_modification_redistribution",
+            "allowmodification", "allowmodificationredistribution",
+        }:
+            conditions["modification"] = "allow"
+        elif modification in {"disallow", "prohibited"}:
+            conditions["modification"] = "disallow"
+
+        redistribution = terms.get("redistribution")
+        if redistribution is True or str(redistribution).strip().lower() == "allow":
+            conditions["redistribution"] = "allow"
+        elif redistribution is False or str(redistribution).strip().lower() == "disallow":
+            conditions["redistribution"] = "disallow"
+        return conditions or None
+
+    @staticmethod
+    def _verify(root: Path, item: dict, *, manifest_dir: Path | None = None) -> LibraryAvatar:
+        manifest_dir = manifest_dir or root
+        file_name = Path(item["file"]).name
+        path = manifest_dir / file_name
+        collection = "library" if manifest_dir == root else manifest_dir.name
         base = {
             "slug": str(item["slug"]),
             "name": str(item.get("name") or item["slug"]),
@@ -198,17 +282,25 @@ class AvatarLibrary:
             "license": str(item.get("license") or "unknown"),
             "source": str(item.get("source") or ""),
             "presentation": item.get("presentation"),
+            "creator": item.get("creator"),
+            "vroid_model_id": str(item["vroidModelId"]) if item.get("vroidModelId") else None,
+            "collection": collection,
+            "license_conditions": AvatarLibrary._sidecar_conditions(manifest_dir, item),
+            "user_attests_modification_allowed": bool(item.get("userAttestsModificationAllowed")),
         }
         try:
             if not path.is_file():
-                return LibraryAvatar(**base, problem="not fetched — run tools/fetch_library.py")
+                hint = (
+                    "not fetched — run tools/fetch_library.py"
+                    if manifest_dir == root
+                    else f"missing from {collection} collection"
+                )
+                return LibraryAvatar(**base, problem=hint)
             if path.stat().st_size != base["size_bytes"]:
                 return LibraryAvatar(**base, problem="size does not match the pinned manifest")
             if _sha256_file(path) != base["sha256"]:
                 return LibraryAvatar(**base, problem="sha256 does not match the pinned manifest")
         except OSError as exc:
-            # Seen for real: a container running as a uid that does not own the files
-            # raised PermissionError here, and it took the whole API down at startup.
             return LibraryAvatar(**base, problem=f"unreadable: {exc.strerror or exc}")
         return LibraryAvatar(**base, path=path)
 

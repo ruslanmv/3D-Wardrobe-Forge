@@ -49,7 +49,7 @@ def test_env_file_is_read_and_the_environment_wins(tmp_path):
 
 def test_the_model_list_is_complete_and_filterable():
     models = dl.load_models()
-    assert len(models) == 12 and len({m["slug"] for m in models}) == 12
+    assert len(models) == 11 and len({m["slug"] for m in models}) == 11
     # Where a creator states the character's age, the entry records it and what was said.
     stated = [m for m in models if "creatorStatesAge" in m]
     assert stated and all(m["creatorStatesAge"] >= 18 and m["creatorStatement"] for m in stated)
@@ -163,11 +163,40 @@ def test_a_real_vrm_is_read_and_its_embedded_licence_reported(tmp_path):
         dl.glb_json(bad)
 
 
+@pytest.mark.parametrize(
+    ("summary", "embedded", "expected"),
+    [
+        ({}, {"licenseName": "CC0"}, "CC0"),
+        ({}, {"licenseName": "CC_BY_NC_SA"}, "CC BY-NC-SA"),
+        (
+            {"licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"},
+            {},
+            "CC0",
+        ),
+        (
+            {"licenseUrl": "https://creativecommons.org/licenses/by/4.0/"},
+            {},
+            "CC BY",
+        ),
+        ({"licenseUrl": "https://example.com/custom-terms"}, {}, "VRoid Hub"),
+    ],
+)
+def test_display_license_prefers_real_creative_commons_terms(summary, embedded, expected):
+    assert dl.display_license(summary, embedded) == expected
+
+
 def test_the_manifest_merges_by_slug(tmp_path):
     dl.write_manifest(tmp_path, [{"slug": "b", "bytes": 1}, {"slug": "a", "bytes": 1}])
     dl.write_manifest(tmp_path, [{"slug": "b", "bytes": 2}])
     items = json.loads((tmp_path / "models.json").read_text())["items"]
     assert [(i["slug"], i["bytes"]) for i in items] == [("a", 1), ("b", 2)]
+
+
+def test_a_full_manifest_replaces_removed_models(tmp_path):
+    dl.write_manifest(tmp_path, [{"slug": "auralithis", "bytes": 1}, {"slug": "helen", "bytes": 1}])
+    dl.write_manifest(tmp_path, [{"slug": "helen", "bytes": 2}], replace=True)
+    items = json.loads((tmp_path / "models.json").read_text())["items"]
+    assert [(i["slug"], i["bytes"]) for i in items] == [("helen", 2)]
 
 
 def _fake_hub(monkeypatch, body: bytes):
