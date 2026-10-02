@@ -1,12 +1,14 @@
 {
   "schemaVersion": 1,
-  "about": "Tattoo designs Forge can add to a derived look, only on skin the finished outfit leaves visible (docs/BODY_ART_PLAN.md). Every design is vector paths authored in this repository (designs/*.json), rasterised by wardrobe/body_art/raster.py; licence Apache-2.0, like the repository.",
+  "about": "Tattoo designs Forge can add to a derived look, only on skin the finished outfit leaves visible (docs/BODY_ART_PLAN.md). Vector designs are paths authored in this repository (designs/*.json, Apache-2.0), rasterised by wardrobe/body_art/raster.py. A raster design (source: raster) is a PNG installed only by tools/body_art/install_design.py, with its licence and origin in designs/<id>.provenance.json beside it.",
   "designs": [
     {
       "id": "tribal-wings-01",
       "name": "Tribal Wings",
       "family": "upper-back-tribal",
-      "placements": ["upper-back"],
+      "placements": [
+        "upper-back"
+      ],
       "aspect": 2.4,
       "paths": "designs/tribal-wings-01.json",
       "license": "Apache-2.0",
@@ -16,17 +18,70 @@
       "id": "thorn-filigree-01",
       "name": "Thorn Filigree",
       "family": "upper-back-tribal",
-      "placements": ["upper-back"],
+      "placements": [
+        "upper-back"
+      ],
       "aspect": 2.4,
       "paths": "designs/thorn-filigree-01.json",
       "license": "Apache-2.0",
       "description": "A central diamond with thorned curls to each shoulder blade."
     },
     {
+      "id": "v-tribal-01",
+      "name": "V Tribal",
+      "family": "upper-back-tribal",
+      "placements": [
+        "upper-back"
+      ],
+      "aspect": 2.4,
+      "paths": "designs/v-tribal-01.json",
+      "license": "Apache-2.0",
+      "description": "Two blades rising from low on the spine to each shoulder blade, barbed on their outer edge."
+    },
+    {
+      "id": "spine-tribal-01",
+      "name": "Spine Tribal",
+      "family": "upper-back-tribal",
+      "placements": [
+        "upper-back"
+      ],
+      "aspect": 2.4,
+      "paths": "designs/spine-tribal-01.json",
+      "license": "Apache-2.0",
+      "description": "A tall central blade on the spine with flourishes curling out to each side."
+    },
+    {
+      "id": "geometric-bands-01",
+      "name": "Geometric Bands",
+      "family": "upper-back-tribal",
+      "placements": [
+        "upper-back"
+      ],
+      "aspect": 2.4,
+      "paths": "designs/geometric-bands-01.json",
+      "license": "Apache-2.0",
+      "description": "Two curved bands over the shoulder blades with shark-teeth between them."
+    },
+    {
+      "id": "lace-ornament-01",
+      "name": "Lace Ornament",
+      "family": "upper-back-tribal",
+      "placements": [
+        "upper-back"
+      ],
+      "aspect": 2.4,
+      "paths": "designs/lace-ornament-01.json",
+      "license": "Apache-2.0",
+      "description": "A rosette on the spine and scalloped arches to each side: soft, lace-like."
+    },
+    {
       "id": "flame-01",
       "name": "Flame",
       "family": "shoulder-blade",
-      "placements": ["left-shoulder-blade", "right-shoulder-blade"],
+      "placements": [
+        "left-shoulder-blade",
+        "right-shoulder-blade"
+      ],
       "aspect": 0.8333,
       "paths": "designs/flame-01.json",
       "license": "Apache-2.0",
@@ -36,7 +91,10 @@
       "id": "spine-vine-01",
       "name": "Spine Vine",
       "family": "spine",
-      "placements": ["spine-upper", "spine-full"],
+      "placements": [
+        "spine-upper",
+        "spine-full"
+      ],
       "aspect": 0.2222,
       "paths": "designs/spine-vine-01.json",
       "license": "Apache-2.0",
@@ -46,7 +104,9 @@
       "id": "lotus-ornament-01",
       "name": "Lotus Ornament",
       "family": "lower-back",
-      "placements": ["lower-back"],
+      "placements": [
+        "lower-back"
+      ],
       "aspect": 2.6,
       "paths": "designs/lotus-ornament-01.json",
       "license": "Apache-2.0",
@@ -56,7 +116,9 @@
       "id": "nape-crescent-01",
       "name": "Crescent and Star",
       "family": "nape",
-      "placements": ["nape"],
+      "placements": [
+        "nape"
+      ],
       "aspect": 1.0,
       "paths": "designs/nape-crescent-01.json",
       "license": "Apache-2.0",

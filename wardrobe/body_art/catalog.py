@@ -5,6 +5,10 @@ is drawn for and the file its artwork is in; v1 artwork is vector paths authored
 in this repository (``source: "vector"``), rasterised by our own code, so every
 design is Apache-2.0 by construction and its pixels are reproducible.
 
+BA5 adds ``source: "raster"``: a PNG whose alpha is the ink, installed only by
+``tools/body_art/install_design.py``, which re-encodes it and records its licence and
+origin beside it. Both kinds are drawn through ``raster.coverage``.
+
 A design may *raise* a placement's rating (``rating: {"lower-back": "swimwear"}``)
 but never lower it: the placement's rating is the floor, as a pack look's rating
 can only hide.
@@ -21,7 +25,9 @@ from wardrobe.body_art.contract import PLACEMENTS, RATINGS, rating_rank
 
 MANIFEST = "body-art.json"
 INK_MODES = ("tint",)
-SOURCES = ("vector",)
+SOURCES = ("vector", "raster")
+#: What each source's artwork file ends in; ``raster.coverage`` reads by suffix.
+SOURCE_SUFFIX = {"vector": ".json", "raster": ".png"}
 
 
 class BodyArtDesign(BaseModel):
@@ -111,6 +117,11 @@ class BodyArtCatalog:
                 issues.append(f"{where}: ink mode {design.ink_mode!r} is not one of {INK_MODES}")
             if design.source not in SOURCES:
                 issues.append(f"{where}: source {design.source!r} is not one of {SOURCES}")
+            elif not design.paths.lower().endswith(SOURCE_SUFFIX[design.source]):
+                # The loader picks by suffix; a raster entry pointing at paths (or the reverse)
+                # would be drawn by the wrong reader, so the two must agree.
+                suffix = SOURCE_SUFFIX[design.source]
+                issues.append(f"{where}: a {design.source} design's artwork ends in {suffix}")
             if self.root is not None and not (self.root / design.paths).is_file():
                 issues.append(f"{where}: artwork {design.paths} is missing")
             if not design.license:

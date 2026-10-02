@@ -30,6 +30,13 @@ async def run(context: PipelineContext, engine: FittingEngine) -> None:
             logger.warning("hosiery previews failed for %s: %s", context.job_id, exc)
             context.warn(f"hosiery previews failed: {exc}")
 
+    if any(outcome.applied for outcome in context.body_art):
+        try:
+            body_art_views(context)
+        except Exception as exc:  # the look is good without its back view
+            logger.warning("body-art previews failed for %s: %s", context.job_id, exc)
+            context.warn(f"{BACK_VIEW_MISSING} (it failed: {exc})")
+
     context.fit_report.preview_rendered = bool(context.preview_bytes)
     if not context.preview_bytes:
         context.warn("no preview image was produced")
@@ -61,4 +68,44 @@ def hosiery_views(context: PipelineContext) -> None:
         context.warn(note)
 
 
-__all__ = ["hosiery_views", "run"]
+#: BA5. Said whenever a look carries a back tattoo and its pictures show only her front.
+BACK_VIEW_MISSING = (
+    "The tattoo is on her back; this preview shows her front (the back view needs the web preview backend)."
+)
+
+
+def body_art_views(context: PipelineContext) -> None:
+    """BA5. A look with a tattoo on her back is pictured from behind.
+
+    Every v1 placement faces back, so the front preview of a tattooed look is a picture of
+    exactly the part that did not change, and a look list of those thumbnails cannot tell a
+    tattooed look from its base. The back view becomes ``preview.webp`` and the thumbnail;
+    the front is kept beside it as ``preview-front.webp``.
+
+    Only the web backend draws it. The native rasteriser paints each material one flat
+    colour, so it would draw the decal as a rectangle of ink colour the size of her back —
+    a worse lie than no back view at all. Without the web backend the front preview stays
+    and the report says the tattoo is not in it.
+    """
+    from wardrobe.body_art.contract import PLACEMENTS
+    from wardrobe.hosiery import previews
+
+    if not any(
+        outcome.applied and PLACEMENTS[outcome.request.placement].facing == "back"
+        for outcome in context.body_art
+    ):
+        return
+    backend = context.record.request.options.preview_backend or context.settings.wardrobe_preview_backend
+    if backend not in {"web", "auto"} or not previews.web_available():
+        context.warn(BACK_VIEW_MISSING)
+        return
+    view = {"name": "back", "vrm": context.output_bytes, "yaw": 180, "focus": None, "size": previews.PROFILE}
+    back = previews.to_webp(previews.render_web([view])["back"])
+    if context.preview_bytes:
+        context.extra_previews["preview-front.webp"] = context.preview_bytes
+    context.preview_bytes = back
+    context.extra_previews["preview-back.webp"] = back
+    context.extra_previews["thumb.webp"] = previews.to_webp_resized(back, previews.THUMB)
+
+
+__all__ = ["BACK_VIEW_MISSING", "body_art_views", "hosiery_views", "run"]

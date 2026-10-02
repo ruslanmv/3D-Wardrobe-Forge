@@ -170,12 +170,41 @@ def rasterise(artwork: dict, size: int = DEFAULT_SIZE) -> np.ndarray:
     return fine.reshape(height, s, width, s).mean(axis=(1, 3))
 
 
+def _raster_coverage(path: Path, size: int) -> np.ndarray:
+    """A raster design (``source: "raster"``, installed by tools/body_art/install_design.py): its alpha.
+
+    Raster art needs Pillow to decode; without it the design is refused with a reason,
+    never drawn wrong.
+    """
+    try:
+        from PIL import Image
+    except ImportError as exc:  # pragma: no cover - the preview extra is installed where raster art is
+        raise ArtworkError("raster designs need Pillow") from exc
+    with Image.open(path) as image:
+        alpha = image.convert("RGBA").getchannel("A")
+        scale = size / max(alpha.size)
+        target = (max(int(round(alpha.size[0] * scale)), 1), max(int(round(alpha.size[1] * scale)), 1))
+        return np.asarray(alpha.resize(target, Image.LANCZOS), dtype=np.float64) / 255.0
+
+
+@lru_cache(maxsize=64)
+def _coverage_cached(path: str, size: int) -> np.ndarray:
+    if path.lower().endswith(".png"):
+        return _raster_coverage(Path(path), size)
+    return rasterise(_load(path), size)
+
+
+def coverage(path: str | Path, size: int = DEFAULT_SIZE) -> np.ndarray:
+    """Coverage 0..1 of any design, vector or raster: the one way a design is drawn."""
+    return _coverage_cached(str(path), int(size)).copy()
+
+
 def artwork_png(path: str | Path, size: int = DEFAULT_SIZE) -> bytes:
     """The design as a white RGBA PNG whose alpha is the ink: the material tints it."""
-    coverage = rasterise(_load(str(path)), size)
-    pixels = np.empty(coverage.shape + (4,), dtype=np.uint8)
+    ink = coverage(path, size)
+    pixels = np.empty(ink.shape + (4,), dtype=np.uint8)
     pixels[..., :3] = 255
-    pixels[..., 3] = np.round(coverage * 255.0).astype(np.uint8)
+    pixels[..., 3] = np.round(ink * 255.0).astype(np.uint8)
     return encode_png(pixels)
 
 
@@ -187,15 +216,23 @@ TEXTURE_PAD = 4
 
 def artwork_texture(path: str | Path, size: int = DEFAULT_SIZE) -> tuple[bytes, np.ndarray, np.ndarray]:
     """The design as a padded white RGBA PNG, and the (scale, offset) from design UV to texture UV."""
-    coverage = rasterise(_load(str(path)), size)
-    h, w = coverage.shape
+    ink = coverage(path, size)
+    h, w = ink.shape
     pad = TEXTURE_PAD
     pixels = np.zeros((h + 2 * pad, w + 2 * pad, 4), dtype=np.uint8)
     pixels[..., :3] = 255
-    pixels[pad : pad + h, pad : pad + w, 3] = np.round(coverage * 255.0).astype(np.uint8)
+    pixels[pad : pad + h, pad : pad + w, 3] = np.round(ink * 255.0).astype(np.uint8)
     scale = np.array([w / (w + 2 * pad), h / (h + 2 * pad)])
     offset = np.array([pad / (w + 2 * pad), pad / (h + 2 * pad)])
     return encode_png(pixels), scale, offset
 
 
-__all__ = ["ArtworkError", "artwork_png", "artwork_polygons", "artwork_texture", "parse_path", "rasterise"]
+__all__ = [
+    "ArtworkError",
+    "artwork_png",
+    "artwork_polygons",
+    "artwork_texture",
+    "coverage",
+    "parse_path",
+    "rasterise",
+]

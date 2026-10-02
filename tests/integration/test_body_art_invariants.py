@@ -18,7 +18,7 @@ import pytest
 from tests.body_art_support import fingerprint, run
 from wardrobe.body_art.catalog import BodyArtCatalog
 from wardrobe.body_art.contract import PLACEMENTS
-from wardrobe.body_art.raster import artwork_polygons, rasterise
+from wardrobe.body_art.raster import artwork_polygons, coverage
 from wardrobe.domain.jobs import CreateJobRequest
 from wardrobe.pipeline import orchestrator as orchestrator_module
 
@@ -73,11 +73,14 @@ def test_the_catalogue_is_valid_and_every_design_is_its_stated_shape():
     catalog = BodyArtCatalog.from_directory(ROOT)
     assert len(catalog) >= 6 and not catalog.validate_all()
     for design in catalog.all():
-        artwork = json.loads(catalog.artwork_path(design).read_text())
-        _shapes, width, height = artwork_polygons(artwork)
-        assert width / height == pytest.approx(design.aspect, rel=1e-3), design.id
-        coverage = rasterise(artwork, 128)
-        assert 0.03 < coverage.mean() < 0.7, design.id  # ink, but not a solid block
+        ink = coverage(catalog.artwork_path(design), 128)
+        if design.source == "vector":
+            artwork = json.loads(catalog.artwork_path(design).read_text())
+            _shapes, width, height = artwork_polygons(artwork)
+        else:  # raster: the picture's own shape
+            height, width = ink.shape
+        assert width / height == pytest.approx(design.aspect, rel=2e-2 if design.source == "raster" else 1e-3)
+        assert 0.03 < ink.mean() < 0.7, design.id  # ink, but not a solid block
         assert set(design.placements) <= set(PLACEMENTS)
     # Every v1 placement has at least one design.
     assert all(catalog.for_placement(p) for p in PLACEMENTS)

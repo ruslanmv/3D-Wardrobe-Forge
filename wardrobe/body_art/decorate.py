@@ -27,7 +27,7 @@ from wardrobe.body_art.exposure import Exposure, exposure, read_body
 from wardrobe.body_art.materials import add_decal, remove_decals
 from wardrobe.body_art.placement import PlacementError
 from wardrobe.body_art.project import Decal, ProjectionError, build_decal
-from wardrobe.body_art.raster import _load, artwork_texture, rasterise
+from wardrobe.body_art.raster import artwork_texture, coverage
 from wardrobe.policy import intimate
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.inspect import VrmInfo
@@ -124,9 +124,9 @@ def decide(
         if not measured.applies:
             outcome.reason = measured.reason
             continue
-        coverage = rasterise(_load(str(catalog.artwork_path(design))), 256)
+        ink = coverage(catalog.artwork_path(design), 256)
         try:
-            outcome.decal = build_decal(body, fp, coverage)
+            outcome.decal = build_decal(body, fp, ink)
         except ProjectionError as exc:
             outcome.reason = str(exc)
     return outcomes

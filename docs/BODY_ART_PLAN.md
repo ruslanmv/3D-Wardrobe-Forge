@@ -1,8 +1,9 @@
 # Body art (tattoos) plan
 
-> Status: **BA1–BA4 implemented** on `claude/body-art-tattoos` (request fields
-> and catalogue; exposure on the finished outfit; projection; the two stages).
-> BA5–BA10 are still a plan. Three things were built differently from what is
+> Status: **BA1–BA5 implemented** on `claude/body-art-tattoos` (request fields
+> and catalogue; exposure on the finished outfit; projection; the two stages;
+> ten designs, raster install and the back-view preview). BA6–BA10 are still a
+> plan. Three things were built differently from what is
 > written below, each for a measured reason — see "As built" at the end.
 > Batches are `BA1`–`BA10`; commit subjects and code comments carry the prefix
 > (`BA3: …`). Every file, function and number below was read or measured in
@@ -504,7 +505,7 @@ Not changed: `wardrobe/domain/garments.py`, `wardrobe/vrm/garments.py`
 `wardrobe/pipeline/{plan_outfit,plan_outfit_stack,prepare_base_body,generate_garment,fit_garment}.py`,
 every garment template, the design panel's controls and Check plan.
 
-## As built (BA1–BA4)
+## As built (BA1–BA5)
 
 - **The decal is her own skin triangles, not a grid with blended weights.**
   §2.3 and the projection steps above describe a grid laid over her skin, each
@@ -530,10 +531,38 @@ every garment template, the design panel's controls and Check plan.
   the nape placement sits over the top of the spine (C7), where nape pieces are
   usually worn.
 
+- **BA5: ten designs, one way to draw them.** Six upper-back presets (winged,
+  V, central-spine, geometric bands, thorn filigree, lace ornament) and one each
+  for the shoulder blades, spine, lower back and nape, all vector paths in
+  `assets/body_art/designs/`. `raster.coverage(path, size)` is the only way a
+  design becomes pixels — vector by our rasteriser, raster (`source: "raster"`)
+  by Pillow from its alpha — and the catalogue refuses an entry whose file
+  suffix disagrees with its source. `tests/unit/test_body_art_artwork.py` pins
+  every design's uploaded texture (`tests/fixtures/body_art_artwork.json`;
+  `BODY_ART_ARTWORK=write` re-baselines).
+- **Raster art comes in only through `tools/body_art/install_design.py`.** A
+  PNG, at most 4 MB and 2048 px a side (read from the header, before decoding),
+  with a real, non-flat alpha covering 3–70%; a licence this repository can ship
+  and an origin are required, an author too for CC-BY. It is re-encoded white
+  plus its alpha (the request's ink colours it) and recorded in
+  `designs/<id>.provenance.json` with both hashes. `--dry-run` validates and
+  writes nothing.
+- **A look with a back tattoo is pictured from behind, by the web renderer
+  only.** `render_preview.body_art_views` makes the back view `preview.webp`
+  and the thumbnail and keeps the front as `preview-front.webp`. The native
+  rasteriser paints each material one flat colour — the decal would be a block
+  of ink the size of her back — so without the web backend the front picture
+  stays and the job warns that the tattoo is not in it. The exit pictures, on
+  the dressed declared-adult calibration body, three jobs through the
+  pipeline's own previews:
+
+  ![Back views](images/body-art-back.webp)
+
 Where it lives: `wardrobe/body_art/{contract,catalog,raster,rays,surfaces,placement,exposure,project,poses,materials,decorate}.py`,
 `wardrobe/pipeline/{analyze_exposed_skin,apply_body_art}.py`, the I7 skips in
 `wardrobe/engines/geometry_checks.py body_points` and
 `wardrobe/hosiery/poses.py posed_body`, `GET /v1/body-art`,
 `GET /v1/library/{slug}/looks/{lookId}/exposure`. Tests:
 `tests/integration/test_body_art_{invariants,exposure,pipeline}.py`,
-`tests/unit/test_body_art_projection.py`.
+`tests/unit/test_body_art_{projection,artwork,preview}.py`; BA5 adds
+`tools/body_art/install_design.py` and `render_preview.body_art_views`.
