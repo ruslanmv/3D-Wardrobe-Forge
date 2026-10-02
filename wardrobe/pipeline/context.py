@@ -82,6 +82,9 @@ class PipelineContext:
 
     # -- output ----------------------------------------------------------
     output_bytes: bytes | None = None
+    #: BA4. The tattoo catalogue, and each requested tattoo's fate on the finished outfit.
+    body_art_catalog: object | None = None
+    body_art: list = field(default_factory=list)
     preview_bytes: bytes | None = None
     #: A hosiery look's other views, by file name ("detail.webp", "preview-sit.webp", ...).
     extra_previews: dict[str, bytes] = field(default_factory=dict)

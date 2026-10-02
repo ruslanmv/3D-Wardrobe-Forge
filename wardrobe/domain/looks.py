@@ -333,6 +333,9 @@ class FitReport(BaseModel):
     #: One entry per garment of a layered outfit, inner first: its own fit and clearance.
     layers: list[dict] = Field(default_factory=list)
     #: Stocking tops, clips, strap tension per pose and the reveal achieved (wardrobe.hosiery.report).
+    #: BA4. Each requested tattoo: applied, or why not ("covered by the outfit"). Absent from a
+    #: job that asked for none, so such a job's report is what it always was.
+    body_art: list[dict] | None = Field(default=None, alias="bodyArt", exclude_if=lambda v: v is None)
     hosiery: dict | None = None
 
     @property

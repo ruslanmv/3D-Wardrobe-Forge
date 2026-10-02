@@ -141,6 +141,9 @@ def body_points(
 
     for node_index in document.mesh_nodes():
         node = document.nodes[node_index]
+        extras = node.get("extras") if isinstance(node.get("extras"), dict) else {}
+        if (extras.get("wardrobeForge") or {}).get("kind") == "bodyArt":
+            continue  # BA4: a tattoo lies on her skin; it is not her body (body art plan, I7)
         mesh = document.meshes[node["mesh"]]
         matrix = document.world_matrices()[node_index]
         skinned = "skin" in node

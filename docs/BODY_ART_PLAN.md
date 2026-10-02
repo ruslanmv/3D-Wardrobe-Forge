@@ -1,7 +1,10 @@
 # Body art (tattoos) plan
 
-> Status: **proposed — nothing here is implemented.** Batches are
-> `BA1`–`BA10`; commit subjects and code comments carry the prefix
+> Status: **BA1–BA4 implemented** on `claude/body-art-tattoos` (request fields
+> and catalogue; exposure on the finished outfit; projection; the two stages).
+> BA5–BA10 are still a plan. Three things were built differently from what is
+> written below, each for a measured reason — see "As built" at the end.
+> Batches are `BA1`–`BA10`; commit subjects and code comments carry the prefix
 > (`BA3: …`). Every file, function and number below was read or measured in
 > this repository at `a0760eb`, the five library avatars included. Revised
 > after the owner's decision that **clothes always come first** (§0); where
@@ -500,3 +503,37 @@ Not changed: `wardrobe/domain/garments.py`, `wardrobe/vrm/garments.py`
 (`KIND_REGIONS`), `wardrobe/vrm/garment_inventory.py`,
 `wardrobe/pipeline/{plan_outfit,plan_outfit_stack,prepare_base_body,generate_garment,fit_garment}.py`,
 every garment template, the design panel's controls and Check plan.
+
+## As built (BA1–BA4)
+
+- **The decal is her own skin triangles, not a grid with blended weights.**
+  §2.3 and the projection steps above describe a grid laid over her skin, each
+  point skinned by the barycentric blend of the triangle under it. Measured on
+  the declared-adult bodies it drifted 15–30 mm off her skin in the arm and leg
+  poses: a point inside a skin triangle does not move as one bone mix, and glTF
+  allows four joints where three corners can bring twelve. Skinning each point as
+  its nearest vertex drifted up to 58 mm. The decal is therefore a copy of her
+  skin triangles under the design, each vertex her own vertex with her own joints
+  and weights, lifted 0.5 mm along its normal; the design reaches them through
+  the placement layout inverted (`wardrobe/body_art/placement.py Layout.to_uv`).
+  Every decal vertex stays 0.5 ± 0.3 mm off her skin in stand, walk, sit,
+  arms-down, legs-apart and arms-raised on all six declared-adult bodies
+  (`tests/unit/test_body_art_projection.py`). The grid survives as the
+  footprint exposure is measured on.
+- **A gated tattoo is not applied; it does not fail the job.** I9 says a refused
+  item is refused before anything is built. Clothes come first, so the outfit is
+  always delivered and the tattoo is reported as not applied with the gate's own
+  sentence, exactly as a covered one is. No v1 placement is rated above
+  `general`, so this only matters from BA9.
+- **"Nape" is the base of the neck.** On the generated bodies the neck above the
+  top of the spine is weighted to the head and is not skin a decal can follow;
+  the nape placement sits over the top of the spine (C7), where nape pieces are
+  usually worn.
+
+Where it lives: `wardrobe/body_art/{contract,catalog,raster,rays,surfaces,placement,exposure,project,poses,materials,decorate}.py`,
+`wardrobe/pipeline/{analyze_exposed_skin,apply_body_art}.py`, the I7 skips in
+`wardrobe/engines/geometry_checks.py body_points` and
+`wardrobe/hosiery/poses.py posed_body`, `GET /v1/body-art`,
+`GET /v1/library/{slug}/looks/{lookId}/exposure`. Tests:
+`tests/integration/test_body_art_{invariants,exposure,pipeline}.py`,
+`tests/unit/test_body_art_projection.py`.

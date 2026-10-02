@@ -34,6 +34,8 @@ from wardrobe.events import EventBroker
 from wardrobe.events import broker as default_broker
 from wardrobe.pipeline import (
     analyze_avatar,
+    analyze_exposed_skin,
+    apply_body_art,
     assemble_vrm,
     fit_garment,
     generate_garment,
@@ -151,6 +153,7 @@ class Orchestrator:
             catalog=self.catalog,
             workdir=workdir,
             emitter=lambda state, message, detail: self._emit(record, state, message, detail),
+            body_art_catalog=self.body_art,
         )
 
         try:
@@ -164,6 +167,10 @@ class Orchestrator:
             await generate_garment.generate(context)
             await fit_garment.run(context, engine)
             await assemble_vrm.run(context, engine)
+            # BA4. Clothes are finished; only now is her visible skin measured, and a tattoo
+            # added where it is. Neither stage does anything for a job without body art.
+            await analyze_exposed_skin.run(context)
+            await apply_body_art.run(context)
             await validate_output.run(context)
             await render_preview.run(context, engine)
 
