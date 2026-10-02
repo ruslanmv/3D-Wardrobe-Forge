@@ -145,3 +145,36 @@ def test_the_studio_puts_a_tattoo_on_a_finished_look(orchestrator, monkeypatch, 
         assert inked["tattoos"] == [{"design": "nape-crescent-01", "placement": "nape", "state": "applied"}]
         listed = client.get("/v1/wardrobes/mira").json()
         assert {look["id"] for look in listed["looks"]} >= {tee["look"]["id"], job["look"]["id"]}
+
+
+async def test_waistline_sits_on_the_waistband_the_outfit_has(orchestrator, store):
+    """'Just above the waistband' is laid from the band the finished outfit has, not a fixed height.
+
+    On mid-rise briefs "lower back" left a 4-5 cm strip of bare skin under the design; this
+    placement finds the band down the centre of her back and leaves ~1.2 cm. Low-rise jeans
+    sit lower than the briefs, and the tattoo follows them down.
+    """
+    form = next(f for f in FASHION_FIT_BODIES if f.name == "fit-form-a-misses")
+    assert declared_adult(form.name)
+    art = [{"design": "tribal-butterfly-01", "placement": "waistline"}]
+    bands = {}
+    for prompt in ("black lace lingerie set", "white crop top + low rise blue jeans"):
+        record, output = await run(orchestrator, store, prompt, source=build_fit_form(form), bodyArt=art)
+        assert output is not None, record.error
+        assert record.fit_report.body_art[0]["applied"], record.fit_report.body_art[0]["message"]
+        document = GltfDocument.from_bytes(output)
+        _, body = read_body(document)
+        assert body.waistband_y is not None
+        lowest = min(
+            float(
+                document.read_accessor(
+                    document.meshes[node["mesh"]]["primitives"][0]["attributes"]["POSITION"]
+                )[:, 1].min()
+            )
+            for node in document.nodes
+            if ((node.get("extras") or {}).get("wardrobeForge") or {}).get("kind") == "bodyArt"
+            and "mesh" in node
+        )
+        assert 0.0 <= lowest - body.waistband_y <= 0.04, (prompt, lowest, body.waistband_y)
+        bands[prompt] = body.waistband_y
+    assert bands["white crop top + low rise blue jeans"] < bands["black lace lingerie set"]

@@ -42,6 +42,12 @@ LAYOUT_MARGIN_M = 0.12
 #: Grid of the footprint, per metre of design, and its bounds.
 GRID_PER_M = 180
 GRID_MIN, GRID_MAX = 8, 72
+#: "Just above the waistband": the gap left between the design's lower edge and the band, and
+#: its width across her back. Wider than "lower back" (0.55), because the look it is for runs
+#: out toward the hips; 0.72 wrapped the widest designs round the boxy calibration bodies'
+#: sides (stretch past MAX_STRETCH on calibration-c-tall), 0.66 builds every design on all six.
+WAIST_GAP_M = 0.012
+WAISTLINE_SPAN = 0.66
 
 
 class PlacementError(ValueError):
@@ -57,6 +63,9 @@ class Body:
     back: np.ndarray
     right: np.ndarray
     skin: Skin
+    #: Height of the top of whatever covers the centre of her back below the waist, on the
+    #: finished outfit (exposure.waistband_y); None when nothing does or it was not measured.
+    waistband_y: float | None = None
 
     @classmethod
     def from_measurements(cls, measurements, skin: Skin) -> Body:
@@ -140,6 +149,17 @@ def rect_for(placement: str, body: Body, aspect: float) -> Rect:
         # Above the waistband of low- and mid-rise bottoms, below a bra band.
         width = 0.55 * span
         return Rect(0.0, body.lerp("spine", "chest", 0.3, fallback=("hips", "neck")), width, width / aspect)
+    if placement == "waistline":
+        # The classic lower-back piece sits on the waistband, not at a fixed height above her
+        # hips: on mid-rise briefs "lower back" left a 4-5 cm strip of bare skin under the
+        # design. So this one is laid from the band the finished outfit actually has.
+        width = WAISTLINE_SPAN * span
+        height = width / aspect
+        if body.waistband_y is not None:
+            return Rect(0.0, body.waistband_y + WAIST_GAP_M + height / 2, width, height)
+        # Nothing below her waist covers her back: where "lower back" sits. Lower than that
+        # reaches the hip joint on the calibration bodies, where a decal stretched 4-6x.
+        return Rect(0.0, body.lerp("spine", "chest", 0.3, fallback=("hips", "neck")), width, height)
     raise PlacementError(f"no layout for placement {placement!r}")
 
 

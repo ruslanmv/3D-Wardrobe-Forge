@@ -1,9 +1,10 @@
 # Body art (tattoos) plan
 
-> Status: **BA1–BA7 implemented** on `claude/body-art-tattoos` (request fields
-> and catalogue; exposure on the finished outfit; projection; the two stages;
-> ten designs, raster install and the back-view preview; tattoo-only jobs and
-> the lifecycle; the Studio section). BA8–BA10 are still a plan. Three things were built differently from what is
+> Status: **BA1–BA7 and BA11 implemented** on `claude/body-art-tattoos`
+> (request fields and catalogue; exposure on the finished outfit; projection;
+> the two stages; nineteen designs, raster install and the back-view preview;
+> tattoo-only jobs and the lifecycle; the Studio section; the lower-back set
+> and "just above the waistband"). BA8–BA10 are still a plan. Three things were built differently from what is
 > written below, each for a measured reason — see "As built" at the end.
 > Batches are `BA1`–`BA10`; commit subjects and code comments carry the prefix
 > (`BA3: …`). Every file, function and number below was read or measured in
@@ -505,7 +506,7 @@ Not changed: `wardrobe/domain/garments.py`, `wardrobe/vrm/garments.py`
 `wardrobe/pipeline/{plan_outfit,plan_outfit_stack,prepare_base_body,generate_garment,fit_garment}.py`,
 every garment template, the design panel's controls and Check plan.
 
-## As built (BA1–BA7)
+## As built (BA1–BA7, BA11)
 
 - **The decal is her own skin triangles, not a grid with blended weights.**
   §2.3 and the projection steps above describe a grid laid over her skin, each
@@ -606,6 +607,31 @@ every garment template, the design panel's controls and Check plan.
   only the nape.
 
   ![The Studio's body-art section](images/studio-body-art.webp)
+
+- **BA11: the lower-back set, on the waistband.** Nine designs in the classic
+  lower-back style, all vector art authored here (generated from tapered strokes,
+  outlines, curls and leaves, then reviewed flat and on the body): Tribal
+  Butterfly, Neotribal Heart, Waist Filigree, Angel Wings, Thorn Vine, Rose Vine,
+  Heart and Stars, Ornamental Butterfly and Dragonfly. With the lotus that makes
+  ten for the lower back. A tiny cursive word is not among them: lettering needs
+  a font licensed for redistribution, and is a raster import (BA10) when wanted.
+  Reviewed on the declared-adult fit form in lingerie, "lower back" left a
+  4–5 cm strip of bare skin between the design and the briefs, and its offsets
+  (±25% of the design's height) cannot close it. So these designs also offer a
+  new placement, `waistline` ("Just above the waistband"), laid from the band
+  the finished outfit actually has: `exposure.waistband_y` walks down the centre
+  of her back from the lower-back position and finds the first height that is
+  covered, exactly as `measure` decides covering, and the design's lower edge
+  sits `WAIST_GAP_M` (1.2 cm) above it, `WAISTLINE_SPAN` (0.66 of her shoulder
+  span) wide. Briefs on the fit form put the band at 1.00 m and low-rise jeans
+  at 0.98 m; the tattoo follows. With no band (no bottoms, or her back covered
+  where the walk starts) it sits where "lower back" does; lower than that
+  reaches the hip joint of the calibration bodies, where a decal stretched 4–6x.
+  The clothes-first check runs as for every placement. All ten lower-back
+  designs build on all six declared-adult bodies (stretch ≤ 1.04); on the fit
+  form every one is 100% visible with stretch ≤ 1.01.
+
+  ![Just above the waistband: tribal butterfly, neotribal heart and waist filigree over briefs; the butterfly over low-rise jeans](images/body-art-waistline.webp)
 
 Where it lives: `wardrobe/body_art/{contract,catalog,raster,rays,surfaces,placement,exposure,project,poses,materials,decorate}.py`,
 `wardrobe/pipeline/{analyze_exposed_skin,apply_body_art}.py`, the I7 skips in

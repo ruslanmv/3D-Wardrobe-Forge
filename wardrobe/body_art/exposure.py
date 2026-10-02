@@ -42,6 +42,7 @@ HIT_MIN = 0.98
 DEFAULT_ASPECT = {
     "upper-back": 2.4,
     "lower-back": 2.6,
+    "waistline": 3.0,
     "spine-upper": 0.25,
     "spine-full": 0.22,
     "nape": 1.0,
@@ -127,6 +128,48 @@ def exposure_map(surfaces: Surfaces, body: Body) -> dict[str, Exposure]:
     return {p: exposure(surfaces, body, p)[0] for p in PLACEMENTS}
 
 
+#: Where waistband_y looks: down the centre of her back from the lower-back position, in
+#: these steps, to this far below her hip bone.
+WAIST_SCAN_STEP_M = 0.003
+WAIST_SCAN_BELOW_HIPS_M = 0.15
+
+
+def waistband_y(surfaces: Surfaces, body: Body) -> float | None:
+    """The top edge of what covers the centre of her back below her waist, or None.
+
+    Walks down her spine from the lower-back position: at each height a ray goes out of her
+    back to her skin, and from there on outward exactly as ``measure`` looks for clothing.
+    The first height that is covered is the waistband's top. None if her back is already
+    covered where the walk starts (there is no bare strip to sit in) or nothing covers it
+    all the way down (no bottoms, or very low-rise ones).
+    """
+    top = body.lerp("spine", "chest", 0.3, fallback=("hips", "neck"))
+    bottom = float(body.bones["hips"][1]) - WAIST_SCAN_BELOW_HIPS_M
+    ys = np.arange(top, bottom, -WAIST_SCAN_STEP_M)
+    if ys.size == 0:
+        return None
+    origins = body.axis(ys)
+    directions = np.tile(body.back, (ys.size, 1))
+    tris = body.skin.corners()
+    near = in_box(tris, np.array([-np.inf, bottom - 0.02, -np.inf]), np.array([np.inf, top + 0.02, np.inf]))
+    t, _, _ = cast(origins, directions, tris[near], t_min=1e-4, t_max=0.5)
+    on_skin = np.isfinite(t)
+    if not on_skin.any():
+        return None
+    points = origins + directions * np.where(on_skin, t, 0.0)[:, None]
+    starts = points - directions * BEHIND_M
+    swept = np.vstack([starts, points + directions * COVER_REACH_M])
+    covering = in_box(surfaces.cover, swept.min(axis=0) - 1e-3, swept.max(axis=0) + 1e-3)
+    reach = COVER_REACH_M + BEHIND_M
+    t_cover, _, _ = cast(starts, directions, surfaces.cover[covering], t_min=0.0, t_max=reach)
+    covered = on_skin & np.isfinite(t_cover)
+    first = int(np.argmax(on_skin))
+    if covered[first]:
+        return None
+    band = np.nonzero(covered)[0]
+    return float(ys[band[0]]) if band.size else None
+
+
 def read_body(document) -> tuple[Surfaces, Body]:
     """Her skin, what covers it, and the frame placements are measured in, from a finished VRM."""
     from wardrobe.body_art.surfaces import read_surfaces
@@ -136,7 +179,18 @@ def read_body(document) -> tuple[Surfaces, Body]:
     surfaces = read_surfaces(document)
     if surfaces.skin.triangles.size == 0:
         raise PlacementError("no skin was found on this avatar")
-    return surfaces, Body.from_measurements(measure_body(document, inspect_document(document)), surfaces.skin)
+    body = Body.from_measurements(measure_body(document, inspect_document(document)), surfaces.skin)
+    body.waistband_y = waistband_y(surfaces, body)
+    return surfaces, body
 
 
-__all__ = ["COVER_REACH_M", "VISIBLE_MIN", "Exposure", "exposure", "exposure_map", "measure", "read_body"]
+__all__ = [
+    "COVER_REACH_M",
+    "VISIBLE_MIN",
+    "Exposure",
+    "exposure",
+    "exposure_map",
+    "measure",
+    "read_body",
+    "waistband_y",
+]

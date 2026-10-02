@@ -49,6 +49,9 @@ PLACEMENTS: dict[str, Placement] = {
         Placement("spine-upper", "Upper spine", "general", "back", "upper"),
         Placement("spine-full", "Full spine", "general", "back", "upper"),
         Placement("lower-back", "Lower back", "general", "back", "lower"),
+        # Just above whatever waistband the outfit has: found on the finished look, not
+        # assumed from her bones (placement.rect_for, exposure.waistband_y).
+        Placement("waistline", "Just above the waistband", "general", "back", "lower"),
     )
 }
 

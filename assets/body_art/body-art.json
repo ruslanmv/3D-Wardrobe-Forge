@@ -105,7 +105,8 @@
       "name": "Lotus Ornament",
       "family": "lower-back",
       "placements": [
-        "lower-back"
+        "lower-back",
+        "waistline"
       ],
       "aspect": 2.6,
       "paths": "designs/lotus-ornament-01.json",
@@ -123,6 +124,123 @@
       "paths": "designs/nape-crescent-01.json",
       "license": "Apache-2.0",
       "description": "A small crescent moon and star at the nape of the neck."
+    },
+    {
+      "id": "tribal-butterfly-01",
+      "name": "Tribal Butterfly",
+      "family": "lower-back-classic",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 2.6667,
+      "paths": "designs/tribal-butterfly-01.json",
+      "license": "Apache-2.0",
+      "description": "A wide tribal butterfly centred above the waistband, its sweeps running out toward the hips."
+    },
+    {
+      "id": "neotribal-heart-01",
+      "name": "Neotribal Heart",
+      "family": "lower-back-classic",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 2.9091,
+      "paths": "designs/neotribal-heart-01.json",
+      "license": "Apache-2.0",
+      "description": "A small outlined heart with sharp neotribal sweeps to each side."
+    },
+    {
+      "id": "waist-filigree-01",
+      "name": "Waist Filigree",
+      "family": "lower-back-ornamental",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 3.4,
+      "paths": "designs/waist-filigree-01.json",
+      "license": "Apache-2.0",
+      "description": "Lace and jewellery curves following the waist, with a centre drop and scalloped beads."
+    },
+    {
+      "id": "angel-wings-01",
+      "name": "Angel Wings",
+      "family": "lower-back-classic",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 3.0,
+      "paths": "designs/angel-wings-01.json",
+      "license": "Apache-2.0",
+      "description": "A small heart with feathered wings reaching toward the hips."
+    },
+    {
+      "id": "thorn-vine-01",
+      "name": "Thorn Vine",
+      "family": "lower-back-ornamental",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 4.1176,
+      "paths": "designs/thorn-vine-01.json",
+      "license": "Apache-2.0",
+      "description": "Thin intertwined vines with thorns and curled ends across the lower back."
+    },
+    {
+      "id": "rose-vine-01",
+      "name": "Rose Vine",
+      "family": "lower-back-ornamental",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 3.1429,
+      "paths": "designs/rose-vine-01.json",
+      "license": "Apache-2.0",
+      "description": "A rose at the centre with leafy vines along the waistline."
+    },
+    {
+      "id": "heart-stars-01",
+      "name": "Heart and Stars",
+      "family": "lower-back-classic",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 3.0,
+      "paths": "designs/heart-stars-01.json",
+      "license": "Apache-2.0",
+      "description": "A double-outlined heart with stars trailing to each side, in fine line."
+    },
+    {
+      "id": "ornamental-butterfly-01",
+      "name": "Ornamental Butterfly",
+      "family": "lower-back-ornamental",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 2.5,
+      "paths": "designs/ornamental-butterfly-01.json",
+      "license": "Apache-2.0",
+      "description": "A fine-line butterfly with curled ornament and flourishes to the sides."
+    },
+    {
+      "id": "dragonfly-01",
+      "name": "Dragonfly",
+      "family": "lower-back-ornamental",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 3.3,
+      "paths": "designs/dragonfly-01.json",
+      "license": "Apache-2.0",
+      "description": "A delicate dragonfly centrepiece with long curling side flourishes."
     }
   ]
 }
