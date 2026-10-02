@@ -33,7 +33,7 @@ which must be registered on the application), and saves the token to
 available to other users, and its creator allows both redistribution and
 modification — this repository re-cuts the file to dress it and serves the
 looks it makes. The list is a request, not a permission: the check runs against
-VRoid Hub every time. Where a creator links extra terms (Celeste, Auralithis),
+VRoid Hub every time. Where a creator links extra terms (for example Celeste),
 the script prints the link; read it.
 
 **What it writes.**
@@ -48,6 +48,8 @@ assets/library/vroid/
 Commit `models.json` and `licenses/`; they are the provenance. The VRMs stay
 out of git for the same reason the library's do (size, and a Hugging Face
 Space refuses plain-git files over 10 MB).
+
+**Wardrobe Studio.** The Studio discovers `assets/library/vroid/models.json` automatically. Verified VRoid models appear under **Avatars** without copying them into the root manifest. The badge uses the model's recognized Creative Commons licence (for example **CC0**) when present; otherwise it falls back to **VRoid Hub** for creator-specific Hub terms.
 
 **Your application's registration.** VRoid Hub registers what an application
 may do with the models it loads — redistribution, alterations, commercial use,

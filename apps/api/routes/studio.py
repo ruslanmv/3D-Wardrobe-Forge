@@ -17,22 +17,27 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import replace
+from datetime import UTC, datetime
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from apps.api.admin import AdminDep
-from apps.api.dependencies import OrchestratorDep, SettingsDep, StoreDep
+from apps.api.dependencies import OrchestratorDep, SettingsDep, StoreDep, http_error_for
 from apps.api.ratelimit import limit_job_creation
+from apps.api.routes.avatars import _inspect
 from apps.api.routes.body_art import check_designs
 from wardrobe import __version__
 from wardrobe.body_art.contract import BodyArtRequest, check_items
 from wardrobe.body_art.exposure import exposure_map, read_body
 from wardrobe.body_art.placement import PlacementError
+from wardrobe.domain.avatars import LicenseAttestation
 from wardrobe.domain.garments import COVERAGE_PRESETS, INTIMATE_CATEGORIES, NECKLINES, STRAP_PRESETS
 from wardrobe.domain.jobs import TERMINAL_STATES, CreateJobRequest, JobOptions, JobRecord, JobState
 from wardrobe.domain.looks import OutfitRequest
+from wardrobe.errors import WardrobeError
 from wardrobe.library import AvatarLibrary, LibraryAvatar
 from wardrobe.materials.finishes import FINISHES, OPACITY_LEVELS, PATTERNS
 from wardrobe.pipeline.generate_garment import complete_foundation, with_foundation
@@ -46,13 +51,13 @@ from wardrobe.pipeline.plan_outfit import (
 )
 from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
 from wardrobe.pipeline.prepare_base_body import foundation_conflicts
-from wardrobe.policy import intimate
+from wardrobe.policy import file_safety, intimate, licensing
 from wardrobe.targets.bundle import LookFiles, build_wardrobe_bundle, select_looks
 from wardrobe.targets.pack import RATINGS, PackAvatar, PackLook, build_pack, pack_slug, spdx_for, zip_pack
 from wardrobe.vrm.body_integrity import check_body
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.garment_inventory import build_strip_plan, garment_inventory
-from wardrobe.vrm.inspect import inspect_document
+from wardrobe.vrm.inspect import ModificationPermission, inspect_document
 from wardrobe.vrm.measure import measure_body
 
 router = APIRouter(tags=["studio"])
@@ -65,6 +70,59 @@ def _library(request: Request) -> AvatarLibrary:
     if library is None:  # started without the lifespan (a bare TestClient, a script)
         raise HTTPException(status_code=503, detail="avatar library is not loaded")
     return library
+
+
+async def _refresh_library(request: Request, store) -> AvatarLibrary:
+    """Re-read collection manifests so downloads/imports appear without a restart."""
+    current = _library(request)
+    fresh = AvatarLibrary.from_directory(current.root)
+    await fresh.seed(store)
+    request.app.state.library = fresh
+    return fresh
+
+
+def _normalised_embedded_conditions(info) -> dict[str, str]:
+    conditions: dict[str, str] = {}
+    if info.license.modification in {
+        ModificationPermission.ALLOWED,
+        ModificationPermission.ALLOWED_WITH_REDISTRIBUTION,
+    }:
+        conditions["modification"] = "allow"
+    elif info.license.modification is ModificationPermission.PROHIBITED:
+        conditions["modification"] = "disallow"
+    if info.license.redistribution_allowed is True:
+        conditions["redistribution"] = "allow"
+    elif info.license.redistribution_allowed is False:
+        conditions["redistribution"] = "disallow"
+    return conditions
+
+
+def _write_import_manifest(directory: Path, item: dict) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / "models.json"
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    except (OSError, ValueError, TypeError):
+        manifest = {}
+    existing = manifest.get("items")
+    items = existing if isinstance(existing, list) else []
+    items = [
+        row for row in items
+        if row.get("slug") != item["slug"] and row.get("sha256") != item["sha256"]
+    ]
+    items.append(item)
+    manifest = {
+        "generated_at_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+        "license_note": (
+            "VRM models imported locally through Wardrobe Studio. Embedded terms are "
+            "preserved; any explicit modification attestation is recorded per avatar."
+        ),
+        "items": items,
+    }
+    temporary = path.with_name(".models.json.tmp")
+    temporary.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
 
 
 # ----------------------------------------------------------------------
@@ -85,18 +143,105 @@ def _dressable(request: Request, slug: str, admin) -> tuple[LibraryAvatar, bool]
 
 
 @router.get("/library")
-def list_library(request: Request, admin: AdminDep) -> dict:
+async def list_library(request: Request, admin: AdminDep, store: StoreDep) -> dict:
     """Every library avatar, with provenance and whether it can be used.
 
     ``declaredBy`` says where an adult declaration came from: ``operator`` (the
     deployment's policy file, for everyone) or ``session`` (this admin session only).
     """
-    listing = _library(request).to_dict()
+    listing = (await _refresh_library(request, store)).to_dict()
     for entry in listing.get("avatars", []):
         entry["declaredBy"] = "operator" if entry.get("depictsAdult") else None
         if admin is not None and entry["slug"] in admin.declared and not entry.get("depictsAdult"):
             entry["depictsAdult"], entry["declaredBy"] = True, "session"
     return listing
+
+
+@router.post("/library/import", status_code=status.HTTP_201_CREATED)
+async def import_library_avatar(
+    request: Request,
+    store: StoreDep,
+    settings: SettingsDep,
+    file: UploadFile = File(...),
+    presentation: str = Form(default="avatar"),
+    user_attests_modification_allowed: bool = Form(default=False),
+) -> dict:
+    """Validate a local VRM, persist it as a Studio collection, and return the refreshed library."""
+    data = await file.read()
+    try:
+        file_safety.check_size(len(data), settings)
+    except WardrobeError as exc:
+        raise http_error_for(exc) from exc
+
+    analysis, extra = _inspect(data)
+    if any("missing required" in warning.lower() for warning in analysis.warnings):
+        raise HTTPException(
+            status_code=422,
+            detail={"reason": "invalid_humanoid", "message": "This VRM is missing required humanoid bones."},
+        )
+
+    attestation = LicenseAttestation(
+        userAttestsModificationAllowed=user_attests_modification_allowed
+    )
+    decision = licensing.evaluate(extra["info"].license, attestation, strict=settings.strict_licensing)
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=428 if decision.requires_attestation else 422,
+            detail={
+                "reason": str(decision.reason) if decision.reason else "license_not_permitted",
+                "message": decision.message,
+                "requiresAttestation": decision.requires_attestation,
+            },
+        )
+
+    current = AvatarLibrary.from_directory(_library(request).root)
+    duplicate = next(
+        (avatar for avatar in current.avatars if avatar.available and avatar.sha256 == analysis.sha256),
+        None,
+    )
+    if duplicate is not None:
+        await current.seed(store)
+        request.app.state.library = current
+        return {"avatar": duplicate.to_dict(), "library": current.to_dict(), "duplicate": True}
+
+    info = extra["info"]
+    original = Path(file.filename or analysis.title or "avatar.vrm")
+    safe_name = file_safety.sanitize_component(original.stem, fallback="avatar")
+    slug_base = safe_name.lower().replace("_", "-")[:48]
+    slug = f"import-{slug_base}-{analysis.sha256[:8]}"
+    imports_dir = current.root / "imports"
+    target = imports_dir / f"{slug}.vrm"
+    imports_dir.mkdir(parents=True, exist_ok=True)
+    temporary = imports_dir / f".{slug}.part"
+    try:
+        temporary.write_bytes(data)
+        temporary.replace(target)
+        conditions = _normalised_embedded_conditions(info)
+        item = {
+            "slug": slug,
+            "name": analysis.title or original.stem or "Imported avatar",
+            "file": target.name,
+            "presentation": presentation if presentation in {"feminine", "masculine", "avatar"} else "avatar",
+            "source": "Wardrobe Studio import",
+            "license": info.license.license_name or "Embedded VRM terms",
+            "creator": ", ".join(info.license.authors) if info.license.authors else None,
+            "licenseConditions": conditions,
+            "userAttestsModificationAllowed": user_attests_modification_allowed,
+            "bytes": len(data),
+            "sha256": analysis.sha256,
+            "glb_version": 2,
+        }
+        _write_import_manifest(imports_dir, item)
+    except OSError as exc:
+        temporary.unlink(missing_ok=True)
+        target.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail=f"could not persist imported VRM: {exc}") from exc
+
+    fresh = await _refresh_library(request, store)
+    avatar = fresh.get(slug)
+    if avatar is None or not avatar.available:
+        raise HTTPException(status_code=500, detail="imported VRM did not enter the avatar library")
+    return {"avatar": avatar.to_dict(), "library": fresh.to_dict(), "duplicate": False}
 
 
 class LibraryJobRequest(BaseModel):

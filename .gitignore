@@ -30,7 +30,10 @@ assets/library/*.vrm
 
 # scripts/download.py: VRoid Hub models (fetched, like the library above) and
 # the saved sign-in. The manifest and licence snapshots beside them are committed.
-assets/library/vroid/*.vrm
+#assets/library/vroid/*.vrm
 assets/library/vroid/*.part
+
+# Wardrobe Studio local imports: persisted for this installation, never committed.
+assets/library/imports/
 .vroid-token.json
 .vroid-pending.json

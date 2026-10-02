@@ -55,6 +55,7 @@ from __future__ import annotations
 import argparse
 import base64
 import contextlib
+import gzip
 import hashlib
 import http.server
 import json
@@ -133,8 +134,11 @@ def load_models(path: Path = MODELS_FILE, only: set[str] | None = None) -> list[
 
 # ---------------------------------------------------------------- http
 def _request(method: str, url: str, *, token: str | None = None, form: dict | None = None,
-             body: dict | None = None, redirects: bool = True) -> tuple[int, dict, bytes]:
+             body: dict | None = None, redirects: bool = True,
+             extra_headers: dict[str, str] | None = None) -> tuple[int, dict, bytes]:
     headers = {"X-Api-Version": API_VERSION, "Accept": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
     data = None
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -451,12 +455,53 @@ def embedded_licence(document: dict) -> dict:
     extensions = document.get("extensions") or {}
     if "VRMC_vrm" in extensions:
         meta = extensions["VRMC_vrm"].get("meta") or {}
-        return {"spec": "1.0", "name": meta.get("name"), "authors": meta.get("authors"),
-                "redistribution": meta.get("allowRedistribution"), "modification": meta.get("modification")}
+        return {
+            "spec": "1.0",
+            "name": meta.get("name"),
+            "authors": meta.get("authors"),
+            "redistribution": meta.get("allowRedistribution"),
+            "modification": meta.get("modification"),
+            "licenseUrl": meta.get("licenseUrl"),
+            "otherLicenseUrl": meta.get("otherLicenseUrl"),
+        }
     meta = (extensions.get("VRM") or {}).get("meta") or {}
-    return {"spec": "0.x", "name": meta.get("title"),
-            "authors": [meta.get("author")] if meta.get("author") else [],
-            "licenseName": meta.get("licenseName"), "otherPermissionUrl": meta.get("otherPermissionUrl")}
+    return {
+        "spec": "0.x",
+        "name": meta.get("title"),
+        "authors": [meta.get("author")] if meta.get("author") else [],
+        "licenseName": meta.get("licenseName"),
+        "otherPermissionUrl": meta.get("otherPermissionUrl"),
+    }
+
+
+def display_license(summary: dict, embedded: dict) -> str:
+    """Short, truthful badge label for a downloaded model's licence."""
+    name = str(embedded.get("licenseName") or "").strip().upper().replace("-", "_")
+    by_name = {
+        "CC0": "CC0",
+        "CC0_1.0": "CC0",
+        "CC_BY": "CC BY",
+        "CC_BY_NC": "CC BY-NC",
+        "CC_BY_SA": "CC BY-SA",
+        "CC_BY_NC_SA": "CC BY-NC-SA",
+    }
+    if name in by_name:
+        return by_name[name]
+
+    urls = [embedded.get("licenseUrl"), summary.get("licenseUrl")]
+    for value in urls:
+        url = str(value or "").strip().lower()
+        if "creativecommons.org/publicdomain/zero/" in url:
+            return "CC0"
+        for path, label in (
+            ("/licenses/by-nc-sa/", "CC BY-NC-SA"),
+            ("/licenses/by-nc/", "CC BY-NC"),
+            ("/licenses/by-sa/", "CC BY-SA"),
+            ("/licenses/by/", "CC BY"),
+        ):
+            if "creativecommons.org" in url and path in url:
+                return label
+    return "VRoid Hub"
 
 
 def sha256_of(path: Path) -> str:
@@ -467,6 +512,42 @@ def sha256_of(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _decode_download_payload(path: Path) -> Path:
+    """Return a GLB-ready file, transparently expanding a gzip-wrapped download.
+
+    Browser fetch and requests transparently decode HTTP gzip responses, while
+    urllib.request exposes the response bytes as-is. VRoid Hub's official API
+    example requests gzip for the download redirect, and its S3 response may
+    therefore be gzip wrapped. Detect the gzip magic rather than trusting
+    Content-Encoding alone, because CDN/S3 metadata can vary.
+    """
+    with path.open("rb") as handle:
+        magic = handle.read(4)
+    if not magic.startswith(b"\x1f\x8b"):
+        return path
+
+    with tempfile.NamedTemporaryFile(dir=path.parent, suffix=".part", delete=False) as decoded:
+        decoded_path = Path(decoded.name)
+        try:
+            with gzip.open(path, "rb") as compressed:
+                shutil.copyfileobj(compressed, decoded, 1 << 20)
+        except (OSError, EOFError) as exc:
+            decoded_path.unlink(missing_ok=True)
+            raise DownloadError(f"VRoid Hub returned a broken gzip-wrapped model: {exc}") from exc
+    path.unlink(missing_ok=True)
+    return decoded_path
+
+
+def _payload_hint(path: Path, headers: dict) -> str:
+    """Small, non-secret diagnostic for a response that is not a VRM/GLB."""
+    with path.open("rb") as handle:
+        head = handle.read(32)
+    content_type = headers.get("Content-Type") or headers.get("content-type") or "unknown"
+    content_encoding = headers.get("Content-Encoding") or headers.get("content-encoding") or "identity"
+    return (f"content-type={content_type!r}, content-encoding={content_encoding!r}, "
+            f"first-bytes={head[:16].hex() or '<empty>'}")
+
+
 def download(entry: dict, token: str, out_dir: Path) -> Path:
     status, _, raw = _request("POST", f"{HUB}/api/download_licenses", token=token,
                               body={"character_model_id": entry["modelId"]})
@@ -474,24 +555,31 @@ def download(entry: dict, token: str, out_dir: Path) -> Path:
     if not licence_id:
         raise DownloadError("VRoid Hub issued no download licence")
     try:
-        status, headers, raw = _request("GET", f"{HUB}/api/download_licenses/{licence_id}/download",
-                                        token=token, redirects=False)
+        status, headers, raw = _request(
+            "GET", f"{HUB}/api/download_licenses/{licence_id}/download",
+            token=token, redirects=False, extra_headers={"Accept-Encoding": "gzip"})
         location = headers.get("Location") or headers.get("location")
         if status not in (301, 302, 303, 307, 308) or not location:
             _json(status, raw, "download")  # raises with VRoid Hub's reason
             raise DownloadError(f"download: expected a redirect, got HTTP {status}")
         target = out_dir / f"{entry['slug']}.vrm"
         out_dir.mkdir(parents=True, exist_ok=True)
+        response_headers: dict = {}
         with tempfile.NamedTemporaryFile(dir=out_dir, suffix=".part", delete=False) as part:
             temporary = Path(part.name)
-            # The presigned URL is the credential: no bearer token, no API headers.
+            # The presigned URL is the credential: no bearer token, no VRoid API headers.
+            # urllib does not auto-decompress Content-Encoding like fetch/requests do.
             with urllib.request.urlopen(location, timeout=TIMEOUT_S * 5) as response:
+                response_headers = dict(getattr(response, "headers", {}) or {})
                 shutil.copyfileobj(response, part, 1 << 20)
         try:
+            temporary = _decode_download_payload(temporary)
             glb_json(temporary)
-        except DownloadError:
+        except DownloadError as exc:
+            hint = _payload_hint(temporary, response_headers) if temporary.exists() else ""
             temporary.unlink(missing_ok=True)
-            raise
+            suffix = f" ({hint})" if hint else ""
+            raise DownloadError(f"{exc}{suffix}") from exc
         temporary.replace(target)
         return target
     finally:
@@ -499,9 +587,13 @@ def download(entry: dict, token: str, out_dir: Path) -> Path:
         _request("DELETE", f"{HUB}/api/download_licenses/{licence_id}", token=token)
 
 
-def write_manifest(out_dir: Path, items: list[dict]) -> Path:
+def write_manifest(out_dir: Path, items: list[dict], *, replace: bool = False) -> Path:
     path = out_dir / "models.json"
-    existing = json.loads(path.read_text(encoding="utf-8")).get("items", []) if path.is_file() else []
+    existing = (
+        []
+        if replace or not path.is_file()
+        else json.loads(path.read_text(encoding="utf-8")).get("items", [])
+    )
     by_slug = {item["slug"]: item for item in existing}
     by_slug.update({item["slug"]: item for item in items})
     manifest = {
@@ -595,7 +687,8 @@ def main(argv: list[str] | None = None) -> int:
         items.append({
             "slug": entry["slug"], "name": record["name"], "file": target.name,
             "presentation": entry.get("presentation", ""), "source": record["source"],
-            "license": f"VRoid Hub conditions of use; see licenses/{entry['slug']}.json",
+            "license": display_license(summary, record["embedded"]),
+            "licenseConditions": {"modification": "allow", "redistribution": "allow"},
             "creator": record["creator"], "vroidModelId": record["modelId"],
             "bytes": target.stat().st_size, "sha256": sha256_of(target), "glb_version": 2,
         })
@@ -607,7 +700,7 @@ def main(argv: list[str] | None = None) -> int:
             shutil.copy2(licences / f"{entry['slug']}.json", args.copy_to / f"{entry['slug']}.license.json")
 
     if items:
-        print(f"\nManifest: {write_manifest(args.out, items)}")
+        print(f"\nManifest: {write_manifest(args.out, items, replace=only is None)}")
     for heading, rows in (("Refused", refused), ("Failed", failed)):
         if rows:
             print(f"\n{heading}:")

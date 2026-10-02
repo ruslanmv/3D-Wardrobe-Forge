@@ -77,6 +77,16 @@ def test_the_studio_is_served_with_its_pinned_renderer(client: TestClient):
         assert client.get(f"/studio/{asset}").status_code == 200
 
 
+def test_the_studio_exposes_the_vrm_import_flow(client: TestClient):
+    page = client.get("/studio/").text
+    script = client.get("/studio/js/app.js").text
+    api = client.get("/studio/js/api.js").text
+    for control in ("import-vrm-btn", "import-dialog", "import-file", "import-submit"):
+        assert f'id="{control}"' in page
+    assert "inspectImportFile" in script and "importAvatar" in script
+    assert "/v1/avatars/inspect" in api and "/v1/library/import" in api
+
+
 # ----------------------------------------------------------------------
 # library
 # ----------------------------------------------------------------------
