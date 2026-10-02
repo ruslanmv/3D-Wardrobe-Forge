@@ -249,7 +249,8 @@ class LibraryJobRequest(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    outfit: OutfitRequest
+    #: BA6. Absent only for a tattoo-only job, which must name the look it decorates.
+    outfit: OutfitRequest | None = None
     options: JobOptions = Field(default_factory=JobOptions)
     #: Build on a look already in this avatar's wardrobe — a top onto a skirt is a set.
     base_look_id: str | None = Field(default=None, alias="baseLookId")
@@ -262,6 +263,11 @@ class LibraryJobRequest(BaseModel):
         # Here as well as on CreateJobRequest: that one is built inside the handler, where a
         # validation error would be a 500 rather than the 422 it is.
         check_items(self.body_art, self.body_art_remove)
+        if self.outfit is None:
+            if not (self.body_art or self.body_art_remove):
+                raise ValueError("outfit is required unless the job only adds or removes body art")
+            if not self.base_look_id:
+                raise ValueError("a tattoo-only job names the finished look it goes on (baseLookId)")
         return self
 
 
@@ -292,7 +298,7 @@ async def create_library_job(
     job = CreateJobRequest.model_validate(
         {
             "avatar": avatar_input,
-            "outfit": body.outfit.model_dump(by_alias=True, exclude_none=True),
+            "outfit": body.outfit.model_dump(by_alias=True, exclude_none=True) if body.outfit else None,
             "options": options.model_dump(by_alias=True),
             "bodyArt": [item.model_dump(by_alias=True) for item in body.body_art],
             "bodyArtRemove": body.body_art_remove,
@@ -313,6 +319,8 @@ async def preview_library_plan(
     of her garments would come off and which stay; and whether there is a body
     under what comes off. Read-only — nothing is stripped, built or stored.
     """
+    if body.outfit is None:
+        raise HTTPException(status_code=422, detail="a plan is for an outfit; this request has none")
     avatar, _ = _dressable(request, slug, admin)
     avatar_input = avatar.avatar_input()
     if body.base_look_id:

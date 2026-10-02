@@ -1,9 +1,9 @@
 # Body art (tattoos) plan
 
-> Status: **BA1–BA5 implemented** on `claude/body-art-tattoos` (request fields
+> Status: **BA1–BA6 implemented** on `claude/body-art-tattoos` (request fields
 > and catalogue; exposure on the finished outfit; projection; the two stages;
-> ten designs, raster install and the back-view preview). BA6–BA10 are still a
-> plan. Three things were built differently from what is
+> ten designs, raster install and the back-view preview; tattoo-only jobs and
+> the lifecycle). BA7–BA10 are still a plan. Three things were built differently from what is
 > written below, each for a measured reason — see "As built" at the end.
 > Batches are `BA1`–`BA10`; commit subjects and code comments carry the prefix
 > (`BA3: …`). Every file, function and number below was read or measured in
@@ -505,7 +505,7 @@ Not changed: `wardrobe/domain/garments.py`, `wardrobe/vrm/garments.py`
 `wardrobe/pipeline/{plan_outfit,plan_outfit_stack,prepare_base_body,generate_garment,fit_garment}.py`,
 every garment template, the design panel's controls and Check plan.
 
-## As built (BA1–BA5)
+## As built (BA1–BA6)
 
 - **The decal is her own skin triangles, not a grid with blended weights.**
   §2.3 and the projection steps above describe a grid laid over her skin, each
@@ -558,6 +558,35 @@ every garment template, the design panel's controls and Check plan.
 
   ![Back views](images/body-art-back.webp)
 
+- **BA6: a tattoo-only job is a job without `outfit`.** `CreateJobRequest.outfit`
+  may be absent only when `bodyArt` or `bodyArtRemove` is not; the Studio's
+  library job also needs `baseLookId`. The orchestrator then runs
+  `validate_source → analyze_avatar → carry_look → analyze_exposed_skin →
+  apply_body_art → validate_output → render_preview`: `carry_look` takes the
+  look's document as the assembled one and changes only the root's provenance
+  (`lookId`, and `baseLookId` naming the look it decorates), so every node,
+  mesh, material, accessor and buffer byte of the look is in the new one
+  unchanged — the lifecycle test compares them. Two refusals, both `rejected`:
+  a source that is not a Forge look (`body_art_needs_a_finished_look` — clothes
+  first, so a tattoo never goes straight onto an uploaded avatar), and a job
+  none of whose tattoos could be made (`body_art_not_applied`, with the
+  sentence), because its "look" would be a copy of one she has. The new look is
+  named after its base ("Black lingerie · Tribal Wings"); its `look.json`
+  carries the base's garments, prompt and rating, made stronger only by a gated
+  tattoo; a base without one stays unrated rather than being guessed general.
+- **Recipes travel; geometry follows the clothes.** The root's
+  `extras.wardrobeForge.bodyArt` lists every tattoo with a `state` —
+  `applied`, `covered`, `held` (kept for later, not drawn for another reason)
+  or `not-applied`. The engines rewrite the root's extras from scratch, so
+  `wardrobe/body_art/lifecycle.py` reads the *source's* recipes (its JSON chunk
+  only) and the stages decide them again on the new outfit: still visible with
+  its decal there → kept as is; covered → decal dropped, recipe `covered`;
+  visible again → re-applied, the same geometry to 1 µm. A recipe that was never
+  on her skin (`not-applied`) never travels, and one asked for again at the
+  same placement gives way only if the new one is actually drawn. `rating_for`
+  for an outfit job also takes the stronger of the plan's rating and any applied
+  gated tattoo (planned for BA8; no v1 placement is gated).
+
 Where it lives: `wardrobe/body_art/{contract,catalog,raster,rays,surfaces,placement,exposure,project,poses,materials,decorate}.py`,
 `wardrobe/pipeline/{analyze_exposed_skin,apply_body_art}.py`, the I7 skips in
 `wardrobe/engines/geometry_checks.py body_points` and
@@ -565,4 +594,6 @@ Where it lives: `wardrobe/body_art/{contract,catalog,raster,rays,surfaces,placem
 `GET /v1/library/{slug}/looks/{lookId}/exposure`. Tests:
 `tests/integration/test_body_art_{invariants,exposure,pipeline}.py`,
 `tests/unit/test_body_art_{projection,artwork,preview}.py`; BA5 adds
-`tools/body_art/install_design.py` and `render_preview.body_art_views`.
+`tools/body_art/install_design.py` and `render_preview.body_art_views`; BA6
+adds `wardrobe/body_art/lifecycle.py`, `wardrobe/pipeline/carry_look.py` and
+`tests/integration/test_body_art_lifecycle.py`.

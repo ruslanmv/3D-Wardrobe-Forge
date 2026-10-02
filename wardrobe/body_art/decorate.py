@@ -47,13 +47,34 @@ class Outcome:
     exposure: Exposure | None = None
     decal: Decal | None = None
     node: int | None = None
+    #: BA6. Carried from the look this job builds on, not asked for in this job.
+    inherited: bool = False
+    #: BA6. Inherited, still visible, and its decal still drawn: left exactly as it was.
+    kept: bool = False
+
+    @property
+    def state(self) -> str:
+        """The recipe's state on the look this job makes (lifecycle.INHERITED_STATES travel on)."""
+        if self.applied:
+            return "applied"
+        if not self.inherited:
+            return "not-applied"  # asked for and refused: never added to a later look unasked
+        if self.exposure is not None and not self.exposure.applies:
+            return "covered"
+        return "held"  # once on her skin, kept for later, not drawn now for another reason
 
     @property
     def sentence(self) -> str:
         """What the report says about it, in words."""
         name = PLACEMENTS[self.request.placement].name
+        if self.kept:
+            return f"{name} tattoo kept"
         if self.applied:
-            return f"{name} tattoo applied"
+            return f"{name} tattoo {'re-applied' if self.inherited else 'applied'}"
+        if self.inherited and self.state == "covered":
+            return f"{name} tattoo is under the outfit; it comes back on a look that shows it"
+        if self.inherited:
+            return f"{name} tattoo not shown on this look — {self.reason}"
         return f"{name} tattoo not applied — {self.reason}"
 
     def report(self) -> dict:
@@ -62,6 +83,8 @@ class Outcome:
             "placement": self.request.placement,
             "rating": self.rating,
             "applied": self.applied,
+            "state": self.state,
+            "inherited": self.inherited,
             "reason": self.reason,
             "message": self.sentence,
         }
@@ -85,17 +108,32 @@ def decide(
     *,
     depicts_adult: bool,
     terms,
+    inherited: list[BodyArtRequest] = (),
+    live: set[str] = frozenset(),
 ) -> list[Outcome]:
-    """Every item's fate on this finished document. Reads it; changes nothing."""
+    """Every item's fate on this finished document. Reads it; changes nothing.
+
+    ``inherited`` are the recipes of the look this job builds on (BA6, ``lifecycle``),
+    decided exactly as requests are — gate, exposure, projection — so a tattoo carried
+    onto a new outfit is held to the same rules as one asked for on it. ``live`` are the
+    placements already drawn: an inherited tattoo still visible there is kept, not rebuilt.
+    """
     outcomes: list[Outcome] = []
     body = surfaces = None
-    for item in items:
+    marked = [(item, False) for item in items] + [(item, True) for item in inherited]
+    #: Placements a new tattoo in this job is drawn at: an inherited one there gives way.
+    replaced: set[str] = set()
+    for item, carried in marked:
+        if carried and item.placement in replaced:
+            continue
         problem = catalog.check(item.design, item.placement)
         if problem is not None:
-            outcomes.append(Outcome(item, PLACEMENTS[item.placement].rating, reason=problem))
+            outcomes.append(
+                Outcome(item, PLACEMENTS[item.placement].rating, reason=problem, inherited=carried)
+            )
             continue
         rating = catalog.rating(item.design, item.placement)
-        outcome = Outcome(item, rating)
+        outcome = Outcome(item, rating, inherited=carried)
         outcomes.append(outcome)
         if rating in GATE_CATEGORY:
             decision = intimate.evaluate(
@@ -124,9 +162,14 @@ def decide(
         if not measured.applies:
             outcome.reason = measured.reason
             continue
+        if carried and item.placement in live:
+            outcome.applied = outcome.kept = True
+            continue
         ink = coverage(catalog.artwork_path(design), 256)
         try:
             outcome.decal = build_decal(body, fp, ink)
+            if not carried:
+                replaced.add(item.placement)
         except ProjectionError as exc:
             outcome.reason = str(exc)
     return outcomes
@@ -144,7 +187,10 @@ def apply(
     Returns the placements whose earlier Forge tattoo was taken off.
     """
     replacing = {o.request.placement for o in outcomes if o.decal is not None}
-    removed = remove_decals(document, set(remove) | replacing)
+    # BA6. An inherited tattoo the new outfit hides is dropped from the geometry (I3); its
+    # recipe stays below, so a later look that shows the spot puts it back.
+    hidden = {o.request.placement for o in outcomes if o.inherited and not o.applied}
+    removed = remove_decals(document, set(remove) | replacing | hidden)
     for outcome in outcomes:
         if outcome.decal is None:
             continue
@@ -173,7 +219,13 @@ def apply(
         outcome.applied = True
     extras = document.gltf.setdefault("extras", {}).setdefault("wardrobeForge", {})
     extras["bodyArt"] = [
-        {**o.request.model_dump(by_alias=True), "rating": o.rating, "applied": o.applied, "reason": o.reason}
+        {
+            **o.request.model_dump(by_alias=True),
+            "rating": o.rating,
+            "applied": o.applied,
+            "state": o.state,
+            "reason": o.reason,
+        }
         for o in outcomes
     ]
     if removed:

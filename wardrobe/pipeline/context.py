@@ -85,6 +85,12 @@ class PipelineContext:
     #: BA4. The tattoo catalogue, and each requested tattoo's fate on the finished outfit.
     body_art_catalog: object | None = None
     body_art: list = field(default_factory=list)
+    #: BA6. The tattoo recipes this job carries from the look it builds on (body_art.lifecycle),
+    #: and the placements whose decal it took off.
+    body_art_inherited: list = field(default_factory=list)
+    body_art_removed: list[str] = field(default_factory=list)
+    #: BA6. A tattoo-only job: the look it builds on, whose clothes it carries unchanged.
+    base_look_id: str | None = None
     preview_bytes: bytes | None = None
     #: A hosiery look's other views, by file name ("detail.webp", "preview-sit.webp", ...).
     extra_previews: dict[str, bytes] = field(default_factory=dict)

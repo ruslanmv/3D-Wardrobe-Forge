@@ -25,11 +25,17 @@ async def run(context: PipelineContext) -> None:
         return
     outcomes = context.body_art
     request = context.record.request
-    if any(o.decal is not None for o in outcomes) or request.body_art_remove:
+    # BA6. A job carrying inherited tattoos always rewrites the recipes: the engine replaced
+    # the root's extras, and a recipe not written back here is a tattoo forgotten.
+    if (
+        any(o.decal is not None for o in outcomes)
+        or request.body_art_remove
+        or any(o.inherited for o in outcomes)
+    ):
         await context.emit(JobState.EXPORTING, "adding body art where her skin is visible")
         try:
             document = GltfDocument.from_bytes(context.output_bytes)
-            apply(
+            context.body_art_removed = apply(
                 document,
                 inspect_document(document),
                 outcomes,
@@ -43,8 +49,10 @@ async def run(context: PipelineContext) -> None:
         except Exception as exc:
             logger.warning("body art not added for %s: %s", context.job_id, exc)
             for outcome in outcomes:
+                # A kept decal is in the assembled bytes delivered instead, so it stays kept.
                 if outcome.decal is not None:
                     outcome.applied, outcome.decal, outcome.reason = False, None, f"not added: {exc}"
+            context.body_art_removed = []
     context.fit_report.body_art = [o.report() for o in outcomes]
     for outcome in outcomes:
         if not outcome.applied:
