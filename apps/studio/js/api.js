@@ -80,9 +80,10 @@ function headers(extra = {}) {
     return out;
 }
 
-async function request(path, { method = 'GET', body, expect = 'json' } = {}) {
+async function request(path, { method = 'GET', body, form, expect = 'json' } = {}) {
     const init = { method, headers: headers(body ? { 'Content-Type': 'application/json' } : {}) };
     if (body) init.body = JSON.stringify(body);
+    if (form) init.body = form;
     const response = await fetch(path, init);
     if (!response.ok) {
         let detail = null;
@@ -108,6 +109,18 @@ export const api = {
     capabilities: () => request('/v1/capabilities'),
     library: () => request('/v1/library'),
     vocabulary: () => request('/v1/vocabulary'),
+    inspectAvatar(file) {
+        const form = new FormData();
+        form.append('file', file, file.name);
+        return request('/v1/avatars/inspect', { method: 'POST', form });
+    },
+    importAvatar(file, { presentation = 'avatar', attestModification = false } = {}) {
+        const form = new FormData();
+        form.append('file', file, file.name);
+        form.append('presentation', presentation);
+        form.append('user_attests_modification_allowed', String(Boolean(attestModification)));
+        return request('/v1/library/import', { method: 'POST', form });
+    },
     templates: (category) => request(`/v1/templates${category ? `?category=${encodeURIComponent(category)}` : ''}`),
     job: (id) => request(`/v1/jobs/${encodeURIComponent(id)}`),
     createLibraryJob: (slug, body) =>

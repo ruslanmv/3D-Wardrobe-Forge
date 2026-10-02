@@ -57,7 +57,13 @@
             <aside class="panel library" id="library" aria-label="Avatar library">
                 <div class="panel-head">
                     <h2>Avatars</h2>
-                    <span class="panel-note" id="library-note">Loading…</span>
+                    <div class="library-head-actions">
+                        <span class="panel-note" id="library-note">Loading…</span>
+                        <button type="button" class="library-import" id="import-vrm-btn" title="Import a VRM avatar">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7V4Z" /></svg>
+                            <span>Import VRM</span>
+                        </button>
+                    </div>
                 </div>
                 <ul class="avatar-list" id="avatar-list"></ul>
                 <p class="provenance" id="provenance"></p>
@@ -267,6 +273,67 @@
                 </p>
             </section>
         </div>
+
+        <dialog id="import-dialog" class="import-vrm" aria-labelledby="import-title">
+            <form id="import-form">
+                <button type="button" class="settings-close import-close" id="import-close" aria-label="Close">×</button>
+                <div class="import-heading">
+                    <span class="import-mark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M12 2 4 6v12l8 4 8-4V6l-8-4Zm0 2.2 5.5 2.7L12 9.6 6.5 6.9 12 4.2ZM6 8.5l5 2.5v8.3l-5-2.5V8.5Zm7 10.8V11l5-2.5v8.3l-5 2.5Z" /></svg>
+                    </span>
+                    <div>
+                        <h2 id="import-title">Import VRM avatar</h2>
+                        <p>Add a local VRM to this Studio. The file is validated before it enters the avatar library.</p>
+                    </div>
+                </div>
+
+                <label class="import-drop" id="import-drop" for="import-file">
+                    <input id="import-file" type="file" accept=".vrm,model/gltf-binary" hidden />
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 7 8h3v6h4V8h3l-5-5ZM5 13v6h14v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6h2Z" /></svg>
+                    <strong>Choose a VRM file</strong>
+                    <span>or drag and drop it here</span>
+                    <small id="import-limit"></small>
+                </label>
+
+                <div class="import-file-card" id="import-file-card" hidden>
+                    <span class="import-file-icon">VRM</span>
+                    <span class="import-file-meta">
+                        <strong id="import-file-name"></strong>
+                        <small id="import-file-size"></small>
+                    </span>
+                    <span class="import-file-state" id="import-file-state">Checking…</span>
+                </div>
+
+                <label class="field import-presentation" id="import-presentation-field" hidden>
+                    <span>Library label</span>
+                    <select id="import-presentation">
+                        <option value="avatar">Avatar</option>
+                        <option value="feminine">Feminine</option>
+                        <option value="masculine">Masculine</option>
+                    </select>
+                </label>
+
+                <div class="import-analysis" id="import-analysis" hidden>
+                    <div class="import-stats">
+                        <div><span>VRM</span><strong id="import-spec">—</strong></div>
+                        <div><span>Meshes</span><strong id="import-meshes">—</strong></div>
+                        <div><span>Materials</span><strong id="import-materials">—</strong></div>
+                    </div>
+                    <div class="import-license" id="import-license"></div>
+                </div>
+
+                <label class="confirm-line import-attestation" id="import-attestation" hidden>
+                    <input type="checkbox" id="import-attest-check" />
+                    <span>I confirm I have permission to modify this VRM model.</span>
+                </label>
+
+                <p class="form-error" id="import-error" role="alert" hidden></p>
+                <menu>
+                    <button type="button" class="ghost" id="import-cancel">Cancel</button>
+                    <button type="submit" class="primary" id="import-submit" disabled>Import avatar</button>
+                </menu>
+            </form>
+        </dialog>
 
         <dialog id="key-dialog">
             <form method="dialog">

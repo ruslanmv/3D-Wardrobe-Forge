@@ -455,12 +455,53 @@ def embedded_licence(document: dict) -> dict:
     extensions = document.get("extensions") or {}
     if "VRMC_vrm" in extensions:
         meta = extensions["VRMC_vrm"].get("meta") or {}
-        return {"spec": "1.0", "name": meta.get("name"), "authors": meta.get("authors"),
-                "redistribution": meta.get("allowRedistribution"), "modification": meta.get("modification")}
+        return {
+            "spec": "1.0",
+            "name": meta.get("name"),
+            "authors": meta.get("authors"),
+            "redistribution": meta.get("allowRedistribution"),
+            "modification": meta.get("modification"),
+            "licenseUrl": meta.get("licenseUrl"),
+            "otherLicenseUrl": meta.get("otherLicenseUrl"),
+        }
     meta = (extensions.get("VRM") or {}).get("meta") or {}
-    return {"spec": "0.x", "name": meta.get("title"),
-            "authors": [meta.get("author")] if meta.get("author") else [],
-            "licenseName": meta.get("licenseName"), "otherPermissionUrl": meta.get("otherPermissionUrl")}
+    return {
+        "spec": "0.x",
+        "name": meta.get("title"),
+        "authors": [meta.get("author")] if meta.get("author") else [],
+        "licenseName": meta.get("licenseName"),
+        "otherPermissionUrl": meta.get("otherPermissionUrl"),
+    }
+
+
+def display_license(summary: dict, embedded: dict) -> str:
+    """Short, truthful badge label for a downloaded model's licence."""
+    name = str(embedded.get("licenseName") or "").strip().upper().replace("-", "_")
+    by_name = {
+        "CC0": "CC0",
+        "CC0_1.0": "CC0",
+        "CC_BY": "CC BY",
+        "CC_BY_NC": "CC BY-NC",
+        "CC_BY_SA": "CC BY-SA",
+        "CC_BY_NC_SA": "CC BY-NC-SA",
+    }
+    if name in by_name:
+        return by_name[name]
+
+    urls = [embedded.get("licenseUrl"), summary.get("licenseUrl")]
+    for value in urls:
+        url = str(value or "").strip().lower()
+        if "creativecommons.org/publicdomain/zero/" in url:
+            return "CC0"
+        for path, label in (
+            ("/licenses/by-nc-sa/", "CC BY-NC-SA"),
+            ("/licenses/by-nc/", "CC BY-NC"),
+            ("/licenses/by-sa/", "CC BY-SA"),
+            ("/licenses/by/", "CC BY"),
+        ):
+            if "creativecommons.org" in url and path in url:
+                return label
+    return "VRoid Hub"
 
 
 def sha256_of(path: Path) -> str:
@@ -546,9 +587,13 @@ def download(entry: dict, token: str, out_dir: Path) -> Path:
         _request("DELETE", f"{HUB}/api/download_licenses/{licence_id}", token=token)
 
 
-def write_manifest(out_dir: Path, items: list[dict]) -> Path:
+def write_manifest(out_dir: Path, items: list[dict], *, replace: bool = False) -> Path:
     path = out_dir / "models.json"
-    existing = json.loads(path.read_text(encoding="utf-8")).get("items", []) if path.is_file() else []
+    existing = (
+        []
+        if replace or not path.is_file()
+        else json.loads(path.read_text(encoding="utf-8")).get("items", [])
+    )
     by_slug = {item["slug"]: item for item in existing}
     by_slug.update({item["slug"]: item for item in items})
     manifest = {
@@ -642,7 +687,8 @@ def main(argv: list[str] | None = None) -> int:
         items.append({
             "slug": entry["slug"], "name": record["name"], "file": target.name,
             "presentation": entry.get("presentation", ""), "source": record["source"],
-            "license": f"VRoid Hub conditions of use; see licenses/{entry['slug']}.json",
+            "license": display_license(summary, record["embedded"]),
+            "licenseConditions": {"modification": "allow", "redistribution": "allow"},
             "creator": record["creator"], "vroidModelId": record["modelId"],
             "bytes": target.stat().st_size, "sha256": sha256_of(target), "glb_version": 2,
         })
@@ -654,7 +700,7 @@ def main(argv: list[str] | None = None) -> int:
             shutil.copy2(licences / f"{entry['slug']}.json", args.copy_to / f"{entry['slug']}.license.json")
 
     if items:
-        print(f"\nManifest: {write_manifest(args.out, items)}")
+        print(f"\nManifest: {write_manifest(args.out, items, replace=only is None)}")
     for heading, rows in (("Refused", refused), ("Failed", failed)):
         if rows:
             print(f"\n{heading}:")
