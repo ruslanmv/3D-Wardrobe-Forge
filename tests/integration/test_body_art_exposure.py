@@ -91,7 +91,10 @@ def test_level_rays_find_what_plain_casting_finds():
     origins = np.column_stack([np.zeros(300), rng.uniform(-0.8, 0.8, 300), np.zeros(300)])
     angles = rng.uniform(0, 2 * np.pi, 300)
     dirs = np.column_stack([np.cos(angles), np.zeros(300), np.sin(angles)])
-    a, b = cast(origins, dirs, tris, t_min=1e-4, t_max=5), cast_level(origins, dirs, tris, t_min=1e-4, t_max=5)
+    a, b = (
+        cast(origins, dirs, tris, t_min=1e-4, t_max=5),
+        cast_level(origins, dirs, tris, t_min=1e-4, t_max=5),
+    )
     assert np.array_equal(a[1], b[1])
     assert np.allclose(np.nan_to_num(a[0], posinf=9), np.nan_to_num(b[0], posinf=9))
 
@@ -107,4 +110,38 @@ def test_the_studio_asks_a_finished_look_where_she_is_bare(orchestrator, monkeyp
         report = client.get(f"/v1/library/mira/looks/{closed['look']['id']}/exposure").json()
         assert "upper-back" not in report["eligible"] and "lower-back" not in report["eligible"]
         assert {p["placement"] for p in report["placements"]} == set(PLACEMENTS)
+        assert report["tattoos"] == []
         assert client.get("/v1/library/mira/looks/look_nope/exposure").status_code == 404
+
+
+def test_the_studio_puts_a_tattoo_on_a_finished_look(orchestrator, monkeypatch, tmp_path, vrm_bytes):
+    """BA7. What the Studio's body-art section does: exposure, a tattoo-only job, the look's tattoos."""
+    from tests.integration.test_studio_api import dress, make_client, wait_for
+    from tests.library_support import write_library
+    from wardrobe.library import AvatarLibrary
+
+    library = AvatarLibrary.from_directory(write_library(tmp_path / "library", {"Mira.vrm": vrm_bytes}))
+    with make_client(orchestrator, monkeypatch, library) as client:
+        tee = dress(client, prompt="white tee")
+        report = client.get(f"/v1/library/mira/looks/{tee['look']['id']}/exposure").json()
+        assert "nape" in report["eligible"] and "upper-back" not in report["eligible"]
+
+        # No outfit: only with body art, and only on a look of hers.
+        art = [{"design": "nape-crescent-01", "placement": "nape"}]
+        options = {"renderPreview": False, "engine": "native"}
+        assert client.post("/v1/library/mira/jobs", json={"bodyArt": art}).status_code == 422
+        assert client.post("/v1/library/mira/jobs", json={"baseLookId": tee["look"]["id"]}).status_code == 422
+        plan = client.post("/v1/library/mira/plan", json={"bodyArt": art, "baseLookId": tee["look"]["id"]})
+        assert plan.status_code == 422
+        response = client.post(
+            "/v1/library/mira/jobs",
+            json={"bodyArt": art, "baseLookId": tee["look"]["id"], "options": options},
+        )
+        assert response.status_code == 202, response.text
+        job = wait_for(client, response.json()["id"])
+        assert job["state"] == "completed", job.get("error")
+        assert job["look"]["name"] == f"{tee['look']['name']} · Crescent and Star"
+        inked = client.get(f"/v1/library/mira/looks/{job['look']['id']}/exposure").json()
+        assert inked["tattoos"] == [{"design": "nape-crescent-01", "placement": "nape", "state": "applied"}]
+        listed = client.get("/v1/wardrobes/mira").json()
+        assert {look["id"] for look in listed["looks"]} >= {tee["look"]["id"], job["look"]["id"]}

@@ -201,6 +201,22 @@ export class Viewer {
         this.controls.update();
     }
 
+    /**
+     * BA7. Swing the camera round her to look at one side of her: "front", "back", "left"
+     * or "right" (hers). Distance and height are kept, so it is the same shot from
+     * elsewhere. Every VRM here faces +Z once loaded — load() runs rotateVRM0 on 0.x
+     * models — so her back is seen from -Z, and her left side (+X) from +X.
+     */
+    turnTo(facing = 'front') {
+        const yaw = { front: 0, back: Math.PI, left: Math.PI / 2, right: -Math.PI / 2 }[facing] ?? 0;
+        const target = this.controls.target;
+        const offset = this.camera.position.clone().sub(target);
+        const flat = Math.hypot(offset.x, offset.z);
+        this.controls.autoRotate = false;
+        this.camera.position.set(target.x + Math.sin(yaw) * flat, this.camera.position.y, target.z + Math.cos(yaw) * flat);
+        this.controls.update();
+    }
+
     makeShadow() {
         const shadow = new THREE.Mesh(
             new THREE.CircleGeometry(0.42, 48),

@@ -266,11 +266,17 @@
                         <button type="button" class="secondary" id="export-btn" disabled>Export pack</button>
                     </div>
                 </div>
-                <div class="looks" id="looks"></div>
-                <p class="export-hint">
-                    A wardrobe pack: every look hashed and rated. Import it in 3D-Avatar-Chatbot with
-                    Try-On ▸ Import wardrobe pack, or ship it with <code>npm run wardrobe:import</code>.
-                </p>
+                <div class="shelf-row">
+                    <div class="shelf-looks">
+                        <div class="looks" id="looks"></div>
+                        <p class="export-hint">
+                            A wardrobe pack: every look hashed and rated. Import it in 3D-Avatar-Chatbot with
+                            Try-On ▸ Import wardrobe pack, or ship it with <code>npm run wardrobe:import</code>.
+                        </p>
+                    </div>
+                    <!-- BA7. Body art, on the look on stage only: filled by app.js from that look's exposure. -->
+                    <div class="body-art" id="body-art" aria-label="Body art" hidden></div>
+                </div>
             </section>
         </div>
 

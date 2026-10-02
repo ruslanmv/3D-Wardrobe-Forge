@@ -78,6 +78,23 @@ const state = {
     activeLookId: null,
     jobId: null,
     urls: { original: null, look: null, previews: [] },
+    // BA7. Body art on the look on stage: the catalogue, that look's exposure, and the tattoo
+    // being set up. The settings outlive a change of look on purpose — trying one design on
+    // three outfits should not mean setting its ink three times.
+    bodyArt: {
+        catalog: null,
+        exposure: null,
+        placement: null,
+        design: null,
+        ink: '#141414',
+        scale: 1,
+        offsetU: 0,
+        offsetV: 0,
+        rotation: 0,
+        opacity: 0.9,
+        mirror: false,
+        thumbs: {},
+    },
 };
 
 let viewer = null;
@@ -161,6 +178,15 @@ async function boot() {
     renderLibrary(library);
     renderDesigner();
     initAccount();
+    if (caps.bodyArt) {
+        // BA7. Fetched once; without it the section simply never appears.
+        api.bodyArt()
+            .then((catalog) => {
+                state.bodyArt.catalog = catalog;
+                if (state.activeLookId) renderBodyArt();
+            })
+            .catch((error) => console.warn('body-art catalogue unavailable', error));
+    }
 
     const wanted = new URLSearchParams(location.search).get('avatar');
     const first =
@@ -541,6 +567,7 @@ async function selectAvatar(slug) {
     $('plan-report').hidden = true;
     $('report').hidden = true;
     if (state.vocab) renderDesigner();
+    renderBodyArt(null);
 
     viewer.clear('look');
     revoke(state.urls.look);
@@ -1344,34 +1371,40 @@ function buildOnLook() {
 // ---------------------------------------------------------------- generation
 async function generate() {
     if (!state.avatar || state.jobId) return;
-    const slug = state.avatar.slug;
     const outfit = outfitRequest();
     if (outfit.prompt.length < 2) return setStatus('Describe the garment first.', true);
+    await runJob(state.avatar.slug, jobBody(outfit), outfit.prompt);
+}
 
+/** Submit a library job and follow it to the end: an outfit (generate) or a tattoo (BA7). */
+async function runJob(slug, body, title) {
     $('generate-btn').disabled = true;
     $('report').hidden = true;
-    showJob({ state: 'queued', events: [] }, outfit.prompt);
+    showJob({ state: 'queued', events: [] }, title);
 
     let job;
     try {
-        const base = buildOnLook();
-        job = await api.createLibraryJob(slug, jobBody(outfit));
+        job = await api.createLibraryJob(slug, body);
     } catch (error) {
-        return finishJob({ state: 'failed', error: describe(error), events: [] }, slug, outfit.prompt);
+        await finishJob({ state: 'failed', error: describe(error), events: [] }, slug, title);
+        return null;
     }
 
     state.jobId = job.id;
+    syncBodyArtButton();
     while (state.jobId === job.id) {
         try {
             job = await api.job(job.id);
         } catch (error) {
-            return finishJob({ state: 'failed', error: describe(error), events: [] }, slug, outfit.prompt);
+            await finishJob({ state: 'failed', error: describe(error), events: [] }, slug, title);
+            return null;
         }
-        showJob(job, outfit.prompt);
+        showJob(job, title);
         if (state.vocab.terminalStates.includes(job.state)) break;
         await new Promise((resolve) => setTimeout(resolve, POLL_MS));
     }
-    await finishJob(job, slug, outfit.prompt);
+    await finishJob(job, slug, title);
+    return job;
 }
 
 function jobBody(outfit) {
@@ -1480,6 +1513,7 @@ function showJob(job, prompt) {
 async function finishJob(job, slug, prompt) {
     state.jobId = null;
     $('generate-btn').disabled = !state.avatar;
+    syncBodyArtButton();
     showJob(job, prompt);
     if (job.state !== 'completed') {
         $('job-message').textContent = job.error || `The job ended ${job.state}.`;
@@ -1509,11 +1543,14 @@ function renderReport(report, look = null) {
             class: `report-line ${report.clippingCheck === 'failed' ? 'bad' : report.clippingCheck === 'warnings' ? 'warn' : ''}`,
             text: `Clearance: ${report.clippingCheck}${clippingWarning ? ` — ${clippingWarning}` : ''}`,
         }),
-        el('p', {
-            class: 'report-line',
-            text: `${report.garmentVertices} vertices · ${report.garmentTriangles} triangles · ${report.engine} engine`,
-        }),
-    ];
+        // A tattoo-only look (BA6) builds no garment: nothing to count.
+        report.garmentVertices || !report.bodyArt
+            ? el('p', {
+                  class: 'report-line',
+                  text: `${report.garmentVertices} vertices · ${report.garmentTriangles} triangles · ${report.engine} engine`,
+              })
+            : null,
+    ].filter(Boolean);
     if (report.clippingCheck === 'failed' && !state.caps.engines.bodyMasking) {
         lines.push(
             el('p', {
@@ -1529,6 +1566,7 @@ function renderReport(report, look = null) {
         lines.push(el('p', { class: 'report-line', text: `Took off her ${body.removedSlots.join(' and ')} · fitted to her body` }));
     }
     if (report.hosiery) lines.push(...hosieryReport(report.hosiery, look));
+    if (report.bodyArt) lines.push(...bodyArtReport(report.bodyArt, look));
     $('report').replaceChildren(...lines);
     $('report').hidden = false;
 }
@@ -1569,6 +1607,270 @@ function hosieryReport(h, look) {
     if (pics.length)
         out.push(el('div', { class: 'hosiery-previews' }, ...pics.map((k) => el('img', { src: previews[k], alt: k, title: k, loading: 'lazy' }))));
     if (h.previews && h.previews.note) out.push(el('p', { class: 'report-line warn', text: h.previews.note }));
+    return out;
+}
+
+// ---------------------------------------------------------------- body art (BA7)
+// Offered on a finished look and nowhere else. Whether skin is visible is exact only once
+// the outfit is built — a jacket's hem, a bra's back band, her own kept clothes — so the
+// designer has no tattoo controls: this section asks the server where *this* look leaves
+// her skin visible and offers only those placements. With none it says so in one line and
+// offers nothing; there is no "put it on anyway", because the server would not.
+async function renderBodyArt(lookId = state.activeLookId) {
+    const box = $('body-art');
+    const art = state.bodyArt;
+    if (!state.caps || !state.caps.bodyArt || !art.catalog || !lookId || !state.avatar) {
+        box.hidden = true;
+        box.replaceChildren();
+        art.exposure = null;
+        return;
+    }
+    const slug = state.avatar.slug;
+    box.hidden = false;
+    box.replaceChildren(
+        el('h3', { text: 'Body art · optional' }),
+        el('p', { class: 'report-line', text: 'Checking which skin this outfit leaves visible…' })
+    );
+    let exposure;
+    try {
+        exposure = await api.lookExposure(slug, lookId);
+    } catch (error) {
+        if (state.activeLookId !== lookId) return;
+        return box.replaceChildren(
+            el('h3', { text: 'Body art · optional' }),
+            el('p', { class: 'report-line bad', text: describe(error) })
+        );
+    }
+    // A slow answer for a look no longer on stage must not paint over the current one.
+    if (state.activeLookId !== lookId || !state.avatar || state.avatar.slug !== slug) return;
+    art.exposure = exposure;
+    if (!exposure.eligible.includes(art.placement)) {
+        art.placement = exposure.eligible[0] || null;
+        art.design = null;
+    }
+    drawBodyArt();
+}
+
+function placementInfo(id) {
+    return state.bodyArt.catalog.placements.find((p) => p.id === id) || { id, name: id, facing: 'back' };
+}
+
+function designInfo(id) {
+    return state.bodyArt.catalog.designs.find((d) => d.id === id) || { id, name: id };
+}
+
+/** A design's picture, inked: its PNG is white with the ink as alpha, so it masks a colour. */
+function inkSwatch(designId) {
+    const art = state.bodyArt;
+    const swatch = el('span', { class: 'tattoo-ink' });
+    swatch.style.backgroundColor = art.ink;
+    const paint = (url) => {
+        swatch.style.maskImage = swatch.style.webkitMaskImage = `url("${url}")`;
+    };
+    if (art.thumbs[designId]) paint(art.thumbs[designId]);
+    else
+        api.blobUrl(`/v1/body-art/designs/${encodeURIComponent(designId)}.png`)
+            .then((url) => {
+                art.thumbs[designId] = url; // kept for the session: ten small PNGs
+                paint(url);
+            })
+            .catch(() => swatch.classList.add('missing'));
+    return el('span', { class: 'tattoo-skin' }, swatch);
+}
+
+function bodyArtSlider(label, key, min, max, step, format) {
+    const art = state.bodyArt;
+    const output = el('output', { text: format(art[key]) });
+    const input = el('input', { type: 'range', min, max, step, value: art[key] });
+    input.addEventListener('input', () => {
+        art[key] = Number(input.value);
+        output.textContent = format(art[key]);
+    });
+    return el('label', { class: 'body-art-row' }, el('span', { text: label }), input, output);
+}
+
+function drawBodyArt() {
+    const box = $('body-art');
+    const art = state.bodyArt;
+    const exposure = art.exposure;
+    const look = state.wardrobe && state.wardrobe.looks.find((l) => l.id === state.activeLookId);
+    if (!exposure || !look) return;
+    const parts = [el('h3', { text: 'Body art · optional' })];
+
+    // What this look already carries, drawn or under its clothes; each can be taken off.
+    const tattoos = exposure.tattoos || [];
+    if (tattoos.length)
+        parts.push(
+            el(
+                'ul',
+                { class: 'body-art-on' },
+                tattoos.map((t) =>
+                    el(
+                        'li',
+                        {},
+                        el('span', {
+                            text: `${designInfo(t.design).name} · ${placementInfo(t.placement).name.toLowerCase()}${
+                                t.state === 'applied' ? '' : ' (under the outfit)'
+                            }`,
+                        }),
+                        el('button', {
+                            class: 'link',
+                            type: 'button',
+                            text: 'Remove',
+                            title: 'A new look without this tattoo; the clothes stay exactly as they are',
+                            onclick: () =>
+                                runBodyArt(
+                                    { bodyArtRemove: [t.placement] },
+                                    `${look.name} without the ${placementInfo(t.placement).name.toLowerCase()} tattoo`,
+                                    placementInfo(t.placement).facing
+                                ),
+                        })
+                    )
+                )
+            )
+        );
+
+    if (!exposure.eligible.length) {
+        parts.push(el('p', { class: 'report-line', text: exposure.reason || 'No suitable exposed placement for this outfit.' }));
+        return box.replaceChildren(...parts);
+    }
+
+    parts.push(
+        el('p', { class: 'body-art-label', text: 'Visible' }),
+        el(
+            'div',
+            { class: 'chips small', role: 'radiogroup', 'aria-label': 'Placement' },
+            exposure.eligible.map((id) =>
+                el('button', {
+                    class: 'chip',
+                    type: 'button',
+                    role: 'radio',
+                    'aria-checked': String(id === art.placement),
+                    text: `✓ ${placementInfo(id).name.toLowerCase()}`,
+                    onclick: () => {
+                        art.placement = id;
+                        art.design = null;
+                        viewer.turnTo(placementInfo(id).facing);
+                        drawBodyArt();
+                    },
+                })
+            )
+        )
+    );
+
+    const designs = art.catalog.designs.filter((d) => d.placements.includes(art.placement));
+    if (!designs.some((d) => d.id === art.design)) art.design = designs.length ? designs[0].id : null;
+    parts.push(
+        el(
+            'div',
+            { class: 'tattoo-tiles', role: 'radiogroup', 'aria-label': 'Design' },
+            designs.map((d) =>
+                el(
+                    'button',
+                    {
+                        class: 'tattoo-tile',
+                        type: 'button',
+                        role: 'radio',
+                        'aria-checked': String(d.id === art.design),
+                        title: d.description || d.name,
+                        onclick: () => {
+                            art.design = d.id;
+                            drawBodyArt();
+                        },
+                    },
+                    inkSwatch(d.id),
+                    el('span', { class: 'tattoo-name', text: d.name })
+                )
+            )
+        )
+    );
+
+    const ink = el('input', { type: 'color', value: art.ink });
+    ink.addEventListener('change', () => {
+        art.ink = ink.value;
+        box.querySelectorAll('.tattoo-ink').forEach((node) => (node.style.backgroundColor = art.ink));
+    });
+    const mirror = el('input', { type: 'checkbox' });
+    mirror.checked = art.mirror;
+    mirror.addEventListener('change', () => (art.mirror = mirror.checked));
+    const pct = (v) => `${Math.round(v * 100)}%`;
+    const signed = (v) => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`;
+    parts.push(
+        el(
+            'div',
+            { class: 'body-art-controls' },
+            el('label', { class: 'body-art-row' }, el('span', { text: 'Ink' }), ink, el('output', { text: '' })),
+            bodyArtSlider('Size', 'scale', 0.5, 1.5, 0.05, pct),
+            bodyArtSlider('Across', 'offsetU', -0.25, 0.25, 0.01, signed),
+            bodyArtSlider('Up', 'offsetV', -0.25, 0.25, 0.01, signed),
+            bodyArtSlider('Rotation', 'rotation', -30, 30, 1, (v) => `${v}°`),
+            bodyArtSlider('Opacity', 'opacity', 0.3, 1, 0.05, pct),
+            el('label', { class: 'check' }, mirror, el('span', { text: 'Mirror' }))
+        ),
+        el('button', {
+            class: 'primary',
+            type: 'button',
+            id: 'body-art-apply',
+            text: 'Add tattoo',
+            disabled: !art.design || Boolean(state.jobId),
+            onclick: () => {
+                const design = designInfo(art.design);
+                const place = placementInfo(art.placement);
+                runBodyArt(
+                    {
+                        bodyArt: [
+                            {
+                                design: art.design,
+                                placement: art.placement,
+                                scale: art.scale,
+                                offsetU: art.offsetU,
+                                offsetV: art.offsetV,
+                                rotation: art.rotation,
+                                opacity: art.opacity,
+                                ink: art.ink,
+                                mirror: art.mirror,
+                            },
+                        ],
+                    },
+                    `${design.name} on her ${place.name.toLowerCase()}`,
+                    place.facing
+                );
+            },
+        }),
+        el('p', {
+            class: 'export-hint',
+            text: 'A new look with the tattoo added; this look and its clothes stay exactly as they are.',
+        })
+    );
+    box.replaceChildren(...parts);
+}
+
+function syncBodyArtButton() {
+    const button = $('body-art-apply');
+    if (button) button.disabled = !state.bodyArt.design || Boolean(state.jobId);
+}
+
+/** A tattoo-only job on the look on stage (BA6): no outfit, so its clothes are carried over. */
+async function runBodyArt(fields, title, facing) {
+    if (!state.avatar || state.jobId || !state.activeLookId) return;
+    const body = {
+        baseLookId: state.activeLookId,
+        ...fields,
+        options: { renderPreview: true, engine: state.caps.engines.default || 'auto' },
+    };
+    const job = await runJob(state.avatar.slug, body, title);
+    if (job && job.state === 'completed' && job.look && state.activeLookId === job.look.id) viewer.turnTo(facing);
+}
+
+/** The fit report's body-art block: what was added, kept or covered, and the back view. */
+function bodyArtReport(items, look) {
+    const out = [el('h3', { text: 'Body art' })];
+    for (const item of items)
+        out.push(el('p', { class: `report-line ${item.applied ? '' : 'warn'}`, text: `${item.applied ? '✓' : '·'} ${item.message}` }));
+    const previews = (look && look.previews) || {};
+    const pics = ['preview-back', 'preview-front'].filter((k) => previews[k]);
+    if (pics.length)
+        out.push(el('div', { class: 'hosiery-previews' }, ...pics.map((k) => el('img', { src: previews[k], alt: k, title: k, loading: 'lazy' }))));
     return out;
 }
 
@@ -1671,6 +1973,7 @@ async function wearLook(lookId, { mode = null } = {}) {
         setViewMode(mode || (viewer.mode === 'original' ? 'compare' : viewer.mode));
         setStatus(look.prompt ? `“${look.prompt}”` : look.name);
         updatePreview();
+        renderBodyArt(lookId);
     } catch (error) {
         setStatus(`Could not load ${look.name}: ${describe(error)}`, true);
     }
@@ -1689,6 +1992,7 @@ async function removeLook(look) {
         revoke(state.urls.look);
         state.urls.look = null;
         setViewMode('original');
+        renderBodyArt(null);
     }
     await loadWardrobe();
 }

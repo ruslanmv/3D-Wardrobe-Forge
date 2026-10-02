@@ -32,6 +32,7 @@ from apps.api.routes.body_art import check_designs
 from wardrobe import __version__
 from wardrobe.body_art.contract import BodyArtRequest, check_items
 from wardrobe.body_art.exposure import exposure_map, read_body
+from wardrobe.body_art.lifecycle import recipe_states
 from wardrobe.body_art.placement import PlacementError
 from wardrobe.domain.avatars import LicenseAttestation
 from wardrobe.domain.garments import COVERAGE_PRESETS, INTIMATE_CATEGORIES, NECKLINES, STRAP_PRESETS
@@ -439,10 +440,16 @@ async def look_exposure(
     if not await orchestrator.store.exists(key):
         raise HTTPException(status_code=409, detail="that look's file is no longer stored")
     document = GltfDocument.from_bytes(await orchestrator.store.get(key))
+    # BA7. The tattoos this look carries — drawn or under its clothes — so the Studio can
+    # offer to take one off. Recipes only: design, placement, state; nothing else of hers.
+    tattoos = [
+        {"design": r.design, "placement": r.placement, "state": state}
+        for r, state in recipe_states(document.gltf)
+    ]
     try:
         surfaces, body = read_body(document)
     except PlacementError as exc:
-        return {"lookId": look.id, "placements": [], "eligible": [], "reason": str(exc)}
+        return {"lookId": look.id, "placements": [], "eligible": [], "reason": str(exc), "tattoos": tattoos}
     placements = [e.to_dict() for e in exposure_map(surfaces, body).values()]
     eligible = [p["placement"] for p in placements if p["eligible"]]
     return {
@@ -450,6 +457,7 @@ async def look_exposure(
         "placements": placements,
         "eligible": eligible,
         "reason": None if eligible else "No suitable exposed placement for this outfit.",
+        "tattoos": tattoos,
     }
 
 

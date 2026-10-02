@@ -1,9 +1,9 @@
 # Body art (tattoos) plan
 
-> Status: **BA1–BA6 implemented** on `claude/body-art-tattoos` (request fields
+> Status: **BA1–BA7 implemented** on `claude/body-art-tattoos` (request fields
 > and catalogue; exposure on the finished outfit; projection; the two stages;
 > ten designs, raster install and the back-view preview; tattoo-only jobs and
-> the lifecycle). BA7–BA10 are still a plan. Three things were built differently from what is
+> the lifecycle; the Studio section). BA8–BA10 are still a plan. Three things were built differently from what is
 > written below, each for a measured reason — see "As built" at the end.
 > Batches are `BA1`–`BA10`; commit subjects and code comments carry the prefix
 > (`BA3: …`). Every file, function and number below was read or measured in
@@ -505,7 +505,7 @@ Not changed: `wardrobe/domain/garments.py`, `wardrobe/vrm/garments.py`
 `wardrobe/pipeline/{plan_outfit,plan_outfit_stack,prepare_base_body,generate_garment,fit_garment}.py`,
 every garment template, the design panel's controls and Check plan.
 
-## As built (BA1–BA6)
+## As built (BA1–BA7)
 
 - **The decal is her own skin triangles, not a grid with blended weights.**
   §2.3 and the projection steps above describe a grid laid over her skin, each
@@ -587,6 +587,26 @@ every garment template, the design panel's controls and Check plan.
   for an outfit job also takes the stronger of the plan's rating and any applied
   gated tattoo (planned for BA8; no v1 placement is gated).
 
+- **BA7: the Studio offers body art on the look on stage, beside the looks.**
+  Wearing a look asks `GET /v1/library/{slug}/looks/{lookId}/exposure`, which
+  now also lists the look's tattoos (`tattoos: [{design, placement, state}]`,
+  from its recipes). The section — on the wardrobe shelf, never in the garment
+  designer, and only when `/v1/capabilities` has `bodyArt` — shows those
+  tattoos with Remove, the visible placements as chips (choosing one turns the
+  viewer to it: `viewer.turnTo(facing)`), the designs drawn for it as tiles
+  inked in the chosen colour (the design PNG masks the ink over a patch of
+  skin), and ink, size, offsets, rotation, opacity and mirror. Add tattoo and
+  Remove both run a tattoo-only job on that look (BA6) through the same job
+  runner as an outfit; the new look is worn and the viewer turned to the
+  tattoo. With nothing visible it is one line, *"No suitable exposed placement
+  for this outfit."*, and no controls. Checked in a browser on the declared-
+  adult calibration body: lingerie offered all seven back placements; Tribal
+  Wings went on her upper back as a new look whose thumbnail is the back view;
+  a tee built on that look listed the tattoo "(under the outfit)" and offered
+  only the nape.
+
+  ![The Studio's body-art section](images/studio-body-art.webp)
+
 Where it lives: `wardrobe/body_art/{contract,catalog,raster,rays,surfaces,placement,exposure,project,poses,materials,decorate}.py`,
 `wardrobe/pipeline/{analyze_exposed_skin,apply_body_art}.py`, the I7 skips in
 `wardrobe/engines/geometry_checks.py body_points` and
@@ -596,4 +616,6 @@ Where it lives: `wardrobe/body_art/{contract,catalog,raster,rays,surfaces,placem
 `tests/unit/test_body_art_{projection,artwork,preview}.py`; BA5 adds
 `tools/body_art/install_design.py` and `render_preview.body_art_views`; BA6
 adds `wardrobe/body_art/lifecycle.py`, `wardrobe/pipeline/carry_look.py` and
-`tests/integration/test_body_art_lifecycle.py`.
+`tests/integration/test_body_art_lifecycle.py`; BA7 is `apps/studio/js/app.js`
+(the body-art section), `viewer.js` (`turnTo`), `api.js`, and the Studio-flow
+test in `tests/integration/test_body_art_exposure.py`.

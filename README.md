@@ -160,6 +160,30 @@ front, side and back, through the real pipeline, on a fashion-fit form that
 through the adult gate like any request. The plan and progress are in
 [docs/LINGERIE_UPGRADE_PLAN.md](docs/LINGERIE_UPGRADE_PLAN.md).
 
+### Body art, clothes first
+
+![Three tattoos on the declared-adult calibration body, from behind: tribal wings and a lotus, a V tribal in plum ink, a lace ornament with a crescent at the nape](docs/images/body-art-back.webp)
+
+A tattoo is an optional accessory to a finished look. It is not a layer that
+competes with the clothes:
+
+- It goes only on skin the finished outfit leaves visible, measured on the
+  assembled VRM.
+- An explicit request never takes a garment off. "Jacket + upper-back tattoo"
+  keeps the jacket and reports *upper back tattoo not applied — that area is
+  covered by the outfit*.
+- The decal is a copy of her own skin triangles under the design. Each vertex
+  keeps its own joints and weights, so it stays on her skin in every pose.
+- Nothing is painted into her texture, and her clothes are never touched.
+
+The Studio offers body art on the look on stage, and only at placements that
+look leaves bare. Each tattoo becomes a new look built on that one. A tattoo
+travels with her: a later outfit that covers it drops the decal but keeps the
+recipe, and the next outfit that bares the spot puts it back. Ten designs ship
+as vector art authored in this repository. Raster art comes in only through
+`tools/body_art/install_design.py`. The plan and what was built are in
+[docs/BODY_ART_PLAN.md](docs/BODY_ART_PLAN.md).
+
 ### Reference look: red bodycon, stockings and suspenders
 
 ![The red bodycon reference look: on the adult mannequin with sheer stockings, a suspender belt and flat straps clipped below the hem; on AvatarSample A with the same dress and light taupe satin thigh-highs over her own loafers](docs/images/red-dress.webp)
@@ -529,6 +553,7 @@ Stated plainly, because the gallery shows them:
 | [HOSIERY_UPGRADE](docs/HOSIERY_UPGRADE.md) | the design: the complete hosiery plan, the `garter_belt.py` analysis, the renderer contract |
 | [HOSIERY_STYLING](docs/HOSIERY_STYLING.md) | the design: suspender belts, stockings and the reveal control |
 | [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | the design: flat straps, clip hardware, denier falloff and the web preview backend |
+| [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section; BA1–BA7 built |
 | [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the plan (not yet built): fashion-fit mannequin, ribbon straps, brief, bra and bodysuit blocks, feet, fabrics, elastic tension, validation |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | components, layers, extension points |
 | [PIPELINE](docs/PIPELINE.md) | the ten stages and the failure model |
