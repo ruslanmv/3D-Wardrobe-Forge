@@ -354,6 +354,7 @@ the same pipeline.
 | `GET /v1/wardrobes/{avatar}/bundle.zip` | the wardrobe as the older v1 static bundle (`?passedOnly=true` drops failed fits) |
 | `GET /v1/library` · `POST /v1/library/{slug}/jobs` | the Studio's avatar library, and jobs on it |
 | `GET /v1/vocabulary` | the colours, cuts and lengths the planner understands |
+| `GET /v1/outfits` | **the outfit dictionary** — 40 named sets in 9 groups, each planned by Forge and rated `general` or `private` by its own adult gate (what the chatbot's companion offers) |
 | `GET /v1/templates` · `GET /v1/capabilities` | the garment library · what this deployment can do |
 
 Full reference: [docs/API.md](docs/API.md).
