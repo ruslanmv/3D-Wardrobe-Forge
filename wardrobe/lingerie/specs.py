@@ -178,8 +178,11 @@ BOTTOM_PRESETS: dict[str, dict] = {
                       "frontCoverage": 0.6},
     "string": {"rise": 0.62, "sideType": "string", "sideWidthMm": 6, "backCoverage": 0.55,
                "frontCoverage": 0.55},
+    # PB3. A thong's front is a V panel, not a brief's: at 0.55 over a 70 mm gusset it read as
+    # full briefs from the front with only the back cut away.
     "thong": {"rise": 0.66, "sideType": "narrow", "sideWidthMm": 18, "backCoverage": 0.12,
-              "frontCoverage": 0.55, "backCenterWidthMm": 18, "gussetWidthMm": 40},
+              "frontCoverage": 0.45, "backCenterWidthMm": 18, "gussetWidthMm": 40,
+              "gussetFrontWidthMm": 55},
     "g-string": {"rise": 0.66, "sideType": "string", "sideWidthMm": 5, "backCoverage": 0.03,
                  "frontCoverage": 0.45, "backCenterWidthMm": 5, "gussetWidthMm": 35,
                  "gussetFrontWidthMm": 50},
