@@ -127,10 +127,13 @@ async def run(context: PipelineContext) -> None:
     if missing:
         needs_body = mode == "underwear-base" or any(p.role == "foundation" for p in context.plan.garments)
         if needs_body:
+            # PB2. Said as what it means for the person choosing, not only as what is missing.
+            where = " and ".join({"upper": "torso", "lower": "hips"}.get(r, r) for r in sorted(missing))
             raise BodyIncomplete(
-                "there is no authored body under this avatar's clothes at "
-                f"{', '.join(sorted(missing))}; it cannot be undressed there, and nothing is generated "
-                "in its place",
+                f"this avatar cannot be used for underwear or swimwear try-on: her {where} body mesh is "
+                "missing beneath her own outfit, so her clothes cannot come off there, and nothing is "
+                "generated in its place. Choose an avatar with a complete body, or keep her original "
+                "clothes",
                 detail={"missingRegions": sorted(missing), "integrity": integrity.to_dict()},
             )
         kept = [g for g in removing if g.regions & missing]

@@ -10,7 +10,7 @@ from wardrobe.pipeline.context import PipelineContext
 from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
 from wardrobe.policy import intimate
 from wardrobe.providers import provider_for_mode
-from wardrobe.vrm.garment_inventory import garment_inventory
+from wardrobe.vrm.garment_inventory import FOUNDATION_ROLES, garment_inventory
 
 #: What underwear-base puts on when the outfit names no underwear: plain and
 #: neutral, a foundation for the outer layers rather than a look of its own.
@@ -37,6 +37,8 @@ async def plan(context: PipelineContext) -> None:
     request = context.record.request.outfit
     outfit_plan = plan_outfit_stack(request, context.catalog)
     mode = context.record.request.options.base_body_mode
+    # PB1. Read before any foundation is added: underwear she asked for, not one put under clothes.
+    context.requested_foundation = any(g.role in FOUNDATION_ROLES for g in outfit_plan.garments)
     if context.record.request.options.ensure_foundation and mode != "preserve":
         founded, added = ensure_foundation(outfit_plan, request, context.catalog, _worn(context),
                                            depicts_adult=context.record.request.avatar.depicts_adult)

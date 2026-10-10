@@ -1084,6 +1084,11 @@ textarea {
     color: var(--warn);
 }
 
+/* PB2. Layered over her clothes on purpose: valid, but not an underwear fit. */
+.look-fit.styled {
+    color: var(--muted);
+}
+
 .look-del {
     position: absolute;
     top: 5px;

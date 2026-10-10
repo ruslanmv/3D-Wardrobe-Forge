@@ -44,6 +44,7 @@ from wardrobe.pipeline import (
     apply_body_art,
     assemble_vrm,
     carry_look,
+    check_painted_skin,
     fit_garment,
     generate_garment,
     prepare_base_body,
@@ -180,6 +181,7 @@ class Orchestrator:
                 await generate_garment.generate(context)
                 await fit_garment.run(context, engine)
                 await assemble_vrm.run(context, engine)
+                await check_painted_skin.run(context)  # PB1: underwear on bare skin, or refused
             # BA4. Clothes are finished; only now is her visible skin measured, and a tattoo
             # added where it is. Neither stage does anything for a job without body art
             # on a look without any.
@@ -391,6 +393,7 @@ class Orchestrator:
                 prompt=look.prompt,
                 createdAt=datetime.now(UTC),
                 fitPassed=context.fit_report.passed,
+                fitVerdict=context.fit_report.verdict,
                 private=record.request.options.private,
                 occasion=occasion,
                 style=style,

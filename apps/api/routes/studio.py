@@ -57,9 +57,10 @@ from wardrobe.targets.bundle import LookFiles, build_wardrobe_bundle, select_loo
 from wardrobe.targets.pack import RATINGS, PackAvatar, PackLook, build_pack, pack_slug, spdx_for, zip_pack
 from wardrobe.vrm.body_integrity import check_body
 from wardrobe.vrm.document import GltfDocument
-from wardrobe.vrm.garment_inventory import build_strip_plan, garment_inventory
+from wardrobe.vrm.garment_inventory import FOUNDATION_ROLES, build_strip_plan, garment_inventory
 from wardrobe.vrm.inspect import ModificationPermission, inspect_document
 from wardrobe.vrm.measure import measure_body
+from wardrobe.vrm.painted_clothing import painted_skin
 
 router = APIRouter(tags=["studio"])
 
@@ -377,7 +378,18 @@ def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, dep
     # "Keep her clothes on" (prepare_base_body), so the plan says so before anyone waits for it.
     over = foundation_conflicts(strip.retain if mode != "preserve" else inventory, kinds)
     layering = ("layered" if mode == "preserve" else "refused") if over else "passed"
+    # PB1. Clothing painted on her skin, as it would be once her clothes are off: the job refuses
+    # underwear she asks for wherever that shows round it, so the plan warns before anyone waits.
+    asked = plan_outfit_stack(outfit, catalog).garments
+    requested_foundation = any(g.role in FOUNDATION_ROLES for g in asked)
+    skin = painted_skin(document, measurements, {(g.mesh, g.primitive) for g in strip.retain})
+    painted = None
+    if skin is not None:
+        painted = {"share": round(skin.painted / skin.samples, 3) if skin.samples else 0.0,
+                   "visibleShare": round(skin.visible_share, 3),
+                   "underwear": requested_foundation and mode != "preserve"}
     return {
+        "paintedSkin": painted,
         "layerOrder": layering,
         "layeredOver": list(dict.fromkeys(g.slot for g in over)),
         "name": plan.name,

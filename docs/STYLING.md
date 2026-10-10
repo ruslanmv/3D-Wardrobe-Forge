@@ -64,6 +64,62 @@ garment inventory ─► strip plan for the whole outfit ─► is there a body 
   off and the layers put on; the fit report has an entry — and a design sheet —
   per layer.
 
+### Clothes painted on her skin (PB1)
+
+Taking her garment *meshes* off is not always taking her clothes off. VRoid
+avatars often have clothing painted into the **skin texture** under the
+garments, and it stays when the meshes go. On the library's eight avatars:
+
+| Avatar | Painted on her skin |
+| --- | --- |
+| AvatarSample A | knit top, tights |
+| AvatarSample B | printed crop top, shorts |
+| AvatarSample C, Rinna | top and bottoms |
+| VRoid Female | VRoid's default black bandeau and briefs |
+| VRoid Male | VRoid's default briefs |
+| AvatarSample_O | a small bra and briefs (and no body under her dress: refused before this) |
+| Model Girl | nothing: bare skin under her clothes |
+
+Lingerie on B therefore went on over a black crop top and black shorts, and the
+job said "fit passed". Now, once the outfit is fitted, her torso skin is sampled
+against her own arms' colour (`wardrobe/vrm/painted_clothing.py`). Every
+non-skin sample that no opaque garment covers is painted clothing left in view.
+Sheer and lace fabric does not count as covering.
+
+- **Underwear or swimwear she asked for** (not a foundation added under clothes),
+  outside "Keep her clothes on": more than 3% of her torso showing painted
+  clothing **refuses the job** (`source_skin_has_painted_clothing`). The message
+  says why and what to do: an avatar bare under her clothes, or "Keep her
+  clothes on" to style it over them. Her skin is never repainted.
+- **Any other outfit:** what shows is a warning, not a refusal. Those looks never
+  promised bare skin.
+- **Before generating**, "Check plan" shows how much painted clothing would be
+  left in view, so the refusal is no surprise.
+
+Measured: lingerie leaves 31–35% of her torso showing painted clothing on B and
+A, and 16% on VRoid Female. On Model Girl it leaves 0%.
+
+### What "fit passed" means (PB2)
+
+A set fitted perfectly over a shirt clears her body and is valid VRM, and it is
+still wrong. So the fit report now lists each check it ran
+(`fitReport.checks`):
+
+- `structure`: VRM, humanoid, weights, skeleton, recoverable source.
+- `bodyPreparation`: her garments came off where the outfit replaces them, and
+  there was a body under them.
+- `layerOrder`: `passed` (fitted to her body), `layered` (over her clothes, on
+  purpose) or `failed`.
+- `skin`: `bare`, `painted-clothing-shows` or `not-checked` (no texture to read).
+- `clearance`: the collision check.
+
+A verdict sits on top (`fitReport.verdict`): `passed`, `styled` (layered over her
+clothes on purpose: a valid look, not an underwear fit) or `failed`. The Studio
+heads the report with it and lists body preparation step by step ("Her top taken
+off · Body complete under it · No painted clothing in view · Fitted directly to
+her body"). The wardrobe shelf shows **styled over her clothes** instead of
+**fit passed** for such a look.
+
 ### Auto Foundation (`options.ensureFoundation`)
 
 Off by default in the API, on by default in the Studio ("Foundation underneath").

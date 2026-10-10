@@ -70,6 +70,8 @@ class FailureReason(StrEnum):
     ADULT_DECLARATION_REQUIRED = "requires_adult_declaration"
     BODY_INCOMPLETE = "source_body_incomplete_under_clothing"
     FOUNDATION_OVER_CLOTHING = "foundation_would_sit_over_worn_clothing"
+    #: PB1. Clothing painted on her skin texture would show around or through the underwear.
+    PAINTED_CLOTHING_SHOWS = "source_skin_has_painted_clothing"
     #: BA6. A tattoo-only job needs a finished Forge look to put it on (clothes first).
     BODY_ART_NEEDS_LOOK = "body_art_needs_a_finished_look"
     #: BA6. A tattoo-only job that changed nothing: every tattoo it asked for was refused.
@@ -246,6 +248,7 @@ _REJECTION_REASONS = frozenset(
         FailureReason.ADULT_DECLARATION_REQUIRED,
         FailureReason.BODY_INCOMPLETE,
         FailureReason.FOUNDATION_OVER_CLOTHING,
+        FailureReason.PAINTED_CLOTHING_SHOWS,
         FailureReason.BODY_ART_NEEDS_LOOK,
         FailureReason.BODY_ART_NOT_APPLIED,
     }

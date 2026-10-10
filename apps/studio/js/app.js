@@ -2159,6 +2159,7 @@ async function checkPlan() {
                       : '✓ Complete body under what comes off',
               })
             : null,
+        paintedLine(report.paintedSkin),
         report.layerOrder === 'refused'
             ? el('p', {
                   class: 'report-line bad',
@@ -2179,6 +2180,24 @@ async function checkPlan() {
         }),
     ];
     box.replaceChildren(...planLines.filter(Boolean));
+}
+
+/**
+ * PB1. Clothing painted on her skin, as it will be once her clothes are off. AvatarSample B's
+ * crop top and shorts are painted into her skin texture: taking the garments off left them on,
+ * and lingerie went on over them. Underwear she asks for now ends on bare skin or is refused,
+ * so the plan says which before anyone waits for the job.
+ */
+function paintedLine(painted) {
+    if (!painted) return null;
+    const pct = Math.round(painted.visibleShare * 100);
+    if (pct <= 3) return el('p', { class: 'report-line', text: '✓ Bare skin under her clothes' });
+    if (!painted.underwear)
+        return el('p', { class: 'report-line warn', text: `Clothing is painted on her skin (${pct}% of her torso) — it shows wherever the outfit leaves it uncovered` });
+    return el('p', {
+        class: 'report-line bad',
+        text: `✕ Clothing is painted on her skin (${pct}% of her torso). Underwear must end on bare skin, so this is refused if any shows around it — choose an avatar that is bare under her clothes, or "Keep her clothes on" to style it over them`,
+    });
 }
 
 function showJob(job, prompt) {
@@ -2228,8 +2247,12 @@ function renderReport(report, look = null) {
         CHECKS.every(([key]) => key === 'expressionsPreserved' || report[key]) &&
         ['passed', 'clearance-only', 'warnings'].includes(report.clippingCheck);
     const clippingWarning = (report.warnings || []).find((warning) => /intersect|clip/i.test(warning));
+    // PB2. The server's verdict when it gives one: a set layered over her shirt is valid and
+    // clear of her body, and still not an underwear fit — "styled", not "passed".
+    const verdict = report.verdict || (passed ? 'passed' : 'failed');
+    const heading = { passed: 'Fit report · passed', styled: 'Fit report · styled over her clothes' }[verdict] || 'Fit report · needs work';
     const lines = [
-        el('h3', { text: passed ? 'Fit report · passed' : 'Fit report · needs work' }),
+        el('h3', { text: heading }),
         el(
             'ul',
             { class: 'checks' },
@@ -2255,16 +2278,39 @@ function renderReport(report, look = null) {
             })
         );
     }
-    const body = report.baseBody || {};
-    if (body.layerOrder === 'layered') {
-        lines.push(el('p', { class: 'report-line warn', text: 'Layered over her own clothes (Keep her clothes on): a styling, not an underwear fit' }));
-    } else if (body.bodyPreparation === 'passed' && (body.removedSlots || []).length) {
-        lines.push(el('p', { class: 'report-line', text: `Took off her ${body.removedSlots.join(' and ')} · fitted to her body` }));
-    }
+    lines.push(...preparationLines(report.baseBody || {}));
     if (report.hosiery) lines.push(...hosieryReport(report.hosiery, look));
     if (report.bodyArt) lines.push(...bodyArtReport(report.bodyArt, look));
     $('report').replaceChildren(...lines);
     $('report').hidden = false;
+}
+
+/**
+ * PB2. Body preparation, step by step, as the job did it: what of hers came off, whether there
+ * was a body under it, whether clothing painted on her skin shows, and how the outfit sits —
+ * fitted to her body, or layered over her clothes on purpose.
+ */
+function preparationLines(body) {
+    const out = [];
+    const removed = body.removedSlots || [];
+    const NAMES = { tops: 'top', bottoms: 'bottoms', onepiece: 'dress', shoes: 'shoes' };
+    for (const slot of removed) out.push(el('p', { class: 'report-line', text: `✓ Her ${NAMES[slot] || slot} taken off` }));
+    if (body.complete === true) out.push(el('p', { class: 'report-line', text: '✓ Body complete under it' }));
+    else if (body.bodyPreparation === 'partial') out.push(el('p', { class: 'report-line warn', text: '! Part of her outfit stayed on: no body under it' }));
+    const painted = body.paintedSkin;
+    if (painted && painted.checked) {
+        const pct = Math.round((painted.visibleShare || 0) * 100);
+        out.push(
+            painted.shows
+                ? el('p', { class: 'report-line warn', text: `! Clothing painted on her skin shows (${pct}% of her torso)` })
+                : el('p', { class: 'report-line', text: '✓ No painted clothing in view' })
+        );
+    }
+    if (body.layerOrder === 'layered')
+        out.push(el('p', { class: 'report-line warn', text: 'Layered over her own clothes (Keep her clothes on): a styling, not an underwear fit' }));
+    else if (body.layerOrder === 'passed' && removed.length)
+        out.push(el('p', { class: 'report-line', text: '✓ Fitted directly to her body' }));
+    return out;
 }
 
 /** The hosiery block: the reveal in each pose, each strap's stretch, and the close-up and seated views. */
@@ -2663,8 +2709,15 @@ async function renderWardrobe() {
                         { class: 'look-body' },
                         el('span', { class: 'look-name', text: look.name }),
                         el('span', {
-                            class: `look-fit${look.fitPassed === false ? ' failed' : ''}`,
-                            text: look.fitPassed === false ? 'fit needs work' : look.fitPassed ? 'fit passed' : 'unchecked',
+                            class: `look-fit${look.fitPassed === false ? ' failed' : look.fitVerdict === 'styled' ? ' styled' : ''}`,
+                            text:
+                                look.fitPassed === false
+                                    ? 'fit needs work'
+                                    : look.fitVerdict === 'styled'
+                                      ? 'styled over her clothes'
+                                      : look.fitPassed
+                                        ? 'fit passed'
+                                        : 'unchecked',
                         })
                     )
                 ),

@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from wardrobe.hosiery.options import HosieryOptions, HosieryPlan, RevealOptions, SuspenderBeltOptions
 
@@ -375,6 +375,41 @@ class FitReport(BaseModel):
             in {ClippingCheck.PASSED, ClippingCheck.CLEARANCE_ONLY, ClippingCheck.WARNINGS}
             and not self.errors
         )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def checks(self) -> dict[str, str]:
+        """PB2. Each part of a fit judged on its own, so one good number cannot speak for the rest.
+
+        A lingerie set fitted perfectly over a shirt passes clearance; what makes it wrong is
+        its layer order. Only checks the pipeline actually runs are listed — none is a default.
+        """
+        body = self.base_body if isinstance(self.base_body, dict) else {}
+        structure = all((self.vrm_valid, self.humanoid_valid, self.weights_valid,
+                         self.skeleton_preserved, self.source_recoverable))
+        out = {"structure": "passed" if structure else "failed"}
+        if body.get("bodyPreparation"):
+            out["bodyPreparation"] = str(body["bodyPreparation"])
+        if body.get("layerOrder"):
+            out["layerOrder"] = str(body["layerOrder"])
+        painted = body.get("paintedSkin")
+        if isinstance(painted, dict):
+            out["skin"] = ("painted-clothing-shows" if painted.get("shows") else "bare") if painted.get(
+                "checked") else "not-checked"
+        out["clearance"] = str(self.clipping_check.value if hasattr(self.clipping_check, "value")
+                               else self.clipping_check)
+        return out
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def verdict(self) -> str:
+        """PB2. passed, styled (layered over her clothes on purpose: not an underwear fit) or failed."""
+        if not self.passed:
+            return "failed"
+        body = self.base_body if isinstance(self.base_body, dict) else {}
+        if body.get("layerOrder") == "layered":
+            return "styled"
+        return "passed"
 
 
 __all__ = [
