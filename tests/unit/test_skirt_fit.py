@@ -192,3 +192,289 @@ def test_an_unknown_flare_start_is_invalid(template_catalog):
                                              "fit": {**good.fit.model_dump(by_alias=True), "flareStart": "knee"}})
     assert any("flareStart" in issue for issue in broken.validate_semantics())
     assert not good.validate_semantics()
+
+
+# ----------------------------------------------------------------------
+# S4. the pleated mini: one width of pleat all round, set under a real band
+# ----------------------------------------------------------------------
+def _pleated_mini(measured, **extra):
+    """The pleated mini's own cut and columns, built the way fitting builds it."""
+    measurements, meta, points = measured
+    params = FitParameters(measurements=measurements, metadata={
+        **meta, "pleats": 24, "waistbandMm": 38.0, "hemFlareRatio": 1.22, "flareStart": "hip",
+        "flarePower": 1.35, **extra}, segments=24 * 8)
+    mesh = build_garment("skirt", params, silhouette="a-line", hem="mini")
+    index = BodyRadialIndex(points, y_range=(float(mesh.positions[:, 1].min()), float(mesh.positions[:, 1].max())))
+    return params, mesh, index
+
+
+def _rings(mesh, segments):
+    return mesh.positions.astype(np.float64).reshape(-1, segments + 1, 3)
+
+
+def test_even_columns_are_one_length_of_fabric_apart(measured):
+    """Equal angles round her made the front pleats 40% wider than the side ones."""
+    _, mesh, _ = _pleated_mini(measured)
+    for ring in _rings(mesh, 24 * 8)[::4]:
+        steps = np.linalg.norm(np.diff(ring[:, [0, 2]], axis=0), axis=1)
+        assert steps.std() / steps.mean() < 0.01
+
+
+def test_the_band_and_the_pleat_line_are_rows_of_their_own(measured):
+    from wardrobe.geometry.procedural import PLEAT_SET_M, skirt_top
+
+    params, mesh, _ = _pleated_mini(measured)
+    rows = np.unique(np.round(mesh.positions[:, 1].astype(np.float64), 4))
+    top = skirt_top(params)
+    for line in (top - 0.038, top - 0.038 - PLEAT_SET_M):
+        assert np.abs(rows - line).min() < 2e-4
+    # Nothing a hair away from them: no sliver rows to shade badly.
+    assert np.diff(rows).min() > 0.004
+
+
+def test_every_fold_runs_down_one_column(measured):
+    """Float noise put the fold one column left on some rows and right on others: a zig-zag edge."""
+    from wardrobe.geometry.procedural import PLEAT_SET_M, skirt_top
+
+    params, mesh, index = _pleated_mini(measured)
+    apply_pleats(mesh, index, count=24, from_y=skirt_top(params) - 0.038 - PLEAT_SET_M + 1e-4, amplitude=0.022,
+                 clearance_m=0.006, retexture=True)
+    rings = _rings(mesh, 24 * 8)
+    radii = np.hypot(rings[..., 0] - index.axis_x, rings[..., 2] - index.axis_z)
+    hem = float(mesh.positions[:, 1].min())
+    lower = rings[:, 0, 1] < hem + (params.hip_y - hem) * 0.5
+    steps = np.diff(radii, axis=1) / radii[:, :-1]  # relative: her sides are nearer the axis than her front
+    folds = [tuple(np.flatnonzero(r < -0.5 * np.abs(r).max())) for r in steps[lower]]
+    assert len(set(folds)) == 1  # the same columns on every row: a straight pressed edge
+    # On the pleat grid, eight columns a pleat; a fold clearance softened near her legs may
+    # fall under the threshold, never off the grid.
+    assert len(folds[0]) >= 20 and all(column % 8 == 7 for column in folds[0])
+
+
+def test_pleats_stay_zero_mean_at_any_column_count(measured):
+    params, mesh, index = _pleated_mini(measured)
+    hem = float(mesh.positions[:, 1].min())
+    before = _ring_radii(mesh, index, hem).copy()
+    apply_pleats(mesh, index, count=24, from_y=params.waist_y - 0.05, amplitude=0.022, clearance_m=0.006)
+    change = _ring_radii(mesh, index, hem) / before - 1.0
+    assert abs(change.mean()) < 0.002 and change.max() > 0.015
+
+
+def test_the_pleated_mini_is_fitted_through_the_hip_then_gently_flared(measured, template_catalog):
+    template = template_catalog.get("skirt-pleated-mini-v1")
+    fit = template.fit
+    assert fit.flare_start == "hip" and 1.15 <= fit.hem_flare_ratio <= 1.3 and fit.pleats >= 20
+    assert 30.0 <= fit.waistband_mm <= 45.0
+    params, mesh, _ = _pleated_mini(measured)
+    ys, widths = _widths(mesh)
+    hip = widths[np.argmin(np.abs(ys - _full_hip_y(params)))]
+    assert 1.12 <= widths[-1] / hip <= 1.3  # was 1.6: a lampshade
+    # No flare above the full hip: from the band down to it the skirt follows her.
+    above = (ys > _full_hip_y(params)) & (ys < params.waist_y - 0.04)
+    assert np.all(widths[above] <= hip + 0.004)
+
+
+# ----------------------------------------------------------------------
+# S5. knife pleats with real folds; a front kept flat; a mini that is a mini
+# ----------------------------------------------------------------------
+def _knife(measured, **extra):
+    from wardrobe.engines.geometry_checks import apply_knife_pleats, pleat_phase
+    from wardrobe.geometry.procedural import PLEAT_SET_M, skirt_top
+
+    measurements, meta, points = measured
+    params = FitParameters(measurements=measurements, metadata={
+        **meta, "pleats": 24, "waistbandMm": 38.0, "hemFlareRatio": 1.2, "flareStart": "hip",
+        "flarePower": 1.35, **extra}, segments=24 * 12)
+    mesh = build_garment("skirt", params, silhouette="a-line", hem="mini")
+    index = BodyRadialIndex(points, y_range=(float(mesh.positions[:, 1].min()), float(mesh.positions[:, 1].max())))
+    before = mesh.positions.astype(np.float64).copy()
+    phase = pleat_phase(mesh, 24)
+    origin = apply_knife_pleats(mesh, index, count=24, from_y=skirt_top(params) - 0.038 - PLEAT_SET_M + 1e-4,
+                                step=0.022, clearance_m=0.006, retexture=True)
+    return params, mesh, index, before, phase, origin
+
+
+def _hem_ring(mesh, origin, before, phase):
+    """The hem row after folding: positions, each vertex's place in its pleat, and its unfolded radius."""
+    points = mesh.positions.astype(np.float64)
+    hem = points[:, 1] < points[:, 1].min() + 1e-4
+    s = phase[origin] - np.floor(phase[origin] + 1e-3)
+    radius = np.hypot(points[:, 0], points[:, 2])
+    was = np.hypot(before[origin, 0], before[origin, 2])
+    return hem, np.clip(s, 0.0, 1.0), radius, was
+
+
+def test_a_knife_pleat_has_a_face_a_fold_edge_and_an_underfold(measured):
+    from wardrobe.engines.geometry_checks import KNIFE_UNDERLAP
+
+    _, mesh, _, before, phase, origin = _knife(measured)
+    assert origin is not None and mesh.vertex_count > before.shape[0]  # the creases split the fold edges
+    hem, s, radius, _ = _hem_ring(mesh, origin, before, phase)
+    face = 1.0 / (1.0 + 2.0 * KNIFE_UNDERLAP)
+    edge = hem & (s < 1e-3)
+    face_end = hem & (s > face * 0.8) & (s < face)
+    under = hem & (s >= face) & (s < face + KNIFE_UNDERLAP * face)
+    # The fold edge stands over the face it covers, and the underfold lies under both.
+    assert radius[edge].mean() > radius[face_end].mean() > radius[under].mean() - 1e-4
+    assert radius[edge].mean() - radius[under].mean() > 0.002
+
+
+def test_knife_pleats_keep_the_size_of_the_cut(measured):
+    _, mesh, _, before, phase, origin = _knife(measured)
+    hem, s, radius, was = _hem_ring(mesh, origin, before, phase)
+    visible = hem & (s < 1.0 / 1.7)
+    assert abs(radius[visible].mean() / was[visible].mean() - 1.0) < 0.015
+
+
+def test_every_knife_pleat_is_built_the_same(measured):
+    """Same pleat, same width, same depth all round: the front, the side and the back match."""
+    _, mesh, _, before, phase, origin = _knife(measured)
+    hem, s, radius, _ = _hem_ring(mesh, origin, before, phase)
+    # Against the unfolded ring at each vertex's new angle: the fold slides it along an ellipse.
+    points = mesh.positions.astype(np.float64)
+    ring = before[before[:, 1] < before[:, 1].min() + 1e-4]
+    ring_angle = np.arctan2(ring[:, 0], ring[:, 2])
+    order = np.argsort(ring_angle)
+    unfolded = np.interp(np.arctan2(points[:, 0], points[:, 2]), ring_angle[order],
+                         np.hypot(ring[order, 0], ring[order, 2]), period=2 * np.pi)
+    relative = radius / unfolded - 1.0
+    pleat = np.floor(phase[origin] + 1e-3).astype(int) % 24
+    for lo, hi in ((0.0, 1e-3), (0.2, 0.3), (0.65, 0.75)):
+        member = hem & (s >= lo) & (s < hi)
+        per_pleat = [relative[member & (pleat == p)].mean() for p in range(24) if (member & (pleat == p)).any()]
+        assert len(per_pleat) == 24 and np.std(per_pleat) < 0.004
+
+
+def test_knife_pleats_never_fold_into_her(measured):
+    _, mesh, index, *_ = _knife(measured)
+    points = mesh.positions.astype(np.float64)
+    reach = index.body_radius_at(points)
+    inside = index.point_radius(points) < reach + 0.006 - 1e-4
+    assert not inside[reach > 0.009].any()
+
+
+def test_a_fitted_pleated_skirt_keeps_its_front_flat_and_its_seat_behind(measured):
+    params = _params(measured)
+    even = skirt_shape(params, "a-line", 1.0)
+    from dataclasses import replace
+
+    shaped = replace(even, hem_ratio=1.2, front_flare=0.45, back_flare=1.0)
+    plain = replace(even, hem_ratio=1.2)
+    hem_y = params.hip_y - (params.hip_y - params.ankle_y) * 0.22
+    front = params.forward
+
+    def growth(shape):
+        mesh = build_skirt(params, y_top=params.waist_y, y_bottom=hem_y, shape=shape)
+        z = mesh.positions[:, 2].astype(np.float64) * front
+        ys = np.round(mesh.positions[:, 1].astype(np.float64), 4)
+        hip, hem = ys == ys[np.argmin(np.abs(ys - _full_hip_y(params)))], ys == ys.min()
+        return z[hem].max() - z[hip].max(), z[hip].min() - z[hem].min()
+
+    front_grows, back_grows = growth(shaped)
+    assert front_grows < back_grows * 0.6  # the front stays nearly flat; the back carries the flare
+    plain_front, plain_back = growth(plain)
+    assert abs(plain_front - plain_back) < 0.004  # without the fields, the even flare it always had
+
+
+def test_a_mini_ends_on_the_upper_thigh_and_clears_the_crotch(measured):
+    from wardrobe.geometry.procedural import MINI_HEM_FRACTION
+
+    params = _params(measured)
+    mesh = build_garment("skirt", params, silhouette="a-line", hem="mini")
+    hem = float(mesh.positions[:, 1].min())
+    crotch = crotch_y(params, params.hip_y)
+    assert MINI_HEM_FRACTION <= 0.25
+    assert hem < crotch - 0.03  # covers her
+    assert hem > params.knee_y + (params.hip_y - params.knee_y) * 0.4  # and is a mini: well above the knee
+
+
+# ----------------------------------------------------------------------
+# S6. tight over the hip, pleats closed there and open at the hem
+# ----------------------------------------------------------------------
+def test_pleats_are_closed_over_the_hip_and_open_at_the_hem(measured):
+    from wardrobe.engines.geometry_checks import apply_knife_pleats, pleat_phase
+    from wardrobe.geometry.procedural import PLEAT_SET_M, full_hip_y, skirt_top
+
+    measurements, meta, points = measured
+    params = FitParameters(measurements=measurements, metadata={
+        **meta, "pleats": 24, "waistbandMm": 38.0, "hemFlareRatio": 1.19, "flareStart": "hip",
+        "flarePower": 1.8}, segments=24 * 12)
+    mesh = build_garment("skirt", params, silhouette="a-line", hem="mini")
+    index = BodyRadialIndex(points, y_range=(float(mesh.positions[:, 1].min()), float(mesh.positions[:, 1].max())))
+    phase = pleat_phase(mesh, 24)
+    top = skirt_top(params) - 0.038 - PLEAT_SET_M + 1e-4
+    hem = float(mesh.positions[:, 1].min())
+    hip = min(full_hip_y(params), top - 0.01)
+    opening = [(top, 0.0), ((top + hip) / 2, 0.15), (hip, 0.30), ((hip + hem) / 2, 0.68), (hem, 1.0)]
+    origin = apply_knife_pleats(mesh, index, count=24, from_y=top, step=0.04, opening=opening,
+                                clearance_m=0.0)
+    p = mesh.positions.astype(np.float64)
+    s = phase[origin] - np.floor(phase[origin] + 1e-3)
+    rows = np.round(p[:, 1], 4)
+
+    def fold_depth(y):
+        row = rows == rows[np.argmin(np.abs(rows - y))]
+        r = np.hypot(p[:, 0], p[:, 2])
+        edge, under = row & (s < 1e-3), row & (s > 0.62) & (s < 0.78)
+        return r[edge].mean() - r[under].mean()
+
+    assert fold_depth(hip) < 0.5 * fold_depth(hem)  # pressed over the hip, open at the hem
+
+
+def test_a_taut_column_never_moves_in_and_spans_a_hollow(measured):
+    from wardrobe.engines.geometry_checks import taut_columns
+
+    params = _params(measured)
+    mesh = build_skirt(params, y_top=params.waist_y, y_bottom=params.hip_y - 0.1, shape=skirt_shape(params, "a-line", 1.0))
+    _, _, points = measured
+    index = BodyRadialIndex(points, y_range=(float(mesh.positions[:, 1].min()), float(mesh.positions[:, 1].max())))
+    p = mesh.positions.astype(np.float64)
+    rows = np.unique(np.round(p[:, 1], 4))
+    dent = np.abs(np.round(p[:, 1], 4) - rows[len(rows) // 2]) < 1e-4
+    p[dent, 0] *= 0.97  # a hollow in one row
+    p[dent, 2] *= 0.97
+    mesh.positions = p.astype(np.float32)
+    before = np.hypot(p[:, 0] - index.axis_x, p[:, 2] - index.axis_z)
+    taut_columns(mesh, index, top=float(rows.max()), bottom=float(rows.min()), round_m=0.02)
+    q = mesh.positions.astype(np.float64)
+    after = np.hypot(q[:, 0] - index.axis_x, q[:, 2] - index.axis_z)
+    assert (after >= before - 1e-6).all()  # never closer to her
+    assert (after[dent] / before[dent]).mean() > 1.02  # the hollow is spanned
+
+
+def test_rounding_a_bend_never_goes_below_it():
+    from wardrobe.engines.geometry_checks import _rounded_profile
+
+    y = np.linspace(0.0, 0.2, 15)
+    r = np.where(y < 0.1, 0.16, 0.16 + (y - 0.1) * 0.2)  # a corner at y = 0.1
+    out = _rounded_profile(y, r, 0.02)
+    assert (out >= r - 1e-9).all()
+    assert np.abs(np.diff(out, 2)).max() < np.abs(np.diff(r, 2)).max()  # the corner is softer
+    assert out[0] - r[0] < 0.001 and out[-1] - r[-1] < 0.001  # and the ends stay put
+
+
+def test_conforming_fades_out_above_its_floor(measured):
+    from wardrobe.engines.geometry_checks import conform_to_body
+
+    params = _params(measured)
+    _, _, points = measured
+    mesh = build_skirt(params, y_top=params.waist_y, y_bottom=params.knee_y, shape=skirt_shape(params, "a-line", 1.0))
+    index = BodyRadialIndex(points, y_range=(float(mesh.positions[:, 1].min()), float(mesh.positions[:, 1].max())))
+    before = mesh.positions.astype(np.float64).copy()
+    floor = params.hip_y
+    conform_to_body(mesh, index, 0.005, strength=1.0, min_y=floor, fade_m=0.03)
+    moved = np.linalg.norm(mesh.positions.astype(np.float64) - before, axis=1)
+    y = np.round(before[:, 1], 4)
+    rows = np.unique(y[(y >= floor) & (y < floor + 0.03)])
+    full = max(float(moved[y > floor + 0.03].max()), 1e-6)
+    for row in rows:  # inside the fade each row moves no more than its eased share
+        t = (row - floor) / 0.03
+        assert moved[y == row].max() <= (t * t * (3 - 2 * t) + 0.05) * full + 1e-6
+
+
+def test_the_pleated_mini_is_cut_tight_over_the_hip(template_catalog):
+    fit = template_catalog.get("skirt-pleated-mini-v1").fit
+    assert fit.conform_to == "full-hip" and fit.conform >= 0.9
+    assert (fit.waist_ease_mm or 0.0) <= 1.0 and (fit.hip_ease_mm or 0.0) <= 3.0
+    assert 1.18 <= fit.hem_flare_ratio <= 1.20 and fit.flare_power >= 1.6
+    assert fit.front_flare < fit.back_flare <= 1.0

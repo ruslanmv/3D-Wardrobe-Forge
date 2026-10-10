@@ -89,6 +89,7 @@ set for materials: lace, mesh, fishnet, sequin, latex and layering.
 | ✂️ **Cut as parameters** | Coverage from full to micro, V, plunge and sweetheart necklines, low backs, high-cut legs, rise, and strap networks (shoulder, halter, string ties, cross-back, garter, harness), each honoured by the geometry. |
 | 🧥 **Layered outfits** | `bralette + briefs + stockings + sheer dress + cropped jacket` is built in one job, in order, with each layer clearing the ones inside it. |
 | 🔍 **Base Body Prep** | Garment inventory, a strip plan for the whole outfit, and a body-integrity check before anything comes off. It never outputs an undressed avatar and never generates anatomy. |
+| 🧱 **Auto Foundation** | `ensureFoundation`: a foundation under the clothes, added only where she has none — kept from look to look, replaced by a bikini or lingerie, and what lets a dress VRoid filed as a top come off under a skirt. See [docs/STYLING.md](docs/STYLING.md#auto-foundation-optionsensurefoundation). |
 | 📐 **Measured fit** | Hair and head never count as body. Legs, arms, crotch, armpit and shoulders are measured. Clearance is checked at vertices and across faces. |
 | ✅ **Validation** | File, humanoid mapping, weights, skeleton, expressions, severe intersections, recoverability and preview, all re-checked from the output bytes. |
 | 📦 **Export** | One call packs an avatar's whole wardrobe as a static bundle. [3D-Avatar-Chatbot](https://github.com/ruslanmv/3D-Avatar-Chatbot) and yourfriend.online load it by unzipping it. |
@@ -107,6 +108,24 @@ out early and drapes at the hem. Pleats fold in as well as out, around the
 cut, and never into her. Every panel above is a render of the VRM the pipeline
 produced; [docs/FIT_QUALITY.md](docs/FIT_QUALITY.md#skirts-cut-from-her-waist-and-hips-then-flared)
 has the model.
+
+![The corrected pleated mini on AvatarSample A in her own cardigan, tights and loafers: front, side and back head to toe, the waistband, pleats and hem, and five details](docs/images/mini-skirt.webp)
+
+The pleated mini is a mini: 26 cm from waistband to hem on AvatarSample A, upper
+thigh (a skirt's or dress's "mini" hem is 0.22 of her hip-to-ankle drop, was
+0.34). Its 38 mm waistband follows her waist, 1.8 mm proud. The skirt is drawn
+onto her down to the full hip and pulled taut there: 5 mm off what is under it
+at the waist, 4.5–6 mm through the hip. It opens only below the full hip, to a
+hem about 1.19× her hip width, with the front kept flat and the back carrying
+the seat. Its 24 knife pleats are real folds, each with a visible face, a creased
+fold edge and a hidden underfold. They are pressed closed over the hip and open
+toward the hem: 15% at the upper hip, 30% at the full hip, 68% halfway down, full
+at the hem. The hem is turned, with a slight natural drape. Before, the skirt
+flared from just under the waist to 1.6× her hip and reached 10 cm above her
+knee.
+`python tools/gallery/mini_skirt.py --sheet docs/images/mini-skirt.webp`
+rebuilds the sheet. Its figures are measured on the fitted shell, and its
+verdict is the job's own fit report.
 
 ### Hosiery and suspenders
 
@@ -160,6 +179,63 @@ front, side and back, through the real pipeline, on a fashion-fit form that
 through the adult gate like any request. The plan and progress are in
 [docs/LINGERIE_UPGRADE_PLAN.md](docs/LINGERIE_UPGRADE_PLAN.md).
 
+### Lingerie collections: one bra, coordinated bottoms
+
+![The Italian lace collection on the fashion-fit form: thong set and Brazilian set in four views](docs/images/lingerie-collection.webp)
+
+A collection is one product: a soft triangle bralette in black sheer mesh with
+galloon lace, and a choice of bottom with `lingerieSet.bottomStyle` (`thong` or
+`brazilian`). The bra is the same either way. The lace, binding, satin bows and
+gold hardware are built after fitting, on the fitted fabric, and each fabric is
+its own material. Every part is a named component in the garment's extras
+(`bra_left_cup`, `bottom_lace`, `bow_L` …). It is underwear and gated as
+underwear. See [docs/LINGERIE_COLLECTION.md](docs/LINGERIE_COLLECTION.md).
+
+### Sexy Discoteca: one dress, four boots
+
+![Sexy Discoteca — All Black on VRoid Female: the bodycon dress with stiletto ankle boots, platform boots, combat boots and over-the-knee boots](docs/images/discoteca.webp)
+
+A short black bodycon dress (spaghetti straps, strapless or cross-back;
+sweetheart; open back; matte, satin, glossy or leather) and four black boots,
+each its own garment:
+
+- stiletto ankle boots on a 95 mm needle;
+- platforms on a 55 mm sole and a 150 mm block heel;
+- combat boots with a lugged sole and laces;
+- over-the-knee boots on a block or stiletto heel.
+
+Heels are real: the boots stand her on them. Her feet are turned down and she is
+lifted, baked into the rest pose with her own skin weights, and every boot is
+cut round her foot as she stands. In the Studio, make the dress once, then try
+each pair on it: only the boots are re-fitted. See
+[docs/DISCOTECA.md](docs/DISCOTECA.md).
+
+### Body art, clothes first
+
+![Three tattoos on the declared-adult calibration body, from behind: tribal wings and a lotus, a V tribal in plum ink, a lace ornament with a crescent at the nape](docs/images/body-art-back.webp)
+
+A tattoo is an optional accessory to a finished look. It is not a layer that
+competes with the clothes:
+
+- It goes only on skin the finished outfit leaves visible, measured on the
+  assembled VRM.
+- An explicit request never takes a garment off. "Jacket + upper-back tattoo"
+  keeps the jacket and reports *upper back tattoo not applied — that area is
+  covered by the outfit*.
+- The decal is a copy of her own skin triangles under the design. Each vertex
+  keeps its own joints and weights, so it stays on her skin in every pose.
+- Nothing is painted into her texture, and her clothes are never touched.
+
+The Studio offers body art on the look on stage, and only at placements that
+look leaves bare. Each tattoo becomes a new look built on that one. A tattoo
+travels with her: a later outfit that covers it drops the decal but keeps the
+recipe, and the next outfit that bares the spot puts it back. Nineteen designs
+ship as vector art authored in this repository, ten of them for the lower back,
+where "Just above the waistband" finds the outfit's own waistband and sits the
+design on it. Raster art comes in only through
+`tools/body_art/install_design.py`. The plan and what was built are in
+[docs/BODY_ART_PLAN.md](docs/BODY_ART_PLAN.md).
+
 ### Reference look: red bodycon, stockings and suspenders
 
 ![The red bodycon reference look: on the adult mannequin with sheer stockings, a suspender belt and flat straps clipped below the hem; on AvatarSample A with the same dress and light taupe satin thigh-highs over her own loafers](docs/images/red-dress.webp)
@@ -205,6 +281,7 @@ here renders there.
 | **Style** | Finish, pattern, see-through level, coverage, straps and neckline. Each is an override the planner honours, and each is gated before the server would refuse it. |
 | **Layer** | Write an outfit with `+` and it is built inner first. **Check plan** reports, before anything runs, which layers will be built, what of her own outfit comes off, whether there is a body under it, and whether each garment passes the gate. |
 | **Judge** | The same body in two outfits under the same light, side by side, on a turntable, with the fit report beside it. |
+| **Inspect** | The expand button gives the stage the whole screen, with Front, Side, Back and Free views and controls that fade until you tap. One finger turns her, a pinch zooms toward your fingers, two fingers pan and a double tap resets. Front, Side and Back keep the camera within 5° of level; Free orbits all the way round, under the hem too, as the Studio does outside full screen. |
 | **Export** | One click packs the wardrobe as a static bundle for [3D-Avatar-Chatbot](https://github.com/ruslanmv/3D-Avatar-Chatbot) or yourfriend.online. |
 
 <p align="center">
@@ -328,6 +405,7 @@ the same pipeline.
 | `GET /v1/wardrobes/{avatar}/bundle.zip` | the wardrobe as the older v1 static bundle (`?passedOnly=true` drops failed fits) |
 | `GET /v1/library` · `POST /v1/library/{slug}/jobs` | the Studio's avatar library, and jobs on it |
 | `GET /v1/vocabulary` | the colours, cuts and lengths the planner understands |
+| `GET /v1/outfits` | **the outfit dictionary** — 42 named sets in 9 groups, each planned by Forge and rated `general` or `private` by its own adult gate (what the chatbot's companion offers) |
 | `GET /v1/templates` · `GET /v1/capabilities` | the garment library · what this deployment can do |
 
 Full reference: [docs/API.md](docs/API.md).
@@ -429,7 +507,7 @@ chatbot's VRM Manager already stores. See [docs/LICENSING.md](docs/LICENSING.md)
 
 ### Garment library
 
-59 templates across dresses, tops, skirts, shorts, trousers and leggings, jumpsuits,
+90 templates across dresses, tops, skirts, shorts, trousers and leggings, jumpsuits,
 jackets, swimwear, underwear, nightwear, legwear and shoes, every one procedural —
 the shell is generated at each avatar's measurements, so the repository needs no
 binary garment assets. Adding a garment is usually a single
@@ -529,6 +607,9 @@ Stated plainly, because the gallery shows them:
 | [HOSIERY_UPGRADE](docs/HOSIERY_UPGRADE.md) | the design: the complete hosiery plan, the `garter_belt.py` analysis, the renderer contract |
 | [HOSIERY_STYLING](docs/HOSIERY_STYLING.md) | the design: suspender belts, stockings and the reveal control |
 | [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | the design: flat straps, clip hardware, denier falloff and the web preview backend |
+| [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section, the lower-back set; BA1–BA7 and BA11 built |
+| [DISCOTECA](docs/DISCOTECA.md) | Sexy Discoteca — All Black: the bodycon dress, four boots built round her posed foot, heels as a stance baked into the rest pose, the Studio's Collection panel |
+| [LINGERIE_COLLECTION](docs/LINGERIE_COLLECTION.md) | collections: the Italian lace bralette with a thong or Brazilian bottom, finishing built on the fitted garment, named components, the product sheet |
 | [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the plan (not yet built): fashion-fit mannequin, ribbon straps, brief, bra and bodysuit blocks, feet, fabrics, elastic tension, validation |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | components, layers, extension points |
 | [PIPELINE](docs/PIPELINE.md) | the ten stages and the failure model |

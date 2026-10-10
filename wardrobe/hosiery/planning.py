@@ -110,6 +110,14 @@ def apply(plan: OutfitPlan, request: OutfitRequest, catalog) -> OutfitPlan:
                                       LEGWEAR_TEMPLATE)
         garment = garment.model_copy(update={"material": _stocking_material(stockings, garment.material)})
         garment = garment.model_copy(update={"requires_adult": garment.material.exposes_body})
+        # OD2. The name says the kind of stocking. Fishnets were announced as "Black Thigh-High
+        # Stockings": in a haul she names every look aloud, and the one word that set this pair
+        # apart from the plain pair before it was the word the name left out.
+        kind = {"fishnet": "Fishnet", "seamed": "Seamed"}.get(stockings.type or "")
+        # Only when the name does not say it already: "Black Fishnet Thigh-High Stockings",
+        # planned from a prompt that named them, is kept rather than made "Fishnet Fishnet".
+        if kind and "Thigh-High Stockings" in garment.name and kind not in garment.name:
+            garment = garment.model_copy(update={"name": garment.name.replace("Thigh-High", kind)})
         if legwear_index is None:
             garments.append(garment)
         else:
@@ -213,7 +221,7 @@ def _belt_material(belt: BeltPlan) -> MaterialPlan:
     colour = hex_to_linear_rgba(belt.color)
     if belt.material == "lace":
         return MaterialPlan(baseColor=colour, colorName=_colour_word(belt.color), finish="matte",
-                            pattern="lace", alphaMode="mask", textureScale=round(1 / 0.07, 3), fabric="lace",
+                            pattern="lace", alphaMode="blend", textureScale=round(1 / 0.07, 3), fabric="lace",
                             roughness=0.6)
     if belt.material == "mesh":
         return MaterialPlan(baseColor=colour, colorName=_colour_word(belt.color), finish="matte",
@@ -263,7 +271,8 @@ def _stocking_material(stockings: StockingPlan, base: MaterialPlan) -> MaterialP
     from wardrobe.pipeline.plan_outfit import hex_to_linear_rgba
 
     fishnet = stockings.pattern == "fishnet"
-    alpha = "mask" if fishnet else ("blend" if stockings.opacity < 0.999 else "opaque")
+    # OD2. Fishnet blends like lace (finishes.PATTERNS): cut out, its net vanished at a distance.
+    alpha = "blend" if fishnet or stockings.opacity < 0.999 else "opaque"
     return base.model_copy(update={
         "base_color": hex_to_linear_rgba(stockings.color),
         "color_name": _colour_word(stockings.color),

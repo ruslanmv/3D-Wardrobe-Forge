@@ -2,7 +2,10 @@
 
     validate_source -> analyze_avatar -> plan (plan_outfit_stack) -> prepare_base_body
                     -> generate_garment -> fit_garment -> assemble_vrm
+                    -> analyze_exposed_skin -> apply_body_art
                     -> validate_output -> render_preview
+
+A tattoo-only job (BA6) runs carry_look in place of plan … assemble_vrm.
 
 The stage modules are deliberately *not* imported here. They depend on
 ``wardrobe.engines``, whose own modules import :mod:`wardrobe.pipeline.context`
@@ -22,6 +25,9 @@ __all__ = [
     "generate_garment",
     "fit_garment",
     "assemble_vrm",
+    "carry_look",
+    "analyze_exposed_skin",
+    "apply_body_art",
     "validate_output",
     "render_preview",
 ]

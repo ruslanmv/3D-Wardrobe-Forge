@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "shoes-combat-boots-v1",
+  "name": "Combat Boots",
+  "category": "shoes",
+  "mesh": "procedural:boots",
+  "coverage": [
+    "feet",
+    "lowerLegs"
+  ],
+  "anchors": [
+    "feet",
+    "lowerLegs"
+  ],
+  "silhouette": "straight",
+  "hem": "midi",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 6.0,
+    "allowLengthScale": false,
+    "allowWidthScale": false
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": false,
+    "supportsMetallic": false,
+    "supportsFinish": true,
+    "supportsTransparency": false
+  },
+  "optIn": true,
+  "boot": {
+    "style": "combat",
+    "heelMm": 40,
+    "platformMm": 28
+  },
+  "tags": [
+    "combat",
+    "combat boots",
+    "lace-up boots",
+    "lace up boots",
+    "lug sole",
+    "chunky boots",
+    "biker boots"
+  ],
+  "description": "Round-toe combat boots to mid-calf: a lugged 28 mm sole, a stacked heel, laces and a padded collar."
+}

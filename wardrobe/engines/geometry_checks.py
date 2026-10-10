@@ -20,6 +20,7 @@ import numpy as np
 from wardrobe.geometry.mesh import Mesh
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.skinning import HUMANOID_CHILDREN, BoneSegment, connected_components, distance_to_segments
+from wardrobe.vrm.visible import visible_vertices
 
 DEFAULT_BANDS = 64
 DEFAULT_SECTORS = 16
@@ -138,9 +139,13 @@ def body_points(
     collected: list[np.ndarray] = []
     accessors = document.gltf.get("accessors") or []
     head_nodes = set() if include_head else _head_attached_nodes(document)
+    textures: dict = {}
 
     for node_index in document.mesh_nodes():
         node = document.nodes[node_index]
+        extras = node.get("extras") if isinstance(node.get("extras"), dict) else {}
+        if (extras.get("wardrobeForge") or {}).get("kind") == "bodyArt":
+            continue  # BA4: a tattoo lies on her skin; it is not her body (body art plan, I7)
         mesh = document.meshes[node["mesh"]]
         matrix = document.world_matrices()[node_index]
         skinned = "skin" in node
@@ -172,6 +177,13 @@ def body_points(
                 if on_head is not None and on_head.any():
                     indices = indices[~on_head[indices]]
                     triangles = triangles[~on_head[triangles].any(axis=1)]
+            shown = visible_vertices(document, primitive, textures)
+            if shown is not None and shown.shape[0] >= points.shape[0] and not shown[indices].all():
+                # MG1. What her textures cut away is not her: Model Girl's own top hangs a sheet
+                # to her shins that its alpha never shows, and a skirt fitted round it stood
+                # out from her like a bell. A triangle counts only if all three corners show.
+                triangles = triangles[shown[triangles].all(axis=1)]
+                indices = triangles.reshape(-1)
             used.setdefault(position, []).append(np.unique(indices))
             if spacing > 0 and primitive.get("mode", 4) == 4:
                 collected.append(_surface_samples(points, triangles, spacing))
@@ -616,6 +628,7 @@ def conform_to_body(
     *,
     strength: float,
     min_y: float | None = None,
+    fade_m: float = 0.0,
 ) -> int:
     """Draw the shell onto the body's actual surface, by ``strength`` (0..1).
 
@@ -627,6 +640,10 @@ def conform_to_body(
     skin-tight; the clearance pass that follows still guarantees nothing ends up
     inside. ``min_y`` leaves everything below it alone, so a dress can hug the
     bodice and keep its skirt's flare.
+
+    ``fade_m`` (S6) eases the strength from nothing at ``min_y`` to full that far above it.
+    Cut off at one height, the rows either side of it came out at different radii and every
+    pleat drawn on them kinked there.
     """
     if strength <= 0.0 or not index.valid or mesh.vertex_count == 0:
         return 0
@@ -642,7 +659,11 @@ def conform_to_body(
     if not active.any():
         return 0
 
-    new_radius = radius + (target - radius) * min(strength, 1.0)
+    weight = np.full(points.shape[0], min(strength, 1.0))
+    if min_y is not None and fade_m > 0.0:
+        t = np.clip((points[:, 1] - min_y) / fade_m, 0.0, 1.0)
+        weight *= t * t * (3.0 - 2.0 * t)
+    new_radius = radius + (target - radius) * weight
     dx = points[active, 0] - index.axis_x
     dz = points[active, 2] - index.axis_z
     current = np.maximum(np.sqrt(dx * dx + dz * dz), 1e-9)
@@ -1199,6 +1220,101 @@ def smooth_radial(
     return int(moved.sum())
 
 
+def _rounded_profile(y: np.ndarray, r: np.ndarray, round_m: float) -> np.ndarray:
+    """``r`` along ``y``, its bends rounded over ``round_m``; never below ``r`` anywhere.
+
+    A hip built of a few flat facets bends at a corner, and the cloth over it does not. The
+    profile is carried on straight past both ends first, so the ends are not pulled toward
+    the rows inside them (the waist stood 10 mm off when they were), then smoothed, then
+    lifted at each point by the shortfall near it — never by the column's worst one.
+    """
+    order = np.argsort(y)
+    ys, rs = y[order], r[order]
+    step = max(float(np.median(np.diff(ys))), 1e-4)
+    reach = int(np.ceil(3.0 * round_m / step))
+    low = ys[0] - step * np.arange(reach, 0, -1)
+    high = ys[-1] + step * np.arange(1, reach + 1)
+    slope_low = (rs[1] - rs[0]) / max(ys[1] - ys[0], 1e-6)
+    slope_high = (rs[-1] - rs[-2]) / max(ys[-1] - ys[-2], 1e-6)
+    py = np.concatenate([low, ys, high])
+    pr = np.concatenate([rs[0] + slope_low * (low - ys[0]), rs, rs[-1] + slope_high * (high - ys[-1])])
+    near = np.exp(-0.5 * ((ys[:, None] - py[None, :]) / round_m) ** 2)
+    rounded = near @ pr / near.sum(axis=1)
+    short = np.maximum(rs - rounded, 0.0)
+    spread = np.exp(-0.5 * ((ys[:, None] - ys[None, :]) / round_m) ** 2)
+    lifted = rounded + (spread * short[None, :]).max(axis=1)
+    out = np.empty_like(r)
+    out[order] = np.maximum(lifted, rs)
+    return out
+
+
+def taut_columns(mesh: Mesh, index: BodyRadialIndex, *, top: float, bottom: float,
+                 mask: np.ndarray | None = None, round_m: float = 0.0) -> int:
+    """S6. Pull a lofted skirt taut down each column between ``top`` and ``bottom``.
+
+    Fitted within millimetres of her, the clearance passes push single vertices out over
+    every small rise of the avatar's hip and let their neighbours sink into the hollows
+    between: the shell follows the body's own facets, and the pleats drawn on it kinked
+    sideways at the hip on AvatarSample A. Cloth pulled down over a hip does not do that —
+    it spans from rise to rise. So each column's radius, as it runs down from ``top`` to
+    ``bottom``, is replaced by its upper hull: never less than it was (the clearance it had
+    is kept), straight wherever it would have dipped. Below ``bottom`` — the flare — is left
+    alone, or the curve of the flare would be straightened into a cone. ``round_m`` also
+    rounds each column's bends over that height (lifting it, never lowering it).
+
+    Needs the loft's own vertex order and UVs (one ring per v, its columns in u order).
+    Returns how many vertices moved.
+    """
+    if mesh.uvs is None or mesh.vertex_count == 0 or not index.valid:
+        return 0
+    points = mesh.positions.astype(np.float64)
+    rows = np.round(mesh.uvs[:, 1].astype(np.float64), 5)
+    band = (points[:, 1] <= top + 1e-6) & (points[:, 1] >= bottom - 1e-6)
+    if mask is not None:
+        band &= mask
+    ring_rows = np.unique(rows[band])
+    rings = [np.flatnonzero((rows == r) & band) for r in ring_rows]
+    width = {len(ring) for ring in rings}
+    if len(rings) < 3 or len(width) != 1:
+        return 0  # not a loft's rings: leave it as it is
+    rings = [ring[np.argsort(mesh.uvs[ring, 0])] for ring in rings]
+    grid = np.stack(rings)  # rows x columns, vertex ids
+    dx = points[grid, 0] - index.axis_x
+    dz = points[grid, 2] - index.axis_z
+    radius = np.hypot(dx, dz)
+    heights = points[grid, 1]
+    taut = radius.copy()
+    for column in range(grid.shape[1]):
+        y, r = heights[:, column], radius[:, column]
+        order = np.argsort(y)
+        hull: list[int] = []
+        for i in order:  # the upper hull of (y, r), left to right
+            while len(hull) >= 2:
+                (y0, r0), (y1, r1) = (y[hull[-2]], r[hull[-2]]), (y[hull[-1]], r[hull[-1]])
+                if (y1 - y0) * (r[i] - r0) - (r1 - r0) * (y[i] - y0) >= 0.0:
+                    hull.pop()
+                else:
+                    break
+            hull.append(i)
+        hulled = np.maximum(r, np.interp(y, y[hull], r[hull]))
+        if round_m > 0.0 and len(y) >= 3:
+            hulled = _rounded_profile(y, hulled, round_m)
+        taut[:, column] = hulled
+    moved = taut - radius > 1e-6
+    if not moved.any():
+        return 0
+    scale = taut / np.maximum(radius, 1e-9)
+    points[grid, 0] = index.axis_x + dx * scale
+    points[grid, 2] = index.axis_z + dz * scale
+    mesh.positions = points.astype(np.float32)
+    mesh.compute_normals()
+    return int(moved.sum())
+
+
+#: How close to a pleat's edge, in pleats, counts as on it (float32 UVs carry ~1e-5).
+PLEAT_SNAP = 1e-3
+
+
 def apply_pleats(
     mesh: Mesh,
     index: BodyRadialIndex,
@@ -1243,8 +1359,15 @@ def apply_pleats(
         dx = points[:, 0] - index.axis_x
         dz = points[:, 2] - index.axis_z
         phase = (np.arctan2(dz, dx) + np.pi) / (2 * np.pi) * count
-    saw = phase - np.floor(phase)  # 0 → 1 across each pleat, then folds back
+    # 0 → 1 across each pleat, then folds back. S4: a fold that lands on a column (it does
+    # when the loft has a whole number of columns a pleat) is 0.99999 on one row and 1.00001
+    # on the next in float32 UVs, so the floor put the fold one column left on some rows and
+    # one right on others, and every pressed edge zig-zagged down the skirt. Snapped first.
+    saw = np.clip(phase - np.floor(phase + PLEAT_SNAP), 0.0, 1.0)
     fold = 2.0 * saw - 1.0  # zero-mean: in on one side of the pleat, out on the other
+    # Sampled at k columns a pleat the ramp is -1 … 1 - 2/k, a 1/k lean inward; centred on
+    # the samples it has, so the skirt stays the size of its cut at any column count.
+    fold = fold - float(fold[below].mean())
     moved = _fold(mesh, points, index, below, 1.0 + amplitude * depth * fold, clearance_m)
     if retexture and mesh.uvs is not None:
         # u in pleats: one tile of the pleat-shading texture per pleat, on the folds exactly.
@@ -1271,6 +1394,150 @@ def pleat_phase(mesh: Mesh, count: int) -> np.ndarray | None:
     if (half <= 1e-6).any():
         return None
     return (u / (2.0 * half) + 0.5) * count
+
+
+#: S5. A knife pleat's hidden underfold, as a fraction of its visible width. A pressed pleat
+#: folds back under the next one by about a third of its face.
+KNIFE_UNDERLAP = 0.35
+#: S5. The least distance between a knife pleat's layers, where it is stitched flat.
+KNIFE_MIN_GAP_M = 0.0012
+
+
+def apply_knife_pleats(
+    mesh: Mesh,
+    index: BodyRadialIndex,
+    *,
+    count: int,
+    from_y: float,
+    step: float = 0.022,
+    underlap: float = KNIFE_UNDERLAP,
+    mask: np.ndarray | None = None,
+    clearance_m: float = 0.0,
+    retexture: bool = False,
+    opening: list[tuple[float, float]] | None = None,
+) -> np.ndarray | None:
+    r"""Fold a lofted skirt into ``count`` knife pleats with real topology (S5).
+
+    ``apply_pleats`` folds a skirt by a radial sawtooth: every vertex keeps its angle and
+    moves in or out, so the "pleats" are wedges extruded from one shell and the surface
+    never folds back on itself. A knife pleat does. Seen from above, the fabric of one
+    pleat runs forward across its visible face, passes under the next pleat's fold edge,
+    carries on for an underlap, turns at a hidden return edge, runs back to that fold
+    edge and turns again to become the next face::
+
+        fold edge                 next fold edge
+           |                          |
+           +==== visible face ====\  +==== …
+                                   \/  <- under the next pleat
+                         return  <-----+  hidden underfold (two layers)
+
+    Each pleat's columns are spent on that path: most on the face, the rest on the two
+    hidden layers. The fold edge is a hard crease (its vertices are split between the
+    face and the layer under it), so a toon shader draws the edge as a line instead of
+    smoothing it away. The fabric path ends where it began, one pleat on, so the skirt
+    keeps the circumference its cut gave it.
+
+    ``step`` is the fold's depth as a fraction of the radius: the face slopes from
+    ``+step/2`` at its fold edge to ``-step/2`` where it slips under the next one, the
+    underfold sits at ``-step/2`` and its return layer at 0. The fabric is folded all the way
+    up to ``from_y`` (the stitching line under the waistband), flat there with its layers
+    ``KNIFE_MIN_GAP_M`` apart, and the fold's depth opens to full a third of the way down —
+    or along ``opening``, (height, fraction) pairs, when given (S6: closed over the hip, open
+    at the hem). No vertex goes closer to her than the body plus ``clearance_m``.
+
+    Needs the loft's UVs (``pleat_phase``) and a whole number of columns per pleat, at
+    least eight. Returns, for each vertex of the new mesh, the index of the vertex it came
+    from (the creases add vertices), so per-vertex masks can follow; None when nothing was
+    folded.
+    """
+    if count <= 0 or not index.valid or mesh.vertex_count == 0 or mesh.uvs is None:
+        return None
+    phase = pleat_phase(mesh, count)
+    if phase is None:
+        return None
+    points = mesh.positions.astype(np.float64)
+    below = points[:, 1] < from_y
+    if mask is not None:
+        below &= mask
+    if not below.any():
+        return None
+    hem = float(points[below, 1].min())
+    if opening:
+        # S6. How far the fold has opened at each height, given as (height, fraction) at her
+        # landmarks: closed and pressed over the hip, opening down the skirt, full at the hem.
+        heights, fractions = zip(*sorted(opening), strict=True)
+        depth = np.interp(points[:, 1], heights, fractions)
+    else:
+        depth = np.clip((from_y - points[:, 1]) / max((from_y - hem) * 0.35, 1e-6), 0.0, 1.0)
+        depth = depth * depth * (3.0 - 2.0 * depth)
+    depth = np.where(below, depth, 0.0)
+
+    base = np.floor(phase + PLEAT_SNAP)
+    s = np.clip(phase - base, 0.0, 1.0)
+    face_share = 1.0 / (1.0 + 2.0 * underlap)
+    layer_share = underlap * face_share
+    on_face = s < face_share
+    on_under = ~on_face & (s < face_share + layer_share)
+    # Where along the pleat (in pleats) each column lands, and on which layer (+1 … -1).
+    t = np.where(on_face, s / face_share,
+                 np.where(on_under, 1.0 + (s - face_share) / layer_share * underlap,
+                          1.0 + underlap - (s - face_share - layer_share) / layer_share * underlap))
+    layer = np.where(on_face, 1.0 - 2.0 * s / face_share, np.where(on_under, -1.0, 0.0))
+    # Folded all the way up to the stitching line, as a pressed pleat is: only the depth of
+    # the fold opens toward the hem. Folding gradually there twisted the layers through
+    # each other and left a crown of dark wedges under the band.
+    target = np.where(below, base + t, phase)
+
+    # Each ring's own curve, by phase, to slide its vertices along.
+    rows = np.round(mesh.uvs[:, 1].astype(np.float64), 5)
+    moved = points.copy()
+    for row in np.unique(rows[below]):
+        member = np.flatnonzero(rows == row)
+        order = member[np.argsort(phase[member])]
+        keep = phase[order] < count - PLEAT_SNAP  # the seam's twin at `count` is the one at 0
+        ring_phase, ring = phase[order][keep], points[order][keep]
+        for axis in (0, 2):
+            moved[member, axis] = np.interp(target[member], ring_phase, ring[:, axis], period=count)
+    dx, dz = moved[:, 0] - index.axis_x, moved[:, 2] - index.axis_z
+    radius = np.maximum(np.hypot(dx, dz), 1e-9)
+    # The layers never share a surface, even where the fold is stitched flat: a millimetre
+    # apart at least, or the face and the underfold flicker through each other.
+    offset = np.maximum(0.5 * step * depth * radius, KNIFE_MIN_GAP_M)
+    wanted = radius + np.where(below, offset * layer, 0.0)
+    floor = index.body_radius_at(moved) + clearance_m
+    wanted = np.where(floor > clearance_m, np.maximum(wanted, floor), wanted)
+    moved[:, 0] = index.axis_x + dx * wanted / radius
+    moved[:, 2] = index.axis_z + dz * wanted / radius
+    points = np.where(below[:, None], moved, points)
+
+    # The fold edge is a crease: the face and the layer under it stop sharing vertices.
+    triangles = mesh.indices.reshape(-1, 3).astype(np.int64)
+    fold = below & (s < PLEAT_SNAP)
+    late = s > 0.5  # the end of the previous pleat's return layer
+    touches = fold[triangles] & late[triangles].any(axis=1, keepdims=True)
+    origin = np.arange(mesh.vertex_count)
+    if touches.any():
+        split = np.unique(triangles[touches])
+        twin = -np.ones(mesh.vertex_count, dtype=np.int64)
+        twin[split] = mesh.vertex_count + np.arange(split.size)
+        triangles = np.where(touches, twin[triangles], triangles)
+        origin = np.concatenate([origin, split])
+        points = points[origin]
+        mesh.uvs = mesh.uvs[origin]
+        for key in ("placed", "gusset"):
+            if mesh.metadata.get(key) is not None:
+                mesh.metadata[key] = np.asarray(mesh.metadata[key])[origin]
+        mesh.indices = triangles.reshape(-1).astype(np.uint32)
+    mesh.positions = points.astype(np.float32)
+    mesh.normals = None
+    if retexture:
+        # u across the visible face, one shading tile per pleat; the hidden layers in its fold.
+        u = base + np.where(on_face, t, 1.0)
+        u = np.where(below, u, phase)
+        mesh.uvs = np.column_stack([u[origin], mesh.uvs[:, 1]]).astype(np.float32)
+        mesh.metadata["pleatShading"] = True
+    mesh.compute_normals()
+    return origin
 
 
 def apply_drape(

@@ -193,7 +193,7 @@ def _interpolate_path(
 
 def loft(rings: list[Ring], *, segments: int = DEFAULT_SEGMENTS, cap_top: bool = False,
          cap_bottom: bool = False, name: str = "loft", front: float = 1.0,
-         max_spacing: float | None = None) -> Mesh:
+         max_spacing: float | None = None, even: bool = False) -> Mesh:
     """Build a closed tube through ``rings`` (ordered bottom to top).
 
     UVs are in metres of fabric: u runs round the ring (its perimeter), v down
@@ -205,6 +205,12 @@ def loft(rings: list[Ring], *, segments: int = DEFAULT_SEGMENTS, cap_top: bool =
     back, and u is measured from her front centre: the pattern's seam is where
     a sewn garment's is, and a flared skirt's vertical lines stay vertical down
     the front instead of shearing with the flare.
+
+    ``even`` (S4) spaces each ring's columns by equal lengths of fabric instead of equal
+    angles. Equal angles round an ellipse wider than it is deep put the columns 40% further
+    apart across her front than at her sides, and a pleated skirt folded on those columns
+    had wide pleats in front and narrow ones at the hips: the reference skirt's pleats are
+    one width all round, because they are pressed at one width.
     """
     if len(rings) < 2:
         raise ValueError("a loft needs at least two rings")
@@ -220,11 +226,18 @@ def loft(rings: list[Ring], *, segments: int = DEFAULT_SEGMENTS, cap_top: bool =
     uvs: list[np.ndarray] = []
 
     for ring in rings:
-        x = ring.center_x + ring.half_width * np.sin(angles)
-        z = ring.center_z + ring.half_depth * np.cos(angles)
+        if even:
+            ring_angles, perimeter = _even_angles(ring.half_width, ring.half_depth, back, ring_vertex_count)
+            fraction = np.linspace(0.0, 1.0, ring_vertex_count)
+            u = (fraction - 0.5) * perimeter
+        else:
+            ring_angles = angles
+            perimeter = _ellipse_perimeter(ring.half_width, ring.half_depth)
+            u = (angles - back - math.pi) / (2.0 * math.pi) * perimeter
+        x = ring.center_x + ring.half_width * np.sin(ring_angles)
+        z = ring.center_z + ring.half_depth * np.cos(ring_angles)
         y = np.full(ring_vertex_count, ring.y)
         positions.append(np.stack([x, y, z], axis=1))
-        u = (angles - back - math.pi) / (2.0 * math.pi) * _ellipse_perimeter(ring.half_width, ring.half_depth)
         v = np.full(ring_vertex_count, rings[-1].y - ring.y)
         uvs.append(np.stack([u, v], axis=1))
 
@@ -274,6 +287,15 @@ def loft(rings: list[Ring], *, segments: int = DEFAULT_SEGMENTS, cap_top: bool =
         metadata={"section": name},
     )
     return mesh.compute_normals()
+
+
+def _even_angles(half_width: float, half_depth: float, start: float, count: int) -> tuple[np.ndarray, float]:
+    """``count`` angles from ``start`` round an ellipse, equal arc lengths apart; and its perimeter."""
+    dense = start + np.linspace(0.0, 2.0 * math.pi, 4097)
+    step = np.hypot(half_width * np.cos(dense), half_depth * np.sin(dense))
+    arc = np.concatenate([[0.0], np.cumsum((step[1:] + step[:-1]) * 0.5 * (dense[1] - dense[0]))])
+    perimeter = float(arc[-1])
+    return np.interp(np.linspace(0.0, perimeter, count), arc, dense), perimeter
 
 
 def sweep(points: np.ndarray, radii: list[float], *, segments: int = 12, name: str = "sweep",
@@ -384,6 +406,11 @@ class SkirtShape:
     flare_power: float = 1.6
     waist_ease_m: float = 0.004
     hip_ease_m: float = 0.008
+    #: S5. How much of the front-to-back flare goes to her front and to her back. 1 and 1 is
+    #: the even flare every skirt had; a fitted pleated mini keeps its front nearly flat and
+    #: lets the back carry the seat, as a cut skirt does, instead of a cone seen from the side.
+    front_flare: float = 1.0
+    back_flare: float = 1.0
 
 
 #: The cut of each silhouette's skirt. Template fields override any of them.
@@ -418,7 +445,8 @@ def skirt_shape(params: FitParameters, silhouette: str | None, flare: float) -> 
     fields = {}
     for key, name, scale in (("hemFlareRatio", "hem_ratio", 1.0), ("flareStart", "flare_start", None),
                              ("flarePower", "flare_power", 1.0), ("waistEaseMm", "waist_ease_m", 0.001),
-                             ("hipEaseMm", "hip_ease_m", 0.001)):
+                             ("hipEaseMm", "hip_ease_m", 0.001), ("frontFlare", "front_flare", 1.0),
+                             ("backFlare", "back_flare", 1.0)):
         if meta.get(key) is not None:
             fields[name] = meta[key] if scale is None else float(meta[key]) * scale
     if fields:
@@ -441,6 +469,21 @@ def _outline(params: FitParameters, y: float) -> tuple[float, float, float, floa
     return half_w - params.clearance_m, half_d - params.clearance_m, 0.0, 0.0
 
 
+def flare_start_y(params: FitParameters, shape: SkirtShape, *, y_top: float, y_bottom: float) -> float:
+    """The height a skirt's flare begins at: above it the skirt is fitted to her (build_skirt)."""
+    y_top, y_bottom = max(y_top, y_bottom), min(y_top, y_bottom)
+    full_hip = min(_full_hip_y(params), y_top)
+    start = {"waist": min(params.waist_y, y_top), "high-hip": (params.waist_y + full_hip) / 2,
+             "hip": full_hip, "below-hip": full_hip - (params.hip_y - params.knee_y) * 0.12}.get(
+                 shape.flare_start, full_hip)
+    return min(max(start, y_bottom + 0.02), y_top)
+
+
+def full_hip_y(params: FitParameters) -> float:
+    """S6. Where her hips are widest (public, for fitting to conform down to it)."""
+    return _full_hip_y(params)
+
+
 def _full_hip_y(params: FitParameters) -> float:
     """Where her hips are widest, between her waist and the top of her thighs."""
     profile = params.metadata.get("torsoProfile")
@@ -458,7 +501,7 @@ def _full_hip_y(params: FitParameters) -> float:
 
 def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: float = 1.0,
                 name: str = "skirt", shape: SkirtShape | None = None,
-                join: tuple[float, float] | None = None) -> Mesh:
+                join: tuple[float, float] | None = None, band_m: float = 0.0, even: bool = False) -> Mesh:
     """A skirt cut from her outline: fitted down to the flare's start, then flared to the hem.
 
     ``join`` is the (half-width, half-depth) of the bodice the skirt hangs from; the
@@ -470,6 +513,12 @@ def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: 
     hip, never narrower than it, and widens toward ``hem_ratio`` of it by
     ``progress ** flare_power``. Rings are 1.5 cm apart so the curve is a curve.
 
+    ``band_m`` (S4) puts a row exactly that far under the top edge, and one just under it:
+    the waistband's lower edge and the line the pleats are set from. On rows 1.5 cm apart
+    the band ended on whichever row fell inside its depth — 1.7 to 3.2 cm, 2.5 on
+    AvatarSample A — and the pleats started part-way down a facet. ``even`` spaces the
+    columns by fabric length (``loft``), for pleats of one width all round.
+
     It replaced a skirt made of scaled hips: every ring the hip width times a
     flare decaying toward the top, and only the top ring her real width, so a
     skirt stepped out from her waist and ran as a straight cone to a wide hem.
@@ -477,17 +526,22 @@ def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: 
     shape = shape or skirt_shape(params, None, flare)
     y_top, y_bottom = max(y_top, y_bottom), min(y_top, y_bottom)
     full_hip = min(_full_hip_y(params), y_top)
-    start = {"waist": min(params.waist_y, y_top), "high-hip": (params.waist_y + full_hip) / 2,
-             "hip": full_hip, "below-hip": full_hip - (params.hip_y - params.knee_y) * 0.12}.get(
-                 shape.flare_start, full_hip)
-    start = min(max(start, y_bottom + 0.02), y_top)
+    start = flare_start_y(params, shape, y_top=y_top, y_bottom=y_bottom)
     hip_w, hip_d, hip_cx, hip_cz = _outline(params, full_hip)
     hip_ease = shape.hip_ease_m + params.clearance_m
     hip_w, hip_d = hip_w + hip_ease, hip_d + hip_ease
     hem_w, hem_d = hip_w * shape.hem_ratio, hip_d * shape.hem_ratio
     span = max(start - y_bottom, 1e-4)
 
-    heights = sorted(set(np.round(np.append(np.arange(y_bottom, y_top, 0.015), y_top), 5)))
+    heights = np.append(np.arange(y_bottom, y_top, 0.015), y_top)
+    if band_m > 0.0 and y_top - band_m - PLEAT_SET_M > y_bottom + 0.02:
+        lines = np.array([y_top - band_m, y_top - band_m - PLEAT_SET_M])
+        # The rows count up from the hem, so the last can fall a hair under the top edge (0.9 mm
+        # on the petite calibration body once the mini got shorter): a sliver row is dropped
+        # like one beside the band's own lines.
+        near = (np.abs(heights[:, None] - np.append(lines, y_top)[None, :]) < 0.005).any(axis=1)
+        heights = np.append(heights[~near | (heights == y_top) | (heights == y_bottom)], lines)
+    heights = sorted(set(np.round(heights, 5)))
     rings: list[Ring] = []
     for y in heights:
         w, d, cx, cz = _outline(params, y)
@@ -506,8 +560,12 @@ def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: 
         top_w, top_d = max(top_w + shape.hip_ease_m + params.clearance_m, hip_w), max(
             top_d + shape.hip_ease_m + params.clearance_m, hip_d)
         width = top_w + (hem_w - top_w) * curve
-        depth = top_d + (hem_d - top_d) * curve
-        rings.append(Ring(float(y), width, depth, hip_cx, hip_cz))
+        grown = (hem_d - top_d) * curve
+        # S5. The front and the back take their own shares of the growth; the ring's centre
+        # moves toward the side that takes more, so its front and back edges land where asked.
+        depth = top_d + grown * (shape.front_flare + shape.back_flare) / 2.0
+        shift = grown * (shape.front_flare - shape.back_flare) / 2.0 * params.forward
+        rings.append(Ring(float(y), width, depth, hip_cx, hip_cz + shift))
     if join is not None:
         for ring in rings:
             t = float(np.clip((y_top - ring.y) / 0.04, 0.0, 1.0))
@@ -516,8 +574,22 @@ def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: 
             ring.half_depth = join[1] + (ring.half_depth - join[1]) * t
             ring.center_x *= t
             ring.center_z *= t
-    return loft(rings, segments=params.segments, name=name, front=params.forward)
+    return loft(rings, segments=params.segments, name=name, front=params.forward, even=even)
 
+
+#: S4b. A mini's hem, as a fraction of her hip-to-ankle drop: upper to mid thigh. It was
+#: 0.34, which on AvatarSample A put a pleated mini's hem 10 cm above her knee — 35 cm from
+#: waistband to hem, the length of a short skirt rather than a mini. 0.22 is the reference
+#: sheet's 26 cm. Never shorter than the crotch-clearance floor build_garment applies.
+MINI_HEM_FRACTION = 0.22
+#: What else a "mini" hem means: shorts and their slip liner keep the 0.34 they always had —
+#: a pair of shorts at 0.22 is a different garment, and nobody asked for one.
+MINI_SHORTS_FRACTION = 0.34
+#: The garments whose mini is a skirt's: skirts, dresses, a skirted swimsuit.
+MINI_HEM_KINDS = frozenset({"skirt", "dress", "slip-dress", "swim-dress"})
+
+#: S4. How far under a waistband's lower edge the pleats are set from: the stitching line.
+PLEAT_SET_M = 0.006
 
 #: A yoke or a low-rise skirt keeps at least this much above her crotch.
 MIN_YOKE_M = 0.06
@@ -701,6 +773,71 @@ TROUSER_WAISTBAND_M = 0.04
 #: legs, as a crotch seam does: ending exactly at the crotch it left an open slot across
 #: her front, and whatever she wore under the trousers showed through it between the legs.
 TROUSER_CROTCH_OVERLAP_M = 0.03
+#: T1. A crotch gusset sits this far inside the ring it closes, so it never shows at that
+#: ring's edge from the front or the side: only from below, between the legs.
+GUSSET_INSET = 0.985
+#: ... and has this many rings from its rim to its centre, so it shades as cloth, not a fan.
+GUSSET_RINGS = 4
+
+
+def crotch_gusset(piece: Mesh, *, name: str) -> Mesh | None:
+    """T1. Close the bottom of a yoke or waistband between the legs, as a gusset does.
+
+    Trousers and leggings were a tube round her hips stopping at (or a little below) her
+    crotch, and a tube per leg below it. Nothing joined the two between the legs: from the
+    front the gap hid behind the thighs, but from below — the view a phone held low has —
+    it opened on a triangle of her own body, or of whatever she wore underneath, up
+    between the legs. A real pair is closed there by its crotch seam or a gusset.
+
+    This is that piece: the tube's own bottom ring, drawn a hair inside it and filled to its
+    centre. The legs pass through it, so it shows only between them. It is marked placed,
+    so the radial fit (which would push it out to her thighs' surface) leaves it flat.
+    """
+    points = piece.positions.astype(np.float64)
+    if points.shape[0] < 6:
+        return None
+    floor = float(points[:, 1].min())
+    rim = points[np.abs(points[:, 1] - floor) < 1e-4]
+    if rim.shape[0] < 6:
+        return None
+    centre = rim.mean(axis=0)
+    order = np.argsort(np.arctan2(rim[:, 2] - centre[2], rim[:, 0] - centre[0]))
+    rim = rim[order]
+    # Rim points duplicated by the loft's UV seam would fold a zero-width wedge into the fan.
+    keep = np.ones(rim.shape[0], dtype=bool)
+    keep[1:] = np.linalg.norm(np.diff(rim, axis=0), axis=1) > 1e-6
+    rim = rim[keep]
+    count = rim.shape[0]
+    rings = [
+        centre + (rim - centre) * (GUSSET_INSET * (GUSSET_RINGS - k) / GUSSET_RINGS)
+        for k in range(GUSSET_RINGS)
+    ]
+    positions = np.vstack(rings + [centre[None, :]])
+    triangles = []
+    for k in range(GUSSET_RINGS - 1):
+        a, b = k * count, (k + 1) * count
+        for i in range(count):
+            j = (i + 1) % count
+            triangles += [(a + i, b + i, a + j), (a + j, b + i, b + j)]
+    last, tip = (GUSSET_RINGS - 1) * count, GUSSET_RINGS * count
+    for i in range(count):
+        triangles.append((last + i, tip, last + (i + 1) % count))
+    tris = np.array(triangles, dtype=np.uint32)
+    # Facing down and out: the side that is seen from below.
+    first = positions[tris[0]]
+    if np.cross(first[1] - first[0], first[2] - first[0])[1] > 0:
+        tris = tris[:, ::-1]
+    uvs = np.column_stack([positions[:, 0] - centre[0], positions[:, 2] - centre[2]])
+    gusset = Mesh(
+        positions=positions.astype(np.float32),
+        indices=tris.reshape(-1).copy(),
+        uvs=uvs.astype(np.float32),
+        metadata={"sections": [(name, 0, tris.shape[0])]},
+    )
+    gusset.compute_normals()
+    gusset.metadata["placed"] = np.ones(gusset.vertex_count, dtype=bool)
+    gusset.metadata["gusset"] = np.ones(gusset.vertex_count, dtype=bool)
+    return gusset
 
 
 def trouser_top(params: FitParameters, rise_style: str) -> float:
@@ -777,6 +914,10 @@ def build_trousers(params: FitParameters, *, hem_y: float, flare: float = 1.0,
         yoke.positions = points.astype(np.float32)
         yoke.compute_normals()
     meshes: list[Mesh] = [yoke]
+    if shaped:
+        gusset = crotch_gusset(yoke, name=f"{name}-gusset")
+        if gusset is not None:
+            meshes.append(gusset)
     segments = max(params.segments // 2, 8)
     for side in ("left", "right"):
         if measured:
@@ -1084,6 +1225,10 @@ SILHOUETTES: dict[str, dict[str, float]] = {
     "slim": {"flare": 0.95, "length": 1.0},
     "oversized": {"flare": 1.35, "length": 1.08},
 }
+
+
+#: DC3. Strap styles a dress takes when a request names one; any other leaves it strapless.
+DRESS_STRAPS = frozenset({"shoulder", "cross-back", "halter"})
 
 
 #: Shapes built from torso bands, straps and legwear rather than the original five.
@@ -1553,8 +1698,12 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
     if kind == "leggings":
         waistband = build_band(params, y_bottom=crotch_y(params, params.hip_y - thigh * 0.12),
                                y_top=low_rise + rise * 0.3, rows=5, name="leggings-waist")
-        return [waistband, *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="leggings",
-                                          ankle=True)]
+        gusset = crotch_gusset(waistband, name="leggings-gusset")
+        return [
+            waistband,
+            *([gusset] if gusset is not None else []),
+            *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="leggings", ankle=True),
+        ]
     if kind == "tights":
         # Leggings' shape, down over the feet, and a layer rather than a garment
         # of its own: KIND_REGIONS leaves tights out, so they go under her skirt
@@ -1599,7 +1748,8 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
     flare = modifiers["flare"] * params.flare
     length_scale = modifiers["length"] * params.length_scale
 
-    hem_fraction = {"mini": 0.34, "knee": 0.62, "midi": 0.78, "ankle": 0.94, "floor": 1.0}.get(hem, 0.62)
+    mini = MINI_HEM_FRACTION if category.lower() in MINI_HEM_KINDS else MINI_SHORTS_FRACTION
+    hem_fraction = {"mini": mini, "knee": 0.62, "midi": 0.78, "ankle": 0.94, "floor": 1.0}.get(hem, 0.62)
     # Coverage shortens (or, "full", lengthens) a hem the way it narrows a bikini.
     # A micro mini still clears her crotch: never shorter than a fifth of the thigh.
     coverage = COVERAGE_SCALE.get(str(params.metadata.get("coverage") or "standard"), 1.0)
@@ -1629,10 +1779,17 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
                         shape=skirt_shape(params, silhouette, flare), join=params.hip_half),
         ]
         sections += build_sleeves(params, length=params.sleeve_length)
+        straps = str(params.metadata.get("straps") or "")
+        if straps in DRESS_STRAPS and not (params.sleeve_length and params.sleeve_length != "none"):
+            # DC3. Asked for by name: "spaghetti strap", "cross-back", "halter". A dress that
+            # names none stays the strapless shell it always was.
+            sections += top_straps(params, top_y=top_y, style=straps, underbust_y=params.chest_y)
 
     elif category == "skirt":
         sections = [build_skirt(params, y_top=skirt_top(params), y_bottom=hem_y, flare=flare,
-                                shape=skirt_shape(params, silhouette, flare))]
+                                shape=skirt_shape(params, silhouette, flare),
+                                band_m=float(params.metadata.get("waistbandMm") or 0.0) / 1000.0,
+                                even=bool(params.metadata.get("pleats")))]
 
     elif category in {"top", "shirt", "blouse"}:
         top_y = params.top_edge(0.6)
@@ -1664,6 +1821,12 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
 
     elif category == "shoes":
         sections = build_shoes(params)
+
+    elif category == "boots":
+        # DC2: round her foot as she stands in them (wardrobe.geometry.boots)
+        from wardrobe.geometry.boots import build_boots  # it builds on this module
+
+        sections = build_boots(params)
 
     # ---- haul garments: every one is a band between two body heights -------
     elif category in HAUL_KINDS:

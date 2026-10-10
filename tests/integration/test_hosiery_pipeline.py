@@ -223,7 +223,7 @@ def test_fishnet_uses_the_same_contract(looks):
     assert len(context.stocking_tops["left"].clips) >= 2
     document = GltfDocument.from_bytes(data)
     stockings = next(mesh for node, mesh in _nodes(data) if "Stockings" in node["name"])
-    assert document.materials[stockings["primitives"][0]["material"]]["alphaMode"] == "MASK"
+    assert document.materials[stockings["primitives"][0]["material"]]["alphaMode"] == "BLEND"
     assert record.fit_report.hosiery["materials"]["pattern"] == "fishnet"
 
 

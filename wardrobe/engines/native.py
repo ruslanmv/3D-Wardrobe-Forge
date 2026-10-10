@@ -25,6 +25,9 @@ from wardrobe.geometry.waistband import WAISTBAND_SHADE, waistband_mask
 from wardrobe.hosiery import assembly as hosiery_assembly
 from wardrobe.hosiery import fit as hosiery_fit
 from wardrobe.hosiery.materials import shade_material
+from wardrobe.lingerie import assembly as lingerie_assembly
+from wardrobe.lingerie.atelier import component_table
+from wardrobe.materials import boots as boot_assembly
 from wardrobe.materials.textures import boning_shading, pleat_shading
 from wardrobe.pipeline.context import BuiltLayer, PipelineContext
 from wardrobe.vrm.garments import garment_material_name, garment_slot
@@ -146,7 +149,10 @@ class NativeEngine(FittingEngine):
                 update={"opacity": 1.0, "alpha_mode": "opaque", "pattern": "none", "texture_scale": 0.0,
                         "lined": False}
             ) if material.exposes_body else None
-            hosiery_parts = hosiery_assembly.primitives(layer, kind)
+            # LC3. A collection piece's fabrics are routed like hosiery's: one primitive each.
+            hosiery_parts = (hosiery_assembly.primitives(layer, kind)
+                             or lingerie_assembly.primitives(layer, kind)
+                             or boot_assembly.primitives(layer, kind))  # DC2: sole, laces, metal
             if hosiery_parts is not None:
                 fabric_material, trim_mask, trim_mat, extra = hosiery_parts
                 attached = attach_garment(
@@ -201,6 +207,12 @@ class NativeEngine(FittingEngine):
             if layer.plan.set_id:  # a coordinated set: only then, so no other garment's extras change
                 forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
                 forge["setId"] = layer.plan.set_id
+            components = component_table(layer.mesh)
+            if components:  # LC2: a collection piece names its parts (bra_left_cup, bow_L, …)
+                forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
+                collection = layer.plan.style.collection or {}
+                forge["collection"] = {k: collection.get(k) for k in ("id", "piece", "bottomStyle")}
+                forge["components"] = components
 
         title = f"{context.info.title or 'Avatar'} — {plan.name}" if plan else context.info.title
         if title:

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "shoes-over-knee-boots-v1",
+  "name": "Over-the-Knee Boots",
+  "category": "shoes",
+  "mesh": "procedural:boots",
+  "coverage": [
+    "feet",
+    "lowerLegs",
+    "upperLegs"
+  ],
+  "anchors": [
+    "feet",
+    "lowerLegs",
+    "upperLegs"
+  ],
+  "silhouette": "straight",
+  "hem": "knee",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 3.0,
+    "allowLengthScale": false,
+    "allowWidthScale": false
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": false,
+    "supportsMetallic": false,
+    "supportsFinish": true,
+    "supportsTransparency": false
+  },
+  "optIn": true,
+  "boot": {
+    "style": "over-knee",
+    "heelMm": 90,
+    "platformMm": 8
+  },
+  "tags": [
+    "over-the-knee",
+    "over the knee",
+    "over-the-knee boots",
+    "over the knee boots",
+    "otk",
+    "otk boots",
+    "thigh-high boots",
+    "thigh high boots"
+  ],
+  "description": "Slim stretch over-the-knee boots: an almond toe, a 90 mm block heel, the shaft close up the leg."
+}

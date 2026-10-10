@@ -7,6 +7,7 @@ measurements. That is what makes one template work across every body.
 
 from __future__ import annotations
 
+import json
 from hashlib import sha1
 
 from wardrobe.domain.avatars import AvatarAnalysis
@@ -50,6 +51,8 @@ class TemplateGarmentProvider(GarmentProvider):
             key += f"|briefRise={style.brief_rise}"
         if style.whale_tail is not None:  # likewise (P2)
             key += "|whaleTail=" + ",".join(f"{k}={style.whale_tail[k]}" for k in sorted(style.whale_tail))
+        if style.collection is not None:  # likewise (LC1): a thong set and a Brazilian set differ
+            key += "|collection=" + json.dumps(style.collection, sort_keys=True)
         digest = sha1(key.encode()).hexdigest()[:12]
 
         artifact = GarmentArtifact(
@@ -93,12 +96,18 @@ class TemplateGarmentProvider(GarmentProvider):
         fit = template.fit
         for key, value in (("hemFlareRatio", fit.hem_flare_ratio), ("flareStart", fit.flare_start),
                            ("flarePower", fit.flare_power), ("waistEaseMm", fit.waist_ease_mm),
-                           ("hipEaseMm", fit.hip_ease_mm), ("pleatDepth", fit.pleat_depth)):
+                           ("hipEaseMm", fit.hip_ease_mm), ("pleatDepth", fit.pleat_depth),
+                           ("waistbandMm", fit.waistband_mm), ("frontFlare", fit.front_flare),
+                           ("backFlare", fit.back_flare), ("conformTo", fit.conform_to)):
             if value is not None:
                 artifact.metadata[key] = value
         if fit.drape_folds and fit.hem_drape:
             artifact.metadata["drapeFolds"] = fit.drape_folds
             artifact.metadata["hemDrape"] = fit.hem_drape
+        if template.boot is not None:
+            # DC2. The boot's construction, for wardrobe.geometry.boots (its heel and sole have
+            # already decided how she stands: wardrobe.pipeline.set_stance).
+            artifact.metadata["boot"] = dict(template.boot)
         if template.lingerie is not None:
             # The pattern block's spec, for wardrobe.lingerie to build from.
             artifact.metadata["lingerie"] = dict(template.lingerie)
@@ -108,6 +117,14 @@ class TemplateGarmentProvider(GarmentProvider):
             if style.whale_tail is not None:
                 # P2. ...against the jeans worn over it.
                 artifact.metadata["whaleTail"] = dict(style.whale_tail)
+            if style.collection is not None:
+                # LC1. A collection's piece: its block fields over the template's, and its
+                # detailing for wardrobe.lingerie.atelier to build once the piece is fitted.
+                from wardrobe.lingerie.collections import merge_lingerie
+
+                artifact.metadata["lingerie"] = merge_lingerie(template.lingerie,
+                                                               style.collection.get("lingerie"))
+                artifact.metadata["collection"] = dict(style.collection)
         if template.id in BELT_STYLE_OF_TEMPLATE:
             artifact.metadata["beltStyle"] = BELT_STYLE_OF_TEMPLATE[template.id]
         return artifact

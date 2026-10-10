@@ -35,6 +35,13 @@ DETECTORS = {"forge-tag": 1.0, "forge-marker": 0.95, "vroid-name": 0.9}
 #: Roles a new garment can have; a foundation is only replaced by a foundation.
 FOUNDATION_ROLES = frozenset({"foundation"})
 
+#: MG2. A VRoid "Tops" whose visible hem reaches this far from her hip joint toward her knee
+#: is a dress, whatever its slot says. Model Girl's flared dress is filed as Tops and reaches
+#: 65% of the way down her thigh (vroid-avatar-sample-o's, 53%); the tops and hoodies of the
+#: other library avatars stop at 2-28%. Read as a top, it stayed on under a new skirt — its
+#: whole flared hem with it — and the skirt was fitted round that: a bell, a hem hanging out.
+DRESS_LENGTH_SHARE = 0.45
+
 
 @dataclass(frozen=True)
 class DetectedGarment:
@@ -47,6 +54,8 @@ class DetectedGarment:
     #: "source" for the avatar's own outfit; a Forge garment's layer role otherwise.
     role: str = "source"
     regions: frozenset[str] = field(default_factory=frozenset)
+    #: MG2. A source Tops that is drawn to dress length: it covers her lower half too.
+    dress_length: bool = False
 
     @property
     def generated(self) -> bool:
@@ -57,6 +66,7 @@ def garment_inventory(document: GltfDocument) -> list[DetectedGarment]:
     """Every drawn primitive that is recognisably clothing, with how it was recognised."""
     materials = document.materials
     found: list[DetectedGarment] = []
+    legs = ...  # her hip and knee heights, read once, only if a VRoid top needs measuring
     for node in document.nodes:
         if "mesh" not in node:
             continue
@@ -79,6 +89,13 @@ def garment_inventory(document: GltfDocument) -> list[DetectedGarment]:
                 slot, detector = match.group(1).lower(), "vroid-name"
             if slot is None or slot not in SLOT_REGIONS:
                 continue
+            regions, long = SLOT_REGIONS[slot], False
+            if slot == "tops" and detector == "vroid-name":
+                if legs is ...:
+                    legs = _hip_and_knee(document)
+                long = legs is not None and _reaches_below(document, primitive, *legs)
+                if long:
+                    regions = SLOT_REGIONS["onepiece"]
             found.append(
                 DetectedGarment(
                     slot=slot,
@@ -88,10 +105,42 @@ def garment_inventory(document: GltfDocument) -> list[DetectedGarment]:
                     detector=detector,
                     confidence=DETECTORS[detector],
                     role=role,
-                    regions=SLOT_REGIONS[slot],
+                    regions=regions,
+                    dress_length=long,
                 )
             )
     return found
+
+
+def _hip_and_knee(document: GltfDocument) -> tuple[float, float] | None:
+    """Heights of her hip joint and knee, or None for a rig that does not name them."""
+    try:
+        from wardrobe.vrm.inspect import inspect_document
+
+        bones = inspect_document(document).humanoid_bones
+        world = document.world_matrices()
+        return float(world[bones["leftUpperLeg"]][1, 3]), float(world[bones["leftLowerLeg"]][1, 3])
+    except Exception:  # an unreadable rig: every top stays a top, as before MG2
+        return None
+
+
+def _reaches_below(document: GltfDocument, primitive: dict, hip: float, knee: float) -> bool:
+    """Whether the visible part of ``primitive`` hangs ``DRESS_LENGTH_SHARE`` down her thigh."""
+    import numpy as np
+
+    from wardrobe.vrm.visible import visible_vertices
+
+    if primitive.get("indices") is None or hip <= knee:
+        return False
+    positions = document.read_accessor(primitive["attributes"]["POSITION"])
+    triangles = document.read_accessor(primitive["indices"]).astype(np.int64).reshape(-1, 3)
+    shown = visible_vertices(document, primitive, {})
+    if shown is not None:
+        triangles = triangles[shown[triangles].all(axis=1)]
+    if not triangles.size:
+        return False
+    lowest = float(positions[np.unique(triangles), 1].min())
+    return (hip - lowest) / (hip - knee) > DRESS_LENGTH_SHARE
 
 
 @dataclass(frozen=True)

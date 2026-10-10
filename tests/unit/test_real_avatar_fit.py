@@ -322,3 +322,47 @@ def test_a_real_pencil_skirt_tapers_and_has_a_waistband():
     fabric, band = (document.materials[p["material"]] for p in primitives)
     shade = lambda m: sum(m["pbrMetallicRoughness"]["baseColorFactor"][:3])  # noqa: E731
     assert shade(band) < shade(fabric)  # the same cloth, a shade darker
+
+
+def test_the_pleated_mini_on_a_real_avatar_is_fitted_short_and_evenly_pleated():
+    """S5 acceptance: the generated VRM, measured — not the builder's rings and not a picture.
+
+    A 38 mm band; a mini 22–30 cm from waistband to hem; a hem 1.12–1.3x her hip; and 24
+    fold edges round the whole skirt, evenly spaced, found on its outer surface.
+    """
+    document, result = _library_look("AvatarSample_A.vrm", "dark grey pleated mini skirt")
+    assert result.fit_report.passed and str(result.fit_report.clipping_check).endswith("passed")
+    node = next(n for n in document.nodes
+                if ((n.get("extras") or {}).get("wardrobeForge") or {}).get("templateId") == "skirt-pleated-mini-v1")
+    primitives = document.meshes[node["mesh"]]["primitives"]
+    assert len(primitives) == 2  # the fabric (with its turned hem) and the waistband
+
+    def used(primitive):
+        positions = document.read_accessor(primitive["attributes"]["POSITION"])[:, :3].astype(np.float64)
+        return positions[np.unique(document.read_accessor(primitive["indices"]).reshape(-1))]
+
+    skirt, band = used(primitives[0]), used(primitives[1])
+    assert 0.036 <= np.ptp(band[:, 1]) <= 0.040
+    top, hem = band[:, 1].max(), skirt[:, 1].min()
+    assert 0.22 <= top - hem <= 0.30
+
+    rows = np.unique(np.round(skirt[:, 1], 4))
+    width = lambda y: np.ptp(skirt[np.abs(np.round(skirt[:, 1], 4) - y) < 1e-4, 0]) / 2  # noqa: E731
+    hip = width(rows[np.argmin(np.abs(rows - (top - 0.1)))])  # her full hip, 10 cm under the waist
+    assert 1.12 <= width(rows.min()) / hip <= 1.3
+
+    # The fold edges. Each is a crease, its vertices split between the face and the layer under
+    # it, so every pleated row holds exactly 24 positions that two vertices share — the same
+    # 24 front, side and back, top to bottom — evenly spread round her.
+    positions = document.read_accessor(primitives[0]["attributes"]["POSITION"])[:, :3].astype(np.float64)
+    rows = np.unique(np.round(positions[:, 1], 4))
+    pleated = rows[(rows > hem + 0.02) & (rows < top - 0.045)]  # above the turned hem, below the band
+    assert len(pleated) >= 8
+    for y in pleated:
+        row = positions[np.abs(positions[:, 1] - y) < 1e-4]
+        shared, uses = np.unique(np.round(row / 2e-5).astype(np.int64), axis=0, return_counts=True)
+        creases = shared[uses >= 2] * 2e-5
+        assert len(creases) == 24, (y, len(creases))
+        angle = np.sort(np.arctan2(creases[:, 0] - row[:, 0].mean(), creases[:, 2] - row[:, 2].mean()))
+        spacing = np.diff(np.r_[angle, angle[0] + 2 * np.pi])
+        assert spacing.std() / spacing.mean() < 0.35  # even, in angle about her (an ellipse)

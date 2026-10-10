@@ -340,14 +340,6 @@ code {
     color: var(--bad);
 }
 
-.provenance {
-    margin: 0;
-    padding: 10px 16px 14px;
-    border-top: 1px solid var(--line);
-    color: var(--faint);
-    font-size: 11.5px;
-}
-
 /* ------------------------------------------------------------------ stage */
 .stage {
     position: relative;
@@ -469,6 +461,117 @@ code {
 
 .stage-status.error {
     color: var(--bad);
+}
+
+/* --------------------------------------------------------- full screen inspection (SV1) */
+.tool-icon {
+    display: inline-grid;
+    place-items: center;
+    padding: 5px 8px;
+}
+
+.tool-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* The stage alone, edge to edge: a fixed layer over the page, so it works where the
+   Fullscreen API does not (an iPhone's Safari) and inside it where it does. */
+.stage.is-immersive {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+}
+
+html.inspecting,
+html.inspecting body {
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+.stage.is-immersive .stage-top,
+.stage.is-immersive .stage-tools,
+.stage.is-immersive .stage-status,
+.stage.is-immersive .stage-empty {
+    display: none;
+}
+
+.inspect-close,
+.inspect-bar {
+    position: absolute;
+    z-index: 2;
+    transition: opacity 0.35s ease;
+}
+
+.inspect-close[hidden],
+.inspect-bar[hidden] {
+    display: none;
+}
+
+.inspect-close {
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: rgba(17, 15, 18, 0.62);
+    backdrop-filter: blur(8px);
+    color: var(--text);
+}
+
+.inspect-close svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.inspect-bar {
+    left: 50%;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    max-width: calc(100% - 24px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    transform: translateX(-50%);
+}
+
+.inspect-bar .seg button {
+    min-width: 58px;
+    padding: 7px 12px;
+    font-size: 13px;
+}
+
+.inspect-hint {
+    margin: 0;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(17, 15, 18, 0.5);
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+}
+
+/* Faded, not removed: a tap brings them back (app.js), and nothing under them shifts. */
+.stage.is-immersive.controls-hidden .inspect-close,
+.stage.is-immersive.controls-hidden .inspect-bar {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* A phone on its side has little height: the hint goes, the bar stays one row. */
+@media (max-height: 480px) {
+    .inspect-hint {
+        display: none;
+    }
 }
 
 /* ------------------------------------------------------------------ designer */
@@ -641,6 +744,83 @@ textarea {
 .ghost {
     border: 1px solid var(--line-strong);
     background: transparent;
+}
+
+/* ------------------------------------------------------------ collection (DC3) */
+.collection {
+    padding: 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: linear-gradient(160deg, var(--panel-2), var(--panel));
+}
+
+.collection legend {
+    flex-wrap: wrap;
+    color: var(--text);
+}
+
+.collection legend .legend-hint {
+    flex-basis: 100%;
+    font-size: 12px;
+}
+
+.collection-step {
+    margin: 10px 0 6px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.boot-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 9px;
+}
+
+.boot-card {
+    display: grid;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+}
+
+.boot-card:hover {
+    border-color: var(--accent);
+}
+
+.boot-card[aria-checked='true'] {
+    border-color: var(--accent);
+    background: rgba(232, 185, 164, 0.12);
+}
+
+.boot-card b {
+    font-size: 13px;
+}
+
+.boot-card small {
+    color: var(--faint);
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.boot-card .made {
+    color: var(--accent);
+}
+
+.collection-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.collection-status {
+    margin: 8px 0 0;
 }
 
 /* ------------------------------------------------------------------ job */
@@ -898,6 +1078,169 @@ textarea {
     padding: 4px 16px 8px;
     color: var(--faint);
     font-size: 11.5px;
+}
+
+/* ------------------------------------------------------------------ body art (BA7)
+ * Beside the looks on a desktop, below them on a phone: it belongs to the look on stage,
+ * so it lives on the shelf with the looks, never in the garment designer.
+ */
+.shelf-row {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.shelf-looks {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.body-art {
+    width: 360px;
+    flex: none;
+    overflow-y: auto;
+    padding: 0 16px 12px;
+    border-left: 1px solid var(--line);
+}
+
+.body-art[hidden] {
+    display: none;
+}
+
+/* A desktop shelf is a strip under the stage; with body art open it gets the room the tiles need. */
+@media (min-width: 901px) {
+    .app:has(#body-art:not([hidden])) {
+        grid-template-rows: auto minmax(0, 1fr) 330px;
+    }
+}
+
+.body-art h3 {
+    margin: 0 0 6px;
+    font: 650 14.5px var(--display);
+}
+
+.body-art-label {
+    margin: 8px 0 4px;
+    color: var(--muted);
+    font: 600 11px var(--ui);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.body-art-on {
+    margin: 0 0 6px;
+    padding: 0;
+    list-style: none;
+    font-size: 12.5px;
+}
+
+.body-art-on li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 3px 0;
+}
+
+button.link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    cursor: pointer;
+}
+
+.tattoo-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.tattoo-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--panel-2);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.tattoo-tile[aria-checked='true'] {
+    border-color: var(--accent);
+}
+
+/* The design's PNG is white with the ink as alpha: used as a mask, it shows the chosen ink on skin. */
+.tattoo-ink {
+    display: block;
+    height: 46px;
+    background-color: #141414;
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+}
+
+/* A patch of skin behind the inked mask, so a dark ink reads as it will on her. */
+.tattoo-skin {
+    display: block;
+    padding: 4px;
+    border-radius: 4px;
+    background: #d9b8a3;
+}
+
+.tattoo-name {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.body-art-controls {
+    display: grid;
+    gap: 4px;
+    margin: 4px 0 10px;
+}
+
+.body-art-row {
+    display: grid;
+    grid-template-columns: 4.6rem minmax(0, 1fr) 3rem;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.body-art-row output {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.body-art-row input[type='color'] {
+    width: 44px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    background: none;
+}
+
+.body-art .primary {
+    width: 100%;
+}
+
+.body-art .export-hint {
+    padding: 6px 0 0;
 }
 
 /* ------------------------------------------------------------------ dialog */
@@ -1268,6 +1611,28 @@ dialog.import-vrm {
         align-content: flex-start;
         overflow-y: auto;
         overflow-x: hidden;
+    }
+
+    /* One scrolling column on a phone: the looks, then body art for the one on stage. */
+    .shelf-row {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .shelf-looks {
+        flex: none;
+    }
+
+    .shelf-row .looks {
+        overflow: visible;
+    }
+
+    .body-art {
+        width: auto;
+        overflow: visible;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+        border-left: 0;
     }
 
     .look {

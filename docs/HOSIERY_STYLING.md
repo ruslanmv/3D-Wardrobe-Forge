@@ -39,7 +39,8 @@ Already built:
   `straps: garter`.
 - **Thigh-high stockings** (`legwear-thigh-highs-v1`): an opaque 3.5 cm top band as
   its own trim section. Sheer levels from *slightly sheer* to *very sheer*, fishnet
-  as an alpha mask, and tights.
+  as a net of holes in the texture's alpha (blended since OD2, so the net still
+  reads at a distance), and tights.
 - **Layered outfits**: foundation, then legwear, then main, then one-piece, then
   outer. Each layer clears the ones inside it.
 - **Measured fit**: crotch, legs, armpit and shoulders, from

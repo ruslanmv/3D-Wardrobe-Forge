@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "shoes-over-knee-stiletto-boots-v1",
+  "name": "Over-the-Knee Stiletto Boots",
+  "category": "shoes",
+  "mesh": "procedural:boots",
+  "coverage": [
+    "feet",
+    "lowerLegs",
+    "upperLegs"
+  ],
+  "anchors": [
+    "feet",
+    "lowerLegs",
+    "upperLegs"
+  ],
+  "silhouette": "straight",
+  "hem": "knee",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 3.0,
+    "allowLengthScale": false,
+    "allowWidthScale": false
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": false,
+    "supportsMetallic": false,
+    "supportsFinish": true,
+    "supportsTransparency": false
+  },
+  "optIn": true,
+  "boot": {
+    "style": "over-knee",
+    "heelMm": 100,
+    "platformMm": 6,
+    "heel": "stiletto",
+    "toe": "pointed",
+    "heelTopMm": [
+      24,
+      28
+    ],
+    "heelTipMm": [
+      8,
+      8
+    ],
+    "heelLeanMm": 9,
+    "toeExtensionMm": 30
+  },
+  "tags": [
+    "over-the-knee stiletto boots",
+    "over the knee stiletto boots",
+    "thigh-high stiletto boots",
+    "thigh high stiletto boots",
+    "stiletto over-the-knee boots",
+    "stiletto"
+  ],
+  "description": "Slim stretch over-the-knee boots on a 100 mm needle heel, pointed toe, the shaft close up the leg."
+}

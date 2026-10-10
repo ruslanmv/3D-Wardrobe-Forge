@@ -66,7 +66,6 @@
                     </div>
                 </div>
                 <ul class="avatar-list" id="avatar-list"></ul>
-                <p class="provenance" id="provenance"></p>
             </aside>
 
             <main class="stage" aria-label="Viewport">
@@ -91,8 +90,24 @@
                     </button>
                     <button type="button" class="tool" id="spin-btn" aria-pressed="false">Turntable</button>
                     <button type="button" class="tool" id="frame-btn">Reframe</button>
+                    <!-- SV1. Full screen inspection: the viewport alone, its controls out of the way. -->
+                    <button type="button" class="tool tool-icon" id="inspect-btn" aria-label="Inspect full screen" title="Inspect full screen">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v2H6v4H4V4Zm10 0h6v6h-2V6h-4V4ZM4 14h2v4h4v2H4v-6Zm14 4v-4h2v6h-6v-2h4Z" /></svg>
+                    </button>
                 </div>
                 <div class="stage-status" id="stage-status" role="status"></div>
+                <button type="button" class="inspect-close" id="inspect-close" aria-label="Exit full screen" hidden>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z" /></svg>
+                </button>
+                <div class="inspect-bar" id="inspect-bar" hidden>
+                    <div class="seg" id="inspect-views" role="radiogroup" aria-label="Inspect from">
+                        <button type="button" role="radio" data-inspect="front" aria-checked="true">Front</button>
+                        <button type="button" role="radio" data-inspect="side" aria-checked="false">Side</button>
+                        <button type="button" role="radio" data-inspect="back" aria-checked="false">Back</button>
+                        <button type="button" role="radio" data-inspect="free" aria-checked="false">Free</button>
+                    </div>
+                    <p class="inspect-hint">Drag to turn · pinch to zoom · two fingers to move · double-tap to reset</p>
+                </div>
             </main>
 
             <section class="panel designer" id="designer" aria-label="Garment designer">
@@ -100,6 +115,33 @@
                     <h2>Design a garment</h2>
                 </div>
                 <form id="design-form" novalidate>
+                    <!-- DC3. A collection: a dress made once, then each pair of its boots put on that look. -->
+                    <fieldset class="style collection" id="collection-fieldset" hidden>
+                        <legend><span id="collection-title">Collection</span> <span class="legend-hint" id="collection-hint"></span></legend>
+                        <div class="style-row">
+                            <span class="style-label">Outfit</span>
+                            <div class="chips small" id="collection-presets" role="radiogroup" aria-label="Outfit"></div>
+                        </div>
+                        <p class="collection-step">1 · The dress</p>
+                        <div id="collection-dress"></div>
+                        <p class="collection-step">2 · The boots</p>
+                        <div class="boot-cards" id="boot-cards" role="radiogroup" aria-label="Boots"></div>
+                        <div class="style-row" id="boot-heel-row" hidden>
+                            <span class="style-label">Heel</span>
+                            <div class="chips small" id="boot-heel" role="radiogroup" aria-label="Heel"></div>
+                        </div>
+                        <div class="style-row">
+                            <span class="style-label">Boots in</span>
+                            <div class="chips small" id="boot-material" role="radiogroup" aria-label="Boot material"></div>
+                        </div>
+                        <div class="collection-actions">
+                            <button type="button" class="secondary" id="collection-dress-btn" disabled>Make the dress</button>
+                            <button type="button" class="secondary" id="collection-boots-btn" disabled>Put the boots on</button>
+                            <button type="button" class="secondary" id="collection-all-btn" disabled>Whole outfit</button>
+                        </div>
+                        <p class="legend-hint collection-status" id="collection-status"></p>
+                    </fieldset>
+
                     <fieldset>
                         <legend>Garment</legend>
                         <div class="chips" id="category-chips" role="radiogroup" aria-label="Category"></div>
@@ -232,6 +274,11 @@
                             </select>
                         </label>
                         <p class="hint" id="base-body-note" hidden></p>
+                        <!-- MG3. Auto Foundation: only the halves she lacks; one she already wears is kept. -->
+                        <label class="check" title="A foundation under the new clothes, added only where she has none: kept from look to look, replaced by a bikini or lingerie. Lets a dress filed as a top come off under a skirt.">
+                            <input type="checkbox" id="ensure-foundation" checked />
+                            <span>Foundation underneath (kept from look to look)</span>
+                        </label>
                         <button type="button" class="secondary" id="plan-btn" disabled>Check plan</button>
                         <div class="plan" id="plan-report" hidden></div>
                     </fieldset>
@@ -266,11 +313,17 @@
                         <button type="button" class="secondary" id="export-btn" disabled>Export pack</button>
                     </div>
                 </div>
-                <div class="looks" id="looks"></div>
-                <p class="export-hint">
-                    A wardrobe pack: every look hashed and rated. Import it in 3D-Avatar-Chatbot with
-                    Try-On ▸ Import wardrobe pack, or ship it with <code>npm run wardrobe:import</code>.
-                </p>
+                <div class="shelf-row">
+                    <div class="shelf-looks">
+                        <div class="looks" id="looks"></div>
+                        <p class="export-hint">
+                            A wardrobe pack: every look hashed and rated. Import it in 3D-Avatar-Chatbot with
+                            Try-On ▸ Import wardrobe pack, or ship it with <code>npm run wardrobe:import</code>.
+                        </p>
+                    </div>
+                    <!-- BA7. Body art, on the look on stage only: filled by app.js from that look's exposure. -->
+                    <div class="body-art" id="body-art" aria-label="Body art" hidden></div>
+                </div>
             </section>
         </div>
 

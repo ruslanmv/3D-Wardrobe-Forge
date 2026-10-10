@@ -114,11 +114,12 @@ def test_vrm0_sheer_fabric_blends_without_an_outline():
     assert entry["tagMap"] == {"RenderType": "Transparent"} and floats["_CullMode"] == 0
 
 
-def test_vrm0_fishnet_is_cut_out():
+def test_vrm0_fishnet_blends_so_its_net_survives_at_a_distance():
+    # OD2. Cut out at 0.5, the net averaged away once the texture was shrunk for a whole body.
     document, index = dressed_with("VRM0", material_for("black fishnet thigh-highs"))
     entry = document.extension("VRM")["materialProperties"][index]
-    assert entry["floatProperties"]["_BlendMode"] == 1 and entry["floatProperties"]["_Cutoff"] == 0.5
-    assert entry["keywordMap"]["_ALPHATEST_ON"] and entry["renderQueue"] == 2450
+    assert entry["floatProperties"]["_BlendMode"] == 2 and "_ALPHATEST_ON" not in entry["keywordMap"]
+    assert entry["keywordMap"]["_ALPHABLEND_ON"] and entry["renderQueue"] == 3000
 
 
 def test_vrm1_metallic_tints_its_highlight_and_stays_opaque():

@@ -70,8 +70,26 @@ def dress_like_vroid(vrm_bytes: bytes, *, slots: tuple[str, ...] = ("Tops", "Bot
             vrm0["materialProperties"].append(
                 _mtoon_vrm0(name) if mtoon else {"name": name, "shader": "VRM_USE_GLTFSHADER", "renderQueue": 2000}
             )
-        body_mesh["primitives"].append({**body, "material": index})
+        primitive = {**body, "material": index}
+        if slot == "Tops":
+            # A top stops at her hips, as a VRoid export's does. A copy of the whole body
+            # filed as Tops reached her feet, and a top that long is a dress (MG2).
+            primitive["indices"] = _above_hips(document, body)
+        body_mesh["primitives"].append(primitive)
     return document.to_bytes()
+
+
+def _above_hips(document: GltfDocument, body: dict) -> int:
+    import numpy as np
+
+    from wardrobe.vrm.inspect import inspect_document
+
+    info = inspect_document(document)
+    hips = float(document.world_matrices()[info.humanoid_bones["hips"]][1, 3])
+    positions = document.read_accessor(body["attributes"]["POSITION"])
+    triangles = document.read_accessor(body["indices"]).astype(np.uint32).reshape(-1, 3)
+    keep = triangles[positions[triangles][:, :, 1].min(axis=1) > hips - 0.02]
+    return document.add_accessor(keep.reshape(-1, 1))
 
 
 def primitive_materials(vrm_bytes: bytes) -> list[str]:

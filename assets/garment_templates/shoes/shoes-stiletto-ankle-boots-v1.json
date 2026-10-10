@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "shoes-stiletto-ankle-boots-v1",
+  "name": "Stiletto Ankle Boots",
+  "category": "shoes",
+  "mesh": "procedural:boots",
+  "coverage": [
+    "feet",
+    "lowerLegs"
+  ],
+  "anchors": [
+    "feet",
+    "lowerLegs"
+  ],
+  "silhouette": "straight",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 3.0,
+    "allowLengthScale": false,
+    "allowWidthScale": false
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": false,
+    "supportsMetallic": false,
+    "supportsFinish": true,
+    "supportsTransparency": false
+  },
+  "optIn": true,
+  "boot": {
+    "style": "stiletto-ankle",
+    "heelMm": 95,
+    "platformMm": 6
+  },
+  "tags": [
+    "stiletto",
+    "stiletto boots",
+    "stiletto ankle boots",
+    "heeled ankle boots",
+    "high heel boots"
+  ],
+  "description": "Pointed-toe ankle boots on a 95 mm needle heel, the shaft fitted to the ankle."
+}

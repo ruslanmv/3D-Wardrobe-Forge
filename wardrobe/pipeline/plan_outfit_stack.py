@@ -44,8 +44,11 @@ ONE_PIECE = (4, "one-piece")
 OUTER = (5, "outer")
 SHOES = (6, "shoes")
 
+#: DC2. "over" joins layers ("a cardigan over a dress"), but not inside "over-the-knee" or
+#: "over the knee": "suede over-the-knee boots" was split into "suede" and "the-knee boots".
 _CONNECTORS = re.compile(
-    r"\s*(?:\+|;|\bunderneath\b|\bunder\b|\bbeneath\b|\bover\b|\bon top of\b|\bwith\b|\bplus\b|"
+    r"\s*(?:\+|;|\bunderneath\b|\bunder\b|\bbeneath\b|\bover\b(?![-\s]the[-\s]knee)|\bon top of\b|"
+    r"\bwith\b|\bplus\b|"
     r"\band(?=\s+(?:an?|the|matching)\b))\s*",
     re.IGNORECASE,
 )
@@ -132,9 +135,11 @@ def plan_outfit_stack(
     its garments and its overrides placed: passing them as extra ``layers``
     instead made "a tee + a skirt" one layer and lost the tee (S2).
     """
+    from wardrobe.lingerie import collections  # it imports the domain this module is planned from
+
     request = hosiery_presets.expand(look_presets.expand(request))
     plan = hosiery_planning.apply(_plan_stack(request, catalog, list(beneath)), request, catalog)
-    return look_presets.apply(plan, request, catalog)
+    return collections.apply(look_presets.apply(plan, request, catalog), request, catalog)
 
 
 def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog, beneath: list[OutfitRequest]) -> OutfitPlan:
@@ -160,10 +165,26 @@ def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog, beneath: list[
     requests = [part for r in requests for part in (set_parts(r, catalog) or [r])]
     requests = [layer.model_copy(update={"layers": None}) for layer in beneath] + requests
 
-    plans = sorted((_placed(plan_outfit(r, catalog), catalog) for r in requests), key=lambda p: p.layer)
+    plans = sorted((_placed(_part_named(plan_outfit(r, catalog), r), catalog) for r in requests),
+                   key=lambda p: p.layer)
     if len(plans) == 1:
         return plans[0]
     return _stack(plans)
+
+
+_BIKINI = re.compile(r"(?<!\w)bikini(?!\w)", re.IGNORECASE)
+
+
+def _part_named(plan: OutfitPlan, request: OutfitRequest) -> OutfitPlan:
+    """OD2. A set's part is named as the set's part, not as the block it is built from.
+
+    A bandeau bikini is built as the tube top's band (SET_PARTS), which is right for the
+    geometry and wrong for the name: "White Tailored Bikini Bottoms + White Tube Top" read
+    as a bikini bottom worn with an everyday top, and that is how she announced it.
+    """
+    if plan.template_id == "top-tube-v1" and _BIKINI.search(request.prompt) and "Tube Top" in plan.name:
+        return plan.model_copy(update={"name": plan.name.replace("Tube Top", "Bandeau Bikini Top")})
+    return plan
 
 
 #: L3e. The sets the lingerie sweep found built as one v1 band shape, and the parts they are

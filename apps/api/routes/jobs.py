@@ -11,6 +11,7 @@ from fastapi.responses import StreamingResponse
 from apps.api.admin import AdminDep
 from apps.api.dependencies import JobDep, OrchestratorDep
 from apps.api.ratelimit import limit_job_creation
+from apps.api.routes.body_art import check_designs
 from wardrobe.domain.jobs import CreateJobRequest, JobRecord
 
 router = APIRouter(tags=["jobs"])
@@ -27,6 +28,8 @@ async def create_job(request: CreateJobRequest, orchestrator: OrchestratorDep) -
     ``options.private`` is the server's to set (apps/api/admin.py), so it is cleared here.
     """
     request = request.model_copy(update={"options": request.options.model_copy(update={"private": False})})
+    if request.body_art:  # a job without tattoos never touches body-art code (I1)
+        check_designs(orchestrator.body_art, request.body_art)
     return await orchestrator.submit(request)
 
 
