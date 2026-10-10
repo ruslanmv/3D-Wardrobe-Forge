@@ -7,8 +7,9 @@ from enum import StrEnum
 from typing import Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wardrobe.body_art.contract import BodyArtRequest, check_items
 from wardrobe.domain.avatars import AvatarAnalysis, AvatarInput
 from wardrobe.domain.looks import FitReport, LookResult, OutfitPlan, OutfitRequest
 
@@ -69,6 +70,10 @@ class FailureReason(StrEnum):
     ADULT_DECLARATION_REQUIRED = "requires_adult_declaration"
     BODY_INCOMPLETE = "source_body_incomplete_under_clothing"
     FOUNDATION_OVER_CLOTHING = "foundation_would_sit_over_worn_clothing"
+    #: BA6. A tattoo-only job needs a finished Forge look to put it on (clothes first).
+    BODY_ART_NEEDS_LOOK = "body_art_needs_a_finished_look"
+    #: BA6. A tattoo-only job that changed nothing: every tattoo it asked for was refused.
+    BODY_ART_NOT_APPLIED = "body_art_not_applied"
     INTERNAL = "internal_error"
 
 
@@ -91,6 +96,14 @@ class JobOptions(BaseModel):
     base_body: Literal["preserve", "replace-outer", "underwear-base"] | None = Field(
         default=None, alias="baseBody"
     )
+    #: MG3. Make sure a foundation is on her under the new clothes, adding only what is missing:
+    #: a Forge foundation she already wears is kept (only a new foundation replaces one), and a
+    #: half the outfit brings itself (a bikini, a lingerie set) is not doubled. It is also what
+    #: lets one of her own garments the outfit only partly covers come off — a dress filed as
+    #: a top, under a new skirt. Bralette and briefs on an avatar declared adult, a seamless
+    #: tube top and slip shorts on any other: no avatar needs a declaration to get dressed.
+    #: Off by default, so a job that never asked is planned exactly as before.
+    ensure_foundation: bool = Field(default=False, alias="ensureFoundation")
     #: Set by the server, never by a caller: the job relied on an admin session's
     #: adult declaration, so it and its look are shown only to an admin session
     #: (apps/api/admin.py). The public job routes force it off.
@@ -107,8 +120,29 @@ class CreateJobRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     avatar: AvatarInput
-    outfit: OutfitRequest
+    #: BA6. Absent only on a tattoo-only job — one that adds or removes body art on a
+    #: finished look and changes nothing else. Every other job must say what to wear.
+    outfit: OutfitRequest | None = None
     options: JobOptions = Field(default_factory=JobOptions)
+    #: BA1. Tattoos she would like, on skin the finished outfit leaves visible. A sibling
+    #: of ``outfit``, never inside it: the planner copies the outfit request into every
+    #: layer. Read only after the outfit is assembled; a tattoo the clothes would hide is
+    #: not made (docs/BODY_ART_PLAN.md). Empty — the default — changes nothing.
+    body_art: list[BodyArtRequest] = Field(default_factory=list, alias="bodyArt", max_length=4)
+    #: Placements whose Forge tattoo to take off.
+    body_art_remove: list[str] = Field(default_factory=list, alias="bodyArtRemove", max_length=8)
+
+    @model_validator(mode="after")
+    def _body_art_list(self) -> CreateJobRequest:
+        check_items(self.body_art, self.body_art_remove)
+        if self.outfit is None and not (self.body_art or self.body_art_remove):
+            raise ValueError("outfit is required: only a job that adds or removes body art may leave it out")
+        return self
+
+    @property
+    def body_art_only(self) -> bool:
+        """BA6. Tattoos on a finished look, its clothes carried over untouched."""
+        return self.outfit is None
 
 
 class JobEvent(BaseModel):
@@ -203,6 +237,8 @@ _REJECTION_REASONS = frozenset(
         FailureReason.ADULT_DECLARATION_REQUIRED,
         FailureReason.BODY_INCOMPLETE,
         FailureReason.FOUNDATION_OVER_CLOTHING,
+        FailureReason.BODY_ART_NEEDS_LOOK,
+        FailureReason.BODY_ART_NOT_APPLIED,
     }
 )
 

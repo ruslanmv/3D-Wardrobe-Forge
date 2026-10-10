@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "shoes-platform-boots-v1",
+  "name": "Platform Boots",
+  "category": "shoes",
+  "mesh": "procedural:boots",
+  "coverage": [
+    "feet",
+    "lowerLegs"
+  ],
+  "anchors": [
+    "feet",
+    "lowerLegs"
+  ],
+  "silhouette": "straight",
+  "hem": "midi",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 4.0,
+    "allowLengthScale": false,
+    "allowWidthScale": false
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": false,
+    "supportsMetallic": false,
+    "supportsFinish": true,
+    "supportsTransparency": false
+  },
+  "optIn": true,
+  "boot": {
+    "style": "platform",
+    "heelMm": 150,
+    "platformMm": 55
+  },
+  "tags": [
+    "platform",
+    "platform boots",
+    "platforms",
+    "block heel",
+    "chunky heel"
+  ],
+  "description": "Below-the-knee boots on a 55 mm platform and a 150 mm block heel, zipped up the inside."
+}

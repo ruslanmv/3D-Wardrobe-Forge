@@ -37,7 +37,13 @@ async def plan(context: PipelineContext) -> None:
     request = context.record.request.outfit
     outfit_plan = plan_outfit_stack(request, context.catalog)
     mode = context.record.request.options.base_body_mode
-    if mode == "underwear-base":
+    if context.record.request.options.ensure_foundation and mode != "preserve":
+        founded, added = ensure_foundation(outfit_plan, request, context.catalog, _worn(context),
+                                           depicts_adult=context.record.request.avatar.depicts_adult)
+        if added:
+            context.warn(f"added {' and '.join(added)} underneath: the foundation her clothes go over")
+        outfit_plan = founded
+    elif mode == "underwear-base":
         outfit_plan = with_foundation(outfit_plan, request, context.catalog)
         completed = complete_foundation(outfit_plan, request, context.catalog, _worn(context))
         if completed is not outfit_plan:
@@ -140,6 +146,66 @@ def complete_foundation(outfit_plan, request, catalog, worn):
     return plan_outfit_stack(request, catalog, beneath=[OutfitRequest(prompt=prompt) for prompt in halves])
 
 
+#: MG3. The foundation ``ensure_foundation`` puts on an avatar not declared adult: clothes, not
+#: underwear, and compact — a seamless bandeau under any top, slip shorts under any bottom.
+GENERAL_FOUNDATION = {"upper": "beige seamless tube top", "lower": "beige slip shorts"}
+#: The regions a foundation is made of.
+FOUNDATION_REGIONS = ("upper", "lower")
+
+
+def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: bool):
+    """MG3. The outfit with a foundation under it, adding only the halves that are missing.
+
+    A half is wanted where the new outfit will be on her, and where one of her own garments
+    the outfit partly covers reaches: Model Girl's dress is filed as a top (it reaches her
+    thighs), and a skirt alone could not take it off — her chest would have been bare — so it
+    stayed on under the skirt. With the upper half of a foundation it comes off. A half is
+    not added where the outfit brings its own foundation (a bikini, a lingerie set replaces
+    the foundation rather than going over it) or where a Forge foundation is already on her
+    (kept: only a foundation replaces a foundation). Shoes alone want nothing.
+
+    Returns (plan, prompts added); the plan unchanged, and nothing added, when it is complete.
+    """
+    from wardrobe.vrm.garment_inventory import FOUNDATION_ROLES
+    from wardrobe.vrm.garments import KIND_REGIONS
+
+    def regions(plans, roles=None):
+        out = set()
+        for garment in plans:
+            if roles is not None and garment.role not in roles:
+                continue
+            template = catalog.get(garment.template_id) if garment.template_id else None
+            kind = template.procedural_kind if template is not None else garment.category
+            out |= KIND_REGIONS.get(kind, set())
+        return out
+
+    covered = regions(outfit_plan.garments) & set(FOUNDATION_REGIONS)
+    if not covered:
+        return outfit_plan, []
+    reach = set(covered)
+    for garment in worn:
+        if garment.role not in FOUNDATION_ROLES and garment.regions & covered:
+            reach |= garment.regions & set(FOUNDATION_REGIONS)
+    kept = set().union(*(g.regions for g in worn if g.role in FOUNDATION_ROLES))
+    needed = reach - regions(outfit_plan.garments, FOUNDATION_ROLES) - kept
+    halves = NEUTRAL_HALF if depicts_adult else GENERAL_FOUNDATION
+    prompts = [halves[region] for region in FOUNDATION_REGIONS if region in needed]
+    if not prompts:
+        return outfit_plan, []
+    stacked = plan_outfit_stack(request, catalog, beneath=[OutfitRequest(prompt=p) for p in prompts])
+    # The stack sorts by layer, and a tube top is a top: find the pieces added and put them
+    # innermost, as the foundation they are — so a later job keeps them under its clothes.
+    wanted = [plan_outfit_stack(OutfitRequest(prompt=p), catalog).template_id for p in prompts]
+    base, rest = [], []
+    for garment in stacked.garments:
+        if garment.template_id in wanted:
+            wanted.remove(garment.template_id)
+            base.append(garment.model_copy(update={"role": "foundation", "layer": 1}))
+        else:
+            rest.append(garment)
+    return stacked.model_copy(update={"layers": [*base, *rest], "name": outfit_plan.name}), prompts
+
+
 def wears_her_own_bottoms(context: PipelineContext) -> bool:
     """Whether she arrives in an outfit of her own below the waist — what a skirt then takes off.
 
@@ -233,6 +299,8 @@ async def generate(context: PipelineContext) -> None:
 
 
 __all__ = [
+    "GENERAL_FOUNDATION",
+    "ensure_foundation",
     "NEUTRAL_FOUNDATION",
     "SKIRT_LINER",
     "generate",

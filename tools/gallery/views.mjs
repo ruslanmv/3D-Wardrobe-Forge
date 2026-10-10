@@ -49,7 +49,8 @@ try {
         const page = await context.newPage();
         page.on('pageerror', (error) => console.error('page error:', error.message));
         const focus = view.focus ? `&focus=${view.focus.map((n) => n.toFixed(4)).join(',')}` : '';
-        await page.goto(`${base}/page.html?a=${encodeURIComponent(view.file)}&yaw=${view.yaw || 0}${focus}`);
+        const elev = view.elev ? `&elev=${Number(view.elev)}` : '';
+        await page.goto(`${base}/page.html?a=${encodeURIComponent(view.file)}&yaw=${view.yaw || 0}${focus}${elev}`);
         await page.waitForFunction(() => window.ready, null, { timeout: 90000 });
         await page.waitForTimeout(700);
         await page.screenshot({ path: path.join(work, view.out) });

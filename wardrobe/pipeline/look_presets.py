@@ -21,7 +21,8 @@ underwear, and no preset, block or style here changes that.
 from __future__ import annotations
 
 from wardrobe.domain.garments import TemplateCatalog
-from wardrobe.domain.looks import OutfitPlan, OutfitRequest, VisibleThongOptions
+from wardrobe.domain.looks import LingerieSetOptions, OutfitPlan, OutfitRequest, VisibleThongOptions
+from wardrobe.pipeline.fashion_collections import look_presets as collection_presets
 
 #: The three usual amounts of visible thong: (side straps above the jeans' waistband, mm;
 #: the jeans' rise). P2: all on ultra-low jeans — on the hip bones, well below the high
@@ -54,6 +55,21 @@ LOOK_PRESETS: dict[str, dict] = {
         "prompt": "white cropped cami + blue low-rise baggy jeans + white tailored v-string",
         "visibleThong": {"style": "classic"},
     },
+    # LC1. The Italian lace collection (wardrobe.lingerie.collections): one bralette, and the
+    # bottom the `lingerieSet` block's bottomStyle names. Underwear, and gated as underwear.
+    "italian_lace_thong_set": {
+        "title": "Italian lace set · thong",
+        "prompt": "black tailored triangle bralette + black tailored thong",
+        "lingerieSet": {"collection": "italian-lace", "bottomStyle": "thong"},
+    },
+    "italian_lace_brazilian_set": {
+        "title": "Italian lace set · Brazilian",
+        "prompt": "black tailored triangle bralette + black tailored brazilian briefs",
+        "lingerieSet": {"collection": "italian-lace", "bottomStyle": "brazilian"},
+    },
+    # DC3. Sexy Discoteca — All Black (wardrobe.pipeline.fashion_collections): the bodycon dress
+    # with each of the collection's four boots. Clothes, not underwear: no declaration needed.
+    **collection_presets(),
 }
 
 
@@ -68,6 +84,8 @@ def expand(request: OutfitRequest) -> OutfitRequest:
         update["prompt"] = preset["prompt"]
     if request.visible_thong is None and "visibleThong" in preset:
         update["visible_thong"] = VisibleThongOptions.model_validate(preset["visibleThong"])
+    if request.lingerie_set is None and "lingerieSet" in preset:
+        update["lingerie_set"] = LingerieSetOptions.model_validate(preset["lingerieSet"])
     return request.model_copy(update=update)
 
 

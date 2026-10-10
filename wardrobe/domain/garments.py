@@ -45,6 +45,8 @@ PROCEDURAL_KINDS = {
     "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
     "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
     "suspender-belt", "waspie", "guepiere", "slip-shorts", "corset",
+    # DC2: a boot built round the foot as she stands in it (wardrobe.geometry.boots)
+    "boots",
 } | set(LINGERIE_KINDS)
 
 #: The template schema that carries a ``lingerie`` block (pattern blocks, wardrobe.lingerie).
@@ -77,12 +79,17 @@ class FitPolicy(BaseModel):
     conform: float = Field(default=0.0, ge=0.0, le=1.0)
     #: Conform below the hip joint too. Off, a flared skirt keeps its flare.
     conform_below_hips: bool = Field(default=False, alias="conformBelowHips")
+    #: S6. "full-hip": a skirt conforms down to her full hip, not only to the hip joint.
+    conform_to: str | None = Field(default=None, alias="conformTo", pattern="^full-hip$")
     #: One of STRAP_PRESETS; empty lets the shape choose.
     straps: str = ""
     #: Knife pleats round the skirt, 0 for none.
     pleats: int = Field(default=0, ge=0, le=32)
     #: How deep the pleats fold, as a fraction of the skirt's radius each way. Absent: 0.03.
     pleat_depth: float | None = Field(default=None, alias="pleatDepth", ge=0.005, le=0.08)
+    #: S4. A skirt's waistband depth in mm, its own row on the loft; absent, the band takes
+    #: the top rows within wardrobe.geometry.waistband.WAISTBAND_DEPTH_M.
+    waistband_mm: float | None = Field(default=None, alias="waistbandMm", ge=20.0, le=60.0)
     # The skirt's cut (wardrobe.geometry.procedural.SkirtShape); absent, the silhouette's.
     #: Hem half-width over the full hip's: 1.34 is an A-line a third wider at the hem.
     hem_flare_ratio: float | None = Field(default=None, alias="hemFlareRatio", ge=0.85, le=2.5)
@@ -91,6 +98,9 @@ class FitPolicy(BaseModel):
     #: How the flare arrives: above 1 it starts gently and opens toward the hem.
     flare_power: float | None = Field(default=None, alias="flarePower", ge=0.5, le=4.0)
     waist_ease_mm: float | None = Field(default=None, alias="waistEaseMm", ge=0.0, le=60.0)
+    #: S5. Shares of the front-to-back flare at her front and her back (1 and 1: even).
+    front_flare: float | None = Field(default=None, alias="frontFlare", ge=0.0, le=2.0)
+    back_flare: float | None = Field(default=None, alias="backFlare", ge=0.0, le=2.0)
     hip_ease_mm: float | None = Field(default=None, alias="hipEaseMm", ge=0.0, le=80.0)
     #: Soft folds at the hem: how many round it, and how deep (fraction of the radius, each way).
     drape_folds: int = Field(default=0, alias="drapeFolds", ge=0, le=24)
@@ -150,6 +160,9 @@ class GarmentTemplate(BaseModel):
     #: Schema 2 only: the pattern block a lingerie kind is built from — its spec
     #: (wardrobe.lingerie.specs), strap and elastic choices. Absent everywhere else.
     lingerie: dict | None = None
+    #: DC2. A boot's construction (wardrobe.geometry.boots): style, heel and sole heights,
+    #: toe, shaft, closure. Its heel and sole decide how she stands (wardrobe.vrm.stance).
+    boot: dict | None = None
 
     @property
     def is_procedural(self) -> bool:

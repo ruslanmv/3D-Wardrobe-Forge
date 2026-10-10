@@ -22,6 +22,7 @@ from wardrobe.engines.geometry_checks import (
     BodyRadialIndex,
     ClearanceReport,
     apply_drape,
+    apply_knife_pleats,
     apply_pleats,
     arm_profile,
     armpit_height,
@@ -35,25 +36,39 @@ from wardrobe.engines.geometry_checks import (
     select_region_points,
     settle_faces,
     smooth_radial,
+    taut_columns,
     torso_profile,
     upper_body_surface,
 )
 from wardrobe.errors import FittingError
 from wardrobe.geometry.mesh import Mesh
 from wardrobe.geometry.procedural import (
+    PLEAT_SET_M,
     TROUSER_WAISTBAND_M,
     FitParameters,
     build_garment,
+    flare_start_y,
     front_angle,
+    full_hip_y,
+    skirt_shape,
     skirt_top,
     trouser_top,
     trouser_top_dip,
 )
-from wardrobe.geometry.waistband import add_waistband
+from wardrobe.geometry.waistband import FITTED_WAISTBAND_PROUD_M, add_hem_facing, add_waistband
 from wardrobe.lingerie import LINGERIE_KINDS
 from wardrobe.pipeline.context import PipelineContext
 from wardrobe.vrm.inspect import VrmSpec
 from wardrobe.vrm.skinning import bones_for_coverage, build_bone_segments, connected_components
+
+#: S6. Over how much height a fitted skirt rounds the bends of her hip (taut_columns).
+TAUT_ROUND_M = 0.02
+#: S6. Over how much height a fitted skirt's conforming eases out above her full hip.
+CONFORM_FADE_M = 0.03
+
+#: S4/S5. Columns a pleat on a skirt with its own waistband row: seven or eight across the
+#: visible face, two on the hidden underfold and two on its return (apply_knife_pleats).
+PLEAT_COLUMNS = 12
 
 
 @dataclass(slots=True)
@@ -110,6 +125,15 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         if surface is not None:
             metadata["upperBody"] = surface
     kind = artifact.procedural_kind or context.plan.category
+    if kind == "boots":
+        # DC2. Her feet and legs as she stands (wardrobe.vrm.stance), each side its own, and any
+        # layer already fitted on them this job: the boot is cut round all of it.
+        from wardrobe.vrm.visible import drawn_surface
+
+        hip = context.measurements.bone_positions.get("hips")
+        drawn = drawn_surface(context.document, y_max=float(hip[1]) if hip is not None else 1.0)
+        reach = drawn if context.collision_points is None else np.vstack([drawn, context.collision_points])
+        metadata["bootBody"] = _boot_body(context, reach)
     folds = int(artifact.metadata.get("drapeFolds") or 0)
     if folds and kind in SKIRTED_KINDS:
         # Six vertices a fold, or the drape aliases into facets.
@@ -154,9 +178,16 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         params.segments = max(params.segments, SHEER_SEGMENTS)
     params.segments = max(params.segments, params_segments_floor)
     pleats = int(artifact.metadata.get("pleats") or 0)
+    band_m = float(artifact.metadata.get("waistbandMm") or 0.0) / 1000.0
     if pleats:
         # Four vertices a pleat, or the sawtooth aliases into noise.
         params.segments = max(params.segments, pleats * 6)
+        if band_m and kind == "skirt":
+            # S4. A whole number of columns a pleat, at least eight: with the columns an even
+            # length of fabric apart (build_skirt's ``even``) every fold falls on a column,
+            # the same column on every row, so a pressed edge runs straight down the skirt
+            # instead of stepping between facets.
+            params.segments = pleats * max(-(-params.segments // pleats), PLEAT_COLUMNS)
 
     # Build the template's own shape. The original five templates share their
     # category's name as their shape; a bikini and a crop top do not.
@@ -197,9 +228,16 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # cut. Unfitted, the yoke kept a formula's depth and stood 3 cm off her
         # seat and belly on a real avatar.
         conform, below_hips = YOKE_CONFORM, True
+    conform_floor, conform_fade = params.hip_y, 0.0
+    if kind == "skirt" and artifact.metadata.get("conformTo") == "full-hip":
+        # S6. A fitted skirt is drawn onto her down to her full hip, not only to the hip
+        # joint: on AvatarSample A the joint is above the widest part of her seat, and the
+        # skirt stood 10 mm off it there while it was 6 mm off at the waist. Below the full
+        # hip it hangs straight, never back in toward her thighs (build_skirt).
+        conform_floor, conform_fade = min(params.hip_y, full_hip_y(params)), CONFORM_FADE_M
     if conform > 0.0:
         conform_to_body(mesh, index, clearance, axis_mask, strength=conform,
-                        min_y=None if below_hips else params.hip_y)
+                        min_y=None if below_hips else conform_floor, fade_m=conform_fade)
 
     # Leg-worn pieces (stocking and legging tubes, trouser and catsuit legs) are
     # off the body axis; fit them round each leg's own bones instead.
@@ -216,6 +254,12 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     pushed = resolve_clearance(mesh, index, clearance, axis_mask)
     smooth_radial(mesh, index, clearance, axis_mask)
     settle_faces(mesh, index, clearance, axis_mask)
+    if band_m and kind == "skirt" and artifact.metadata.get("conformTo") == "full-hip":
+        # S6. Taut over the hip: no facet of her body printed through a skirt fitted this close.
+        shape = skirt_shape(params, context.plan.silhouette, 1.0)
+        top, hem_y = float(mesh.positions[:, 1].max()), float(mesh.positions[:, 1].min())
+        taut_columns(mesh, index, top=top, mask=axis_mask, round_m=TAUT_ROUND_M,
+                     bottom=flare_start_y(params, shape, y_top=top, y_bottom=hem_y))
     if kind in LINGERIE_KINDS:
         from wardrobe.lingerie.fit import after_shell as seat_placed  # it imports this package
 
@@ -224,9 +268,29 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # Set from just below the waistband on a skirt, from the hips on a dress.
         # From just below the skirt's own top: a low-rise skirt starts below her waist (P1).
         pleat_from = skirt_top(params) - 0.03 if kind == "skirt" else params.hip_y
-        apply_pleats(mesh, index, count=pleats, from_y=pleat_from, mask=axis_mask, clearance_m=clearance,
-                     amplitude=float(artifact.metadata.get("pleatDepth") or 0.03),
-                     retexture=context.plan.material.pattern == "none")
+        if band_m and kind == "skirt":
+            # S4. From the stitching line under the band (build_skirt puts a row there), so
+            # the band is plain and every pleat starts on the same line.
+            pleat_from = skirt_top(params) - band_m - PLEAT_SET_M + 1e-4
+        depth_of_pleat = float(artifact.metadata.get("pleatDepth") or 0.03)
+        if band_m and kind == "skirt":
+            # S5. Knife pleats with a face, a fold edge and an underfold, not a sawtooth.
+            # The creases add vertices; the axis mask follows them.
+            hem_now = float(mesh.positions[:, 1].min())
+            hip_line = min(max(full_hip_y(params), hem_now + 0.02), pleat_from)
+            mid = (hip_line + hem_now) / 2.0
+            # S6. Closed at the hip, open at the hem: how far each pleat's fold has opened
+            # at her upper hip, full hip, mid skirt and hem.
+            opening = [(pleat_from, 0.0), ((pleat_from + hip_line) / 2.0, 0.15), (hip_line, 0.30),
+                       (mid, 0.68), (hem_now, 1.0)]
+            origin = apply_knife_pleats(mesh, index, count=pleats, from_y=pleat_from, mask=axis_mask,
+                                        clearance_m=clearance, step=depth_of_pleat, opening=opening,
+                                        retexture=context.plan.material.pattern == "none")
+            if origin is not None:
+                axis_mask = axis_mask[origin]
+        else:
+            apply_pleats(mesh, index, count=pleats, from_y=pleat_from, mask=axis_mask, clearance_m=clearance,
+                         amplitude=depth_of_pleat, retexture=context.plan.material.pattern == "none")
     drape = int(artifact.metadata.get("drapeFolds") or 0)
     if drape and kind in SKIRTED_KINDS:
         apply_drape(mesh, index, folds=drape, amplitude=float(artifact.metadata.get("hemDrape") or 0.0),
@@ -236,7 +300,14 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     if kind == "skirt":
         # Last, from the finished shape: a band built before fitting is pressed back
         # into the skirt by the passes above (wardrobe.geometry.waistband).
-        mesh = add_waistband(mesh, index.axis_x, index.axis_z)
+        if band_m:
+            # S4. A turned hem on a skirt cut with its own band: a fold with a thickness, before
+            # the band, whose rows it never reaches.
+            mesh = add_hem_facing(mesh, index.axis_x, index.axis_z)
+        # S5. A cut band sits 1.8 mm proud, not 3: over the skirt's own ease, 3 mm read as a
+        # belt floating round her. The darker shade and the ledge mark it, not the gap.
+        cut_band = {"depth_m": band_m + 1e-4, "proud_m": FITTED_WAISTBAND_PROUD_M} if band_m else {}
+        mesh = add_waistband(mesh, index.axis_x, index.axis_z, **cut_band)
     elif kind == "trousers" and str(params.metadata.get("rise") or "") in {"low", "ultra-low"}:
         # P2. Low-rise jeans get a narrow waistband that follows their curved top edge. The
         # yoke alone read as a thick blue belt: nothing marked where the band ended and the
@@ -247,6 +318,16 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
             mesh, index.axis_x, index.axis_z, depth_m=TROUSER_WAISTBAND_M + 0.002, section="trousers-yoke",
             top_edge=lambda points: top + trouser_top_dip(front_angle(points, params), rise, params.height),
         )
+    elif kind in LINGERIE_KINDS and artifact.metadata.get("collection"):
+        # LC2. A collection piece's lace, binding, bows and metal, sewn onto the fabric as it
+        # was fitted — after the clearance is measured, whose masks are the panels' own.
+        from wardrobe.lingerie.atelier import embellish
+
+        mesh = embellish(mesh, artifact.metadata["collection"], params)
+
+    _light_gusset(mesh, params.forward)
+    if kind in SEAM_WELDED_KINDS:
+        _weld_seam_normals(mesh)
 
     # The shell's UVs are metres of fabric; one pattern tile covers its physical size.
     scale = float(context.plan.material.texture_scale or 0.0)
@@ -279,6 +360,76 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         after=after,
         verdict=verdict,
     )
+
+
+#: DC3. Garments built of a bodice and a skirt whose shading must run straight across the join.
+SEAM_WELDED_KINDS = frozenset({"dress", "slip-dress"})
+#: How close two open edges of different pieces must be to count as one seam.
+SEAM_WELD_M = 0.004
+
+
+def _weld_seam_normals(mesh: Mesh) -> None:
+    """DC3. One normal either side of the join between a dress's bodice and its skirt.
+
+    The two are separate pieces a millimetre apart, and each piece's normals at its own edge
+    lean the way only its own faces do. Matte, nobody saw it; in satin or patent the
+    highlight broke along a hard line round her hips. Paired open-edge vertices of different
+    pieces that already face the same way share their mean normal; the shape is untouched.
+    A strap's open end beside the neckline faces another way and is left alone.
+    """
+    if mesh.normals is None or mesh.indices.size == 0:
+        return
+    tris = mesh.indices.reshape(-1, 3).astype(np.int64)
+    edges = np.sort(np.concatenate([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), axis=1)
+    unique, counts = np.unique(edges, axis=0, return_counts=True)
+    open_vertices = np.unique(unique[counts == 1])
+    if open_vertices.size < 2:
+        return
+    labels = connected_components(mesh)
+    points = mesh.positions[open_vertices].astype(np.float64)
+    normals = mesh.normals[open_vertices].astype(np.float64)
+    owner = labels[open_vertices]
+    gap = np.linalg.norm(points[:, None, :] - points[None, :, :], axis=2)
+    facing = normals @ normals.T
+    paired = (gap < SEAM_WELD_M) & (owner[:, None] != owner[None, :]) & (facing > 0.5)
+    if not paired.any():
+        return
+    weights = paired.astype(np.float64) + np.eye(open_vertices.size)
+    merged = weights @ normals
+    merged /= np.maximum(np.linalg.norm(merged, axis=1, keepdims=True), 1e-12)
+    rows = paired.any(axis=1)
+    mesh.normals = mesh.normals.copy()
+    mesh.normals[open_vertices[rows]] = merged[rows].astype(np.float32)
+
+
+#: T1. How far down a crotch gusset's shading normals tip from horizontal (about 20 degrees).
+GUSSET_NORMAL_DOWN = 0.35
+
+
+def _light_gusset(mesh: Mesh, forward: float) -> None:
+    """T1. Shade a crotch gusset as the cloth curving under her that it stands for.
+
+    The gusset is flat and faces straight down, so a toon material lit from above gives it
+    nothing but its shade colour: a black patch between the legs of beige trousers. Its
+    normals are set as a crotch seam's would be — the front half facing forward, the back
+    half back, both tipped down — so it takes the light the fabric round it takes. Last,
+    after every pass that recomputes normals; the shape is left exactly as it is.
+    """
+    mask = mesh.metadata.get("gusset")
+    if mask is None or mesh.normals is None:
+        return
+    mask = np.asarray(mask, dtype=bool)
+    if mask.shape[0] < mesh.vertex_count:  # a pass appended vertices (add_waistband): none are gusset
+        mask = np.concatenate([mask, np.zeros(mesh.vertex_count - mask.shape[0], dtype=bool)])
+    mask = mask[: mesh.vertex_count]
+    if not mask.any():
+        return
+    z = mesh.positions[mask, 2].astype(np.float64)
+    centre = (z.max() + z.min()) * 0.5
+    side = np.where((z - centre) * forward >= 0.0, forward, -forward)
+    normals = np.column_stack([np.zeros_like(z), np.full_like(z, -GUSSET_NORMAL_DOWN), side])
+    normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+    mesh.normals[mask] = normals.astype(np.float32)
 
 
 #: Below this many body points the classification is too sparse to trust, and
@@ -459,6 +610,17 @@ def _skinned_to(context: PipelineContext, body: np.ndarray, bones: frozenset[str
         return None
     selected = body[select_region_points(body, segments, set(bones))]
     return selected if selected.shape[0] >= MIN_REGION_POINTS else None
+
+
+def _boot_body(context: PipelineContext, body: np.ndarray) -> dict:
+    """Her points on each leg and foot, for a boot (wardrobe.geometry.boots)."""
+    out = {}
+    for side in ("left", "right"):
+        bones = frozenset({f"{side}Foot", f"{side}LowerLeg", f"{side}UpperLeg"})
+        points = _skinned_to(context, body, bones)
+        if points is not None:
+            out[side] = points
+    return out
 
 
 def _torso(context: PipelineContext, body: np.ndarray) -> np.ndarray | None:

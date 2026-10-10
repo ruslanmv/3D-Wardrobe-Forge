@@ -194,6 +194,42 @@ Recent jobs, newest first.
 | `GET /v1/templates/{id}` | one template |
 | `GET /v1/assets/{key}` | a stored artifact (local backend; S3 issues signed URLs) |
 
+## Outfit dictionary (OD1)
+
+### `GET /v1/outfits`
+
+Named sets a client may offer — the chatbot's companion answers "what can you
+wear?" from this, and its Try-On tabs are its groups. Each entry is shorthand
+for a request someone could type and grants nothing; a job for it is planned,
+fitted and gated as if typed.
+
+```json
+{
+  "version": 1,
+  "groups": [{"id": "casual", "title": "Casual", "private": false}, …],
+  "outfits": [
+    {
+      "id": "little-black-dress", "title": "Little black dress", "group": "dressy",
+      "prompt": "black satin cocktail dress",
+      "request": {"prompt": "black satin cocktail dress"},
+      "tags": ["evening"], "rating": "general", "slots": ["dress"],
+      "garments": [{"name": "…", "category": "dress", "template": "dress-cocktail-v1",
+                    "slot": "dress", "adultGate": false}]
+    }, …
+  ]
+}
+```
+
+- `request` is the exact `outfit` body a job sends (with a look or hosiery
+  `preset` when the set needs one, e.g. the stockings group).
+- `rating` is computed from Forge's planner and adult gate — `private` when any
+  garment needs an adult declaration (an intimate category, a template that says
+  so, or see-through fabric). Never written by hand; a group's `private` flag is
+  a claim the tests check against it both ways, and an integration test checks
+  every entry against the gate a real job meets.
+- Source: `wardrobe/pipeline/outfit_dictionary.py`. Every entry was also
+  generated on the declared-adult fit form and passed its fit checks.
+
 ## Wardrobes
 
 | Endpoint | Returns |

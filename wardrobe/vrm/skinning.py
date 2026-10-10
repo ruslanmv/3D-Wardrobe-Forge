@@ -251,6 +251,14 @@ def bind_mesh(
     epsilon = max(float(np.median(distances)) * 0.05, 1e-4)
     strength = 1.0 / np.power(distances + epsilon, falloff)
     _apply_lateral_mask(strength, points, segments, mesh)
+    rigid = mesh.metadata.get("rigidFoot")
+    if rigid is not None and np.asarray(rigid).shape[0] == points.shape[0] and np.any(rigid):
+        # DC2. A boot's heel, sole and platform belong to the foot alone: weighted to the shin
+        # as well, a heel post 15 cm below the ankle bent with her calf.
+        rigid = np.asarray(rigid, dtype=bool)
+        foot = np.array([segment.name.endswith("Foot") for segment in segments])
+        if foot.any():
+            strength[np.ix_(rigid, ~foot)] = 0.0
     if torso is not None and torso.any():
         arm = np.array([segment.name in ARM_BONES for segment in segments])
         if arm.any() and not arm.all():

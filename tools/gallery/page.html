@@ -15,13 +15,17 @@ const box = new THREE.Box3().setFromObject(v.slots.original.vrm.scene);
 const height = Math.max(box.max.y, 0.5), fov = THREE.MathUtils.degToRad(v.camera.fov);
 const distance = (height * 0.56) / Math.tan(fov / 2);
 const yaw = Number(q.get('yaw') || 0) * Math.PI / 180;
+// ?elev= degrees above (positive) or below (negative) her, for the focus view: what a phone held
+// low sees, where a seam between the legs shows. Absent, 0: every earlier render is unchanged.
+const elev = Number(q.get('elev') || 0) * Math.PI / 180;
 // ?focus=y0,y1 frames that band of heights instead (the hem close-up): its height fills the frame.
 const focus = (q.get('focus') || '').split(',').map(Number).filter((n) => Number.isFinite(n));
 if (focus.length === 2) {
   const span = Math.max(focus[1] - focus[0], 0.05), mid = (focus[0] + focus[1]) / 2;
   const near = (span * 0.56) / Math.tan(fov / 2);
   v.controls.target.set(0, mid, 0);
-  v.camera.position.set(Math.sin(yaw) * near, mid, Math.cos(yaw) * near);
+  const flat = Math.cos(elev) * near;
+  v.camera.position.set(Math.sin(yaw) * flat, mid + Math.sin(elev) * near, Math.cos(yaw) * flat);
   v.camera.near = 0.02; v.camera.far = near * 10; v.camera.updateProjectionMatrix();
   v.controls.update();
   return;

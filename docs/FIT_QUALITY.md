@@ -90,6 +90,76 @@ holds the silhouette to numbers:
 - no skirt template over 1.9× her hip
 - zero-mean pleats and drape that never enter the body
 
+### The pleated mini, corrected (S4)
+
+![The corrected pleated mini on AvatarSample A: front, side, back, and the waistband, pleats and hem close up](images/mini-skirt.webp)
+
+On AvatarSample A, under a cardigan, the pleated mini still read as a lampshade.
+These figures are measured on its fitted shell:
+
+| What it looked like | Cause | Now |
+| --- | --- | --- |
+| Flared from just under the waist to a hem 1.6× her hip | `flareStart: high-hip`, `flarePower: 1.0`, `hemFlareRatio: 1.5`: a straight cone from halfway between waist and hip | `flareStart: hip`, `flarePower: 1.35`, `hemFlareRatio: 1.22`. Fitted down to the full hip, then a late, gentle flare. The hem is 1.16× her hip width |
+| A thin band, 2.5 cm on her | The band took whichever 1.5 cm row fell within 3.2 cm of the top | `waistbandMm: 38`. `build_skirt` puts a row exactly there, and another 6 mm under it where the pleats are set (`PLEAT_SET_M`) |
+| Pleats wide in front and narrow at the hips | Loft columns at equal angles round an ellipse wider than it is deep | Columns are an equal length of fabric apart (`loft(..., even=True)`), so the 24 pleats are one width all round |
+| Pressed edges that zig-zagged | Each fold landed on a column, and float32 UVs put it one column left on some rows and one right on others | The pleat phase is snapped before it is split (`PLEAT_SNAP`). A whole number of columns per pleat, at least 8 (`PLEAT_COLUMNS`), keeps every fold on the same column |
+| A paper hem | One surface | A turned hem (`add_hem_facing`): the bottom row of faces copied 2.5 mm inside and closed at the edge |
+
+### Real knife pleats, a flat front, a shorter mini (S5)
+
+A review of S4 found the skirt still read as CG cloth. The pleats were extruded
+wedges, the flare was the same in every direction, the band floated, and the
+mini was too long. Measured on the fitted shell on AvatarSample A:
+
+| What it looked like | Cause | Now |
+| --- | --- | --- |
+| Pleats like polygon wedges | `apply_pleats` moves each vertex in or out by a sawtooth and never folds the surface back on itself | `apply_knife_pleats`: each pleat's columns are spent on a fabric path, a visible face (seven or eight columns), the underfold under the next pleat and its return (two each). The fold edge is a hard crease, its vertices split between the face and the layer under it. The layers are folded all the way up to the stitching line, flat there (`KNIFE_MIN_GAP_M` apart) and opening to full depth a third of the way down. Twelve columns a pleat (`PLEAT_COLUMNS`) |
+| A cone from the side | The flare grew front and back by the same amount | `frontFlare` / `backFlare` share out the front-to-back growth. The mini uses 0.45 / 1.0: hip to hem her front grows 1.4 cm and her back 2.9 cm, and the sides keep the full flare |
+| A belt floating round her | Band 3 mm proud of a skirt 9 mm off the liner | A cut band stands 1.8 mm proud (`FITTED_WAISTBAND_PROUD_M`). The mini's `bodyClearanceMm` is 3 (plus the 3 mm allowance for a garment over another), so it measures 6.0–6.5 mm off the liner from waist to upper hip, with no vertex inside that |
+| Too long for a mini | `hem: mini` was 0.34 of her hip-to-ankle drop: 35 cm, 10 cm above her knee | `MINI_HEM_FRACTION = 0.22`: 26 cm, upper thigh, still above the crotch-clearance floor. This applies to skirts, dresses and the skirted swimsuit (); shorts keep 0.34 |
+| A hem like a drawn circle | No variation | `drapeFolds: 5`, `hemDrape: 0.012`: a soft, zero-mean wave that grows toward the turned hem |
+
+`hemFlareRatio`Thirty-five of the 81 gallery looks have new geometry hashes: every mini skirt and
+mini dress, and the tops, cardigans and coats fitted over one. Shorts, trousers and
+everything else are byte-identical, and the baseline was regenerated for those 35.
+
+ is 1.20. The hem is 1.20× her hip width, inside the 1.18–1.22
+the review asked for. `tests/unit/test_real_avatar_fit.py` holds the generated
+VRM to it end to end:
+
+- the fit passes
+- the band is 36–40 mm
+- the skirt is 22–30 cm long
+- the hem is 1.12–1.3× her hip
+- every pleated row has exactly 24 creases, evenly spread round her
+
+`test_skirt_fit.py` checks the fold itself:
+
+- face over underfold
+- the cut's size kept
+- every pleat built the same
+- nothing inside her
+- a flat front with the seat behind
+- the mini's length
+
+### Tight over the hip, pleats closed there (S6)
+
+The next review said the hip was still too loose. The skirt opened before it had
+followed her waist, high hip and full hip, and the pleats were as open at the hip
+as at the hem. On AvatarSample A, measured on the fitted shell from what lies under
+it (the slip liner):
+
+| What it looked like | Cause | Now |
+| --- | --- | --- |
+| Loose over the seat | Conforming stopped at the hip joint, above her full hip | `conformTo: "full-hip"`: drawn onto her down to the full hip, eased out over 3 cm (`conform_to_body(fade_m=…)`). `waistEaseMm 0`, `hipEaseMm 2`, `bodyClearanceMm 1.5` (+3 mm allowance over the liner): 5 mm at the waist, 4.5–6 mm through the hip |
+| Pleats equally open top to bottom | The fold reached full depth a third of the way down | `apply_knife_pleats(opening=…)`: 0 at the stitching line, 15% at the upper hip, 30% at the full hip, 68% at mid-skirt, 100% at the hem |
+| Fold lines kinking at the hip | Within millimetres of her, the clearance passes printed the avatar's hip facets through, and the hip itself bends at a corner | `taut_columns`: each column, waist to the flare, takes its upper hull (spanning hollows) and its bends rounded over 2 cm (`TAUT_ROUND_M`). Lifted locally, never lowered |
+| An early flare | `flarePower 1.35` opens from the hip at once | `flarePower 1.8` from the full hip: it leaves the hip vertical and opens below it, with no corner. The hem is 1.18–1.19× her hip |
+
+`flareStart: "below-hip"` was tried: a straight section between the full hip and
+the flare made every fold bend twice. A higher power gives the same late opening
+smoothly.
+
 ## What is still true
 
 - **Clothes painted onto the skin stay.** VRoid often paints an inner layer onto

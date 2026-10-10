@@ -341,7 +341,7 @@ async def test_the_designers_example_builds_as_specified(orchestrator, store, bo
     assert record.state is JobState.COMPLETED, record.error
     bralette, briefs, mini = record.plan.garments
     for piece in (bralette, briefs):
-        assert (piece.material.pattern, piece.material.alpha_mode, piece.material.lined) == ("lace", "mask", False)
+        assert (piece.material.pattern, piece.material.alpha_mode, piece.material.lined) == ("lace", "blend", False)
         assert piece.requires_adult
     assert briefs.style.leg_cut == "high"
     assert (mini.material.finish, mini.material.alpha_mode) == ("satin", "blend")
@@ -349,10 +349,10 @@ async def test_the_designers_example_builds_as_specified(orchestrator, store, bo
 
     document = GltfDocument.from_bytes(output)
     materials = {m.get("name", ""): m for m in document.materials}
-    # The lace is cut out, its straps are opaque trim, and the dress is translucent over both.
+    # The lace is see-through (blended, OD2), its straps are opaque trim, and the dress is translucent over both.
     lace = next(m for n, m in materials.items() if n.startswith(bralette.name) and " Trim " not in n)
     trim = next(m for n, m in materials.items() if n.startswith(f"{bralette.name} Trim"))
-    assert lace["alphaMode"] == "MASK" and trim.get("alphaMode", "OPAQUE") == "OPAQUE"
+    assert lace["alphaMode"] == "BLEND" and trim.get("alphaMode", "OPAQUE") == "OPAQUE"
     assert "baseColorTexture" not in trim["pbrMetallicRoughness"]
     assert record.fit_report.passed
     sheets = [layer["design"] for layer in record.fit_report.layers]

@@ -87,6 +87,8 @@ class Settings(BaseSettings):
     wardrobe_fixture_root: str = str(REPO_ROOT / "assets" / "fixtures")
     #: The Studio's avatar library: models.json plus the VRMs tools/fetch_library.py verified.
     wardrobe_library_root: str = str(REPO_ROOT / "assets" / "library")
+    #: BA1. The tattoo designs (body-art.json and their artwork).
+    wardrobe_body_art_root: str = str(REPO_ROOT / "assets" / "body_art")
 
     # -- safety ----------------------------------------------------------
     max_avatar_bytes: int = 128 * 1024 * 1024
@@ -123,6 +125,10 @@ class Settings(BaseSettings):
     @property
     def template_root_path(self) -> Path:
         return Path(self.wardrobe_template_root)
+
+    @property
+    def body_art_root_path(self) -> Path:
+        return Path(self.wardrobe_body_art_root)
 
     def artifact_url(self, key: str) -> str:
         base = self.public_base_url.rstrip("/")

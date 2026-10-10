@@ -120,11 +120,11 @@ def test_navy_blue_is_one_colour_not_two(template_catalog):
         ("transparent white mini dress", 0.45, "blend", True),
         ("slightly sheer black thigh-high stockings", 0.8, "blend", True),
         ("very sheer chiffon dress", 0.35, "blend", True),
-        ("black sheer lace bodysuit", 1.0, "mask", True),  # sheer lace: open holes, not a veil
+        ("black sheer lace bodysuit", 1.0, "blend", True),  # sheer lace: open holes, not a veil
         ("white lace crop cami", 1.0, "opaque", False),  # lined
-        ("white unlined lace crop cami", 1.0, "mask", True),
-        ("black lace bralette", 1.0, "mask", True),  # lingerie is not lined, and is gated anyway
-        ("black fishnet thigh-highs", 1.0, "mask", True),
+        ("white unlined lace crop cami", 1.0, "blend", True),
+        ("black lace bralette", 1.0, "blend", True),  # lingerie is not lined, and is gated anyway
+        ("black fishnet thigh-highs", 1.0, "blend", True),
     ],
 )
 def test_the_gate_follows_what_will_render(template_catalog, prompt, opacity, alpha, requires_adult):
@@ -191,7 +191,8 @@ def test_without_mtoon_the_pbr_material_carries_alpha_and_texture(template_catal
     document = GltfDocument({"asset": {"version": "2.0"}, "buffers": [{"byteLength": 0}]}, b"")
     material = GarmentMaterial.from_plan("Net", plan("black fishnet thigh-highs", template_catalog).material)
     gltf = document.materials[material.add_to(document)]
-    assert gltf["alphaMode"] == "MASK" and gltf["alphaCutoff"] == 0.5
+    # OD2: blended, so the net survives the renderer shrinking it (finishes.PATTERNS).
+    assert gltf["alphaMode"] == "BLEND" and "alphaCutoff" not in gltf
     texture = document.gltf["textures"][gltf["pbrMetallicRoughness"]["baseColorTexture"]["index"]]
     assert document.gltf["samplers"][texture["sampler"]]["wrapS"] == 10497  # tiles
 
@@ -216,10 +217,10 @@ def test_an_opacity_below_the_minimum_is_clamped_and_reported(template_catalog):
     ("prompt", "lined", "alpha"),
     [
         ("black lined lace bralette", True, "opaque"),  # asked for: honoured, lingerie included
-        ("black lace bralette", False, "mask"),
-        ("black sheer lace bralette", False, "mask"),  # sheer lace: open holes
+        ("black lace bralette", False, "blend"),
+        ("black sheer lace bralette", False, "blend"),  # sheer lace: open holes
         ("white lace crop cami", True, "opaque"),
-        ("white unlined lace crop cami", False, "mask"),
+        ("white unlined lace crop cami", False, "blend"),
     ],
 )
 def test_lining(template_catalog, prompt, lined, alpha):
@@ -258,3 +259,18 @@ def test_cup_and_rise_words(template_catalog, prompt, field, value):
 def test_legwear_and_italian_words(template_catalog, prompt, template_id, colour):
     result = plan(prompt, template_catalog)
     assert (result.template_id, result.material.color_name) == (template_id, colour)
+
+
+def test_lace_and_fishnet_blend_so_their_net_survives_at_a_distance():
+    """OD2. Cut out at 0.5, a net averaged by mipmapping to ~25 % was cut away whole."""
+    from wardrobe.materials.finishes import PATTERNS
+
+    for name in ("lace", "fishnet"):
+        assert PATTERNS[name].alpha == "blend" and PATTERNS[name].holes, name
+    assert not any(spec.holes for name, spec in PATTERNS.items() if name not in ("lace", "fishnet"))
+
+
+def test_lace_reads_dark_from_across_a_room_and_is_still_mostly_holes():
+    a = alpha("lace")
+    assert 0.35 <= a.mean() <= 0.5  # its average is what a whole-body view sees
+    assert (a < 0.5).mean() > 0.5

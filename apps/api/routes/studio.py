@@ -22,13 +22,18 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import OrchestratorDep, SettingsDep, StoreDep, http_error_for
 from apps.api.ratelimit import limit_job_creation
 from apps.api.routes.avatars import _inspect
+from apps.api.routes.body_art import check_designs
 from wardrobe import __version__
+from wardrobe.body_art.contract import BodyArtRequest, check_items
+from wardrobe.body_art.exposure import exposure_map, read_body
+from wardrobe.body_art.lifecycle import recipe_states
+from wardrobe.body_art.placement import PlacementError
 from wardrobe.domain.avatars import LicenseAttestation
 from wardrobe.domain.garments import COVERAGE_PRESETS, INTIMATE_CATEGORIES, NECKLINES, STRAP_PRESETS
 from wardrobe.domain.jobs import TERMINAL_STATES, CreateJobRequest, JobOptions, JobRecord, JobState
@@ -245,10 +250,26 @@ class LibraryJobRequest(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    outfit: OutfitRequest
+    #: BA6. Absent only for a tattoo-only job, which must name the look it decorates.
+    outfit: OutfitRequest | None = None
     options: JobOptions = Field(default_factory=JobOptions)
     #: Build on a look already in this avatar's wardrobe — a top onto a skirt is a set.
     base_look_id: str | None = Field(default=None, alias="baseLookId")
+    #: BA1. Tattoos, on skin the finished outfit leaves visible (CreateJobRequest.body_art).
+    body_art: list[BodyArtRequest] = Field(default_factory=list, alias="bodyArt", max_length=4)
+    body_art_remove: list[str] = Field(default_factory=list, alias="bodyArtRemove", max_length=8)
+
+    @model_validator(mode="after")
+    def _body_art_list(self) -> LibraryJobRequest:
+        # Here as well as on CreateJobRequest: that one is built inside the handler, where a
+        # validation error would be a 500 rather than the 422 it is.
+        check_items(self.body_art, self.body_art_remove)
+        if self.outfit is None:
+            if not (self.body_art or self.body_art_remove):
+                raise ValueError("outfit is required unless the job only adds or removes body art")
+            if not self.base_look_id:
+                raise ValueError("a tattoo-only job names the finished look it goes on (baseLookId)")
+        return self
 
 
 @router.post("/library/{slug}/jobs", response_model=JobRecord, status_code=status.HTTP_202_ACCEPTED,
@@ -278,10 +299,14 @@ async def create_library_job(
     job = CreateJobRequest.model_validate(
         {
             "avatar": avatar_input,
-            "outfit": body.outfit.model_dump(by_alias=True, exclude_none=True),
+            "outfit": body.outfit.model_dump(by_alias=True, exclude_none=True) if body.outfit else None,
             "options": options.model_dump(by_alias=True),
+            "bodyArt": [item.model_dump(by_alias=True) for item in body.body_art],
+            "bodyArtRemove": body.body_art_remove,
         }
     )
+    if job.body_art:  # a job without tattoos never touches body-art code (I1)
+        check_designs(orchestrator.body_art, job.body_art)
     return await orchestrator.submit(job)
 
 
@@ -295,6 +320,8 @@ async def preview_library_plan(
     of her garments would come off and which stay; and whether there is a body
     under what comes off. Read-only — nothing is stripped, built or stored.
     """
+    if body.outfit is None:
+        raise HTTPException(status_code=422, detail="a plan is for an outfit; this request has none")
     avatar, _ = _dressable(request, slug, admin)
     avatar_input = avatar.avatar_input()
     if body.base_look_id:
@@ -391,6 +418,49 @@ async def _base_look_input(
     return {**base, "storageKey": key}, look.private
 
 
+@router.get("/library/{slug}/looks/{look_id}/exposure")
+async def look_exposure(
+    slug: str, look_id: str, request: Request, orchestrator: OrchestratorDep, admin: AdminDep
+) -> dict:
+    """BA2. Where this finished look leaves her skin visible: the placements a tattoo could go.
+
+    Read-only, from the look's own VRM: the clothes it was built with, her own clothes the
+    strip plan kept, everything. A placement is eligible when the outfit leaves nearly all
+    of a tattoo there visible; the Studio offers body art only then (docs/BODY_ART_PLAN.md).
+    """
+    if _library(request).get(slug) is None:
+        raise HTTPException(status_code=404, detail="avatar not in the library")
+    manifest = await orchestrator.wardrobes.get(slug)
+    look = manifest.get(look_id) if manifest is not None else None
+    if look is not None and look.private and admin is None:
+        look = None
+    if look is None or look.type == "source":
+        raise HTTPException(status_code=404, detail="no such look in this avatar's wardrobe")
+    key = f"looks/{look.id}/look.vrm"
+    if not await orchestrator.store.exists(key):
+        raise HTTPException(status_code=409, detail="that look's file is no longer stored")
+    document = GltfDocument.from_bytes(await orchestrator.store.get(key))
+    # BA7. The tattoos this look carries — drawn or under its clothes — so the Studio can
+    # offer to take one off. Recipes only: design, placement, state; nothing else of hers.
+    tattoos = [
+        {"design": r.design, "placement": r.placement, "state": state}
+        for r, state in recipe_states(document.gltf)
+    ]
+    try:
+        surfaces, body = read_body(document)
+    except PlacementError as exc:
+        return {"lookId": look.id, "placements": [], "eligible": [], "reason": str(exc), "tattoos": tattoos}
+    placements = [e.to_dict() for e in exposure_map(surfaces, body).values()]
+    eligible = [p["placement"] for p in placements if p["eligible"]]
+    return {
+        "lookId": look.id,
+        "placements": placements,
+        "eligible": eligible,
+        "reason": None if eligible else "No suitable exposed placement for this outfit.",
+        "tattoos": tattoos,
+    }
+
+
 @router.get("/library/{slug}/avatar.vrm")
 def get_library_avatar(slug: str, request: Request) -> FileResponse:
     """The avatar's bytes, for the Studio's viewport."""
@@ -443,16 +513,27 @@ def vocabulary() -> dict:
         # Patterns whose holes show the body (lace outside underwear is lined, so
         # only fishnet here), and every opacity below 1: gated like the categories.
         "seeThroughPatterns": sorted(
-            name for name, spec in PATTERNS.items() if spec.alpha == "mask" and name != "lace"
+            # OD2: `holes`, not the alpha mode — lace and fishnet now blend, and reading
+            # "mask" here would have quietly emptied this list and ungated fishnet.
+            name for name, spec in PATTERNS.items() if spec.holes and name != "lace"
         ),
         # Hosiery & suspenders (wardrobe.hosiery): every value the request blocks accept, and the presets.
         "hosiery": hosiery_vocabulary(),
         # Looks of more than one garment (wardrobe.pipeline.look_presets): send the id as
         # `outfit.preset` (and as the prompt, to take its prompt too).
         "lookPresets": look_vocabulary(),
+        # DC3. Collections (wardrobe.pipeline.fashion_collections): a dress and its boots, each
+        # choice the words it adds to the prompt; the Studio's Collection panel is built from it.
+        "collections": collection_vocabulary(),
         "jobStates": [state.value for state in JobState if state not in TERMINAL_STATES],
         "terminalStates": sorted(state.value for state in TERMINAL_STATES),
     }
+
+
+def collection_vocabulary() -> list[dict]:
+    from wardrobe.pipeline.fashion_collections import catalogue
+
+    return catalogue()
 
 
 def look_vocabulary() -> dict:

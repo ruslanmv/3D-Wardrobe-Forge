@@ -78,7 +78,11 @@ template.
 | `fit.flarePower` | 0.5–4 | skirts: flare profile, `progress ** power`. Above 1 is a slow A-line; below 1 is a skater's early curve |
 | `fit.waistEaseMm` / `fit.hipEaseMm` | mm | skirts: ease over her measured outline at the waist and at the full hip |
 | `fit.pleats` / `fit.pleatDepth` | count / metres | zero-mean pleats, clamped to body + clearance |
+| `fit.waistbandMm` | 20–60 mm | a skirt's waistband depth, cut on its own row, 1.8 mm proud; with pleats, they are real knife folds set 6 mm under it, on even columns, and the hem is turned |
+| `fit.conformTo` | `full-hip` | a skirt conforms down to her full hip (not only the hip joint), eased out over 3 cm and pulled taut there |
+| `fit.frontFlare` / `fit.backFlare` | 0–2 | shares of the front-to-back flare at her front and her back (1 / 1: even). 0.45 / 1.0 keeps a fitted skirt's front flat and puts the volume behind |
 | `fit.drapeFolds` / `fit.hemDrape` | 0–24 / 0–0.08 | a soft zero-mean hem drape; both must be set |
+| `boot` | object | `procedural:boots` only (`wardrobe/geometry/boots.py`): `style` (`stiletto-ankle` `platform` `combat` `over-knee`) plus any of its fields — `heelMm`, `platformMm` (these two decide how she stands: `wardrobe/vrm/stance.py`), `heel` (`stiletto` `block` `stack`), `toe` (`pointed` `almond` `round`), `toeExtensionMm`, `toeBoxMm`, `shaft` (`ankle` `mid-calf` `below-knee` `over-knee`), `shaftTop`, `footEaseMm`, `shaftEaseMm`, `heelTopMm` / `heelTipMm` ([width, depth]), `heelLeanMm`, `sole` (`thin` `platform` `lug`), `soleOutMm`, `lugMm`, `closure` (`none` `laces` `zip`), `collar` (`plain` `padded`) |
 | `fit.bodyClearanceMm` | 0–40 | fabric-to-body spacing; 5–8 fitted, 12–18 outerwear |
 | `materials.supportsMetallic` | bool | when false, a "metallic" prompt is ignored for this template |
 | `tags` | free text | matched against the prompt during selection |

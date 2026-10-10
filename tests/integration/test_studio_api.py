@@ -87,6 +87,30 @@ def test_the_studio_exposes_the_vrm_import_flow(client: TestClient):
     assert "/v1/avatars/inspect" in api and "/v1/library/import" in api
 
 
+def test_the_studio_offers_full_screen_garment_inspection(client: TestClient):
+    """SV1. One button to the stage alone; Front, Side, Back, Free; a close; presets near level, Free all round."""
+    page = client.get("/studio/").text
+    script = client.get("/studio/js/app.js").text
+    viewer = client.get("/studio/js/viewer.js").text
+    styles = client.get("/studio/studio.css").text
+    for control in ("inspect-btn", "inspect-close", "inspect-bar", "inspect-views"):
+        assert f'id="{control}"' in page
+    for view in ("front", "side", "back", "free"):
+        assert f'data-inspect="{view}"' in page
+    assert "wireInspection" in script and "requestFullscreen" in script and "INSPECT_FADE_MS" in script
+    assert "controls-hidden" in script and "controls-hidden" in styles and "safe-area-inset" in styles
+    assert "THREE.TOUCH.DOLLY_PAN" in viewer and "orbitFor(" in viewer
+    max_polar = float(viewer.split("const MAX_POLAR = THREE.MathUtils.degToRad(")[1].split(")")[0])
+    assert 90 < max_polar <= 100  # Front, Side and Back: within a few degrees of level
+    # SV2. Free, and the Studio outside full screen, orbit the whole sphere, under the hem too.
+    free_max = float(viewer.split("const FREE_MAX_POLAR = THREE.MathUtils.degToRad(")[1].split(")")[0])
+    free_min = float(viewer.split("const FREE_MIN_POLAR = THREE.MathUtils.degToRad(")[1].split(")")[0])
+    assert free_max >= 175 and free_min <= 5  # right underneath her, and over the top
+    assert free_max < 180 and free_min > 0  # never on a pole, where the orbit flips
+    assert "this.orbitFor('free');" in viewer
+    assert "viewer.orbitFor('free')" in script
+
+
 # ----------------------------------------------------------------------
 # library
 # ----------------------------------------------------------------------

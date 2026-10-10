@@ -101,18 +101,28 @@ MIN_OPACITY = 0.2
 @dataclass(frozen=True, slots=True)
 class Pattern:
     name: str
-    #: How the texture's alpha is used: "mask" makes holes (lace, fishnet).
+    #: How the renderer uses the texture's alpha. "blend" for lace and fishnet (OD2).
     alpha: str = "opaque"
     #: Physical size of one tile of the texture, in metres.
     tile_m: float = 0.05
     #: The texture carries colour (stripes) rather than a grey the colour tints (lace).
     coloured: bool = False
+    #: The tile's alpha is holes and threads, 0 or 1: the body shows through the gaps.
+    holes: bool = False
 
 
+#: OD2. Lace and fishnet blend; they used to be cut out ("mask", cutoff 0.5), which is exact
+#: up close and wrong everywhere else. Their threads are a pixel or two wide in the tile, so
+#: once the renderer shrinks the texture for a body seen whole (a lace tile is ~10 px on
+#: screen) the net averages to ~25 % alpha, under the cutoff, and is cut away entirely. What
+#: survived was the rosettes' solid centres: black lace rendered as specks on bare skin,
+#: fishnets as a few dots. Blended, the same average draws as a dark veil, which is how
+#: lace and fishnet read from across a room; up close the tile's alpha is still 0 or 1, so
+#: the holes are as open as they were.
 PATTERNS: dict[str, Pattern] = {
     "none": Pattern("none"),
-    "lace": Pattern("lace", alpha="mask", tile_m=0.07),
-    "fishnet": Pattern("fishnet", alpha="mask", tile_m=0.014),
+    "lace": Pattern("lace", alpha="blend", tile_m=0.07, holes=True),
+    "fishnet": Pattern("fishnet", alpha="blend", tile_m=0.014, holes=True),
     "sequin": Pattern("sequin", tile_m=0.03),
     "stripes": Pattern("stripes", tile_m=0.05, coloured=True),
     "dots": Pattern("dots", tile_m=0.04, coloured=True),

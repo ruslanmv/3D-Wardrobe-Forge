@@ -38,6 +38,22 @@ class VisibleThongOptions(BaseModel):
     strap_above_mm: float | None = Field(default=None, alias="strapAboveMm", ge=10.0, le=90.0)
 
 
+class LingerieSetOptions(BaseModel):
+    """LC1. A coordinated lingerie collection: one bra, and a bottom chosen by ``bottomStyle``.
+
+    A collection is a design, not a prompt: the bralette's cut and its lace, the two
+    bottoms that belong with it, and the trims, bows and hardware all of them share
+    (``wardrobe.lingerie.collections``). Switching ``bottomStyle`` swaps the bottom's
+    pattern and detailing and leaves the bra as it was. It grants nothing: both pieces
+    are underwear, planned and gated exactly as if typed.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    collection: Literal["italian-lace"] = "italian-lace"
+    bottom_style: Literal["thong", "brazilian"] = Field(default="thong", alias="bottomStyle")
+
+
 class OutfitRequest(BaseModel):
     """What the caller asked for, in their own words."""
 
@@ -71,6 +87,8 @@ class OutfitRequest(BaseModel):
     reveal: RevealOptions | None = None
     #: P1. A thong placed to show above low-rise trousers (wardrobe.pipeline.look_presets).
     visible_thong: VisibleThongOptions | None = Field(default=None, alias="visibleThong")
+    #: LC1. A coordinated lingerie collection (wardrobe.lingerie.collections).
+    lingerie_set: LingerieSetOptions | None = Field(default=None, alias="lingerieSet")
     #: A named look (wardrobe.pipeline.look_presets, wardrobe.hosiery.presets); explicit
     #: fields above win over it.
     preset: str | None = Field(default=None, max_length=64)
@@ -156,6 +174,10 @@ class StylePlan(BaseModel):
     #: whale_tail_targets): strapAboveMm, frontBelowMm, backAboveMm, strapMm, jeansRise. Set
     #: only by the visible-thong block; None everywhere else.
     whale_tail: dict | None = Field(default=None, alias="whaleTail")
+    #: LC1. This piece's part in a lingerie collection (wardrobe.lingerie.collections): its
+    #: block overrides, lace, bows, hardware and fabric. Set only by the ``lingerieSet``
+    #: block; None everywhere else, so every other garment is built exactly as it was.
+    collection: dict | None = None
 
     def to_dict(self) -> dict:
         return self.model_dump(by_alias=True)
@@ -333,7 +355,13 @@ class FitReport(BaseModel):
     #: One entry per garment of a layered outfit, inner first: its own fit and clearance.
     layers: list[dict] = Field(default_factory=list)
     #: Stocking tops, clips, strap tension per pose and the reveal achieved (wardrobe.hosiery.report).
+    #: BA4. Each requested tattoo: applied, or why not ("covered by the outfit"). Absent from a
+    #: job that asked for none, so such a job's report is what it always was.
+    body_art: list[dict] | None = Field(default=None, alias="bodyArt", exclude_if=lambda v: v is None)
     hosiery: dict | None = None
+    #: DC1. The heel and sole she stands on and the pitch and lift that give them, with the
+    #: stance she stood in before. Absent from a job without shoes in it.
+    stance: dict | None = Field(default=None, exclude_if=lambda v: v is None)
 
     @property
     def passed(self) -> bool:

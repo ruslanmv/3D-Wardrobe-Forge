@@ -64,6 +64,52 @@ garment inventory ─► strip plan for the whole outfit ─► is there a body 
   off and the layers put on; the fit report has an entry — and a design sheet —
   per layer.
 
+### Auto Foundation (`options.ensureFoundation`)
+
+Off by default in the API, on by default in the Studio ("Foundation underneath").
+It makes sure a foundation is on her under the new clothes, and adds only what is
+missing:
+
+```text
+the outfit covers her upper and/or lower body?  no (shoes alone) → nothing added
+        │ yes
+        ▼
+regions wanted = what the outfit covers
+               + what her own garments reach, where the outfit covers part of them
+        − what the outfit brings as its own foundation (a bikini, a lingerie set)
+        − what a Forge foundation she already wears covers (kept)
+        ▼
+a neutral half for each region left:
+    declared adult  → beige seamless bralette / beige seamless briefs
+    any other       → beige seamless tube top / beige slip shorts (clothes: no gate)
+```
+
+The added pieces are innermost, with the `foundation` role. A later job leaves
+them on under its clothes: only a new foundation replaces a foundation. So:
+
+- On a look with a foundation, changing the top (`baseLookId`) changes only the
+  top. The jeans and the foundation are carried.
+- A bikini replaces the foundation rather than going over it.
+- A job on a look that already has one adds nothing.
+
+The body under her own clothes is checked before anything comes off, as for every
+job. The stored source is never modified.
+
+**A top that is really a dress.** VRM has no clothing slots. VRoid files Model
+Girl's flared dress as `Tops`. A VRoid `Tops` whose *visible* hem reaches 45% of
+the way from her hip joint to her knee is read as covering her lower half too
+(`garment_inventory.DRESS_LENGTH_SHARE`): Model Girl's reaches 65%, the
+library's real tops 2–28%. A skirt alone cannot take such a dress off, because
+her chest would be bare. With Auto Foundation the upper half of a foundation goes
+on and the dress comes off. Without it, the dress stays and the skirt goes over
+it, as it always has.
+
+**What is drawn, not what is in the buffer.** A triangle her textures cut away
+(`alphaMode` `MASK`/`BLEND`) is not her body to fit round
+(`wardrobe/vrm/visible.py`). Model Girl's dress hangs an invisible sheet to her
+shins. AvatarSample A's Bottoms has another round hers. Read as body, these pushed
+skirts out into bells and boots into drums.
+
 ## What is gated, and by whom
 
 Swimwear, underwear and **anything the body shows through** — a sheer dress,

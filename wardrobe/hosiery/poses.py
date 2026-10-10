@@ -188,7 +188,7 @@ def posed_body(document, info, pose: str, forward: float, pivots: dict, *,
     skins = document.gltf.get("skins") or []
     for node_index in document.mesh_nodes():
         node = document.nodes[node_index]
-        if ((node.get("extras") or {}).get("wardrobeForge") or {}).get("kind") == "garment":
+        if ((node.get("extras") or {}).get("wardrobeForge") or {}).get("kind") in ("garment", "bodyArt"):
             continue
         for primitive in document.meshes[node["mesh"]].get("primitives", []):
             result = posed_primitive(document, node, primitive, table, normals=True)

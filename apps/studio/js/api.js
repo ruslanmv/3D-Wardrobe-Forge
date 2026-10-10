@@ -168,6 +168,11 @@ export const api = {
             body: { depictsAdult, ageConfirmed },
         }),
 
+    /** BA7. The tattoo catalogue, and where a finished look leaves her skin visible. */
+    bodyArt: () => request('/v1/body-art'),
+    lookExposure: (slug, lookId) =>
+        request(`/v1/library/${encodeURIComponent(slug)}/looks/${encodeURIComponent(lookId)}/exposure`),
+
     /** An object URL for a protected asset. The caller owns it and must revoke it. */
     async blobUrl(path) {
         const blob = await request(path, { expect: 'blob' });

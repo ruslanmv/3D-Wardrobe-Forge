@@ -36,6 +36,9 @@ WAISTBAND_DEPTH_M = 0.032
 #: How far the band stands out from the skirt: enough that the two never share a
 #: pixel at the Studio's and the chatbot's camera distances, too little to read as a belt.
 WAISTBAND_PROUD_M = 0.003
+#: S5. A band cut on its own row (a template's ``waistbandMm``) stands this far proud: the
+#: skirt under it already has its ease, and 3 mm more read as a belt floating round her.
+FITTED_WAISTBAND_PROUD_M = 0.0018
 #: The band's colour relative to the fabric's: the same cloth, folded double, in shade.
 WAISTBAND_SHADE = 0.78
 
@@ -157,6 +160,91 @@ def add_waistband(mesh: Mesh, axis_x: float, axis_z: float, *, depth_m: float = 
     return joined
 
 
+HEM_SECTION = "skirt-hem"
+#: S4. A turned hem: how far up inside the skirt it reaches (at least one row of the loft),
+#: and how far in from the fabric.
+HEM_DEPTH_M = 0.012
+HEM_INSET_M = 0.0025
+
+
+def add_hem_facing(mesh: Mesh, axis_x: float, axis_z: float, *, depth_m: float = HEM_DEPTH_M,
+                   inset_m: float = HEM_INSET_M) -> Mesh:
+    """``mesh`` with a turned hem: its bottom rows copied ``inset_m`` inside, joined at the edge.
+
+    A skirt is one surface, and seen at its hem — from the side, or as it lifts — a single
+    surface has no edge at all: the reference skirt's hem reads as cloth because it is a
+    doubled fold with a thickness to it, and ours read as paper. The facing is the skirt's
+    own bottom rows, pleats and all, pushed in toward her axis, and a lip closes the two
+    along the hem so the fold is solid. Same cloth, same material: only a section name, so
+    a later pass can find it. Heights are untouched, so the hem stays where it was cut.
+    """
+    if mesh.vertex_count == 0 or mesh.indices.size < 3:
+        return mesh
+    positions = mesh.positions.astype(np.float64)
+    heights = np.round(positions[:, 1], 5)
+    triangles = mesh.indices.reshape(-1, 3).astype(np.int64)
+    hem = float(heights.min())
+    rows = np.unique(heights)
+    if rows.size > 1:
+        # At least the bottom row of faces: a skirt's rows are 1.5 cm apart, and a facing
+        # shallower than that held no whole triangle and was silently never made.
+        depth_m = max(depth_m, float(rows[1] - hem))
+    low = heights <= hem + depth_m + 1e-6
+    tris = triangles[low[triangles].all(axis=1)]
+    if tris.shape[0] == 0:
+        return mesh
+    used = np.unique(tris.reshape(-1))
+    remap = -np.ones(mesh.vertex_count, dtype=np.int64)
+    remap[used] = np.arange(used.size)
+    dx, dz = positions[used, 0] - axis_x, positions[used, 2] - axis_z
+    radius = np.maximum(np.hypot(dx, dz), 1e-9)
+    inner = positions[used].copy()
+    inner[:, 0] = axis_x + dx * (radius - inset_m) / radius
+    inner[:, 2] = axis_z + dz * (radius - inset_m) / radius
+    faces = [remap[tris][:, [0, 2, 1]]]  # facing in, toward her: the inside of the fold
+
+    # The lip along the hem: each open bottom edge joined to its inner twin.
+    edges = np.concatenate([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    key = np.sort(edges, axis=1)
+    _, first, counts = np.unique(key, axis=0, return_index=True, return_counts=True)
+    open_edges = edges[first[counts == 1]]
+    bottom = open_edges[(np.abs(heights[open_edges[:, 0]] - hem) < 1e-5)
+                        & (np.abs(heights[open_edges[:, 1]] - hem) < 1e-5)]
+    points = [inner]
+    uvs = [mesh.uvs[used]] if mesh.uvs is not None else None
+    if bottom.shape[0]:
+        ends = np.unique(bottom.reshape(-1))
+        start = used.size
+        outer_of = {int(v): start + i for i, v in enumerate(ends)}
+        points.append(positions[ends].copy())
+        if uvs is not None:
+            uvs.append(mesh.uvs[ends])
+        quads = []
+        for a, b in bottom:
+            ia, ib, oa, ob = remap[a], remap[b], outer_of[int(a)], outer_of[int(b)]
+            quads += [(oa, ob, ib), (oa, ib, ia)]
+        quads = np.asarray(quads, dtype=np.int64)
+        stacked = np.vstack(points)
+        a, b, c = stacked[quads[:, 0]], stacked[quads[:, 1]], stacked[quads[:, 2]]
+        wrong = np.cross(b - a, c - a)[:, 1] > 0  # the lip faces down, under the hem
+        quads[wrong] = quads[wrong][:, [0, 2, 1]]
+        faces.append(quads)
+    facing = Mesh(
+        positions=np.vstack(points).astype(np.float32),
+        indices=np.concatenate(faces).reshape(-1).astype(np.uint32),
+        uvs=np.vstack(uvs).astype(np.float32) if uvs is not None else None,
+        metadata={"sections": [(HEM_SECTION, 0, int(sum(f.shape[0] for f in faces)))]},
+    )
+    facing.compute_normals()
+    skirt = replace(mesh, metadata={**mesh.metadata, "sections": section_ranges(mesh)})
+    if skirt.normals is None:
+        skirt = replace(skirt, normals=None).compute_normals()
+    joined = concatenate([skirt, facing])
+    for name in ("joints", "weights"):
+        setattr(joined, name, None)
+    return joined
+
+
 def waistband_mask(mesh: Mesh) -> np.ndarray:
     """One bool per triangle: those of the waistband section."""
     mask = np.zeros(mesh.triangle_count, dtype=bool)
@@ -166,5 +254,6 @@ def waistband_mask(mesh: Mesh) -> np.ndarray:
     return mask
 
 
-__all__ = ["WAISTBAND_DEPTH_M", "WAISTBAND_PROUD_M", "WAISTBAND_SECTION", "WAISTBAND_SHADE", "add_waistband",
+__all__ = ["FITTED_WAISTBAND_PROUD_M", "HEM_DEPTH_M", "HEM_INSET_M", "HEM_SECTION", "WAISTBAND_DEPTH_M",
+           "WAISTBAND_PROUD_M", "WAISTBAND_SECTION", "WAISTBAND_SHADE", "add_hem_facing", "add_waistband",
            "waistband_mask"]

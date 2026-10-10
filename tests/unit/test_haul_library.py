@@ -15,10 +15,12 @@ from wardrobe.vrm.inspect import inspect_document
 from wardrobe.vrm.measure import measure_body
 
 ORIGINAL_KINDS = {"dress", "skirt", "top", "trousers", "jacket", "shoes"}
+#: DC2. Boots built round the posed foot (wardrobe.geometry.boots).
+BOOT_KINDS = {"boots"}
 
 
 def test_the_domain_knows_every_shape_the_builder_makes():
-    assert PROCEDURAL_KINDS == ORIGINAL_KINDS | HAUL_KINDS | LINGERIE_KINDS
+    assert PROCEDURAL_KINDS == ORIGINAL_KINDS | HAUL_KINDS | LINGERIE_KINDS | BOOT_KINDS
 
 
 def test_the_library_covers_the_haul_categories(template_catalog: TemplateCatalog):

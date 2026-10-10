@@ -15,6 +15,15 @@
  * Every load carries a token. Clicking three looks quickly starts three loads;
  * only the last one to be requested may land, and the others dispose themselves
  * on arrival rather than flashing onto the stage out of order.
+ *
+ * SV1. The camera is an inspection camera, on a phone as on a desk: one finger turns
+ * her, a pinch zooms toward the fingers, two fingers pan, a double tap puts the shot back.
+ * Front, side and back are the same shot from three places (inspect()), and keep the camera
+ * within 5° of level while they are chosen, so a preset never opens on a view from beneath.
+ * Free — and the Studio outside full screen — orbits all the way round, under the hem too:
+ * the full freedom the viewer had before SV1, which the person inspecting a garment needs.
+ * The point it orbits cannot be dragged off her figure, so a stray pan never leaves an
+ * empty screen.
  */
 
 import * as THREE from 'three';
@@ -34,6 +43,23 @@ const RELAXED = {
     rightLowerArm: [0, -0.18, 0],
 };
 const COMPARE_GAP = 0.62; // metres between the two figures' centres, per side
+// SV1. The orbit's limits from straight overhead for the Front, Side and Back presets: never
+// quite overhead (the controls spin about the pole there), and at most 5° under level.
+const MIN_POLAR = THREE.MathUtils.degToRad(8);
+const MAX_POLAR = THREE.MathUtils.degToRad(95);
+// SV2. Free, and the Studio outside full screen: over the top and right underneath her, for
+// QA of a hem, the underside of a garment and clipping. SV1 put the presets' limit on every
+// view and took that away. One degree short of each pole, not on it: at the pole the orbit's
+// "up" is undefined and the camera can flip or spin about its own axis as it crosses.
+const FREE_MIN_POLAR = THREE.MathUtils.degToRad(1);
+const FREE_MAX_POLAR = THREE.MathUtils.degToRad(179);
+// The inspection views: her own front, her left side and her back (see turnTo()).
+const INSPECT_FACING = { front: 'front', side: 'left', back: 'back' };
+// A tap is a press that neither moved nor lasted; two of them close together are a double tap.
+const TAP_MS = 260;
+const TAP_SLOP_PX = 10;
+const DOUBLE_TAP_MS = 400; // phones' own double-tap windows run 300–500 ms
+const DOUBLE_TAP_PX = 32;
 
 export class Viewer {
     constructor(container) {
@@ -59,6 +85,22 @@ export class Viewer {
         this.controls.maxDistance = 9;
         this.controls.autoRotateSpeed = 1.4;
         this.controls.target.set(0, 1, 0);
+        this.controls.enablePan = true;
+        this.controls.screenSpacePanning = true;
+        this.orbitFor('free');
+        this.controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+        // A pinch over the hem zooms onto the hem, not onto her middle.
+        this.controls.zoomToCursor = true;
+        // What the visible figures fill, from the last frame(): the orbit's target stays inside.
+        this.bounds = null;
+        // The view inspect() last chose: a double tap returns to it. 'free' returns to the front.
+        this.view = 'free';
+        // Full screen inspection (app.js) has no controls across the top to keep her head under.
+        this.immersive = false;
+        // Called on a single tap and on a double tap of the canvas (after the reset).
+        this.onTap = null;
+        this.onDoubleTap = null;
+        this.watchTaps(this.renderer.domElement);
 
         // MToon shades from the scene's lights, not from an environment map.
         const key = new THREE.DirectionalLight(0xfff4ec, 2.1);
@@ -90,7 +132,98 @@ export class Viewer {
         const delta = Math.min(this.clock.getDelta(), 0.1);
         for (const slot of Object.values(this.slots)) if (slot) slot.vrm.update(delta);
         this.controls.update();
+        this.keepTargetOnHer();
         this.renderer.render(this.scene, this.camera);
+    }
+
+    /**
+     * SV1. Pull the orbit's target back inside her figure, moving the camera with it.
+     * Two-finger pan moves both; without this a pan could carry the target under the floor
+     * or off to one side, and every turn after it swung the camera round empty space.
+     */
+    keepTargetOnHer() {
+        if (!this.bounds) return;
+        const target = this.controls.target;
+        const { min, max } = this.bounds;
+        const margin = 0.15;
+        const clamped = target.clone();
+        clamped.x = THREE.MathUtils.clamp(clamped.x, min.x - margin, max.x + margin);
+        clamped.y = THREE.MathUtils.clamp(clamped.y, min.y + (max.y - min.y) * 0.08, max.y);
+        clamped.z = THREE.MathUtils.clamp(clamped.z, min.z - margin, max.z + margin);
+        if (clamped.distanceToSquared(target) < 1e-10) return;
+        const shift = clamped.sub(target);
+        target.add(shift);
+        this.camera.position.add(shift);
+    }
+
+    /**
+     * SV1. Taps on the canvas, told apart from drags. OrbitControls owns every drag, so this
+     * only listens: a press that did not move and did not linger is a tap, and a second one
+     * soon after and near the first is a double tap, which resets the shot.
+     */
+    watchTaps(element) {
+        const presses = new Map();
+        let lastTap = null;
+        element.addEventListener('pointerdown', (event) => {
+            presses.set(event.pointerId, { x: event.clientX, y: event.clientY, at: event.timeStamp, multi: presses.size > 0 });
+            if (presses.size > 1) for (const press of presses.values()) press.multi = true;
+        });
+        const release = (event) => {
+            const press = presses.get(event.pointerId);
+            presses.delete(event.pointerId);
+            if (!press || press.multi || event.type === 'pointercancel') return;
+            const moved = Math.hypot(event.clientX - press.x, event.clientY - press.y);
+            if (moved > TAP_SLOP_PX || event.timeStamp - press.at > TAP_MS) return;
+            const double =
+                lastTap &&
+                event.timeStamp - lastTap.at < DOUBLE_TAP_MS &&
+                Math.hypot(event.clientX - lastTap.x, event.clientY - lastTap.y) < DOUBLE_TAP_PX;
+            if (double) {
+                lastTap = null;
+                this.reset();
+                this.onDoubleTap?.();
+                return;
+            }
+            lastTap = { x: event.clientX, y: event.clientY, at: event.timeStamp };
+            this.onTap?.();
+        };
+        element.addEventListener('pointerup', release);
+        element.addEventListener('pointercancel', release);
+    }
+
+    /**
+     * SV1. Garment inspection: frame her, then look from her front, her left side or her
+     * back. 'free' keeps the camera where it is and only stops the turntable, so the person
+     * can take it from there.
+     */
+    inspect(view = 'front') {
+        this.view = view;
+        this.controls.autoRotate = false;
+        this.orbitFor(view);
+        if (view === 'free') return;
+        this.frame();
+        this.turnTo(INSPECT_FACING[view] || 'front');
+    }
+
+    /** The shot a double tap returns to: the chosen inspection view, else the front, framed. */
+    reset() {
+        const view = this.view;
+        this.inspect(view === 'free' ? 'front' : view);
+        this.view = view; // a reset from Free is still Free: the bar keeps showing the person's choice
+        this.orbitFor(view); // and so is its orbit
+    }
+
+    /** SV2. The orbit a view allows: near level for Front, Side and Back; the whole sphere for Free. */
+    orbitFor(view) {
+        const free = view === 'free';
+        this.controls.minPolarAngle = free ? FREE_MIN_POLAR : MIN_POLAR;
+        this.controls.maxPolarAngle = free ? FREE_MAX_POLAR : MAX_POLAR;
+        this.controls.update();
+    }
+
+    /** The camera's angle down from straight overhead, in degrees (90 is level, 180 beneath). */
+    polarDegrees() {
+        return THREE.MathUtils.radToDeg(this.controls.getPolarAngle());
     }
 
     /** Load a VRM into a slot. Resolves true when it landed, false when superseded. */
@@ -174,6 +307,13 @@ export class Viewer {
             look.group.visible = this.mode !== 'original';
             look.group.position.x = compare ? COMPARE_GAP : 0;
         }
+        // SV1. A figure that just jumped sideways would otherwise swing its hair and skirt
+        // springs out like horns for a second: let them start from where she now stands.
+        for (const slot of [original, look]) {
+            if (!slot) continue;
+            slot.group.updateMatrixWorld(true);
+            slot.vrm.springBoneManager?.reset?.();
+        }
     }
 
     /** Fit whatever is visible into the frame, head to toe. */
@@ -190,14 +330,34 @@ export class Viewer {
         const byWidth = size.x / 2 / Math.tan(fov / 2) / Math.max(this.camera.aspect, 0.2);
         // A tall, narrow viewport (a phone) has the view controls across its top, so
         // it gets more headroom and a target nudged up to put her head below them.
-        const narrow = this.camera.aspect < 0.9;
-        const distance = Math.max(byHeight, byWidth) * (narrow ? 1.34 : 1.18) + size.z;
+        const narrow = this.camera.aspect < 0.9 && !this.immersive;
+        // Full screen: tight in portrait, where she is the whole height; roomier on a phone on
+        // its side, where the inspection bar crosses her feet until it fades.
+        const fill = this.immersive ? (this.camera.aspect < 0.9 ? 1.1 : 1.24) : narrow ? 1.34 : 1.18;
+        const distance = Math.max(byHeight, byWidth) * fill + size.z;
         if (narrow) center.y += size.y * 0.05;
+        this.bounds = box.clone();
         this.controls.target.copy(center);
         this.camera.position.set(center.x, center.y + size.y * 0.04, center.z + distance);
         this.camera.near = Math.max(distance / 100, 0.01);
         this.camera.far = distance * 10;
         this.camera.updateProjectionMatrix();
+        this.controls.update();
+    }
+
+    /**
+     * BA7. Swing the camera round her to look at one side of her: "front", "back", "left"
+     * or "right" (hers). Distance and height are kept, so it is the same shot from
+     * elsewhere. Every VRM here faces +Z once loaded — load() runs rotateVRM0 on 0.x
+     * models — so her back is seen from -Z, and her left side (+X) from +X.
+     */
+    turnTo(facing = 'front') {
+        const yaw = { front: 0, back: Math.PI, left: Math.PI / 2, right: -Math.PI / 2 }[facing] ?? 0;
+        const target = this.controls.target;
+        const offset = this.camera.position.clone().sub(target);
+        const flat = Math.hypot(offset.x, offset.z);
+        this.controls.autoRotate = false;
+        this.camera.position.set(target.x + Math.sin(yaw) * flat, this.camera.position.y, target.z + Math.cos(yaw) * flat);
         this.controls.update();
     }
 

@@ -1,7 +1,12 @@
 # Body art (tattoos) plan
 
-> Status: **proposed — nothing here is implemented.** Batches are
-> `BA1`–`BA10`; commit subjects and code comments carry the prefix
+> Status: **BA1–BA7 and BA11 implemented** on `claude/body-art-tattoos`
+> (request fields and catalogue; exposure on the finished outfit; projection;
+> the two stages; nineteen designs, raster install and the back-view preview;
+> tattoo-only jobs and the lifecycle; the Studio section; the lower-back set
+> and "just above the waistband"). BA8–BA10 are still a plan. Three things were built differently from what is
+> written below, each for a measured reason — see "As built" at the end.
+> Batches are `BA1`–`BA10`; commit subjects and code comments carry the prefix
 > (`BA3: …`). Every file, function and number below was read or measured in
 > this repository at `a0760eb`, the five library avatars included. Revised
 > after the owner's decision that **clothes always come first** (§0); where
@@ -49,7 +54,7 @@ Bottoms:
 |---|---|
 | Bra + briefs | Upper back, spine, lower back, hip, rib, thigh eligible where the fitted pieces leave skin |
 | Low-back bodysuit / swimsuit (`back: low`) | Upper back and spine eligible |
-| "Backless dress" today | **Not** eligible: no dress block cuts a low back yet (only `wardrobe/lingerie/blocks/bodysuit.py` reads `back`), so the fitted dress covers it. It becomes eligible the day a dress honours `back: low` in its geometry, with no body-art change. |
+| "Backless dress" | Upper back eligible — measured, not assumed: the A-line dress the planner picks for it leaves her back bare in its geometry. A dress whose geometry is closed (the bodycon below) is not, whatever the prompt says. |
 | Crop top + shorts | Lower back, hip, thigh eligible |
 | Cardigan + trousers | Nothing eligible (no hoodie template exists; a long cardigan stands in) |
 | Jacket + long trousers | Nothing eligible |
@@ -113,10 +118,13 @@ Read before designing; each shapes a decision below.
   `bodyArt` silently, so the Studio asks `/v1/capabilities` first.
 - **No identifier is derived from the request.** A pack look's `recipeId` is its
   look id (`apps/api/routes/studio.py:436`).
-- **"Backless" is parsed but mostly not built.** `BACK_KEYWORDS["low"]` in
-  `plan_outfit.py` gives `style.back = "low"`, but only the bodysuit block reads
-  it. Deciding exposure from the plan's words would put a tattoo under a closed
-  dress; measuring the fitted geometry does not.
+- **"Backless" is a word; the geometry is the answer.** `BACK_KEYWORDS["low"]`
+  in `plan_outfit.py` gives `style.back = "low"`, and whether a garment is then
+  cut open at the back depends on its block. Measured in BA2: the A-line dress
+  the planner picks for "red backless dress" leaves her upper back bare, the
+  bodycon mini dress does not. Deciding exposure from the prompt's words would be
+  right for one and wrong for the other; measuring the fitted geometry is right
+  for both.
 - **The chatbot drops unknown provenance.** `3D-Avatar-Chatbot
   src/wardrobe/WardrobePackValidator.js` (lines 207–242) rebuilds `provenance`
   from a field list, so `provenance.bodyArt` is carried by pack schema 2 and
@@ -497,3 +505,143 @@ Not changed: `wardrobe/domain/garments.py`, `wardrobe/vrm/garments.py`
 (`KIND_REGIONS`), `wardrobe/vrm/garment_inventory.py`,
 `wardrobe/pipeline/{plan_outfit,plan_outfit_stack,prepare_base_body,generate_garment,fit_garment}.py`,
 every garment template, the design panel's controls and Check plan.
+
+## As built (BA1–BA7, BA11)
+
+- **The decal is her own skin triangles, not a grid with blended weights.**
+  §2.3 and the projection steps above describe a grid laid over her skin, each
+  point skinned by the barycentric blend of the triangle under it. Measured on
+  the declared-adult bodies it drifted 15–30 mm off her skin in the arm and leg
+  poses: a point inside a skin triangle does not move as one bone mix, and glTF
+  allows four joints where three corners can bring twelve. Skinning each point as
+  its nearest vertex drifted up to 58 mm. The decal is therefore a copy of her
+  skin triangles under the design, each vertex her own vertex with her own joints
+  and weights, lifted 0.5 mm along its normal; the design reaches them through
+  the placement layout inverted (`wardrobe/body_art/placement.py Layout.to_uv`).
+  Every decal vertex stays 0.5 ± 0.3 mm off her skin in stand, walk, sit,
+  arms-down, legs-apart and arms-raised on all six declared-adult bodies
+  (`tests/unit/test_body_art_projection.py`). The grid survives as the
+  footprint exposure is measured on.
+- **A gated tattoo is not applied; it does not fail the job.** I9 says a refused
+  item is refused before anything is built. Clothes come first, so the outfit is
+  always delivered and the tattoo is reported as not applied with the gate's own
+  sentence, exactly as a covered one is. No v1 placement is rated above
+  `general`, so this only matters from BA9.
+- **"Nape" is the base of the neck.** On the generated bodies the neck above the
+  top of the spine is weighted to the head and is not skin a decal can follow;
+  the nape placement sits over the top of the spine (C7), where nape pieces are
+  usually worn.
+
+- **BA5: ten designs, one way to draw them.** Six upper-back presets (winged,
+  V, central-spine, geometric bands, thorn filigree, lace ornament) and one each
+  for the shoulder blades, spine, lower back and nape, all vector paths in
+  `assets/body_art/designs/`. `raster.coverage(path, size)` is the only way a
+  design becomes pixels — vector by our rasteriser, raster (`source: "raster"`)
+  by Pillow from its alpha — and the catalogue refuses an entry whose file
+  suffix disagrees with its source. `tests/unit/test_body_art_artwork.py` pins
+  every design's uploaded texture (`tests/fixtures/body_art_artwork.json`;
+  `BODY_ART_ARTWORK=write` re-baselines).
+- **Raster art comes in only through `tools/body_art/install_design.py`.** A
+  PNG, at most 4 MB and 2048 px a side (read from the header, before decoding),
+  with a real, non-flat alpha covering 3–70%; a licence this repository can ship
+  and an origin are required, an author too for CC-BY. It is re-encoded white
+  plus its alpha (the request's ink colours it) and recorded in
+  `designs/<id>.provenance.json` with both hashes. `--dry-run` validates and
+  writes nothing.
+- **A look with a back tattoo is pictured from behind, by the web renderer
+  only.** `render_preview.body_art_views` makes the back view `preview.webp`
+  and the thumbnail and keeps the front as `preview-front.webp`. The native
+  rasteriser paints each material one flat colour — the decal would be a block
+  of ink the size of her back — so without the web backend the front picture
+  stays and the job warns that the tattoo is not in it. The exit pictures, on
+  the dressed declared-adult calibration body, three jobs through the
+  pipeline's own previews:
+
+  ![Back views](images/body-art-back.webp)
+
+- **BA6: a tattoo-only job is a job without `outfit`.** `CreateJobRequest.outfit`
+  may be absent only when `bodyArt` or `bodyArtRemove` is not; the Studio's
+  library job also needs `baseLookId`. The orchestrator then runs
+  `validate_source → analyze_avatar → carry_look → analyze_exposed_skin →
+  apply_body_art → validate_output → render_preview`: `carry_look` takes the
+  look's document as the assembled one and changes only the root's provenance
+  (`lookId`, and `baseLookId` naming the look it decorates), so every node,
+  mesh, material, accessor and buffer byte of the look is in the new one
+  unchanged — the lifecycle test compares them. Two refusals, both `rejected`:
+  a source that is not a Forge look (`body_art_needs_a_finished_look` — clothes
+  first, so a tattoo never goes straight onto an uploaded avatar), and a job
+  none of whose tattoos could be made (`body_art_not_applied`, with the
+  sentence), because its "look" would be a copy of one she has. The new look is
+  named after its base ("Black lingerie · Tribal Wings"); its `look.json`
+  carries the base's garments, prompt and rating, made stronger only by a gated
+  tattoo; a base without one stays unrated rather than being guessed general.
+- **Recipes travel; geometry follows the clothes.** The root's
+  `extras.wardrobeForge.bodyArt` lists every tattoo with a `state` —
+  `applied`, `covered`, `held` (kept for later, not drawn for another reason)
+  or `not-applied`. The engines rewrite the root's extras from scratch, so
+  `wardrobe/body_art/lifecycle.py` reads the *source's* recipes (its JSON chunk
+  only) and the stages decide them again on the new outfit: still visible with
+  its decal there → kept as is; covered → decal dropped, recipe `covered`;
+  visible again → re-applied, the same geometry to 1 µm. A recipe that was never
+  on her skin (`not-applied`) never travels, and one asked for again at the
+  same placement gives way only if the new one is actually drawn. `rating_for`
+  for an outfit job also takes the stronger of the plan's rating and any applied
+  gated tattoo (planned for BA8; no v1 placement is gated).
+
+- **BA7: the Studio offers body art on the look on stage, beside the looks.**
+  Wearing a look asks `GET /v1/library/{slug}/looks/{lookId}/exposure`, which
+  now also lists the look's tattoos (`tattoos: [{design, placement, state}]`,
+  from its recipes). The section — on the wardrobe shelf, never in the garment
+  designer, and only when `/v1/capabilities` has `bodyArt` — shows those
+  tattoos with Remove, the visible placements as chips (choosing one turns the
+  viewer to it: `viewer.turnTo(facing)`), the designs drawn for it as tiles
+  inked in the chosen colour (the design PNG masks the ink over a patch of
+  skin), and ink, size, offsets, rotation, opacity and mirror. Add tattoo and
+  Remove both run a tattoo-only job on that look (BA6) through the same job
+  runner as an outfit; the new look is worn and the viewer turned to the
+  tattoo. With nothing visible it is one line, *"No suitable exposed placement
+  for this outfit."*, and no controls. Checked in a browser on the declared-
+  adult calibration body: lingerie offered all seven back placements; Tribal
+  Wings went on her upper back as a new look whose thumbnail is the back view;
+  a tee built on that look listed the tattoo "(under the outfit)" and offered
+  only the nape.
+
+  ![The Studio's body-art section](images/studio-body-art.webp)
+
+- **BA11: the lower-back set, on the waistband.** Nine designs in the classic
+  lower-back style, all vector art authored here (generated from tapered strokes,
+  outlines, curls and leaves, then reviewed flat and on the body): Tribal
+  Butterfly, Neotribal Heart, Waist Filigree, Angel Wings, Thorn Vine, Rose Vine,
+  Heart and Stars, Ornamental Butterfly and Dragonfly. With the lotus that makes
+  ten for the lower back. A tiny cursive word is not among them: lettering needs
+  a font licensed for redistribution, and is a raster import (BA10) when wanted.
+  Reviewed on the declared-adult fit form in lingerie, "lower back" left a
+  4–5 cm strip of bare skin between the design and the briefs, and its offsets
+  (±25% of the design's height) cannot close it. So these designs also offer a
+  new placement, `waistline` ("Just above the waistband"), laid from the band
+  the finished outfit actually has: `exposure.waistband_y` walks down the centre
+  of her back from the lower-back position and finds the first height that is
+  covered, exactly as `measure` decides covering, and the design's lower edge
+  sits `WAIST_GAP_M` (1.2 cm) above it, `WAISTLINE_SPAN` (0.66 of her shoulder
+  span) wide. Briefs on the fit form put the band at 1.00 m and low-rise jeans
+  at 0.98 m; the tattoo follows. With no band (no bottoms, or her back covered
+  where the walk starts) it sits where "lower back" does; lower than that
+  reaches the hip joint of the calibration bodies, where a decal stretched 4–6x.
+  The clothes-first check runs as for every placement. All ten lower-back
+  designs build on all six declared-adult bodies (stretch ≤ 1.04); on the fit
+  form every one is 100% visible with stretch ≤ 1.01.
+
+  ![Just above the waistband: tribal butterfly, neotribal heart and waist filigree over briefs; the butterfly over low-rise jeans](images/body-art-waistline.webp)
+
+Where it lives: `wardrobe/body_art/{contract,catalog,raster,rays,surfaces,placement,exposure,project,poses,materials,decorate}.py`,
+`wardrobe/pipeline/{analyze_exposed_skin,apply_body_art}.py`, the I7 skips in
+`wardrobe/engines/geometry_checks.py body_points` and
+`wardrobe/hosiery/poses.py posed_body`, `GET /v1/body-art`,
+`GET /v1/library/{slug}/looks/{lookId}/exposure`. Tests:
+`tests/integration/test_body_art_{invariants,exposure,pipeline}.py`,
+`tests/unit/test_body_art_{projection,artwork,preview}.py`; BA5 adds
+`tools/body_art/install_design.py` and `render_preview.body_art_views`; BA6
+adds `wardrobe/body_art/lifecycle.py`, `wardrobe/pipeline/carry_look.py` and
+`tests/integration/test_body_art_lifecycle.py`; BA7 is `apps/studio/js/app.js`
+(the body-art section), `viewer.js` (`turnTo`), `api.js`, and the Studio-flow
+test in `tests/integration/test_body_art_exposure.py`.

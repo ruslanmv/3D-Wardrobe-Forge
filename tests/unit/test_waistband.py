@@ -98,3 +98,33 @@ def test_the_skirt_handed_in_is_not_changed(skirt):
     metadata, normals = dict(skirt.metadata), skirt.normals.copy()
     add_waistband(skirt, 0.0, 0.0)
     assert skirt.metadata == metadata and np.array_equal(skirt.normals, normals)
+
+
+# ----------------------------------------------------------------------
+# S4. a turned hem
+# ----------------------------------------------------------------------
+def test_a_turned_hem_is_the_bottom_rows_a_little_inside_closed_at_the_edge(skirt):
+    from wardrobe.geometry.waistband import HEM_DEPTH_M, HEM_INSET_M, HEM_SECTION, add_hem_facing
+
+    hemmed = add_hem_facing(skirt, 0.0, 0.0)
+    names = [name for name, _, _ in section_ranges(hemmed)]
+    assert names[-1] == HEM_SECTION and hemmed.vertex_count > skirt.vertex_count
+    (first, count), = [(f, c) for n, f, c in section_ranges(hemmed) if n == HEM_SECTION]
+    facing = np.unique(hemmed.indices.reshape(-1, 3)[first:first + count].reshape(-1))
+    points = hemmed.positions[facing].astype(np.float64)
+    hem = float(skirt.positions[:, 1].min())
+    assert points[:, 1].min() == pytest.approx(hem, abs=1e-6)  # the hem stays where it was cut
+    rows = np.unique(np.round(skirt.positions[:, 1].astype(np.float64), 5))
+    assert points[:, 1].max() <= hem + max(HEM_DEPTH_M, rows[1] - hem) + 1e-5  # at least one row deep
+    # The facing and its lip: radii at the skirt's own and HEM_INSET_M inside it, nothing else.
+    ring = skirt.positions[np.abs(skirt.positions[:, 1] - hem) < 1e-6].astype(np.float64)
+    at_hem = points[np.abs(points[:, 1] - hem) < 1e-6]
+    ring_angle = np.arctan2(ring[:, 0], ring[:, 2])
+    inset = 0
+    for point in at_hem:
+        twin = ring[np.argmin(np.abs(np.angle(np.exp(1j * (ring_angle - np.arctan2(point[0], point[2]))))))]
+        gap = np.hypot(twin[0], twin[2]) - np.hypot(point[0], point[2])
+        assert gap == pytest.approx(0.0, abs=1e-5) or gap == pytest.approx(HEM_INSET_M, abs=1e-4)
+        inset += gap > HEM_INSET_M / 2
+    assert inset >= ring.shape[0] - 1  # the whole hem turned in, the seam's twin aside
+    assert np.allclose(hemmed.positions[:skirt.vertex_count], skirt.positions)  # the skirt itself untouched

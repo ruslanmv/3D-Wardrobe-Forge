@@ -47,6 +47,9 @@ COLORS: dict[str, str] = {
     "grey": "#8a8a90",
     "gray": "#8a8a90",
     "charcoal": "#3a3c42",
+    # S4b. Between grey and charcoal: the uniform-skirt grey of the corrected mini's sheet.
+    "dark grey": "#7a7d85",
+    "dark gray": "#7a7d85",
     "silver": "#c8ccd2",
     "gold": "#c9a227",
     "red": "#b3202b",
@@ -95,6 +98,8 @@ FABRICS: dict[str, tuple[float, float]] = {
     "silk": (0.28, 0.02),
     "velvet": (0.85, 0.0),
     "leather": (0.42, 0.0),
+    # DC3: a napped leather, the over-the-knee boot's default; matte (no FABRIC_FINISH entry)
+    "suede": (0.95, 0.0),
     "denim": (0.88, 0.0),
     "cotton": (0.82, 0.0),
     "linen": (0.86, 0.0),
@@ -653,10 +658,10 @@ def resolve_material(
     # "Sheer lace" and "see-through fishnet" describe the holes, not a second
     # veil over them: a cut-out pattern at full opacity, its gaps open. Only an
     # explicit opacity value makes the threads themselves translucent too.
-    if PATTERNS[pattern].alpha == "mask" and request.opacity is None and parsed.opacity is not None:
+    if PATTERNS[pattern].holes and request.opacity is None and parsed.opacity is not None:
         opacity = 1.0
     if not policy.supports_transparency:
-        if opacity < 1.0 or PATTERNS[pattern].alpha == "mask":
+        if opacity < 1.0 or PATTERNS[pattern].holes:
             notes.append(f"{template.name} cannot be see-through; rendered opaque")
         opacity = 1.0
     # Lining. Asked for, it is honoured: "lined lace" is lined, lingerie included.

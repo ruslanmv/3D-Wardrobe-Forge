@@ -56,6 +56,18 @@ class FoundationOverClothing(WardrobeError):
     reason = FailureReason.FOUNDATION_OVER_CLOTHING
 
 
+class BodyArtNeedsLook(WardrobeError):
+    """BA6. A tattoo-only job on something that is not a finished Forge look."""
+
+    reason = FailureReason.BODY_ART_NEEDS_LOOK
+
+
+class BodyArtNotApplied(WardrobeError):
+    """BA6. A tattoo-only job none of whose tattoos could be made: there is no new look."""
+
+    reason = FailureReason.BODY_ART_NOT_APPLIED
+
+
 class NotHumanoid(WardrobeError):
     reason = FailureReason.SOURCE_NOT_HUMANOID
 
@@ -85,6 +97,8 @@ __all__ = [
     "AdultDeclarationRequired",
     "BodyIncomplete",
     "FoundationOverClothing",
+    "BodyArtNeedsLook",
+    "BodyArtNotApplied",
     "NotHumanoid",
     "PlanningError",
     "ProviderError",

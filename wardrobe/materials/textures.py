@@ -73,10 +73,13 @@ def _lace(size: int = 256, *, lined: bool = False, base: Colour = (1.0, 1.0, 1.0
           lining: Colour = (0.8, 0.8, 0.8)) -> bytes:
     """A rosette on a fine net: the motif opaque, the net threads opaque, the rest holes."""
     u, v = _grid(size)
-    # Ground: a net eight cells across the tile.
+    # Ground: a net eight cells across the tile. OD2: threads ~4 px, not ~2. Seen whole, a
+    # body shrinks the tile to a few pixels and the renderer averages it; at the old width
+    # the tile averaged to a quarter thread, and black lace drew as a pale grey veil. Now it
+    # is a little under half — dark enough to read as black lace, still more hole than net.
     a = _periodic((u + v) * 8.0)
     b = _periodic((u - v) * 8.0)
-    net = _coverage(np.minimum(np.abs(a), np.abs(b)) / (8.0 * np.sqrt(2.0)), 0.004, size)
+    net = _coverage(np.minimum(np.abs(a), np.abs(b)) / (8.0 * np.sqrt(2.0)), 0.009, size)
 
     motif = np.zeros_like(u)
     shade = np.full_like(u, 0.9)

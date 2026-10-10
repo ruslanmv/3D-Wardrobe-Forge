@@ -14,6 +14,9 @@ import { Viewer } from './viewer.js';
 
 const $ = (id) => document.getElementById(id);
 
+// SV1. How long full screen inspection's controls stay after the last touch, in ms.
+const INSPECT_FADE_MS = 2600;
+
 const STEP_LABELS = {
     queued: 'Queued',
     validating: 'Checking the avatar',
@@ -73,11 +76,39 @@ const state = {
         strapCount: 4,
         hardware: 'silver',
     },
+    // DC3. The Collection panel: the dress's choices, the boots chosen, and the looks made from
+    // them this session — the dress look each pair of boots goes on, and each pair already made.
+    collection: {
+        dress: null,
+        boot: null,
+        heel: null,
+        material: null,
+        preset: null,
+        dressLookId: null,
+        made: {},
+    },
     promptDirty: false,
     wardrobe: null,
     activeLookId: null,
     jobId: null,
     urls: { original: null, look: null, previews: [] },
+    // BA7. Body art on the look on stage: the catalogue, that look's exposure, and the tattoo
+    // being set up. The settings outlive a change of look on purpose — trying one design on
+    // three outfits should not mean setting its ink three times.
+    bodyArt: {
+        catalog: null,
+        exposure: null,
+        placement: null,
+        design: null,
+        ink: '#141414',
+        scale: 1,
+        offsetU: 0,
+        offsetV: 0,
+        rotation: 0,
+        opacity: 0.9,
+        mirror: false,
+        thumbs: {},
+    },
 };
 
 let viewer = null;
@@ -136,6 +167,8 @@ function renderKeyControls() {
 // ---------------------------------------------------------------- boot
 async function boot() {
     viewer = new Viewer($('stage-canvas'));
+    // For the console and browser tests: window.wardrobeStudio.viewer.polarDegrees() and the like.
+    window.wardrobeStudio = { viewer };
     bindChrome();
 
     let loaded;
@@ -161,6 +194,15 @@ async function boot() {
     renderLibrary(library);
     renderDesigner();
     initAccount();
+    if (caps.bodyArt) {
+        // BA7. Fetched once; without it the section simply never appears.
+        api.bodyArt()
+            .then((catalog) => {
+                state.bodyArt.catalog = catalog;
+                if (state.activeLookId) renderBodyArt();
+            })
+            .catch((error) => console.warn('body-art catalogue unavailable', error));
+    }
 
     const wanted = new URLSearchParams(location.search).get('avatar');
     const first =
@@ -171,6 +213,9 @@ async function boot() {
 }
 
 function bindChrome() {
+    $('collection-dress-btn').addEventListener('click', makeCollectionDress);
+    $('collection-boots-btn').addEventListener('click', putOnBoots);
+    $('collection-all-btn').addEventListener('click', makeCollectionOutfit);
     document.querySelectorAll('[data-tab-target]').forEach((button) =>
         button.addEventListener('click', () => {
             $('library').closest('.app').dataset.tab = button.dataset.tabTarget;
@@ -198,6 +243,7 @@ function bindChrome() {
     });
 
     $('frame-btn').addEventListener('click', () => viewer.frame());
+    wireInspection();
 
     $('key-btn').addEventListener('click', () => {
         $('key-input').value = auth.key;
@@ -461,7 +507,6 @@ function renderCaps() {
 function renderLibrary(library) {
     const available = state.library.filter((avatar) => avatar.available).length;
     $('library-note').textContent = `${available} of ${state.library.length}`;
-    $('provenance').textContent = library.licenseNote || '';
     $('avatar-list').replaceChildren(
         ...state.library.map((avatar) => {
             const badge =
@@ -528,6 +573,8 @@ async function selectAvatar(slug) {
     if (!avatar || !avatar.available) return;
     state.avatar = avatar;
     state.activeLookId = null;
+    state.collection.dressLookId = null; // the dress a pair of boots goes on is hers, not the next avatar's
+    state.collection.made = {};
     history.replaceState(null, '', `?avatar=${encodeURIComponent(slug)}`);
 
     document
@@ -541,6 +588,7 @@ async function selectAvatar(slug) {
     $('plan-report').hidden = true;
     $('report').hidden = true;
     if (state.vocab) renderDesigner();
+    renderBodyArt(null);
 
     viewer.clear('look');
     revoke(state.urls.look);
@@ -1038,6 +1086,7 @@ function renderDesigner() {
 
     renderStyle(adult);
     renderHosiery(adult);
+    renderCollection();
 
     const words = [...promptWords.fabric, ...Object.values(promptWords.sleeve), ...(promptWords.cut || [])];
     $('word-chips').replaceChildren(
@@ -1117,6 +1166,191 @@ const REVEAL_HINTS = {
     glimpse: 'Hidden standing and walking; the tops show when she sits',
     statement: 'Tops, clasps and strap ends show below the hem',
 };
+
+/**
+ * DC3. A collection (wardrobe.pipeline.fashion_collections): the dress is made once, then each
+ * pair of boots is put on *that look* (baseLookId), so changing boots re-fits the boots and
+ * never rebuilds the dress. A pair already made on this dress is worn again, not remade. Every
+ * choice is words the planner reads; the prompt each button sends is shown under it.
+ */
+function collectionSpec() {
+    return (state.vocab.collections || [])[0] || null;
+}
+
+function collectionDressPrompt(spec) {
+    const c = state.collection;
+    const words = (name) => (spec.dress.options[name].find((o) => o.id === c.dress[name]) || {}).words || '';
+    return [spec.colour, words('material'), words('straps'), words('neckline'), words('back'), spec.dress.noun]
+        .filter(Boolean)
+        .join(' ');
+}
+
+function collectionBootsPrompt(spec) {
+    const c = state.collection;
+    const boot = spec.boots.find((b) => b.id === c.boot) || spec.boots[0];
+    const material = spec.bootMaterials.find((m) => m.id === (c.material || boot.material));
+    const noun = (c.heel && boot.heelNouns && boot.heelNouns[c.heel]) || boot.noun;
+    return [spec.colour, material && material.words, noun].filter(Boolean).join(' ');
+}
+
+function collectionKey(base) {
+    const c = state.collection;
+    return [base, c.boot, c.heel || '', c.material || ''].join('|');
+}
+
+function lookExists(lookId) {
+    return Boolean(lookId && state.wardrobe && state.wardrobe.looks.some((look) => look.id === lookId));
+}
+
+function renderCollection() {
+    const spec = collectionSpec();
+    $('collection-fieldset').hidden = !spec;
+    if (!spec) return;
+    const c = state.collection;
+    if (!c.dress) c.dress = { ...spec.dress.defaults };
+    if (!c.boot) c.boot = spec.boots[0].id;
+    $('collection-title').textContent = `${spec.title} → ${spec.subtitle}`;
+    $('collection-hint').textContent = spec.description;
+
+    const chips = (container, values, current, label, pick) =>
+        container.replaceChildren(
+            ...values.map((value) =>
+                el('button', {
+                    class: 'chip',
+                    type: 'button',
+                    role: 'radio',
+                    'aria-checked': String(current === value.id),
+                    text: label(value),
+                    onclick: () => {
+                        pick(value.id);
+                        renderCollection();
+                        updatePreview();
+                    },
+                })
+            )
+        );
+
+    chips($('collection-presets'), spec.presets, c.preset, (p) => p.title, (id) => {
+        const preset = spec.presets.find((p) => p.id === id);
+        c.preset = id;
+        c.dress = { ...spec.dress.defaults, ...preset.dress };
+        c.boot = preset.boot;
+        c.heel = null;
+        c.material = null;
+    });
+
+    const labels = { straps: 'Straps', neckline: 'Neckline', back: 'Back', material: 'Fabric' };
+    $('collection-dress').replaceChildren(
+        ...Object.keys(labels).map((name) => {
+            const row = el('div', { class: 'chips small', role: 'radiogroup', 'aria-label': labels[name] });
+            chips(row, spec.dress.options[name], c.dress[name], (o) => o.title, (id) => {
+                c.dress[name] = id;
+                c.preset = null;
+            });
+            return el('div', { class: 'style-row' }, el('span', { class: 'style-label', text: labels[name] }), row);
+        })
+    );
+
+    const base = lookExists(c.dressLookId) ? c.dressLookId : null;
+    $('boot-cards').replaceChildren(
+        ...spec.boots.map((boot) => {
+            const made = base && Object.keys(c.made).some((key) => key.startsWith(`${base}|${boot.id}|`) && lookExists(c.made[key]));
+            return el(
+                'button',
+                {
+                    class: 'boot-card',
+                    type: 'button',
+                    role: 'radio',
+                    'aria-checked': String(c.boot === boot.id),
+                    title: boot.prompt,
+                    onclick: () => {
+                        c.boot = boot.id;
+                        c.heel = null;
+                        c.preset = null;
+                        renderCollection();
+                        updatePreview();
+                        // On the dress already made, choosing boots is trying them on.
+                        if (lookExists(c.dressLookId) && !state.jobId) putOnBoots();
+                    },
+                },
+                el('b', { text: `${boot.letter} · ${boot.title}` }),
+                el('small', { text: boot.points.join(' · ') }),
+                made ? el('small', { class: 'made', text: 'made on this dress' }) : null
+            );
+        })
+    );
+    const chosen = spec.boots.find((b) => b.id === c.boot) || spec.boots[0];
+    $('boot-heel-row').hidden = !chosen.heels.length;
+    if (chosen.heels.length) {
+        if (!c.heel) c.heel = chosen.heels[0];
+        chips($('boot-heel'), chosen.heels.map((id) => ({ id })), c.heel, (h) => h.id, (id) => (c.heel = id));
+    }
+    chips($('boot-material'), spec.bootMaterials, c.material || chosen.material, (m) => m.title, (id) => {
+        c.material = id;
+        c.preset = null;
+    });
+
+    const idle = Boolean(state.avatar) && !state.jobId;
+    $('collection-dress-btn').disabled = !idle;
+    $('collection-all-btn').disabled = !idle;
+    $('collection-boots-btn').disabled = !idle || !(lookExists(c.dressLookId) || state.activeLookId);
+    $('collection-dress-btn').title = collectionDressPrompt(spec);
+    $('collection-boots-btn').title = collectionBootsPrompt(spec);
+    $('collection-all-btn').title = `${collectionDressPrompt(spec)} + ${collectionBootsPrompt(spec)}`;
+    $('collection-status').textContent = lookExists(c.dressLookId)
+        ? `Boots go on the dress look you made: only the boots are re-fitted. “${collectionBootsPrompt(spec)}”`
+        : `Make the dress, then try each pair of boots on it — or make the whole outfit in one go.`;
+}
+
+function collectionBody(prompt, baseLookId = null) {
+    return {
+        outfit: { prompt, mode: 'template' },
+        ...(baseLookId ? { baseLookId } : {}),
+        options: {
+            renderPreview: true,
+            engine: state.caps.engines.default || 'auto',
+            baseBody: $('base-body-select').value,
+            ensureFoundation: $('ensure-foundation').checked,
+        },
+    };
+}
+
+async function makeCollectionDress() {
+    const spec = collectionSpec();
+    if (!spec || !state.avatar || state.jobId) return;
+    const prompt = collectionDressPrompt(spec);
+    const job = await runJob(state.avatar.slug, collectionBody(prompt), prompt);
+    if (job && job.state === 'completed' && job.look) {
+        state.collection.dressLookId = job.look.id;
+        state.collection.made = {};
+    }
+    renderCollection();
+}
+
+async function putOnBoots() {
+    const spec = collectionSpec();
+    const c = state.collection;
+    if (!spec || !state.avatar || state.jobId) return;
+    const base = lookExists(c.dressLookId) ? c.dressLookId : state.activeLookId;
+    if (!base) return setStatus('Make the dress first: the boots go on it.', true);
+    const key = collectionKey(base);
+    if (lookExists(c.made[key])) {
+        await wearLook(c.made[key], { mode: 'compare' });
+        return renderCollection();
+    }
+    const prompt = collectionBootsPrompt(spec);
+    const job = await runJob(state.avatar.slug, collectionBody(prompt, base), prompt);
+    if (job && job.state === 'completed' && job.look) c.made[key] = job.look.id;
+    renderCollection();
+}
+
+async function makeCollectionOutfit() {
+    const spec = collectionSpec();
+    if (!spec || !state.avatar || state.jobId) return;
+    const prompt = `${collectionDressPrompt(spec)} + ${collectionBootsPrompt(spec)}`;
+    await runJob(state.avatar.slug, collectionBody(prompt), prompt);
+    renderCollection();
+}
 
 /**
  * Hosiery & Suspenders, disclosed a step at a time: one switch, then the look (a preset)
@@ -1344,34 +1578,41 @@ function buildOnLook() {
 // ---------------------------------------------------------------- generation
 async function generate() {
     if (!state.avatar || state.jobId) return;
-    const slug = state.avatar.slug;
     const outfit = outfitRequest();
     if (outfit.prompt.length < 2) return setStatus('Describe the garment first.', true);
+    await runJob(state.avatar.slug, jobBody(outfit), outfit.prompt);
+}
 
+/** Submit a library job and follow it to the end: an outfit (generate) or a tattoo (BA7). */
+async function runJob(slug, body, title) {
     $('generate-btn').disabled = true;
     $('report').hidden = true;
-    showJob({ state: 'queued', events: [] }, outfit.prompt);
+    showJob({ state: 'queued', events: [] }, title);
 
     let job;
     try {
-        const base = buildOnLook();
-        job = await api.createLibraryJob(slug, jobBody(outfit));
+        job = await api.createLibraryJob(slug, body);
     } catch (error) {
-        return finishJob({ state: 'failed', error: describe(error), events: [] }, slug, outfit.prompt);
+        await finishJob({ state: 'failed', error: describe(error), events: [] }, slug, title);
+        return null;
     }
 
     state.jobId = job.id;
+    syncBodyArtButton();
+    renderCollection();
     while (state.jobId === job.id) {
         try {
             job = await api.job(job.id);
         } catch (error) {
-            return finishJob({ state: 'failed', error: describe(error), events: [] }, slug, outfit.prompt);
+            await finishJob({ state: 'failed', error: describe(error), events: [] }, slug, title);
+            return null;
         }
-        showJob(job, outfit.prompt);
+        showJob(job, title);
         if (state.vocab.terminalStates.includes(job.state)) break;
         await new Promise((resolve) => setTimeout(resolve, POLL_MS));
     }
-    await finishJob(job, slug, outfit.prompt);
+    await finishJob(job, slug, title);
+    return job;
 }
 
 function jobBody(outfit) {
@@ -1383,6 +1624,7 @@ function jobBody(outfit) {
             renderPreview: true,
             engine: state.caps.engines.default || 'auto',
             baseBody: $('base-body-select').value,
+            ensureFoundation: $('ensure-foundation').checked,
         },
     };
 }
@@ -1480,6 +1722,8 @@ function showJob(job, prompt) {
 async function finishJob(job, slug, prompt) {
     state.jobId = null;
     $('generate-btn').disabled = !state.avatar;
+    syncBodyArtButton();
+    renderCollection();
     showJob(job, prompt);
     if (job.state !== 'completed') {
         $('job-message').textContent = job.error || `The job ended ${job.state}.`;
@@ -1509,11 +1753,14 @@ function renderReport(report, look = null) {
             class: `report-line ${report.clippingCheck === 'failed' ? 'bad' : report.clippingCheck === 'warnings' ? 'warn' : ''}`,
             text: `Clearance: ${report.clippingCheck}${clippingWarning ? ` — ${clippingWarning}` : ''}`,
         }),
-        el('p', {
-            class: 'report-line',
-            text: `${report.garmentVertices} vertices · ${report.garmentTriangles} triangles · ${report.engine} engine`,
-        }),
-    ];
+        // A tattoo-only look (BA6) builds no garment: nothing to count.
+        report.garmentVertices || !report.bodyArt
+            ? el('p', {
+                  class: 'report-line',
+                  text: `${report.garmentVertices} vertices · ${report.garmentTriangles} triangles · ${report.engine} engine`,
+              })
+            : null,
+    ].filter(Boolean);
     if (report.clippingCheck === 'failed' && !state.caps.engines.bodyMasking) {
         lines.push(
             el('p', {
@@ -1529,6 +1776,7 @@ function renderReport(report, look = null) {
         lines.push(el('p', { class: 'report-line', text: `Took off her ${body.removedSlots.join(' and ')} · fitted to her body` }));
     }
     if (report.hosiery) lines.push(...hosieryReport(report.hosiery, look));
+    if (report.bodyArt) lines.push(...bodyArtReport(report.bodyArt, look));
     $('report').replaceChildren(...lines);
     $('report').hidden = false;
 }
@@ -1569,6 +1817,270 @@ function hosieryReport(h, look) {
     if (pics.length)
         out.push(el('div', { class: 'hosiery-previews' }, ...pics.map((k) => el('img', { src: previews[k], alt: k, title: k, loading: 'lazy' }))));
     if (h.previews && h.previews.note) out.push(el('p', { class: 'report-line warn', text: h.previews.note }));
+    return out;
+}
+
+// ---------------------------------------------------------------- body art (BA7)
+// Offered on a finished look and nowhere else. Whether skin is visible is exact only once
+// the outfit is built — a jacket's hem, a bra's back band, her own kept clothes — so the
+// designer has no tattoo controls: this section asks the server where *this* look leaves
+// her skin visible and offers only those placements. With none it says so in one line and
+// offers nothing; there is no "put it on anyway", because the server would not.
+async function renderBodyArt(lookId = state.activeLookId) {
+    const box = $('body-art');
+    const art = state.bodyArt;
+    if (!state.caps || !state.caps.bodyArt || !art.catalog || !lookId || !state.avatar) {
+        box.hidden = true;
+        box.replaceChildren();
+        art.exposure = null;
+        return;
+    }
+    const slug = state.avatar.slug;
+    box.hidden = false;
+    box.replaceChildren(
+        el('h3', { text: 'Body art · optional' }),
+        el('p', { class: 'report-line', text: 'Checking which skin this outfit leaves visible…' })
+    );
+    let exposure;
+    try {
+        exposure = await api.lookExposure(slug, lookId);
+    } catch (error) {
+        if (state.activeLookId !== lookId) return;
+        return box.replaceChildren(
+            el('h3', { text: 'Body art · optional' }),
+            el('p', { class: 'report-line bad', text: describe(error) })
+        );
+    }
+    // A slow answer for a look no longer on stage must not paint over the current one.
+    if (state.activeLookId !== lookId || !state.avatar || state.avatar.slug !== slug) return;
+    art.exposure = exposure;
+    if (!exposure.eligible.includes(art.placement)) {
+        art.placement = exposure.eligible[0] || null;
+        art.design = null;
+    }
+    drawBodyArt();
+}
+
+function placementInfo(id) {
+    return state.bodyArt.catalog.placements.find((p) => p.id === id) || { id, name: id, facing: 'back' };
+}
+
+function designInfo(id) {
+    return state.bodyArt.catalog.designs.find((d) => d.id === id) || { id, name: id };
+}
+
+/** A design's picture, inked: its PNG is white with the ink as alpha, so it masks a colour. */
+function inkSwatch(designId) {
+    const art = state.bodyArt;
+    const swatch = el('span', { class: 'tattoo-ink' });
+    swatch.style.backgroundColor = art.ink;
+    const paint = (url) => {
+        swatch.style.maskImage = swatch.style.webkitMaskImage = `url("${url}")`;
+    };
+    if (art.thumbs[designId]) paint(art.thumbs[designId]);
+    else
+        api.blobUrl(`/v1/body-art/designs/${encodeURIComponent(designId)}.png`)
+            .then((url) => {
+                art.thumbs[designId] = url; // kept for the session: ten small PNGs
+                paint(url);
+            })
+            .catch(() => swatch.classList.add('missing'));
+    return el('span', { class: 'tattoo-skin' }, swatch);
+}
+
+function bodyArtSlider(label, key, min, max, step, format) {
+    const art = state.bodyArt;
+    const output = el('output', { text: format(art[key]) });
+    const input = el('input', { type: 'range', min, max, step, value: art[key] });
+    input.addEventListener('input', () => {
+        art[key] = Number(input.value);
+        output.textContent = format(art[key]);
+    });
+    return el('label', { class: 'body-art-row' }, el('span', { text: label }), input, output);
+}
+
+function drawBodyArt() {
+    const box = $('body-art');
+    const art = state.bodyArt;
+    const exposure = art.exposure;
+    const look = state.wardrobe && state.wardrobe.looks.find((l) => l.id === state.activeLookId);
+    if (!exposure || !look) return;
+    const parts = [el('h3', { text: 'Body art · optional' })];
+
+    // What this look already carries, drawn or under its clothes; each can be taken off.
+    const tattoos = exposure.tattoos || [];
+    if (tattoos.length)
+        parts.push(
+            el(
+                'ul',
+                { class: 'body-art-on' },
+                tattoos.map((t) =>
+                    el(
+                        'li',
+                        {},
+                        el('span', {
+                            text: `${designInfo(t.design).name} · ${placementInfo(t.placement).name.toLowerCase()}${
+                                t.state === 'applied' ? '' : ' (under the outfit)'
+                            }`,
+                        }),
+                        el('button', {
+                            class: 'link',
+                            type: 'button',
+                            text: 'Remove',
+                            title: 'A new look without this tattoo; the clothes stay exactly as they are',
+                            onclick: () =>
+                                runBodyArt(
+                                    { bodyArtRemove: [t.placement] },
+                                    `${look.name} without the ${placementInfo(t.placement).name.toLowerCase()} tattoo`,
+                                    placementInfo(t.placement).facing
+                                ),
+                        })
+                    )
+                )
+            )
+        );
+
+    if (!exposure.eligible.length) {
+        parts.push(el('p', { class: 'report-line', text: exposure.reason || 'No suitable exposed placement for this outfit.' }));
+        return box.replaceChildren(...parts);
+    }
+
+    parts.push(
+        el('p', { class: 'body-art-label', text: 'Visible' }),
+        el(
+            'div',
+            { class: 'chips small', role: 'radiogroup', 'aria-label': 'Placement' },
+            exposure.eligible.map((id) =>
+                el('button', {
+                    class: 'chip',
+                    type: 'button',
+                    role: 'radio',
+                    'aria-checked': String(id === art.placement),
+                    text: `✓ ${placementInfo(id).name.toLowerCase()}`,
+                    onclick: () => {
+                        art.placement = id;
+                        art.design = null;
+                        viewer.turnTo(placementInfo(id).facing);
+                        drawBodyArt();
+                    },
+                })
+            )
+        )
+    );
+
+    const designs = art.catalog.designs.filter((d) => d.placements.includes(art.placement));
+    if (!designs.some((d) => d.id === art.design)) art.design = designs.length ? designs[0].id : null;
+    parts.push(
+        el(
+            'div',
+            { class: 'tattoo-tiles', role: 'radiogroup', 'aria-label': 'Design' },
+            designs.map((d) =>
+                el(
+                    'button',
+                    {
+                        class: 'tattoo-tile',
+                        type: 'button',
+                        role: 'radio',
+                        'aria-checked': String(d.id === art.design),
+                        title: d.description || d.name,
+                        onclick: () => {
+                            art.design = d.id;
+                            drawBodyArt();
+                        },
+                    },
+                    inkSwatch(d.id),
+                    el('span', { class: 'tattoo-name', text: d.name })
+                )
+            )
+        )
+    );
+
+    const ink = el('input', { type: 'color', value: art.ink });
+    ink.addEventListener('change', () => {
+        art.ink = ink.value;
+        box.querySelectorAll('.tattoo-ink').forEach((node) => (node.style.backgroundColor = art.ink));
+    });
+    const mirror = el('input', { type: 'checkbox' });
+    mirror.checked = art.mirror;
+    mirror.addEventListener('change', () => (art.mirror = mirror.checked));
+    const pct = (v) => `${Math.round(v * 100)}%`;
+    const signed = (v) => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`;
+    parts.push(
+        el(
+            'div',
+            { class: 'body-art-controls' },
+            el('label', { class: 'body-art-row' }, el('span', { text: 'Ink' }), ink, el('output', { text: '' })),
+            bodyArtSlider('Size', 'scale', 0.5, 1.5, 0.05, pct),
+            bodyArtSlider('Across', 'offsetU', -0.25, 0.25, 0.01, signed),
+            bodyArtSlider('Up', 'offsetV', -0.25, 0.25, 0.01, signed),
+            bodyArtSlider('Rotation', 'rotation', -30, 30, 1, (v) => `${v}°`),
+            bodyArtSlider('Opacity', 'opacity', 0.3, 1, 0.05, pct),
+            el('label', { class: 'check' }, mirror, el('span', { text: 'Mirror' }))
+        ),
+        el('button', {
+            class: 'primary',
+            type: 'button',
+            id: 'body-art-apply',
+            text: 'Add tattoo',
+            disabled: !art.design || Boolean(state.jobId),
+            onclick: () => {
+                const design = designInfo(art.design);
+                const place = placementInfo(art.placement);
+                runBodyArt(
+                    {
+                        bodyArt: [
+                            {
+                                design: art.design,
+                                placement: art.placement,
+                                scale: art.scale,
+                                offsetU: art.offsetU,
+                                offsetV: art.offsetV,
+                                rotation: art.rotation,
+                                opacity: art.opacity,
+                                ink: art.ink,
+                                mirror: art.mirror,
+                            },
+                        ],
+                    },
+                    `${design.name} on her ${place.name.toLowerCase()}`,
+                    place.facing
+                );
+            },
+        }),
+        el('p', {
+            class: 'export-hint',
+            text: 'A new look with the tattoo added; this look and its clothes stay exactly as they are.',
+        })
+    );
+    box.replaceChildren(...parts);
+}
+
+function syncBodyArtButton() {
+    const button = $('body-art-apply');
+    if (button) button.disabled = !state.bodyArt.design || Boolean(state.jobId);
+}
+
+/** A tattoo-only job on the look on stage (BA6): no outfit, so its clothes are carried over. */
+async function runBodyArt(fields, title, facing) {
+    if (!state.avatar || state.jobId || !state.activeLookId) return;
+    const body = {
+        baseLookId: state.activeLookId,
+        ...fields,
+        options: { renderPreview: true, engine: state.caps.engines.default || 'auto' },
+    };
+    const job = await runJob(state.avatar.slug, body, title);
+    if (job && job.state === 'completed' && job.look && state.activeLookId === job.look.id) viewer.turnTo(facing);
+}
+
+/** The fit report's body-art block: what was added, kept or covered, and the back view. */
+function bodyArtReport(items, look) {
+    const out = [el('h3', { text: 'Body art' })];
+    for (const item of items)
+        out.push(el('p', { class: `report-line ${item.applied ? '' : 'warn'}`, text: `${item.applied ? '✓' : '·'} ${item.message}` }));
+    const previews = (look && look.previews) || {};
+    const pics = ['preview-back', 'preview-front'].filter((k) => previews[k]);
+    if (pics.length)
+        out.push(el('div', { class: 'hosiery-previews' }, ...pics.map((k) => el('img', { src: previews[k], alt: k, title: k, loading: 'lazy' }))));
     return out;
 }
 
@@ -1671,6 +2183,7 @@ async function wearLook(lookId, { mode = null } = {}) {
         setViewMode(mode || (viewer.mode === 'original' ? 'compare' : viewer.mode));
         setStatus(look.prompt ? `“${look.prompt}”` : look.name);
         updatePreview();
+        renderBodyArt(lookId);
     } catch (error) {
         setStatus(`Could not load ${look.name}: ${describe(error)}`, true);
     }
@@ -1689,6 +2202,7 @@ async function removeLook(look) {
         revoke(state.urls.look);
         state.urls.look = null;
         setViewMode('original');
+        renderBodyArt(null);
     }
     await loadWardrobe();
 }
@@ -1716,3 +2230,112 @@ async function exportBundle() {
 }
 
 boot();
+
+/**
+ * SV1. Full screen garment inspection.
+ *
+ * On a phone the Studio's viewport is what is left between a title, a view switch, a
+ * toolbar and the panels: she is a few centimetres tall and the garment is a smudge. The
+ * expand button gives the stage the whole screen — through the Fullscreen API where there
+ * is one, and as a fixed layer over the page where there is not (an iPhone's Safari), so
+ * the result is the same either way — and takes every control off it but a close button
+ * and Front / Side / Back / Free. Those fade after a moment and come back on a tap, so
+ * nothing sits over the garment while it is being looked at.
+ *
+ * The browser can end full screen on its own (Escape, a back gesture), so leaving is one
+ * function whichever way it happens, and it always restores the page it found.
+ */
+function wireInspection() {
+    const stage = $('stage-canvas').closest('.stage');
+    const bar = $('inspect-bar');
+    const close = $('inspect-close');
+    let fadeTimer = 0;
+    let active = false;
+    let modeBefore = null;
+
+    const showControls = () => {
+        stage.classList.remove('controls-hidden');
+        clearTimeout(fadeTimer);
+        fadeTimer = setTimeout(() => stage.classList.add('controls-hidden'), INSPECT_FADE_MS);
+    };
+
+    const choose = (view) => {
+        bar.querySelectorAll('[data-inspect]').forEach((button) =>
+            button.setAttribute('aria-checked', String(button.dataset.inspect === view))
+        );
+        viewer.inspect(view);
+    };
+
+    // After the stage has its new size: frame for the screen it is now on.
+    const settle = (then) => requestAnimationFrame(() => requestAnimationFrame(() => {
+        viewer.resize();
+        then();
+    }));
+
+    const enter = async () => {
+        if (active) return;
+        active = true;
+        // One figure, full height: side by side halves her, and the switch is hidden here.
+        modeBefore = viewer.mode;
+        if (modeBefore === 'compare') setViewMode('look');
+        stage.classList.add('is-immersive');
+        document.documentElement.classList.add('inspecting');
+        bar.hidden = false;
+        close.hidden = false;
+        viewer.immersive = true;
+        const request = stage.requestFullscreen || stage.webkitRequestFullscreen;
+        if (request && !document.fullscreenElement) {
+            try {
+                await request.call(stage, { navigationUI: 'hide' });
+            } catch {
+                // Refused or unsupported: the fixed layer already fills the window.
+            }
+        }
+        settle(() => choose('front'));
+        showControls();
+        close.focus({ preventScroll: true });
+    };
+
+    const leave = () => {
+        if (!active) return;
+        active = false;
+        clearTimeout(fadeTimer);
+        stage.classList.remove('is-immersive', 'controls-hidden');
+        document.documentElement.classList.remove('inspecting');
+        bar.hidden = true;
+        close.hidden = true;
+        viewer.immersive = false;
+        viewer.view = 'free';
+        viewer.orbitFor('free'); // SV2. Outside full screen the Studio orbits freely, as it always did
+        if (modeBefore && modeBefore !== viewer.mode) setViewMode(modeBefore);
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+        settle(() => viewer.frame());
+        $('inspect-btn').focus({ preventScroll: true });
+    };
+
+    $('inspect-btn').addEventListener('click', enter);
+    close.addEventListener('click', leave);
+    bar.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-inspect]');
+        if (!button) return;
+        choose(button.dataset.inspect);
+        showControls();
+    });
+    // A tap on her shows the controls; a double tap has reset the shot (viewer.reset()).
+    viewer.onTap = () => active && showControls();
+    viewer.onDoubleTap = () => active && showControls();
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && active) leave();
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && active) leave();
+    });
+    // Turning the phone round (or resizing the window) changes the frame: keep her in it.
+    // A free view is the person's own and is left alone.
+    let resizeTimer = 0;
+    window.addEventListener('resize', () => {
+        if (!active) return;
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => settle(() => viewer.view !== 'free' && viewer.reset()), 150);
+    });
+}
