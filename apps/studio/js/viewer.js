@@ -16,6 +16,17 @@
  * only the last one to be requested may land, and the others dispose themselves
  * on arrival rather than flashing onto the stage out of order.
  *
+ * OC2. Compare is two viewports, not two positions. It used to stand the original and the
+ * look 0.62 m either side of the origin along world X and orbit one camera round both. From
+ * the front that is side by side; from her side, or from underneath, the X separation turns
+ * into depth and one figure stands inside the other — the original's jacket through the new
+ * dress, which reads as one broken outfit when nothing is wrong with either. Now both stand
+ * at the origin and each frame is drawn twice, the original into the left half of the canvas
+ * and the look into the right, through the same camera at half the aspect. They can no longer
+ * overlap from any angle, and turning one turns the other the same way, which is the
+ * comparison. Compare also keeps the camera within 5° of level, as Front/Side/Back do: a
+ * view from beneath is for inspecting one garment, in Look.
+ *
  * SV1. The camera is an inspection camera, on a phone as on a desk: one finger turns
  * her, a pinch zooms toward the fingers, two fingers pan, a double tap puts the shot back.
  * Front, side and back are the same shot from three places (inspect()), and keep the camera
@@ -42,7 +53,6 @@ const RELAXED = {
     leftLowerArm: [0, 0.18, 0],
     rightLowerArm: [0, -0.18, 0],
 };
-const COMPARE_GAP = 0.62; // metres between the two figures' centres, per side
 // SV1. The orbit's limits from straight overhead for the Front, Side and Back presets: never
 // quite overhead (the controls spin about the pole there), and at most 5° under level.
 const MIN_POLAR = THREE.MathUtils.degToRad(8);
@@ -124,8 +134,14 @@ export class Viewer {
         const { clientWidth: width, clientHeight: height } = this.container;
         if (!width || !height) return;
         this.renderer.setSize(width, height, false);
-        this.camera.aspect = width / height;
+        // OC2. In Compare each figure gets half the canvas, so the camera frames for half.
+        this.camera.aspect = width / height / (this.comparing() ? 2 : 1);
         this.camera.updateProjectionMatrix();
+    }
+
+    /** OC2. Compare, with both figures loaded: the frame is drawn as two halves. */
+    comparing() {
+        return this.mode === 'compare' && Boolean(this.slots.original && this.slots.look);
     }
 
     tick() {
@@ -133,7 +149,28 @@ export class Viewer {
         for (const slot of Object.values(this.slots)) if (slot) slot.vrm.update(delta);
         this.controls.update();
         this.keepTargetOnHer();
-        this.renderer.render(this.scene, this.camera);
+        if (!this.comparing()) {
+            this.renderer.render(this.scene, this.camera);
+            return;
+        }
+        // OC2. The original on the left half, the look on the right, through one camera.
+        const size = this.renderer.getSize(new THREE.Vector2());
+        const half = Math.floor(size.x / 2);
+        const { original, look } = this.slots;
+        this.renderer.setScissorTest(true);
+        for (const [shown, hidden, x, width] of [
+            [original, look, 0, half],
+            [look, original, half, size.x - half],
+        ]) {
+            shown.group.visible = true;
+            hidden.group.visible = false;
+            this.renderer.setViewport(x, 0, width, size.y);
+            this.renderer.setScissor(x, 0, width, size.y);
+            this.renderer.render(this.scene, this.camera);
+        }
+        this.renderer.setScissorTest(false);
+        this.renderer.setViewport(0, 0, size.x, size.y);
+        original.group.visible = look.group.visible = true;
     }
 
     /**
@@ -215,7 +252,7 @@ export class Viewer {
 
     /** SV2. The orbit a view allows: near level for Front, Side and Back; the whole sphere for Free. */
     orbitFor(view) {
-        const free = view === 'free';
+        const free = view === 'free' && !this.comparing();
         this.controls.minPolarAngle = free ? FREE_MIN_POLAR : MIN_POLAR;
         this.controls.maxPolarAngle = free ? FREE_MAX_POLAR : MAX_POLAR;
         this.controls.update();
@@ -272,6 +309,8 @@ export class Viewer {
     setMode(mode) {
         this.mode = mode;
         this.layout();
+        // OC2. Into Compare from the front, level; out of it, the view's own orbit again.
+        this.orbitFor(this.view);
         this.frame();
     }
 
@@ -298,22 +337,10 @@ export class Viewer {
 
     layout() {
         const { original, look } = this.slots;
-        const compare = this.mode === 'compare' && original && look;
-        if (original) {
-            original.group.visible = this.mode !== 'look' || !look;
-            original.group.position.x = compare ? -COMPARE_GAP : 0;
-        }
-        if (look) {
-            look.group.visible = this.mode !== 'original';
-            look.group.position.x = compare ? COMPARE_GAP : 0;
-        }
-        // SV1. A figure that just jumped sideways would otherwise swing its hair and skirt
-        // springs out like horns for a second: let them start from where she now stands.
-        for (const slot of [original, look]) {
-            if (!slot) continue;
-            slot.group.updateMatrixWorld(true);
-            slot.vrm.springBoneManager?.reset?.();
-        }
+        // OC2. Both stand at the origin in every mode; Compare separates them on screen (tick()).
+        if (original) original.group.visible = this.mode !== 'look' || !look;
+        if (look) look.group.visible = this.mode !== 'original';
+        this.resize(); // a slot filled or emptied in Compare changes the frame's aspect
     }
 
     /** Fit whatever is visible into the frame, head to toe. */

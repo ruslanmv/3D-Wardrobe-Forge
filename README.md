@@ -90,6 +90,7 @@ set for materials: lace, mesh, fishnet, sequin, latex and layering.
 | 🧥 **Layered outfits** | `bralette + briefs + stockings + sheer dress + cropped jacket` is built in one job, in order, with each layer clearing the ones inside it. |
 | 🔍 **Base Body Prep** | Garment inventory, a strip plan for the whole outfit, and a body-integrity check before anything comes off. It never outputs an undressed avatar and never generates anatomy. |
 | 🧱 **Auto Foundation** | `ensureFoundation`: a foundation under the clothes, added only where she has none — kept from look to look, replaced by a bikini or lingerie, and what lets a dress VRoid filed as a top come off under a skirt. See [docs/STYLING.md](docs/STYLING.md#auto-foundation-optionsensurefoundation). |
+| 🗺️ **Occasions first** | The Studio opens on *What are we dressing for?* — Night out, Work, Gym, Sleep, Shopping, Vacation, Campus (and Private, only with private mode) — then a style, then a few looks she wears at once; quick changes, a tattoo only where the outfit leaves skin, and the designer under Customize. **Compare** shows original and look in two halves that never overlap. See [docs/OCCASIONS.md](docs/OCCASIONS.md). |
 | 📐 **Measured fit** | Hair and head never count as body. Legs, arms, crotch, armpit and shoulders are measured. Clearance is checked at vertices and across faces. |
 | ✅ **Validation** | File, humanoid mapping, weights, skeleton, expressions, severe intersections, recoverability and preview, all re-checked from the output bytes. |
 | 📦 **Export** | One call packs an avatar's whole wardrobe as a static bundle. [3D-Avatar-Chatbot](https://github.com/ruslanmv/3D-Avatar-Chatbot) and yourfriend.online load it by unzipping it. |
@@ -609,6 +610,7 @@ Stated plainly, because the gallery shows them:
 | [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | the design: flat straps, clip hardware, denier falloff and the web preview backend |
 | [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section, the lower-back set; BA1–BA7 and BA11 built |
 | [DISCOTECA](docs/DISCOTECA.md) | Sexy Discoteca — All Black: the bodycon dress, four boots built round her posed foot, heels as a stance baked into the rest pose, the Studio's Collection panel |
+| [OCCASIONS](docs/OCCASIONS.md) | Occasion → style → look: the Studio's first screen, who sees which look, the `occasion` label on a look, quick changes, and Compare as two viewports |
 | [LINGERIE_COLLECTION](docs/LINGERIE_COLLECTION.md) | collections: the Italian lace bralette with a thong or Brazilian bottom, finishing built on the fitted garment, named components, the product sheet |
 | [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the plan (not yet built): fashion-fit mannequin, ribbon straps, brief, bra and bodysuit blocks, feet, fabrics, elastic tension, validation |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | components, layers, extension points |

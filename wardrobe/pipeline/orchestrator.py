@@ -53,6 +53,7 @@ from wardrobe.pipeline import (
     validate_source,
 )
 from wardrobe.pipeline.context import PipelineContext
+from wardrobe.pipeline.occasions import tag as occasion_tag
 from wardrobe.policy.file_safety import sanitize_component
 from wardrobe.queue.jobs import JobQueue, create_job_queue
 from wardrobe.storage.database import JobRepository, WardrobeRepository, create_repositories
@@ -379,6 +380,8 @@ class Orchestrator:
             )
 
         manifest.source_hash = manifest.source_hash or context.source_sha256
+        label = record.request.options.occasion
+        occasion, style = occasion_tag(label.model_dump() if label else None)
         manifest.upsert(
             WardrobeLook(
                 id=look.id,
@@ -389,6 +392,8 @@ class Orchestrator:
                 createdAt=datetime.now(UTC),
                 fitPassed=context.fit_report.passed,
                 private=record.request.options.private,
+                occasion=occasion,
+                style=style,
             )
         )
         await self.wardrobes.save(manifest)

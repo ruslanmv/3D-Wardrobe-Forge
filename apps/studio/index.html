@@ -81,9 +81,12 @@
                     <div class="seg" id="view-mode" role="radiogroup" aria-label="View">
                         <button type="button" role="radio" data-mode="original" aria-checked="true">Original</button>
                         <button type="button" role="radio" data-mode="look" disabled>Look</button>
-                        <button type="button" role="radio" data-mode="compare" disabled><span class="long">Side by side</span><span class="short">Both</span></button>
+                        <!-- OC2. "Compare", not "Both": both read as "both outfits on her at once". -->
+                        <button type="button" role="radio" data-mode="compare" disabled title="Her original and the new look, side by side">Compare</button>
                     </div>
                 </div>
+                <!-- OC2. Compare draws two halves; these say which half is which. -->
+                <div class="compare-labels" aria-hidden="true"><span>Original</span><span>Look</span></div>
                 <div class="stage-tools">
                     <button type="button" class="tool" id="pose-btn" aria-pressed="false" title="Show the rest pose — arms out, where clipping under the arms is visible">
                         T-pose
@@ -110,10 +113,45 @@
                 </div>
             </main>
 
-            <section class="panel designer" id="designer" aria-label="Garment designer">
-                <div class="panel-head">
-                    <h2>Design a garment</h2>
+            <section class="panel designer" id="designer" aria-label="Dress her">
+                <!--
+                    OC3. Occasion first: where she is going, then a style, then a few looks to wear.
+                    Filled by app.js from GET /v1/outfits (wardrobe.pipeline.occasions); the garment
+                    designer is still all here, folded under Customize.
+                -->
+                <div class="occasion-flow" id="occasion-flow" aria-live="polite">
+                    <nav class="crumbs" id="occasion-crumbs" aria-label="Back"></nav>
+                    <div id="occasion-body"><p class="hint">Loading occasions…</p></div>
                 </div>
+
+                <!-- OC3. Once she wears a look: quick changes, then extras only where they apply. -->
+                <div class="look-actions" id="look-actions" hidden>
+                    <div class="look-actions-head">
+                        <div>
+                            <strong id="look-actions-name"></strong>
+                            <span id="look-actions-sub"></span>
+                        </div>
+                        <div class="look-actions-tools">
+                            <button type="button" class="tool" id="save-look-btn" aria-pressed="false">♡ Save</button>
+                            <button type="button" class="tool" id="compare-btn" aria-pressed="false" title="Her original and this look, side by side">◐ Compare</button>
+                            <button type="button" class="tool" id="turn-btn" aria-pressed="false">↻ Turn</button>
+                        </div>
+                    </div>
+                    <div class="quick" id="quick-changes"></div>
+                    <form class="tell" id="tell-form">
+                        <input id="tell-input" type="text" maxlength="200" autocomplete="off" placeholder="Tell me what to change… “make it red”, “a cream cardigan”, “something for the beach”" aria-label="Tell me what to change" />
+                        <button type="submit" class="secondary" id="tell-btn">Go</button>
+                    </form>
+                    <div class="extras" id="extras" hidden>
+                        <p class="extras-title">Make it yours</p>
+                        <div class="chips small" id="extras-chips"></div>
+                        <!-- BA7. Body art, offered from this look's exposure: filled by app.js. -->
+                        <div class="body-art" id="body-art" aria-label="Body art" hidden></div>
+                    </div>
+                </div>
+
+                <details class="customize" id="customize">
+                    <summary>Customize · the garment designer</summary>
                 <form id="design-form" novalidate>
                     <!-- DC3. A collection: a dress made once, then each pair of its boots put on that look. -->
                     <fieldset class="style collection" id="collection-fieldset" hidden>
@@ -289,6 +327,7 @@
                     </label>
                     <button type="submit" class="primary" id="generate-btn" disabled>Generate look</button>
                 </form>
+                </details>
 
                 <div class="job" id="job" hidden>
                     <div class="job-head">
@@ -315,14 +354,14 @@
                 </div>
                 <div class="shelf-row">
                     <div class="shelf-looks">
+                        <!-- OC3. Her looks by the occasion each was made for, and the ones saved with ♡. -->
+                        <div class="chips small shelf-filter" id="shelf-filter" role="radiogroup" aria-label="Show"></div>
                         <div class="looks" id="looks"></div>
                         <p class="export-hint">
                             A wardrobe pack: every look hashed and rated. Import it in 3D-Avatar-Chatbot with
                             Try-On ▸ Import wardrobe pack, or ship it with <code>npm run wardrobe:import</code>.
                         </p>
                     </div>
-                    <!-- BA7. Body art, on the look on stage only: filled by app.js from that look's exposure. -->
-                    <div class="body-art" id="body-art" aria-label="Body art" hidden></div>
                 </div>
             </section>
         </div>

@@ -77,6 +77,11 @@ class FailureReason(StrEnum):
     INTERNAL = "internal_error"
 
 
+class OccasionTag(BaseModel):
+    occasion: str = Field(max_length=40)
+    style: str | None = Field(default=None, max_length=40)
+
+
 class JobOptions(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -104,6 +109,10 @@ class JobOptions(BaseModel):
     #: tube top and slip shorts on any other: no avatar needs a declaration to get dressed.
     #: Off by default, so a job that never asked is planned exactly as before.
     ensure_foundation: bool = Field(default=False, alias="ensureFoundation")
+    #: OC1. What the look was made for — ``{"occasion": "night-out", "style": "discoteca"}`` —
+    #: kept on the wardrobe entry so a shelf can group by occasion. A label only: it plans and
+    #: gates nothing, and one naming no occasion in wardrobe.pipeline.occasions is dropped.
+    occasion: OccasionTag | None = None
     #: Set by the server, never by a caller: the job relied on an admin session's
     #: adult declaration, so it and its look are shown only to an admin session
     #: (apps/api/admin.py). The public job routes force it off.

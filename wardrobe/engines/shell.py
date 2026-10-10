@@ -201,6 +201,15 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # The layers already fitted are part of what this one must clear: a
         # dress goes over the underwear, not through it.
         whole = np.vstack([whole, inner])
+        # OC3. Only an inner layer's body, not its sleeves, is outline: the hull is taken from
+        # her torso without arms (OUTLINE_EXCLUDED_BONES), and a blouse's sleeve held out in
+        # the rest pose is as much an arm as hers. Added whole, it widened the shoulder bands
+        # to the blouse's cuffs, so a blazer over a blouse had its shoulders pushed out 65 cm
+        # along the sleeve — torso vertices that may not follow the arm, left standing straight
+        # out like a plank when her arms came down. Sleeves are lofted round their own bone
+        # with their own clearance; the radial index never spoke for them.
+        if segments:
+            inner = inner[select_region_points(inner, segments, set(bones) - OUTLINE_EXCLUDED_BONES)]
         body = np.vstack([body, inner])
         torso = inner if torso is None else np.vstack([torso, inner])
         # Stockings under trousers: their legs are what the trouser legs must clear.

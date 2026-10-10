@@ -66,6 +66,8 @@ GROUPS: tuple[Group, ...] = (
     # DC3. Sexy Discoteca — All Black: the bodycon dress with each of four black boots.
     Group("discoteca", "Sexy Discoteca · All Black"),
     Group("smart", "Smart"),
+    # OC1. Training, yoga and athleisure: what the Gym occasion (wardrobe.pipeline.occasions) offers.
+    Group("active", "Active & gym"),
     Group("cozy", "Cozy & home"),
     Group("summer", "Summer"),
     Group("swim", "Swimwear", private=True),
@@ -139,6 +141,44 @@ OUTFITS: tuple[Outfit, ...] = (
         "white fitted tee + cream cropped cardigan + black leggings",
         tags=("comfy",),
     ),
+    # OC1. The rest of the casual looks the occasions (wardrobe.pipeline.occasions) offer for
+    # shopping and campus: streetwear, a cute set, and two quieter ones. Each prompt was planned
+    # before it was written here, and test_every_entry_plans_to_real_templates keeps it so.
+    Outfit(
+        "street-coat-baggy",
+        "Coat, baggy jeans & combat boots",
+        "casual",
+        "black oversized coat + white cropped tee + blue baggy jeans + black combat boots",
+        tags=("streetwear",),
+    ),
+    Outfit(
+        "cami-balloon",
+        "Cami & balloon trousers",
+        "casual",
+        "white cropped cami + khaki balloon trousers",
+        tags=("streetwear",),
+    ),
+    Outfit(
+        "pleated-cardigan",
+        "Tee, cardigan & pleated mini",
+        "casual",
+        "white fitted tee + pink cropped cardigan + pink pleated mini skirt",
+        tags=("cute",),
+    ),
+    Outfit(
+        "cardigan-jeans",
+        "Long cardigan & jeans",
+        "casual",
+        "grey long cardigan + white fitted tee + blue straight jeans",
+        tags=("comfy", "day"),
+    ),
+    Outfit(
+        "tee-trousers-flats",
+        "Tee, trousers & flats",
+        "casual",
+        "white fitted tee + navy straight trousers + white flat shoes",
+        tags=("day",),
+    ),
     # --- dressy ---------------------------------------------------------
     Outfit(
         "little-black-dress", "Little black dress", "dressy", "black satin cocktail dress", tags=("evening",)
@@ -161,6 +201,35 @@ OUTFITS: tuple[Outfit, ...] = (
         "black corset top + black low-rise pleated mini skirt",
         preset="corset_top_low_rise_mini",
         tags=("party",),
+    ),
+    # OC1. A night out with an edge: leather, a corset over jeans, a catsuit — and boots.
+    Outfit(
+        "leather-mini-combat",
+        "Leather mini & combat boots",
+        "dressy",
+        "black leather bodycon mini dress + black combat boots",
+        tags=("edgy", "night", "boots"),
+    ),
+    Outfit(
+        "corset-slim-jeans",
+        "Corset & slim jeans",
+        "dressy",
+        "black corset top + black slim jeans + black stiletto ankle boots",
+        tags=("edgy", "night", "boots"),
+    ),
+    Outfit(
+        "catsuit-boots",
+        "Catsuit & over-the-knee boots",
+        "dressy",
+        "black catsuit + black over-the-knee boots",
+        tags=("edgy", "night", "boots"),
+    ),
+    Outfit(
+        "cocktail-stilettos",
+        "Cocktail dress & stiletto boots",
+        "dressy",
+        "black satin cocktail dress + black stiletto ankle boots",
+        tags=("evening", "boots"),
     ),
     # --- discoteca (wardrobe.pipeline.fashion_collections) ---------------
     Outfit("discoteca-stiletto-ankle", "Black dress & stiletto ankle boots", "discoteca",
@@ -190,6 +259,57 @@ OUTFITS: tuple[Outfit, ...] = (
         "beige lightweight trench + white fitted tee + blue slim jeans",
         tags=("day",),
     ),
+    # OC1. Work and campus: a trouser suit, a skirt suit and two preppy sets.
+    Outfit(
+        "blouse-wide-leg",
+        "Blouse & wide-leg trousers",
+        "smart",
+        "white blouse + navy wide-leg trousers",
+        tags=("work",),
+    ),
+    Outfit(
+        "navy-suit",
+        "Navy trouser suit",
+        "smart",
+        "navy blazer + white blouse + navy straight trousers",
+        tags=("work", "formal"),
+    ),
+    Outfit(
+        "grey-skirt-suit",
+        "Grey skirt suit",
+        "smart",
+        "grey blazer + white blouse + grey pencil skirt",
+        tags=("work", "formal"),
+    ),
+    Outfit(
+        "preppy-a-line",
+        "Blouse & A-line skirt",
+        "smart",
+        "white blouse + navy a-line skirt",
+        tags=("preppy",),
+    ),
+    Outfit(
+        "preppy-cardigan",
+        "Blouse, cardigan & trousers",
+        "smart",
+        "white blouse + navy cropped cardigan + grey straight trousers",
+        tags=("preppy",),
+    ),
+    # --- active (OC1) ---------------------------------------------------
+    Outfit(
+        "gym-cami-leggings", "Cami & leggings", "active", "black cropped cami + black leggings", tags=("gym",)
+    ),
+    Outfit("gym-tee-leggings", "Tee & leggings", "active", "grey fitted tee + black leggings", tags=("gym",)),
+    Outfit(
+        "yoga-set", "Lavender yoga set", "active", "lavender cropped cami + lavender leggings", tags=("yoga",)
+    ),
+    Outfit(
+        "athleisure-coat",
+        "Coat, tee & leggings",
+        "active",
+        "black oversized coat + white fitted tee + black leggings",
+        tags=("athleisure",),
+    ),
     # --- cozy & home ----------------------------------------------------
     Outfit(
         "cardigan-trousers",
@@ -202,6 +322,21 @@ OUTFITS: tuple[Outfit, ...] = (
     # nightwear template's own tags, which would put her in office trousers to sleep.
     Outfit("pajamas", "Pajamas", "cozy", "pink pajama shirt + pink pajama bottoms", tags=("sleep", "comfy")),
     Outfit("nightgown", "Satin nightgown", "cozy", "champagne satin nightgown", tags=("sleep",)),
+    Outfit(
+        "navy-pajamas",
+        "Navy pajamas",
+        "cozy",
+        "navy pajama shirt + navy pajama bottoms",
+        tags=("sleep", "comfy"),
+    ),
+    Outfit("blush-nightgown", "Blush nightgown", "cozy", "blush satin nightgown", tags=("sleep",)),
+    Outfit(
+        "cozy-lounge",
+        "Long cardigan & leggings",
+        "cozy",
+        "cream long cardigan + white fitted tee + grey leggings",
+        tags=("comfy", "sleep"),
+    ),
     # --- summer ---------------------------------------------------------
     Outfit("yellow-sundress", "Yellow sundress", "summer", "yellow maxi sundress", tags=("day",)),
     Outfit(
@@ -214,6 +349,20 @@ OUTFITS: tuple[Outfit, ...] = (
     Outfit("a-line-dress", "A-line dress", "summer", "light blue a-line dress", tags=("day",)),
     Outfit(
         "linen-shorts", "Blouse & linen shorts", "summer", "white blouse + beige linen shorts", tags=("day",)
+    ),
+    Outfit(
+        "cami-wrap-skirt",
+        "Camisole & wrap skirt",
+        "summer",
+        "white camisole top + turquoise wrap skirt",
+        tags=("resort",),
+    ),
+    Outfit(
+        "cami-denim-shorts",
+        "Cami & denim shorts",
+        "summer",
+        "white cropped cami + blue denim shorts",
+        tags=("beach",),
     ),
     # --- swimwear (private) ---------------------------------------------
     Outfit("triangle-bikini", "Triangle bikini", "swim", "red triangle bikini", tags=("beach",)),
@@ -337,11 +486,16 @@ def _catalogue(catalog_id: int, catalog: TemplateCatalog) -> tuple[dict, ...]:
 
 def catalogue(catalog: TemplateCatalog) -> dict:
     """``GET /v1/outfits``: the groups and every entry, planned. Cached per catalogue."""
+    from wardrobe.pipeline.occasions import catalogue as occasions
+
     entries = [dict(entry) for entry in _catalogue(id(catalog), catalog)]
     return {
         "version": 1,
         "groups": [{"id": g.id, "title": g.title, "private": g.private} for g in GROUPS],
         "outfits": entries,
+        # OC1. Occasion → style → these entries' ids: the Studio's first question. Additive, so
+        # a client that reads only groups and outfits is unchanged.
+        "occasions": occasions({entry["id"]: entry for entry in entries}),
     }
 
 
