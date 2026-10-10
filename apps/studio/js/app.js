@@ -10,6 +10,21 @@
  */
 
 import { admin, api, auth, ApiError } from './api.js';
+import {
+    compose,
+    favourites,
+    forYou,
+    looksOf,
+    pieces,
+    readIntent,
+    recipes,
+    recolour,
+    shelfGroups,
+    surprise,
+    usage,
+    visibleOccasions,
+    withoutColour,
+} from './occasions.js';
 import { Viewer } from './viewer.js';
 
 const $ = (id) => document.getElementById(id);
@@ -87,6 +102,14 @@ const state = {
         dressLookId: null,
         made: {},
     },
+    // OC3. The occasion-first flow: GET /v1/outfits (null until it lands, false if it failed),
+    // where the person is in it, the piece "Change colour" recolours, the shelf's filter, and
+    // whether the tattoo extra is open.
+    outfits: null,
+    flow: { occasion: null, style: null },
+    recolourPiece: 0,
+    shelfFilter: 'all',
+    tattooOpen: false,
     promptDirty: false,
     wardrobe: null,
     activeLookId: null,
@@ -194,6 +217,17 @@ async function boot() {
     renderLibrary(library);
     renderDesigner();
     initAccount();
+    // OC3. Not part of the boot's Promise.all: without it the Studio still works, from Customize.
+    api.outfits()
+        .then((outfits) => (state.outfits = outfits))
+        .catch((error) => {
+            console.warn('occasions unavailable', error);
+            state.outfits = false;
+        })
+        .finally(() => {
+            renderFlow();
+            renderLookActions();
+        });
     if (caps.bodyArt) {
         // BA7. Fetched once; without it the section simply never appears.
         api.bodyArt()
@@ -239,8 +273,10 @@ function bindChrome() {
     $('spin-btn').addEventListener('click', (event) => {
         const on = event.currentTarget.getAttribute('aria-pressed') !== 'true';
         event.currentTarget.setAttribute('aria-pressed', String(on));
+        $('turn-btn').setAttribute('aria-pressed', String(on));
         viewer.setTurntable(on);
     });
+    bindOccasions();
 
     $('frame-btn').addEventListener('click', () => viewer.frame());
     wireInspection();
@@ -589,6 +625,9 @@ async function selectAvatar(slug) {
     $('report').hidden = true;
     if (state.vocab) renderDesigner();
     renderBodyArt(null);
+    state.recolourPiece = 0;
+    renderFlow(); // OC3. Another avatar may see other occasions (private mode is per avatar)
+    renderLookActions();
 
     viewer.clear('look');
     revoke(state.urls.look);
@@ -802,6 +841,7 @@ async function endSession(message) {
         state.activeLookId = null;
         setViewMode('original');
         $('report').hidden = true;
+        renderBodyArt(null);
     }
     await refreshForSession();
     setStatus(message);
@@ -824,6 +864,8 @@ async function refreshForSession() {
     } catch (error) {
         setStatus(describe(error), true);
     }
+    renderFlow(); // OC3. Private mode on or off shows or hides the Private occasion and private looks
+    renderLookActions();
     if ($('settings-dialog').open) renderSettings();
 }
 
@@ -959,6 +1001,9 @@ function setViewMode(mode) {
         button.setAttribute('aria-checked', String(button.dataset.mode === mode));
     });
     viewer.setMode(mode);
+    // OC2. The halves' names and the line between them (studio.css .comparing).
+    $('stage-canvas').closest('.stage').classList.toggle('comparing', viewer.comparing());
+    $('compare-btn').setAttribute('aria-pressed', String(viewer.comparing()));
 }
 
 // ---------------------------------------------------------------- designer
@@ -1335,7 +1380,7 @@ async function putOnBoots() {
     if (!base) return setStatus('Make the dress first: the boots go on it.', true);
     const key = collectionKey(base);
     if (lookExists(c.made[key])) {
-        await wearLook(c.made[key], { mode: 'compare' });
+        await wearLook(c.made[key], { mode: 'look' });
         return renderCollection();
     }
     const prompt = collectionBootsPrompt(spec);
@@ -1575,6 +1620,440 @@ function buildOnLook() {
     return look && box.checked ? look : null;
 }
 
+// ---------------------------------------------------------------- occasions (OC3)
+// The Studio opens on "What are we dressing for?" — occasion, then style, then a few looks —
+// and only then on what to change. Every look offered is an outfit dictionary entry, sent as
+// exactly the request the dictionary lists (the prompt, and the preset its blocks need), so
+// the simple path builds what the designer would and the server gates it the same way. What
+// is shown to whom is decided in occasions.js; this section draws it and runs the jobs.
+
+/** Colours the quick "Change colour" row offers: a short, wearable set the planner knows. */
+const QUICK_COLOURS = ['black', 'white', 'red', 'pink', 'navy', 'emerald', 'champagne', 'lavender', 'beige', 'blue'];
+
+function shownOccasions() {
+    return visibleOccasions(state.outfits || null, { adult: Boolean(state.avatar && state.avatar.depictsAdult) });
+}
+
+function colourNames() {
+    return ((state.vocab && state.vocab.overrides && state.vocab.overrides.color) || []).map((c) => c.name);
+}
+
+function activeLook() {
+    return (state.wardrobe && state.activeLookId && state.wardrobe.looks.find((l) => l.id === state.activeLookId)) || null;
+}
+
+/** A look of hers already made from this prompt: worn again rather than made twice. */
+function madeFrom(prompt) {
+    const looks = (state.wardrobe && state.wardrobe.looks) || [];
+    return [...looks].reverse().find((look) => look.type !== 'source' && look.vrmUrl && look.prompt === prompt) || null;
+}
+
+/** The occasion and style a look belongs to: its own tag, else where the person is in the flow. */
+function contextOf(look) {
+    const shown = shownOccasions();
+    const occasion = shown.find((o) => o.id === ((look && look.occasion) || state.flow.occasion)) || null;
+    const style = occasion && occasion.styles.find((s) => s.id === ((look && look.style) || state.flow.style));
+    return { occasion, style: style || null };
+}
+
+function goTo(occasion = null, style = null) {
+    if (occasion && occasion !== state.flow.occasion) usage.bump(occasion);
+    state.flow = { occasion, style };
+    renderFlow();
+    $('occasion-flow').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function tile({ icon, title, sub, current = false, wide = false, extra = null, onclick, disabled = false, cls = '' }) {
+    return el(
+        'button',
+        {
+            class: `tile${wide ? ' wide' : ''}${cls ? ` ${cls}` : ''}`,
+            type: 'button',
+            'aria-current': current ? 'true' : null,
+            disabled,
+            onclick,
+        },
+        icon ? el('span', { class: 'tile-icon', 'aria-hidden': 'true', text: icon }) : null,
+        el('span', { class: 'tile-text' }, el('b', { text: title }), sub ? el('small', { text: sub }) : null, extra)
+    );
+}
+
+function renderFlow() {
+    const body = $('occasion-body');
+    const crumbs = $('occasion-crumbs');
+    if (!body) return;
+    if (state.outfits === null) return body.replaceChildren(el('p', { class: 'hint', text: 'Loading occasions…' }));
+    if (state.outfits === false) {
+        crumbs.replaceChildren();
+        return body.replaceChildren(
+            el('p', { class: 'hint', text: 'Occasions are unavailable on this server — design a look under Customize.' })
+        );
+    }
+    const shown = shownOccasions();
+    const occasion = shown.find((o) => o.id === state.flow.occasion) || null;
+    const style = (occasion && occasion.styles.find((s) => s.id === state.flow.style)) || null;
+    // A choice that is no longer shown (private mode turned off, another avatar) is let go.
+    state.flow = { occasion: occasion ? occasion.id : null, style: style ? style.id : null };
+    const busy = !state.avatar || Boolean(state.jobId);
+    const onStage = activeLook();
+
+    crumbs.replaceChildren(
+        ...(occasion
+            ? [
+                  el('button', { type: 'button', text: '‹ All occasions', onclick: () => goTo() }),
+                  ...(style
+                      ? [el('span', { text: '·' }), el('button', { type: 'button', text: occasion.title, onclick: () => goTo(occasion.id) })]
+                      : []),
+              ]
+            : [])
+    );
+
+    if (!occasion) {
+        const counts = usage.read();
+        const mine = forYou(shown, counts);
+        const all = shown.flatMap((o) => looksOf(o).map((c) => ({ ...c, occasion: o })));
+        return body.replaceChildren(
+            el('h2', { class: 'flow-title', text: 'What are we dressing for?' }),
+            el('p', { class: 'flow-sub', text: 'Pick where she is going — the outfit follows.' }),
+            ...(mine.length
+                ? [
+                      el('p', { class: 'flow-label', text: 'For you' }),
+                      el('div', { class: 'tiles' }, ...mine.map((o) => tile({ icon: o.icon, title: o.title, onclick: () => goTo(o.id) }))),
+                      el('p', { class: 'flow-label', text: 'All occasions' }),
+                  ]
+                : []),
+            el(
+                'div',
+                { class: 'tiles' },
+                ...shown.map((o) =>
+                    tile({
+                        icon: o.icon,
+                        title: o.title,
+                        sub: o.styles.map((s) => s.title).join(' · '),
+                        onclick: () => goTo(o.id),
+                    })
+                ),
+                tile({
+                    icon: '🎲',
+                    title: 'Surprise me',
+                    wide: true,
+                    cls: 'surprise',
+                    disabled: busy || !all.length,
+                    onclick: () => {
+                        const pick = surprise(all, { avoidPrompt: onStage && onStage.prompt });
+                        if (pick) tryLook(pick.look, pick.occasion.id, pick.style.id);
+                    },
+                })
+            )
+        );
+    }
+
+    if (!style) {
+        return body.replaceChildren(
+            el('h2', { class: 'flow-title', text: `${occasion.icon} ${occasion.title}` }),
+            el('p', { class: 'flow-sub', text: occasion.question }),
+            el(
+                'div',
+                { class: 'tiles' },
+                ...occasion.styles.map((s) =>
+                    tile({
+                        icon: s.icon,
+                        title: s.title,
+                        sub: `${s.blurb} · ${s.looks.length} look${s.looks.length === 1 ? '' : 's'}`,
+                        onclick: () => goTo(occasion.id, s.id),
+                    })
+                ),
+                tile({
+                    icon: '🎲',
+                    title: 'Surprise me',
+                    sub: 'She picks one',
+                    cls: 'surprise',
+                    disabled: busy,
+                    onclick: () => {
+                        const pick = surprise(looksOf(occasion), { avoidPrompt: onStage && onStage.prompt });
+                        if (pick) tryLook(pick.look, occasion.id, pick.style.id);
+                    },
+                })
+            )
+        );
+    }
+
+    body.replaceChildren(
+        el('h2', { class: 'flow-title', text: `${style.icon} ${style.title}` }),
+        el('p', { class: 'flow-sub', text: `${occasion.title} · ${style.blurb}` }),
+        el(
+            'div',
+            { class: 'tiles' },
+            ...style.looks.map((look) => {
+                const made = madeFrom(look.prompt);
+                const worn = onStage && onStage.prompt === look.prompt;
+                const badges = [
+                    worn ? el('span', { class: 'on-stage', text: 'wearing' }) : made ? el('span', { text: 'in her wardrobe' }) : null,
+                    look.rating === 'private' ? el('span', { text: 'private' }) : null,
+                ].filter(Boolean);
+                return tile({
+                    title: look.title,
+                    sub: [...new Set(look.garments.map((g) => g.name))].join(' · '),
+                    wide: true,
+                    cls: 'look-tile',
+                    current: worn,
+                    disabled: busy,
+                    extra: badges.length ? el('span', { class: 'tile-badges' }, ...badges) : null,
+                    onclick: () => tryLook(look, occasion.id, style.id),
+                });
+            }),
+            tile({
+                icon: '🎲',
+                title: 'Surprise me',
+                wide: true,
+                cls: 'surprise',
+                disabled: busy,
+                onclick: () => {
+                    const pick = surprise(looksOf(occasion, style.id), { avoidPrompt: onStage && onStage.prompt });
+                    if (pick) tryLook(pick.look, occasion.id, style.id);
+                },
+            })
+        )
+    );
+}
+
+/** The job body of the simple path: her outfit replaced where the new one covers, a foundation kept. */
+function simpleBody(outfit, { baseLookId = null, occasion = null, style = null } = {}) {
+    return {
+        outfit: { mode: 'template', ...outfit },
+        ...(baseLookId ? { baseLookId } : {}),
+        options: {
+            renderPreview: true,
+            engine: state.caps.engines.default || 'auto',
+            baseBody: 'replace-outer',
+            ensureFoundation: true,
+            ...(occasion ? { occasion: { occasion, ...(style ? { style } : {}) } } : {}),
+        },
+    };
+}
+
+/** Wear a dictionary look: the one already made from it, else made now. */
+async function tryLook(entry, occasion, style) {
+    if (!state.avatar || state.jobId) return;
+    state.flow = { occasion, style };
+    const made = madeFrom(entry.prompt);
+    if (made) {
+        await wearLook(made.id, { mode: 'look' });
+        return renderFlow();
+    }
+    await runJob(state.avatar.slug, simpleBody(entry.request, { occasion, style }), entry.title);
+}
+
+/**
+ * What a look wears, piece by piece. A look made by a change carries only the new piece as its
+ * prompt (the job's own), so the whole outfit is remembered here when the change is made —
+ * otherwise "make it red" after new boots could only ever recolour the boots.
+ */
+function recipeOf(look) {
+    return (state.avatar && recipes.read(state.avatar.slug)[look.id]) || look.prompt || '';
+}
+
+/** A change to the look on stage, as a job on that look: only what the new piece covers changes. */
+async function changeLook(prompt, title) {
+    const look = activeLook();
+    if (!state.avatar || state.jobId || !look) return;
+    const slug = state.avatar.slug;
+    const recipe = compose(recipeOf(look), prompt);
+    const job = await runJob(
+        slug,
+        simpleBody({ prompt }, { baseLookId: look.id, occasion: look.occasion, style: look.style }),
+        title
+    );
+    if (job && job.state === 'completed' && job.look) {
+        recipes.write(slug, job.look.id, recipe);
+        if (state.activeLookId === job.look.id) renderLookActions();
+    }
+}
+
+function renderLookActions() {
+    const box = $('look-actions');
+    const look = activeLook();
+    box.hidden = !look;
+    if (!look) return syncExtras();
+    const { occasion, style } = contextOf(look);
+    const busy = Boolean(state.jobId);
+    $('look-actions-name').textContent = look.name;
+    $('look-actions-sub').textContent = occasion
+        ? `${occasion.icon} ${occasion.title}${style ? ` · ${style.title}` : ''}`
+        : look.prompt || '';
+    const saved = favourites.read(state.avatar.slug).has(look.id);
+    $('save-look-btn').setAttribute('aria-pressed', String(saved));
+    $('save-look-btn').textContent = saved ? '♥ Saved' : '♡ Save';
+
+    const parts = [];
+    // Another look from the same style, or a sibling style of the same occasion.
+    if (occasion && style) {
+        parts.push(
+            el('p', { class: 'flow-label', text: 'Quick changes' }),
+            el(
+                'div',
+                { class: 'chips small' },
+                el('button', {
+                    class: 'chip',
+                    type: 'button',
+                    text: `🔀 Another ${style.title.toLowerCase()} look`,
+                    disabled: busy || style.looks.length < 2,
+                    onclick: () => {
+                        const pick = surprise(looksOf(occasion, style.id), { avoidPrompt: look.prompt });
+                        if (pick) tryLook(pick.look, occasion.id, style.id);
+                    },
+                }),
+                ...occasion.styles
+                    .filter((s) => s.id !== style.id)
+                    .map((s) =>
+                        el('button', { class: 'chip', type: 'button', text: `${s.icon} ${s.title}`, onclick: () => goTo(occasion.id, s.id) })
+                    )
+            )
+        );
+    }
+    // DC3. A collection's boots, put on this look: only the boots are re-fitted.
+    const spec = style && style.collection && (state.vocab.collections || []).find((c) => c.id === style.collection);
+    if (spec) {
+        parts.push(
+            el('p', { class: 'flow-label', text: 'Other boots' }),
+            el(
+                'div',
+                { class: 'chips small' },
+                ...spec.boots.map((boot) =>
+                    el('button', {
+                        class: 'chip',
+                        type: 'button',
+                        title: boot.prompt,
+                        'aria-checked': String(recipeOf(look).includes(boot.noun)),
+                        role: 'radio',
+                        text: `${boot.letter} · ${boot.title}`,
+                        disabled: busy,
+                        onclick: () => changeLook(boot.prompt, boot.prompt),
+                    })
+                )
+            )
+        );
+    }
+    // Change colour: of one piece, which keeps its cut; the rest of the look stays as it is.
+    const colours = colourNames();
+    const split = pieces(recipeOf(look));
+    if (split.length && colours.length) {
+        if (state.recolourPiece >= split.length) state.recolourPiece = 0;
+        const piece = split[state.recolourPiece];
+        parts.push(el('p', { class: 'flow-label', text: 'Change colour' }));
+        if (split.length > 1)
+            parts.push(
+                el(
+                    'div',
+                    { class: 'chips small', role: 'radiogroup', 'aria-label': 'Piece' },
+                    ...split.map((p, index) =>
+                        el('button', {
+                            class: 'chip',
+                            type: 'button',
+                            role: 'radio',
+                            'aria-checked': String(index === state.recolourPiece),
+                            text: withoutColour(p, colours),
+                            onclick: () => {
+                                state.recolourPiece = index;
+                                renderLookActions();
+                            },
+                        })
+                    )
+                )
+            );
+        const swatches = (state.vocab.overrides.color || []).filter((c) => QUICK_COLOURS.includes(c.name));
+        parts.push(
+            el(
+                'div',
+                { class: 'swatches' },
+                ...swatches.map((c) =>
+                    el('button', {
+                        class: 'swatch',
+                        type: 'button',
+                        title: `${c.name} ${withoutColour(piece, colours)}`,
+                        'aria-label': c.name,
+                        style: `--swatch:${c.hex}`,
+                        disabled: busy,
+                        onclick: () => {
+                            const prompt = recolour(piece, c.name, colours);
+                            changeLook(prompt, prompt);
+                        },
+                    })
+                )
+            )
+        );
+    }
+    $('quick-changes').replaceChildren(...parts);
+    $('tell-btn').disabled = busy;
+    syncExtras();
+}
+
+/** "Make it yours": only what applies to this look. A tattoo only where this outfit leaves skin. */
+function syncExtras() {
+    const exposure = state.bodyArt.exposure;
+    const tattoo = Boolean(exposure && ((exposure.eligible || []).length || (exposure.tattoos || []).length));
+    const look = activeLook();
+    $('extras').hidden = !look || !tattoo;
+    $('extras-chips').replaceChildren(
+        ...(tattoo
+            ? [
+                  el('button', {
+                      class: 'chip',
+                      type: 'button',
+                      'aria-pressed': String(state.tattooOpen),
+                      text: (exposure.tattoos || []).length ? '🖋 Tattoos' : '🖋 Tattoo',
+                      onclick: () => {
+                          state.tattooOpen = !state.tattooOpen;
+                          syncExtras();
+                      },
+                  }),
+              ]
+            : [])
+    );
+    $('body-art').hidden = !(tattoo && state.tattooOpen);
+}
+
+/** "Tell me what to change…": an occasion to go to, a colour for the piece, or a garment to put on. */
+async function tell(event) {
+    event.preventDefault();
+    const input = $('tell-input');
+    const intent = readIntent(input.value, {
+        colours: colourNames(),
+        available: shownOccasions().map((o) => o.id),
+    });
+    if (!intent) return;
+    if (intent.kind === 'occasion') {
+        input.value = '';
+        return goTo(intent.occasion, intent.style);
+    }
+    const look = activeLook();
+    if (!look) return setStatus('Choose a look first: changes go on the look she is wearing.', true);
+    input.value = '';
+    if (intent.kind === 'colour') {
+        const split = pieces(recipeOf(look));
+        const piece = split[Math.min(state.recolourPiece, split.length - 1)] || recipeOf(look);
+        const prompt = recolour(piece, intent.colour, colourNames());
+        return changeLook(prompt, prompt);
+    }
+    return changeLook(intent.prompt, intent.prompt);
+}
+
+function bindOccasions() {
+    $('tell-form').addEventListener('submit', tell);
+    $('save-look-btn').addEventListener('click', () => {
+        const look = activeLook();
+        if (!look || !state.avatar) return;
+        favourites.toggle(state.avatar.slug, look.id);
+        renderLookActions();
+        renderWardrobe();
+    });
+    $('compare-btn').addEventListener('click', () => setViewMode(viewer.mode === 'compare' ? 'look' : 'compare'));
+    $('turn-btn').addEventListener('click', () => {
+        $('spin-btn').click();
+        $('turn-btn').setAttribute('aria-pressed', $('spin-btn').getAttribute('aria-pressed'));
+    });
+}
+
 // ---------------------------------------------------------------- generation
 async function generate() {
     if (!state.avatar || state.jobId) return;
@@ -1600,6 +2079,8 @@ async function runJob(slug, body, title) {
     state.jobId = job.id;
     syncBodyArtButton();
     renderCollection();
+    renderFlow();
+    renderLookActions();
     while (state.jobId === job.id) {
         try {
             job = await api.job(job.id);
@@ -1724,6 +2205,8 @@ async function finishJob(job, slug, prompt) {
     $('generate-btn').disabled = !state.avatar;
     syncBodyArtButton();
     renderCollection();
+    renderFlow();
+    renderLookActions();
     showJob(job, prompt);
     if (job.state !== 'completed') {
         $('job-message').textContent = job.error || `The job ended ${job.state}.`;
@@ -1732,7 +2215,10 @@ async function finishJob(job, slug, prompt) {
     renderReport(job.fitReport, job.look);
     if (state.avatar && state.avatar.slug === slug) {
         await loadWardrobe();
-        if (job.look) await wearLook(job.look.id, { mode: 'compare' });
+        // OC2. A finished look is shown on its own. It used to open in Compare, so the first
+        // thing anyone saw of a new outfit was two figures — and from most angles, one inside
+        // the other. Compare is a tap away for whoever wants the before and after.
+        if (job.look) await wearLook(job.look.id, { mode: 'look' });
     }
 }
 
@@ -1829,27 +2315,21 @@ function hosieryReport(h, look) {
 async function renderBodyArt(lookId = state.activeLookId) {
     const box = $('body-art');
     const art = state.bodyArt;
+    // OC3. Shown from "Make it yours" (syncExtras), and only once this look's exposure says
+    // there is skin to put a tattoo on: no tile, no "not available", until then.
+    art.exposure = null;
     if (!state.caps || !state.caps.bodyArt || !art.catalog || !lookId || !state.avatar) {
-        box.hidden = true;
         box.replaceChildren();
-        art.exposure = null;
-        return;
+        return syncExtras();
     }
     const slug = state.avatar.slug;
-    box.hidden = false;
-    box.replaceChildren(
-        el('h3', { text: 'Body art · optional' }),
-        el('p', { class: 'report-line', text: 'Checking which skin this outfit leaves visible…' })
-    );
+    syncExtras();
     let exposure;
     try {
         exposure = await api.lookExposure(slug, lookId);
     } catch (error) {
-        if (state.activeLookId !== lookId) return;
-        return box.replaceChildren(
-            el('h3', { text: 'Body art · optional' }),
-            el('p', { class: 'report-line bad', text: describe(error) })
-        );
+        console.warn('look exposure unavailable', error);
+        return;
     }
     // A slow answer for a look no longer on stage must not paint over the current one.
     if (state.activeLookId !== lookId || !state.avatar || state.avatar.slug !== slug) return;
@@ -1905,7 +2385,7 @@ function drawBodyArt() {
     const exposure = art.exposure;
     const look = state.wardrobe && state.wardrobe.looks.find((l) => l.id === state.activeLookId);
     if (!exposure || !look) return;
-    const parts = [el('h3', { text: 'Body art · optional' })];
+    const parts = [el('h3', { text: 'Tattoo' })];
 
     // What this look already carries, drawn or under its clothes; each can be taken off.
     const tattoos = exposure.tattoos || [];
@@ -1942,7 +2422,8 @@ function drawBodyArt() {
 
     if (!exposure.eligible.length) {
         parts.push(el('p', { class: 'report-line', text: exposure.reason || 'No suitable exposed placement for this outfit.' }));
-        return box.replaceChildren(...parts);
+        box.replaceChildren(...parts);
+        return syncExtras();
     }
 
     parts.push(
@@ -2053,6 +2534,7 @@ function drawBodyArt() {
         })
     );
     box.replaceChildren(...parts);
+    syncExtras();
 }
 
 function syncBodyArtButton() {
@@ -2063,10 +2545,16 @@ function syncBodyArtButton() {
 /** A tattoo-only job on the look on stage (BA6): no outfit, so its clothes are carried over. */
 async function runBodyArt(fields, title, facing) {
     if (!state.avatar || state.jobId || !state.activeLookId) return;
+    const look = activeLook();
     const body = {
         baseLookId: state.activeLookId,
         ...fields,
-        options: { renderPreview: true, engine: state.caps.engines.default || 'auto' },
+        options: {
+            renderPreview: true,
+            engine: state.caps.engines.default || 'auto',
+            // OC3. The tattooed look belongs to the same occasion as the look it was made on.
+            ...(look && look.occasion ? { occasion: { occasion: look.occasion, ...(look.style ? { style: look.style } : {}) } } : {}),
+        },
     };
     const job = await runJob(state.avatar.slug, body, title);
     if (job && job.state === 'completed' && job.look && state.activeLookId === job.look.id) viewer.turnTo(facing);
@@ -2107,18 +2595,53 @@ async function renderWardrobe() {
     );
     $('look-count').textContent = looks.length ? `${looks.length}` : '';
     $('export-btn').disabled = looks.length === 0;
+    renderFlow(); // OC3. "in her wardrobe" on the looks she already has
+    renderLookActions();
 
     if (!looks.length) {
+        $('shelf-filter').replaceChildren();
         $('looks').replaceChildren(
-            el('p', { class: 'looks-empty', text: 'No looks yet — design one and it appears here.' })
+            el('p', { class: 'looks-empty', text: 'No looks yet — pick an occasion and she wears one here.' })
         );
         return;
     }
 
-    const cards = looks
-        .slice()
-        .reverse()
-        .map((look) => {
+    // OC3. Her looks by occasion, newest first in each, and the ones saved with ♡.
+    const saved = favourites.read(state.avatar.slug);
+    const groups = shelfGroups(looks.slice().reverse(), shownOccasions());
+    const savedLooks = looks.filter((look) => saved.has(look.id));
+    const filters = [
+        { id: 'all', text: `All ${looks.length}` },
+        ...(savedLooks.length ? [{ id: 'saved', text: `♥ Saved ${savedLooks.length}` }] : []),
+        ...(groups.length > 1 || (groups[0] && groups[0].id) ? groups.map((g) => ({ id: g.id || 'designed', text: `${g.icon} ${g.title} ${g.looks.length}` })) : []),
+    ];
+    if (!filters.some((f) => f.id === state.shelfFilter)) state.shelfFilter = 'all';
+    $('shelf-filter').replaceChildren(
+        ...(filters.length > 1
+            ? filters.map((f) =>
+                  el('button', {
+                      class: 'chip',
+                      type: 'button',
+                      role: 'radio',
+                      'aria-checked': String(f.id === state.shelfFilter),
+                      text: f.text,
+                      onclick: () => {
+                          state.shelfFilter = f.id;
+                          renderWardrobe();
+                      },
+                  })
+              )
+            : [])
+    );
+    const filter = state.shelfFilter;
+    const shownGroups =
+        filter === 'all'
+            ? groups
+            : filter === 'saved'
+              ? [{ id: 'saved', title: 'Saved', icon: '♥', looks: looks.slice().reverse().filter((l) => saved.has(l.id)) }]
+              : groups.filter((g) => (g.id || 'designed') === filter);
+
+    const card = (look) => {
             const picture = el('span', { class: 'look-ph', text: '👗' });
             if (look.previewUrl) {
                 api.blobUrl(look.previewUrl)
@@ -2152,6 +2675,7 @@ async function renderWardrobe() {
                           title: "Made under an admin session's declaration: only an admin session sees it",
                       })
                     : null,
+                saved.has(look.id) ? el('span', { class: 'look-saved', title: 'Saved', text: '♥' }) : null,
                 el('button', {
                     class: 'look-del',
                     type: 'button',
@@ -2161,8 +2685,14 @@ async function renderWardrobe() {
                     onclick: () => removeLook(look),
                 })
             );
-        });
-    $('looks').replaceChildren(...cards);
+    };
+    const labelled = shownGroups.length > 1;
+    $('looks').replaceChildren(
+        ...shownGroups.flatMap((group) => [
+            labelled ? el('span', { class: 'look-group', text: `${group.icon} ${group.title}` }) : null,
+            ...group.looks.map(card),
+        ]).filter(Boolean)
+    );
 }
 
 async function wearLook(lookId, { mode = null } = {}) {
@@ -2180,10 +2710,13 @@ async function wearLook(lookId, { mode = null } = {}) {
         if (!landed) return revoke(url);
         revoke(state.urls.look);
         state.urls.look = url;
-        setViewMode(mode || (viewer.mode === 'original' ? 'compare' : viewer.mode));
+        setViewMode(mode || (viewer.mode === 'original' ? 'look' : viewer.mode));
         setStatus(look.prompt ? `“${look.prompt}”` : look.name);
         updatePreview();
+        state.recolourPiece = 0;
         renderBodyArt(lookId);
+        renderLookActions();
+        renderFlow();
     } catch (error) {
         setStatus(`Could not load ${look.name}: ${describe(error)}`, true);
     }
@@ -2205,6 +2738,7 @@ async function removeLook(look) {
         renderBodyArt(null);
     }
     await loadWardrobe();
+    renderLookActions();
 }
 
 async function exportBundle() {
