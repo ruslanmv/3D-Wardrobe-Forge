@@ -8,9 +8,9 @@ black crop top and black shorts — both painted on her skin — and the job rep
 "fit passed": the meshes were right, the picture was not.
 
 * The outfit she asked for is underwear or swimwear (``requested_foundation``) and her
-  clothes were to come off (not ``preserve``): painted clothing left in view refuses
-  the job. Nothing is repainted; another avatar, or keeping her clothes on, is the
-  answer.
+  clothes were to come off (not ``preserve``): Base Body Prep has restored her skin
+  first (``wardrobe.vrm.skin_restore``, SR1), so this is the check that it worked —
+  painted clothing still in view refuses the job rather than shipping it.
 * Any other outfit: what shows is reported, as a warning. Those looks were never
   promised as bare skin, and refusing them would take away looks that work today.
 * ``preserve``: the underwear was asked to go over her clothes. Reported, not refused.
@@ -68,11 +68,10 @@ async def run(context: PipelineContext) -> None:
         base_body["layerOrder"] = "failed"
         kind = "swimwear" if any(g.category == "swimwear" for g in context.plan.garments) else "underwear"
         raise PaintedClothingShows(
-            f"this avatar cannot wear {kind} as her innermost layer: clothing is painted on her skin "
-            f"texture ({_where(result)}) and {share} of her torso would show it around or through the "
-            f"{kind}. Her clothes came off, but painted clothing is part of her skin and is never repainted. "
-            "Choose an avatar whose body is bare under her clothes (Model Girl is), or choose "
-            "'Keep her clothes on' to style it over them",
+            f"this avatar's skin could not be made ready for {kind}: after restoring it, "
+            f"{share} of her torso still shows clothing painted on her skin ({_where(result)}) "
+            f"around or through the {kind}. Choose another avatar, or 'Keep her clothes on' to "
+            "style it over them",
             detail={"paintedSkin": result.to_dict()},
         )
     context.warn(f"clothing painted on her skin shows at {_where(result)} ({share} of her torso)")

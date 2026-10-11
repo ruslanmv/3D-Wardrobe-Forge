@@ -64,40 +64,71 @@ garment inventory ─► strip plan for the whole outfit ─► is there a body 
   off and the layers put on; the fit report has an entry — and a design sheet —
   per layer.
 
-### Clothes painted on her skin (PB1)
+### Her skin made ready for underwear (PB1, SR1, BC1)
 
-Taking her garment *meshes* off is not always taking her clothes off. VRoid
-avatars often have clothing painted into the **skin texture** under the
-garments, and it stays when the meshes go. On the library's eight avatars:
+Taking her garment *meshes* off is not always taking her clothes off. On the
+library's eight avatars:
 
-| Avatar | Painted on her skin |
+| Avatar | Under her clothes |
 | --- | --- |
-| AvatarSample A | knit top, tights |
-| AvatarSample B | printed crop top, shorts |
-| AvatarSample C, Rinna | top and bottoms |
-| VRoid Female | VRoid's default black bandeau and briefs |
-| VRoid Male | VRoid's default briefs |
-| AvatarSample_O | a small bra and briefs (and no body under her dress: refused before this) |
-| Model Girl | nothing: bare skin under her clothes |
+| AvatarSample A | knit top and tights painted on her skin |
+| AvatarSample B | printed crop top and shorts painted on her skin |
+| AvatarSample C, Rinna | top and bottoms painted on; some skin cut away by alpha |
+| VRoid Female | VRoid's default black bandeau and briefs painted on |
+| VRoid Male | VRoid's default briefs painted on |
+| AvatarSample_O | chest **deleted** from her mesh; a band of skin cut away by alpha; a small bra and briefs painted on |
+| Model Girl | bare skin |
 
-Lingerie on B therefore went on over a black crop top and black shorts, and the
-job said "fit passed". Now, once the outfit is fitted, her torso skin is sampled
-against her own arms' colour (`wardrobe/vrm/painted_clothing.py`). Every
-non-skin sample that no opaque garment covers is painted clothing left in view.
-Sheer and lace fabric does not count as covering.
+Lingerie on B went on over a black crop top and black shorts, and the job said
+"fit passed". O was refused. For underwear or swimwear the person asked for
+(past the adult gate, outside "Keep her clothes on"), Base Body Prep now makes
+her skin ready first, as avatar pipelines do with a base body that carries
+baked clothing:
 
-- **Underwear or swimwear she asked for** (not a foundation added under clothes),
-  outside "Keep her clothes on": more than 3% of her torso showing painted
-  clothing **refuses the job** (`source_skin_has_painted_clothing`). The message
-  says why and what to do: an avatar bare under her clothes, or "Keep her
-  clothes on" to style it over them. Her skin is never repainted.
-- **Any other outfit:** what shows is a warning, not a refusal. Those looks never
-  promised bare skin.
-- **Before generating**, "Check plan" shows how much painted clothing would be
-  left in view, so the refusal is no surprise.
+```text
+her garment meshes come off where the outfit replaces them
+        │
+        ▼
+SR1 skin restoration (wardrobe/vrm/skin_restore.py)
+  region  her skin material's triangles, ankles → shoulders, in UV space,
+          plus the island padding no triangle owns (filtering samples it)
+  mask    texels not her skin: > 45 from her arms' colour, or alpha-cut
+  fill    push-pull from the skin round it (bilinear pull): her shading
+          carries across, featureless by construction
+  solid   alpha 255 under the mask: cut-away skin is drawn again
+  shade   the MToon shade texture gets the same fill; the normal map is
+          flattened under the mask (no fabric folds left as bumps)
+        │
+        ▼
+body check ── a region with no body? ──► BC1 body completion
+                                          (wardrobe/vrm/body_completion.py)
+        │                                 a skin patch on a 5° × 1 cm grid
+        │                                 round her axis: the removed
+        │                                 garment's radius minus the gap
+        │                                 between garment and skin, that gap
+        │                                 interpolated across the hole;
+        │                                 1.5 mm under her own skin wherever
+        │                                 she has some; smoothed; weighted
+        │                                 like the garment; her skin colour
+        ▼
+the underwear is fitted to that body
+        │
+        ▼
+check: painted clothing still in view? (wardrobe/vrm/painted_clothing.py)
+  her torso sampled against her arms' colour; samples no opaque garment
+  covers (sheer and lace do not cover) — over 3% refuses the job
+  (source_skin_has_painted_clothing), now only if restoration failed
+```
 
-Measured: lingerie leaves 31–35% of her torso showing painted clothing on B and
-A, and 16% on VRoid Female. On Model Girl it leaves 0%.
+New textures and the patch go into the look only; her source file is never
+touched, and the output always wears the underwear. "Keep her clothes on" and
+every other outfit leave her skin exactly as it is; for those, painted clothing
+that shows is a warning. "Check plan" says beforehand what will be restored and
+whether her body will be completed.
+
+Measured with the Italian lace Brazilian set, painted clothing in view after
+restoration: B 0.2%, A 0.1%, C 0.2%, Rinna 0.1%, VRoid Female 0.0%, O 0.1%
+(her chest completed first), Model Girl 0% (left untouched).
 
 ### What "fit passed" means (PB2)
 
@@ -110,7 +141,8 @@ still wrong. So the fit report now lists each check it ran
   there was a body under them.
 - `layerOrder`: `passed` (fitted to her body), `layered` (over her clothes, on
   purpose) or `failed`.
-- `skin`: `bare`, `painted-clothing-shows` or `not-checked` (no texture to read).
+- `skin`: `bare`, `restored` (SR1 made it bare), `painted-clothing-shows` or
+  `not-checked` (no texture to read).
 - `clearance`: the collision check.
 
 A verdict sits on top (`fitReport.verdict`): `passed`, `styled` (layered over her

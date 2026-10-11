@@ -396,6 +396,8 @@ class FitReport(BaseModel):
         if isinstance(painted, dict):
             out["skin"] = ("painted-clothing-shows" if painted.get("shows") else "bare") if painted.get(
                 "checked") else "not-checked"
+            if out["skin"] == "bare" and body.get("skinRestored"):
+                out["skin"] = "restored"  # SR1: bare because her skin was restored under the underwear
         out["clearance"] = str(self.clipping_check.value if hasattr(self.clipping_check, "value")
                                else self.clipping_check)
         return out

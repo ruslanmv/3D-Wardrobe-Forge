@@ -388,8 +388,12 @@ def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, dep
         painted = {"share": round(skin.painted / skin.samples, 3) if skin.samples else 0.0,
                    "visibleShare": round(skin.visible_share, 3),
                    "underwear": requested_foundation and mode != "preserve"}
+    # BC1. A job for underwear she asked for completes a body her export deleted, rather than
+    # refusing: the plan says so instead of "that part stays on".
+    missing = sorted(r for r, c in (integrity.regions.items() if integrity else []) if not c.present)
     return {
         "paintedSkin": painted,
+        "bodyCompletion": missing if requested_foundation and mode != "preserve" else [],
         "layerOrder": layering,
         "layeredOver": list(dict.fromkeys(g.slot for g in over)),
         "name": plan.name,

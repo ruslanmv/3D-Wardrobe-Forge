@@ -148,70 +148,124 @@ def _spread(values: np.ndarray, triangles: np.ndarray) -> np.ndarray:
     return np.einsum("sk,tkd->tsd", _WEIGHTS, corners).reshape(-1, values.shape[1])
 
 
-def painted_skin(
-    document: GltfDocument,
-    measurements: BodyMeasurements,
-    garments: set[tuple[int, int]],
-) -> PaintedSkin | None:
-    """Her torso skin and how much clothing painted on it the outfit leaves in view.
+@dataclass
+class SkinSurface:
+    """Her skin: the material that draws most of her torso, every primitive drawn with it."""
 
-    ``garments`` are the (mesh, primitive) pairs that are clothing — hers that stayed on
-    and the new outfit's. None when there is nothing to judge: no textured skin, or no
-    bare arm to take her skin colour from (a generated fit form has no texture at all).
+    material: int
+    texture: int
+    #: (primitive, rest-pose positions, triangles) per primitive drawn with the skin material.
+    parts: list[tuple[dict, np.ndarray, np.ndarray]]
+    #: Her own skin colour, from her arms (RGB 0-255).
+    reference: np.ndarray
+    axis_x: float
+    axis_z: float
+    #: The torso band the checks sample: from just below her hip joints to below her neck.
+    low: float
+    high: float
+    waist: float
+    ankle: float
+
+
+def skin_surface(
+    document: GltfDocument, measurements: BodyMeasurements, garments: set[tuple[int, int]], textures: dict
+) -> tuple[SkinSurface | None, list[tuple[np.ndarray, np.ndarray]]]:
+    """Her skin, and the opaque surface of every garment (``garments``) that covers it.
+
+    VRoid splits one skin material across several primitives (AvatarSample B has four):
+    the skin is chosen by material, then read whole. None when there is no textured skin
+    or no bare arm to take her colour from (a generated fit form has no texture at all).
     """
     bones = measurements.bone_positions
-    hips = bones.get("hips")
-    spine = bones.get("spine")
-    neck = bones.get("neck")
+    hips, spine, neck = bones.get("hips"), bones.get("spine"), bones.get("neck")
     legs = bones.get("leftUpperLeg", hips)
-    if hips is None or spine is None or neck is None:
-        return None
-    axis_x, axis_z = float(hips[0]), float(hips[2])
-    low, high, waist = float(legs[1]) - 0.08, float(neck[1]) - 0.02, float(spine[1])
-
-    textures: dict = {}
-    skin = None
+    foot = bones.get("leftFoot", bones.get("leftLowerLeg"))
     covering: list[tuple[np.ndarray, np.ndarray]] = []
+    if hips is None or spine is None or neck is None:
+        return None, covering
+    axis_x, axis_z = float(hips[0]), float(hips[2])
+    low, high = float(legs[1]) - 0.08, float(neck[1]) - 0.02
+    materials = document.gltf.get("materials") or []
+    torso_count: dict[int, int] = {}
+    parts: dict[int, list] = {}
     for mesh, index, primitive, points in _primitives(document):
-        materials = document.gltf.get("materials") or []
         material = materials[primitive["material"]] if "material" in primitive else {}
-        name = str(material.get("name", "")).lower()
-        pbr = material.get("pbrMetallicRoughness") or {}
         triangles = _triangles(document, primitive, len(points))
         if not len(triangles):
             continue
         if (mesh, index) in garments:
             covering.append(_opaque(document, primitive, material, points, triangles, textures))
             continue
-        texture = (pbr.get("baseColorTexture") or {}).get("index")
-        if "hair" in name or texture is None or "TEXCOORD_0" not in primitive.get("attributes", {}):
+        pbr = material.get("pbrMetallicRoughness") or {}
+        name = str(material.get("name", "")).lower()
+        # BC1: the body proxy is drawn in her skin colour; it is never the skin read for her colour.
+        if ("hair" in name or "body proxy" in name or (pbr.get("baseColorTexture") or {}).get("index") is None
+                or "TEXCOORD_0" not in primitive.get("attributes", {})):
             continue
         r = np.hypot(points[:, 0] - axis_x, points[:, 2] - axis_z)
-        torso = int(((points[:, 1] > low) & (points[:, 1] < high) & (r < TORSO_RADIUS_M)).sum())
-        if skin is None or torso > skin[0]:
-            skin = (torso, primitive, points, triangles, texture)
-    if skin is None or skin[0] == 0:
-        return None
-
-    _, primitive, points, triangles, texture = skin
+        used = np.unique(triangles)
+        torso = int(((points[used, 1] > low) & (points[used, 1] < high) & (r[used] < TORSO_RADIUS_M)).sum())
+        key = int(primitive["material"])
+        torso_count[key] = torso_count.get(key, 0) + torso
+        parts.setdefault(key, []).append((primitive, points, triangles))
+    if not torso_count or max(torso_count.values()) == 0:
+        return None, covering
+    material = max(torso_count, key=torso_count.get)
+    texture = int(materials[material]["pbrMetallicRoughness"]["baseColorTexture"]["index"])
     image = _image(document, texture, textures)
     if image is None:
-        return None
-    uv = document.read_accessor(primitive["attributes"]["TEXCOORD_0"]).astype(np.float64)[:, :2]
-    where = _spread(points, triangles)
-    colour = _sample(image, _spread(uv, triangles))[:, :3]
-    dx, dz = where[:, 0] - axis_x, where[:, 2] - axis_z
-    radius = np.hypot(dx, dz)
-
-    arm = (np.abs(dx) > ARM_OFFSET_M) & (where[:, 1] > low)
+        return None, covering
+    where, colour = _samples(document, parts[material], image)
+    dx = where[:, 0] - axis_x
+    arm = (np.abs(dx) > ARM_OFFSET_M) & (where[:, 1] > low) & (colour[:, 3] >= 128)
     if int(arm.sum()) < MIN_ARM_SAMPLES:
-        return None
-    reference = np.median(colour[arm], axis=0)
-    torso = (where[:, 1] >= low) & (where[:, 1] < high) & (radius < TORSO_RADIUS_M)
-    painted = torso & (np.linalg.norm(colour - reference, axis=1) > PAINT_DISTANCE)
+        return None, covering
+    return SkinSurface(
+        material=material, texture=texture, parts=parts[material],
+        reference=np.median(colour[arm, :3], axis=0), axis_x=axis_x, axis_z=axis_z,
+        low=low, high=high, waist=float(spine[1]),
+        ankle=float(foot[1]) + 0.03 if foot is not None else low - 0.6,
+    ), covering
 
-    covered = _coverage(covering, axis_x, axis_z, low, high)
-    theta, row = _cell(where, axis_x, axis_z, low)
+
+def _samples(document: GltfDocument, parts, image: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Surface samples of the skin and the texel (RGBA) under each."""
+    where, colour = [], []
+    for primitive, points, triangles in parts:
+        uv = document.read_accessor(primitive["attributes"]["TEXCOORD_0"]).astype(np.float64)[:, :2]
+        where.append(_spread(points, triangles))
+        colour.append(_sample(image, _spread(uv, triangles)))
+    return np.vstack(where), np.vstack(colour)
+
+
+def not_skin(colour: np.ndarray, reference: np.ndarray) -> np.ndarray:
+    """Texels that are not her skin: painted clothing, or skin her texture cuts away."""
+    return (np.linalg.norm(colour[:, :3] - reference, axis=1) > PAINT_DISTANCE) | (colour[:, 3] < 128)
+
+
+def painted_skin(
+    document: GltfDocument,
+    measurements: BodyMeasurements,
+    garments: set[tuple[int, int]],
+) -> PaintedSkin | None:
+    """Her torso skin and how much of it the outfit leaves showing something that is not skin.
+
+    ``garments`` are the (mesh, primitive) pairs that are clothing — hers that stayed on
+    and the new outfit's. Not skin is clothing painted on her texture, or skin the texture
+    cuts away (VRoid hides skin under clothes that way: AvatarSample_O's chest). None when
+    there is nothing to judge.
+    """
+    textures: dict = {}
+    skin, covering = skin_surface(document, measurements, garments, textures)
+    if skin is None:
+        return None
+    where, colour = _samples(document, skin.parts, _image(document, skin.texture, textures))
+    radius = np.hypot(where[:, 0] - skin.axis_x, where[:, 2] - skin.axis_z)
+    torso = (where[:, 1] >= skin.low) & (where[:, 1] < skin.high) & (radius < TORSO_RADIUS_M)
+    painted = torso & not_skin(colour, skin.reference)
+
+    covered = _coverage(covering, skin.axis_x, skin.axis_z, skin.low, skin.high)
+    theta, row = _cell(where, skin.axis_x, skin.axis_z, skin.low)
     inside = (row >= 0) & (row < covered.shape[1])
     hidden = np.zeros(len(where), dtype=bool)
     hidden[inside] = covered[theta[inside], row[inside]] >= radius[inside] - CELL_M
@@ -220,9 +274,9 @@ def painted_skin(
         samples=int(torso.sum()),
         painted=int(painted.sum()),
         visible=int(visible.sum()),
-        visible_upper=int((visible & (where[:, 1] >= waist)).sum()),
-        visible_lower=int((visible & (where[:, 1] < waist)).sum()),
-        reference=tuple(int(v) for v in reference),
+        visible_upper=int((visible & (where[:, 1] >= skin.waist)).sum()),
+        visible_lower=int((visible & (where[:, 1] < skin.waist)).sum()),
+        reference=tuple(int(v) for v in skin.reference),
     )
 
 
@@ -277,4 +331,4 @@ def _coverage(covering, axis_x: float, axis_z: float, low: float, high: float) -
     return widened
 
 
-__all__ = ["MAX_VISIBLE_SHARE", "PaintedSkin", "painted_skin"]
+__all__ = ["MAX_VISIBLE_SHARE", "PaintedSkin", "SkinSurface", "not_skin", "painted_skin", "skin_surface"]

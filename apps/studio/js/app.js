@@ -2153,13 +2153,18 @@ async function checkPlan() {
         }),
         body
             ? el('p', {
-                  class: `report-line ${missing.length ? 'bad' : ''}`,
+                  class: `report-line ${missing.length && !(report.bodyCompletion || []).length ? 'bad' : ''}`,
                   text: missing.length
-                      ? `! No body under her clothes at ${missing.join(', ')} — that part stays on`
+                      ? (report.bodyCompletion || []).length
+                          ? `No body under her clothes at ${missing.join(', ')} — it will be completed`
+                          : `! No body under her clothes at ${missing.join(', ')} — that part stays on`
                       : '✓ Complete body under what comes off',
               })
             : null,
         paintedLine(report.paintedSkin),
+        (report.bodyCompletion || []).length
+            ? el('p', { class: 'report-line', text: '✓ Her body will be completed where her export left none under her clothes' })
+            : null,
         report.layerOrder === 'refused'
             ? el('p', {
                   class: 'report-line bad',
@@ -2194,9 +2199,10 @@ function paintedLine(painted) {
     if (pct <= 3) return el('p', { class: 'report-line', text: '✓ Bare skin under her clothes' });
     if (!painted.underwear)
         return el('p', { class: 'report-line warn', text: `Clothing is painted on her skin (${pct}% of her torso) — it shows wherever the outfit leaves it uncovered` });
+    // SR1. Restored, not refused: the job fills it with her own skin under the underwear.
     return el('p', {
-        class: 'report-line bad',
-        text: `✕ Clothing is painted on her skin (${pct}% of her torso). Underwear must end on bare skin, so this is refused if any shows around it — choose an avatar that is bare under her clothes, or "Keep her clothes on" to style it over them`,
+        class: 'report-line',
+        text: `✓ Clothing painted on her skin (${pct}% of her torso) will be restored to skin under the underwear`,
     });
 }
 
@@ -2297,6 +2303,8 @@ function preparationLines(body) {
     for (const slot of removed) out.push(el('p', { class: 'report-line', text: `✓ Her ${NAMES[slot] || slot} taken off` }));
     if (body.complete === true) out.push(el('p', { class: 'report-line', text: '✓ Body complete under it' }));
     else if (body.bodyPreparation === 'partial') out.push(el('p', { class: 'report-line warn', text: '! Part of her outfit stayed on: no body under it' }));
+    if (body.bodyCompleted) out.push(el('p', { class: 'report-line', text: '✓ Body completed where her export left none' }));
+    if (body.skinRestored) out.push(el('p', { class: 'report-line', text: '✓ Her skin restored under it (painted clothing removed)' }));
     const painted = body.paintedSkin;
     if (painted && painted.checked) {
         const pct = Math.round((painted.visibleShare || 0) * 100);
