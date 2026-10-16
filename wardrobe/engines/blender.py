@@ -36,8 +36,14 @@ LOG_TAIL_CHARS = 4000
 
 
 def mask_policy(material) -> str:
-    """Whether Blender may hide the body under this garment: not if it is see-through."""
-    return "none" if material.exposes_body else "body-only"
+    """Whether Blender may hide the body under this garment: not if it is see-through (BS4).
+
+    ``wardrobe.body_surface.masking`` names the three cases (never, alpha-aware, opaque-only)
+    and why alpha-aware is sent to the worker as ``none``; the answer here is unchanged.
+    """
+    from wardrobe.body_surface.masking import worker_mask_policy
+
+    return worker_mask_policy(material)
 
 
 class BlenderEngine(FittingEngine):
