@@ -257,6 +257,7 @@ def _stocking_plan(options, existing: OutfitPlan | None) -> StockingPlan:
         rolledEdge=options.rolled_edge,
         seam=seam, seamWidthM=options.back_seam.width / 1000.0,
         seamColor=_hex(options.back_seam.color, None) if options.back_seam.color else None,
+        foot=options.foot,
     )
 
 
