@@ -170,6 +170,9 @@ export const api = {
             body: { depictsAdult, ageConfirmed },
         }),
 
+    /** AB4. An independent collection (wardrobe.collections): its designs, each with Forge's rating. */
+    collection: (id) => request(`/v1/collections/${encodeURIComponent(id)}`),
+
     /** BA7. The tattoo catalogue, and where a finished look leaves her skin visible. */
     bodyArt: () => request('/v1/body-art'),
     lookExposure: (slug, lookId) =>

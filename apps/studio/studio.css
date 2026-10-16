@@ -2604,3 +2604,108 @@ dialog.login .form-error {
         padding: 6px 0 0;
     }
 }
+
+
+/* AB4. An independent collection's gallery (Anime Beachwear). */
+.gallery-subtitle {
+    margin: -4px 0 10px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.gallery-card {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--panel-2);
+    text-align: left;
+}
+
+.gallery-card:hover,
+.gallery-card[aria-current='true'] {
+    border-color: var(--accent);
+}
+
+.gallery-card small {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.gallery-pic {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: calc(var(--radius) - 2px);
+    background: var(--panel-3);
+}
+
+.gallery-pic.missing {
+    visibility: hidden;
+}
+
+.status.good {
+    color: var(--good, #8cc496);
+}
+
+.status.warn {
+    color: var(--warn, #e2aa78);
+}
+
+.gallery-detail {
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--panel-2);
+}
+
+.gallery-views {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.gallery-views figure {
+    margin: 0;
+}
+
+.gallery-views figcaption {
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+    text-transform: capitalize;
+}
+
+.gallery-list {
+    margin: 0 0 6px;
+    padding-left: 18px;
+    font-size: 13px;
+}
+
+.gallery-list.muted {
+    color: var(--muted);
+}
+
+.gallery-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.swatch.default {
+    display: grid;
+    place-items: center;
+    background: var(--panel-3);
+    font-size: 12px;
+}
