@@ -33,6 +33,7 @@ from functools import lru_cache
 
 from wardrobe.domain.garments import INTIMATE_CATEGORIES, TemplateCatalog
 from wardrobe.domain.looks import OutfitRequest
+from wardrobe.pipeline.fashion_collections import outfit_prompt
 from wardrobe.pipeline.look_presets import LOOK_PRESETS
 
 #: Where a garment of each category sits on her: what a "change the top" replaces.
@@ -102,6 +103,15 @@ OUTFITS: tuple[Outfit, ...] = (
         "casual",
         "black fitted crop top + blue straight jeans",
         tags=("denim", "day"),
+    ),
+    # CR1. The Y2K low rise: a cropped cami over low-rise baggy jeans, her waist bare above the
+    # waistband front and back (measured: waistline and lower back 100% bare on the fit form).
+    Outfit(
+        "y2k-low-rise",
+        "Y2K low rise",
+        "casual",
+        "white cropped cami + blue low-rise baggy jeans",
+        tags=("y2k", "denim", "waistline"),
     ),
     Outfit(
         "tee-jeans", "Tee & jeans", "casual", "white fitted tee + blue straight jeans", tags=("denim", "day")
@@ -202,6 +212,15 @@ OUTFITS: tuple[Outfit, ...] = (
         preset="corset_top_low_rise_mini",
         tags=("party",),
     ),
+    # CR1. Club Waistline: the cropped corset (top-corset-cropped-v1) stops above her waist and
+    # is cut higher at the back, so a waistline tattoo has bare skin above the low-rise mini.
+    Outfit(
+        "club-waistline",
+        "Club Waistline",
+        "dressy",
+        "black cropped corset top + black low-rise pleated mini skirt + black stiletto ankle boots",
+        tags=("club", "night", "waistline", "boots"),
+    ),
     # OC1. A night out with an edge: leather, a corset over jeans, a catsuit — and boots.
     Outfit(
         "leather-mini-combat",
@@ -240,6 +259,11 @@ OUTFITS: tuple[Outfit, ...] = (
            LOOK_PRESETS["discoteca_combat"]["prompt"], tags=("party", "night", "boots")),
     Outfit("discoteca-over-knee", "Black dress & over-the-knee boots", "discoteca",
            LOOK_PRESETS["discoteca_over_knee"]["prompt"], tags=("party", "night", "boots")),
+    # CR1. The same satin mini cut open at the back (the collection's own "Open back" choice),
+    # over the over-the-knee boots: her upper back and shoulder blades bare.
+    Outfit("discoteca-open-back", "Open-back dress & over-the-knee boots", "discoteca",
+           outfit_prompt("sexy-discoteca-black", "over-knee", {"back": "open", "material": "satin"}),
+           tags=("party", "night", "boots", "open-back")),
     # --- smart ----------------------------------------------------------
     Outfit(
         "blazer-trousers",
@@ -383,6 +407,16 @@ OUTFITS: tuple[Outfit, ...] = (
         preset="visible_thong_low_rise_jeans",
         tags=("y2k",),
     ),
+    # CR1. The whale tail with a cropped cami and baggy jeans: the look preset that already
+    # existed (visible_thong_cami_baggy_jeans), now a dictionary look.
+    Outfit(
+        "visible-v-string-y2k",
+        "Visible V-string · Y2K",
+        "lingerie",
+        LOOK_PRESETS["visible_thong_cami_baggy_jeans"]["prompt"],
+        preset="visible_thong_cami_baggy_jeans",
+        tags=("y2k", "waistline"),
+    ),
     # LC5. The Italian lace collection (wardrobe.lingerie.collections): one bralette, two bottoms.
     Outfit(
         "italian-lace-thong",
@@ -438,7 +472,67 @@ OUTFITS: tuple[Outfit, ...] = (
     ),
     # --- sheer (private) ------------------------------------------------
     Outfit("sheer-blouse", "Sheer blouse & mini", "sheer", "sheer white blouse + black mini skirt"),
+    # CR1. Sheer layering over lingerie: the bralette shows through the blouse, as it is meant to.
+    Outfit(
+        "sheer-blouse-bralette",
+        "Sheer blouse over a lace bralette",
+        "sheer",
+        "black lace bralette + sheer white blouse + black mini skirt",
+    ),
 )
+
+
+#: CR2. Stockings as an add-on to a look she wears: the request blocks merged into the look's
+#: own outfit request (``wardrobe.hosiery``). Hold-ups are stockings alone — the planner adds no
+#: belt when none is asked for — so they suit a low-rise look whose bare waist a belt would cover.
+HOLD_UPS = {"hosiery": {"type": "sheer", "denier": 15, "color": "black", "topStyle": "wide"}}
+SUSPENDERS = {
+    "hosiery": {"type": "sheer", "denier": 20, "color": "black", "topStyle": "wide"},
+    "suspenderBelt": {"style": "classic", "color": "black", "strapCount": 4, "hardware": {"color": "silver"}},
+}
+STOCKINGS_WORDS = "black sheer thigh-high stockings"
+#: What on her makes stockings pointless or impossible: her legs already covered, or a beach.
+LEGS_COVERED = frozenset({"trousers", "jumpsuit", "legwear", "nightwear", "swimwear"})
+
+
+def add_ons(outfit: Outfit, garments: list[dict], catalog: TemplateCatalog) -> list[dict]:
+    """CR2. The stockings a look can take, each with the blocks a client merges and its rating.
+
+    Read from what the planner builds, never from the look's name: a skirt or dress has a
+    hem the reveal can move (glimpse for hold-ups, the straps below it for suspenders); a look
+    of underwear alone takes a garter set in full view; shorts take hold-ups only. Her legs
+    already covered (trousers, a catsuit, stockings of her own), swimwear, or over-the-knee
+    boots that would hide the tops: none. The rating is the planner's for the merged request,
+    as a job's would be — sheer stockings show her body, so they are private.
+    """
+    from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
+
+    categories = {g["category"] for g in garments}
+    if categories & LEGS_COVERED or any("over-knee" in (g["template"] or "") for g in garments):
+        return []
+    hem = bool(categories & {"dress", "skirt"})
+    lingerie = categories == {"underwear"}
+    if not (hem or lingerie or "shorts" in categories):
+        return []
+    glimpse = {"reveal": {"level": "glimpse"}} if hem else {}
+    choices = [("hold-ups", "Hold-up stockings", {**HOLD_UPS, **glimpse})]
+    if hem or lingerie:
+        belt = {**SUSPENDERS["suspenderBelt"], "visibility": "straps_only" if hem else "full"}
+        statement = {"reveal": {"level": "statement"}} if hem else {}
+        blocks = {**SUSPENDERS, "suspenderBelt": belt, **statement}
+        choices.append(("suspenders", "Stockings & suspenders", blocks))
+    out = []
+    base = outfit.request().model_dump(by_alias=True, exclude_none=True, exclude_defaults=True)
+    for key, title, blocks in choices:
+        # The stockings are named in the prompt as well as set by the blocks: the planner builds
+        # the same garments either way, and the look made has a prompt of its own — a client
+        # that finds a look by its prompt never mistakes the stockinged one for the plain one.
+        request = {**base, **blocks, "prompt": f"{base['prompt']} + {STOCKINGS_WORDS}"}
+        plan = plan_outfit_stack(OutfitRequest.model_validate(request), catalog)
+        gated = any(g.category in INTIMATE_CATEGORIES or bool(g.requires_adult) for g in plan.garments)
+        out.append({"id": key, "title": title, "blocks": blocks, "request": request,
+                    "rating": "private" if gated else "general"})
+    return out
 
 
 def groups() -> dict[str, Group]:
@@ -476,6 +570,8 @@ def plan_entry(outfit: Outfit, catalog: TemplateCatalog) -> dict:
         "rating": "private" if private else "general",
         "slots": list(dict.fromkeys(g["slot"] for g in garments)),
         "garments": garments,
+        # CR2. Additive: a client that does not know add-ons ignores the key.
+        "addOns": add_ons(outfit, garments, catalog),
     }
 
 
@@ -499,4 +595,16 @@ def catalogue(catalog: TemplateCatalog) -> dict:
     }
 
 
-__all__ = ["GROUPS", "OUTFITS", "SLOT_OF_CATEGORY", "Group", "Outfit", "catalogue", "groups", "plan_entry"]
+__all__ = [
+    "GROUPS",
+    "HOLD_UPS",
+    "OUTFITS",
+    "SLOT_OF_CATEGORY",
+    "SUSPENDERS",
+    "Group",
+    "Outfit",
+    "add_ons",
+    "catalogue",
+    "groups",
+    "plan_entry",
+]

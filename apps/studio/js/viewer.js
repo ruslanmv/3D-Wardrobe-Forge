@@ -65,6 +65,17 @@ const FREE_MIN_POLAR = THREE.MathUtils.degToRad(1);
 const FREE_MAX_POLAR = THREE.MathUtils.degToRad(179);
 // The inspection views: her own front, her left side and her back (see turnTo()).
 const INSPECT_FACING = { front: 'front', side: 'left', back: 'back' };
+// CR1. The detail shot per content profile: the band of her height it frames (feet 0 → head 1),
+// and the side it is seen from (0 front, π back).
+const DETAIL_BANDS = {
+    // From behind and to her side: long hair hangs down the middle of her back, and from
+    // straight behind it was most of the waist shot (AvatarSample B).
+    waist: [0.5, 0.7, Math.PI * 0.72],
+    back: [0.58, 0.86, Math.PI],
+    legs: [0.2, 0.55, Math.PI / 4],
+    boots: [0.0, 0.34, Math.PI / 4],
+    construction: [0.55, 0.82, 0],
+};
 // A tap is a press that neither moved nor lasted; two of them close together are a double tap.
 const TAP_MS = 260;
 const TAP_SLOP_PX = 10;
@@ -380,6 +391,55 @@ export class Viewer {
      */
     turnTo(facing = 'front') {
         const yaw = { front: 0, back: Math.PI, left: Math.PI / 2, right: -Math.PI / 2 }[facing] ?? 0;
+        const target = this.controls.target;
+        const offset = this.camera.position.clone().sub(target);
+        const flat = Math.hypot(offset.x, offset.z);
+        this.controls.autoRotate = false;
+        this.camera.position.set(target.x + Math.sin(yaw) * flat, this.camera.position.y, target.z + Math.cos(yaw) * flat);
+        this.controls.update();
+    }
+
+    /**
+     * CR1. A try-on haul's five shots: front, three-quarter, back, a detail and a slow 360°.
+     * The detail frames a band of her height — her waist, her back, her legs, her boots, or
+     * the bodice ("construction") — from the side that shows it, filling the frame with it.
+     */
+    shot(name, detail = 'back') {
+        this.view = 'front';
+        this.orbitFor('front');
+        this.setTurntable(false);
+        if (name === 'detail') return this.frameBand(...(DETAIL_BANDS[detail] || DETAIL_BANDS.back));
+        this.frame();
+        if (name === 'three-quarter') this.turnToYaw(Math.PI / 4);
+        else if (name === 'back') this.turnTo('back');
+        else if (name === 'turntable') this.setTurntable(true);
+    }
+
+    /** Frame the band of her height from ``low`` to ``high`` (fractions, feet 0 → head 1), from ``yaw``. */
+    frameBand(low, high, yaw = 0) {
+        const box = new THREE.Box3();
+        for (const slot of Object.values(this.slots)) {
+            if (slot && slot.group.visible) box.expandByObject(slot.vrm.scene);
+        }
+        if (box.isEmpty()) return;
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        center.y = box.min.y + size.y * (low + high) / 2;
+        const fov = THREE.MathUtils.degToRad(this.camera.fov);
+        const band = size.y * (high - low);
+        const distance = (band / 2 / Math.tan(fov / 2)) * 1.25 + size.z / 2;
+        this.bounds = box.clone();
+        this.controls.target.copy(center);
+        this.camera.position.set(center.x, center.y, center.z + distance);
+        this.camera.near = Math.max(distance / 100, 0.01);
+        this.camera.far = distance * 20;
+        this.camera.updateProjectionMatrix();
+        this.controls.update();
+        this.turnToYaw(yaw);
+    }
+
+    /** turnTo() by angle: 0 her front, π her back, π/4 her front-left three-quarter. */
+    turnToYaw(yaw) {
         const target = this.controls.target;
         const offset = this.camera.position.clone().sub(target);
         const flat = Math.hypot(offset.x, offset.z);

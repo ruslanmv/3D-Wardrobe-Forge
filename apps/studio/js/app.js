@@ -1985,7 +1985,128 @@ function renderLookActions() {
     }
     $('quick-changes').replaceChildren(...parts);
     $('tell-btn').disabled = busy;
+    renderLookFilm();
     syncExtras();
+}
+
+const SHOT_LABELS = { front: 'Front', 'three-quarter': '¾', back: 'Back', detail: 'Detail', turntable: '360°' };
+
+/** The dictionary entry a look was made from, by its recipe: what its add-ons are read from. */
+function entryOf(look) {
+    const outfits = (state.outfits && state.outfits.outfits) || [];
+    const recipe = recipeOf(look);
+    return outfits.find((entry) => entry.prompt === recipe || entry.prompt === look.prompt) || null;
+}
+
+/**
+ * CR1/CR2. The try-on haul on the look on stage: the shots its style is filmed in, the body
+ * art that works with it, and the stockings it can take.
+ *
+ * Body art is recommended, never decided by the style: a design is offered only at a
+ * placement this look's own exposure (GET …/looks/{id}/exposure) says is bare, best first by
+ * the style's placements. Stockings are the look's dictionary add-ons, shown by their rating
+ * as every look is: a private one only where private mode is on for her.
+ */
+function renderLookFilm() {
+    const box = $('look-film');
+    const look = activeLook();
+    if (!box) return;
+    if (!look) return box.replaceChildren();
+    const { style } = contextOf(look);
+    const content = style && style.content;
+    const busy = Boolean(state.jobId);
+    const parts = [];
+    if (content) {
+        parts.push(
+            el('p', { class: 'flow-label', text: 'Film it' }),
+            el(
+                'div',
+                { class: 'chips small' },
+                ...content.shots.map((shot) =>
+                    el('button', {
+                        class: 'chip',
+                        type: 'button',
+                        text: shot === 'detail' ? `Detail · ${content.detail}` : SHOT_LABELS[shot] || shot,
+                        onclick: () => {
+                            viewer.shot(shot, content.detail);
+                            $('turn-btn').setAttribute('aria-pressed', String(shot === 'turntable'));
+                        },
+                    })
+                )
+            )
+        );
+    }
+    const exposure = state.bodyArt.exposure;
+    if (content && exposure && state.bodyArt.catalog) {
+        const eligible = exposure.eligible || [];
+        const wanted = content.bodyArt.placements;
+        const order = [...wanted.filter((p) => eligible.includes(p)), ...eligible.filter((p) => !wanted.includes(p))];
+        const picks = content.bodyArt.designs
+            .map((id) => {
+                const design = designInfo(id);
+                const at = order.find((p) => (design.placements || []).includes(p));
+                return at ? { design, at } : null;
+            })
+            .filter(Boolean);
+        if (order.length) {
+            parts.push(
+                el('p', { class: 'flow-label', text: 'Body art that works with this look' }),
+                el('p', { class: 'report-line', text: order.slice(0, 3).map((p) => `✓ ${placementInfo(p).name}`).join('   ') })
+            );
+            if (picks.length)
+                parts.push(
+                    el(
+                        'div',
+                        { class: 'chips small' },
+                        ...picks.map(({ design, at }) =>
+                            el(
+                                'button',
+                                {
+                                    class: 'chip',
+                                    type: 'button',
+                                    title: `${design.name} · ${placementInfo(at).name}`,
+                                    disabled: busy,
+                                    onclick: () =>
+                                        runBodyArt(
+                                            { bodyArt: [{ design: design.id, placement: at }] },
+                                            `${design.name} on her ${placementInfo(at).name.toLowerCase()}`,
+                                            placementInfo(at).facing
+                                        ),
+                                },
+                                inkSwatch(design.id),
+                                ` ${design.name}`
+                            )
+                        )
+                    )
+                );
+        }
+    }
+    const entry = entryOf(look);
+    const adult = Boolean(state.avatar && state.avatar.depictsAdult);
+    const addOns = entry ? (entry.addOns || []).filter((a) => a.rating === 'general' || adult) : [];
+    if (addOns.length)
+        parts.push(
+            el('p', { class: 'flow-label', text: 'Stockings' }),
+            el(
+                'div',
+                { class: 'chips small' },
+                ...addOns.map((addOn) =>
+                    el('button', {
+                        class: 'chip',
+                        type: 'button',
+                        disabled: busy,
+                        text: `＋ ${addOn.title}`,
+                        onclick: () =>
+                            runJob(
+                                state.avatar.slug,
+                                simpleBody(addOn.request, { occasion: look.occasion, style: look.style }),
+                                `${entry.title} + ${addOn.title.toLowerCase()}`
+                            ),
+                    })
+                )
+            )
+        );
+    box.replaceChildren(...parts);
 }
 
 /** "Make it yours": only what applies to this look. A tattoo only where this outfit leaves skin. */
@@ -2393,6 +2514,7 @@ async function renderBodyArt(lookId = state.activeLookId) {
         art.design = null;
     }
     drawBodyArt();
+    renderLookFilm(); // CR1: the recommendations wait for this look's exposure
 }
 
 function placementInfo(id) {

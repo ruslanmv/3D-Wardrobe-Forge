@@ -22,7 +22,8 @@ def test_ids_are_unique_and_every_look_is_in_the_dictionary(entries):
         assert len(occasion.styles) >= 2, occasion.id
         assert len({s.id for s in occasion.styles}) == len(occasion.styles), occasion.id
         for style in occasion.styles:
-            assert len(style.looks) >= 2, (occasion.id, style.id)
+            # CR1. A Try-on haul style is one complete recipe; everywhere else a style is a choice.
+            assert len(style.looks) >= (1 if occasion.id == "creator" else 2), (occasion.id, style.id)
             assert len(set(style.looks)) == len(style.looks), (occasion.id, style.id)
             for look in style.looks:
                 assert look in entries, (occasion.id, style.id, look)
@@ -30,16 +31,29 @@ def test_ids_are_unique_and_every_look_is_in_the_dictionary(entries):
 
 def test_the_first_screen_is_the_occasions_asked_for():
     titles = [o.title for o in oc.OCCASIONS]
-    assert titles == ["Night out", "Work", "Gym", "Sleep", "Shopping", "Vacation", "Campus", "Private"]
+    assert titles == ["Night out", "Try-on haul", "Work", "Gym", "Sleep", "Shopping", "Vacation", "Campus",
+                      "Private"]
 
 
 def test_without_private_mode_no_style_is_left_empty(entries):
-    """A general occasion's every style has a look anyone may wear: hiding private looks never empties it."""
+    """A general occasion's every style has a look anyone may wear: hiding private looks never empties it.
+
+    CR1. Try-on haul also holds whole private recipes (a lace set, the whale tail): each of those is
+    private through and through, so a client hides the style as a whole, never shows it half-empty —
+    and the occasion keeps its general styles for everyone else.
+    """
     for occasion in oc.OCCASIONS:
         if occasion.private:
             continue
         for style in occasion.styles:
-            assert any(entries[look]["rating"] == "general" for look in style.looks), (occasion.id, style.id)
+            ratings = {entries[look]["rating"] for look in style.looks}
+            if occasion.id == "creator" and ratings == {"private"}:
+                continue
+            assert "general" in ratings, (occasion.id, style.id)
+    creator = oc.occasions()["creator"]
+    general = [s for s in creator.styles if all(entries[look]["rating"] == "general" for look in s.looks)]
+    assert [s.id for s in general] == ["club-waistline", "y2k-low-rise", "discoteca-open-back", "leather-edge",
+                                       "boots-haul"]
 
 
 def test_private_is_hidden_as_a_whole_and_holds_the_private_looks(entries):

@@ -40,6 +40,7 @@ console.log(JSON.stringify({
     intents: [
         'something for the beach', "let's go clubbing", 'make it red', 'navy', 'a cream cropped cardigan',
         'private lingerie', 'school', '', 'Make it dark grey!',
+        'film a try-on haul', 'the club waistline look', 'low-rise jeans', 'black stockings',
     ].map((t) => m.readIntent(t, { colours, available: shown.map((o) => o.id) })),
     recolour: [
         m.recolour('black satin spaghetti strap bodycon mini dress', 'red', colours),
@@ -84,6 +85,7 @@ def test_without_private_mode_nothing_private_is_offered(result):
     ids = [o["id"] for o in result["general"]]
     assert ids == [
         "night-out",
+        "creator",
         "work",
         "gym",
         "sleep",
@@ -97,6 +99,12 @@ def test_without_private_mode_nothing_private_is_offered(result):
             assert all(rating == "general" for _id, rating in style["looks"]), (occasion["id"], style["id"])
     beach = next(s for o in result["general"] for s in o["styles"] if s["id"] == "beach")
     assert [look for look, _ in beach["looks"]] == ["cami-denim-shorts"]  # the bikinis wait for private mode
+    # CR1. The haul's private recipes are hidden whole: no half-empty lace style without private mode.
+    creator = next(o for o in result["general"] if o["id"] == "creator")
+    assert [s["id"] for s in creator["styles"]] == ["club-waistline", "y2k-low-rise", "discoteca-open-back",
+                                                    "leather-edge", "boots-haul"]
+    adult = next(o for o in result["adult"] if o["id"] == "creator")
+    assert {"visible-v-string", "italian-lace-brazilian", "stockings-editorial"} <= {s["id"] for s in adult["styles"]}
 
 
 def test_with_private_mode_the_private_occasion_and_swimwear_appear(result):
@@ -106,7 +114,9 @@ def test_with_private_mode_the_private_occasion_and_swimwear_appear(result):
 
 
 def test_what_she_is_told_is_read_as_an_occasion_a_colour_or_a_garment(result):
-    beach, club, red, navy, cardigan, private, school, empty, grey = result["intents"]
+    beach, club, red, navy, cardigan, private, school, empty, grey, haul, waistline, jeans, stockings = result[
+        "intents"
+    ]
     assert beach == {"kind": "occasion", "occasion": "vacation", "style": "beach"}
     assert club == {"kind": "occasion", "occasion": "night-out", "style": None}
     assert red == {"kind": "colour", "colour": "red"} and navy == {"kind": "colour", "colour": "navy"}
@@ -117,6 +127,11 @@ def test_what_she_is_told_is_read_as_an_occasion_a_colour_or_a_garment(result):
     assert private == {"kind": "garment", "prompt": "private lingerie"}
     assert school == {"kind": "occasion", "occasion": "campus", "style": None}
     assert empty is None
+    # CR1. The haul by its own words; and a garment named never sends her somewhere else.
+    assert haul == {"kind": "occasion", "occasion": "creator", "style": None}
+    assert waistline == {"kind": "occasion", "occasion": "creator", "style": "club-waistline"}
+    assert jeans == {"kind": "garment", "prompt": "low-rise jeans"}
+    assert stockings == {"kind": "garment", "prompt": "black stockings"}
 
 
 def test_recolour_keeps_the_cut_and_pieces_split_like_the_planner(result):

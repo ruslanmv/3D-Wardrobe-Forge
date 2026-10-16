@@ -159,6 +159,11 @@ export function recolour(piece, colour, colours) {
 
 /** Words that mean an occasion (and sometimes a style in it) in what someone types. */
 const OCCASION_WORDS = [
+    // CR1. Why the outfit is made rather than where she goes: before "club" and "night out", so
+    // "club waistline" and "a try-on haul for the club" are the haul. Only phrases no garment
+    // is called: "low-rise jeans" or "black stockings" are things to put on her, not places.
+    [/\b(club waistline)\b/, 'creator', 'club-waistline'],
+    [/\b(try-?on haul|haul|filming)\b/, 'creator', null],
     [/\b(discoteca|disco)\b/, 'night-out', 'discoteca'],
     [/\b(club|clubbing|nightclub|night ?out|going out|party|cocktail)\b/, 'night-out', null],
     [/\b(office|work|business|meeting|interview)\b/, 'work', null],
@@ -169,6 +174,7 @@ const OCCASION_WORDS = [
     [/\b(beach)\b/, 'vacation', 'beach'],
     [/\b(vacation|holiday|holidays|resort|trip|travel|sightseeing)\b/, 'vacation', null],
     [/\b(campus|school|college|class|classes|university|uni)\b/, 'campus', null],
+    [/\b(body art|lower[ -]back tattoo|waistline tattoo)\b/, 'private', 'body-art-focus'],
     [/\b(fan service|lingerie|private)\b/, 'private', null],
 ];
 
