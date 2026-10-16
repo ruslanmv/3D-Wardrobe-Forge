@@ -359,6 +359,9 @@ class FitReport(BaseModel):
     #: job that asked for none, so such a job's report is what it always was.
     body_art: list[dict] | None = Field(default=None, alias="bodyArt", exclude_if=lambda v: v is None)
     hosiery: dict | None = None
+    #: L8/L9. Each lingerie piece's elastic edges (strain, force and pressure per pose) and
+    #: its garment rules (wardrobe.lingerie.report). Absent from a job without lingerie.
+    lingerie: dict | None = Field(default=None, exclude_if=lambda v: v is None)
     #: DC1. The heel and sole she stands on and the pitch and lift that give them, with the
     #: stance she stood in before. Absent from a job without shoes in it.
     stance: dict | None = Field(default=None, exclude_if=lambda v: v is None)

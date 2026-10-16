@@ -18,7 +18,7 @@ as a flat projection squeezes it.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 
@@ -66,6 +66,8 @@ class Body:
     #: Height of the top of whatever covers the centre of her back below the waist, on the
     #: finished outfit (exposure.waistband_y); None when nothing does or it was not measured.
     waistband_y: float | None = None
+    #: BA9. The bones the chart's axis runs through: her spine, or a thigh for a thigh piece.
+    chain: tuple[str, ...] = AXIS_BONES
 
     @classmethod
     def from_measurements(cls, measurements, skin: Skin) -> Body:
@@ -83,7 +85,7 @@ class Body:
 
     def axis(self, y: float | np.ndarray) -> np.ndarray:
         """The torso axis at height ``y``: the spine chain's x and z, interpolated in y."""
-        chain = [self.bones[b] for b in AXIS_BONES if b in self.bones]
+        chain = [self.bones[b] for b in self.chain if b in self.bones]
         chain.sort(key=lambda p: p[1])
         ys = np.array([p[1] for p in chain])
         y = np.atleast_1d(np.asarray(y, dtype=np.float64))
@@ -115,6 +117,44 @@ class Rect:
     centre_y: float
     width: float
     height: float
+
+
+#: BA9. Which way out of her each placement's chart faces, and round which bones.
+FRONT_PLACEMENTS = frozenset({"sternum", "under-bust"})
+#: The hips are not here: the calibration bodies' leg tubes start inside the torso at the side of
+#: the hip, and every design laid there stretched 2.7-6.8x over the fold (BODY_ART_PLAN BA9).
+SIDE_PLACEMENTS = {"left-rib": "left", "right-rib": "right"}
+THIGH_PLACEMENTS = {"left-upper-thigh": ("left", "front"), "right-upper-thigh": ("right", "front"),
+                    "left-outer-thigh": ("left", "outer"), "right-outer-thigh": ("right", "outer")}
+
+
+def frame_for(placement: str, body: Body) -> Body:
+    """The body as the placement's chart sees it: the same skin, charted from another side.
+
+    Every placement is laid the same way — rays out of an axis, arc length round her from
+    the direction the chart faces — so a front, side or thigh piece is the back's machinery
+    turned to face another way. ``back`` is the direction the chart is centred on and
+    ``right`` the horizontal perpendicular with ``back = -(up × right)``, as for her back.
+    """
+    back, right = body.back, body.right
+    if placement in FRONT_PLACEMENTS:
+        return replace(body, back=-back, right=-right)
+    if placement in SIDE_PLACEMENTS:
+        if SIDE_PLACEMENTS[placement] == "right":
+            return replace(body, back=right.copy(), right=-back)
+        return replace(body, back=-right, right=back.copy())
+    if placement in THIGH_PLACEMENTS:
+        side, facing = THIGH_PLACEMENTS[placement]
+        chain = (f"{side}UpperLeg", f"{side}LowerLeg")
+        for bone in chain:
+            if bone not in body.bones:
+                raise PlacementError(f"her skeleton has no {bone} bone")
+        if facing == "front":
+            return replace(body, back=-back, right=-right, chain=chain, waistband_y=None)
+        out = right if side == "right" else -right
+        return replace(body, back=out.copy(), right=(-back if side == "right" else back.copy()), chain=chain,
+                       waistband_y=None)
+    return body
 
 
 def rect_for(placement: str, body: Body, aspect: float) -> Rect:
@@ -160,6 +200,27 @@ def rect_for(placement: str, body: Body, aspect: float) -> Rect:
         # Nothing below her waist covers her back: where "lower back" sits. Lower than that
         # reaches the hip joint on the calibration bodies, where a decal stretched 4-6x.
         return Rect(0.0, body.lerp("spine", "chest", 0.3, fallback=("hips", "neck")), width, height)
+    if placement in SIDE_PLACEMENTS:
+        # Down her side over the ribs, under the arm: a vertical piece.
+        height = 0.3 * torso
+        y = body.lerp("spine", "chest", 0.75, fallback=("hips", "neck"))
+        return Rect(0.0, y, height * aspect, height)
+    if placement == "sternum":
+        # Down the centre of her chest, below the bust's gore: between triangle cups it was
+        # under the cups' inner edges (65% visible on the fit form in a string bikini).
+        height = 0.16 * torso
+        y = body.lerp("spine", "chest", 0.82, fallback=("hips", "neck"))
+        return Rect(0.0, y, height * aspect, height)
+    if placement == "under-bust":
+        # Along the fold under the bust, centred: a wide, shallow ornament.
+        width = 0.5 * span
+        return Rect(0.0, body.lerp("spine", "chest", 0.7, fallback=("hips", "neck")), width, width / aspect)
+    if placement in THIGH_PLACEMENTS:
+        side = THIGH_PLACEMENTS[placement][0]
+        hip, knee = body.bones[f"{side}UpperLeg"], body.bones[f"{side}LowerLeg"]
+        thigh = float(hip[1] - knee[1])
+        height = 0.38 * thigh
+        return Rect(0.0, float(hip[1]) - 0.45 * thigh, height * aspect, height)
     raise PlacementError(f"no layout for placement {placement!r}")
 
 
@@ -278,6 +339,7 @@ class Layout:
 
 def layout(body: Body, placement: str, aspect: float, request: BodyArtRequest | None = None) -> Layout:
     """Place the design's rectangle at ``placement`` with the request's scale, offsets, rotation, mirror."""
+    body = frame_for(placement, body)
     rect = rect_for(placement, body, aspect)
     scale = request.scale if request else 1.0
     width, height = rect.width * scale, rect.height * scale
@@ -332,6 +394,7 @@ def footprint(body: Body, placement: str, aspect: float, request: BodyArtRequest
     approx = _on_chart(lay.chart, target_s.ravel(), target_y.ravel())
 
     # The exact hit: from the axis at the target's height, out through the chart's point.
+    body = lay.body  # BA9: the frame the placement is charted in (front, side, a thigh)
     axis = body.axis(target_y.ravel())
     direction = approx - axis
     direction[:, 1] = 0.0
@@ -478,6 +541,7 @@ __all__ = [
     "Rect",
     "build_chart",
     "footprint",
+    "frame_for",
     "layout",
     "rect_for",
 ]

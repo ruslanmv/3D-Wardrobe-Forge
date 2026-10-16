@@ -67,6 +67,12 @@ async def run(context: PipelineContext, engine: FittingEngine) -> None:
         for message in (report.hosiery or {}).get("errors", []):
             context.warn(f"hosiery: {message}")
 
+    from wardrobe.lingerie import report as lingerie_report  # imports the engines
+
+    report.lingerie = lingerie_report.build(context)
+    for message in (report.lingerie or {}).get("warnings", []):
+        context.warn(f"lingerie: {message}")
+
     await context.emit(
         JobState.SKINNING,
         f"bound {report.garment_vertices} vertices to {len(report.bones_used)} bones",
