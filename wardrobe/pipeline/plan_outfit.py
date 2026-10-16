@@ -253,6 +253,16 @@ LEG_CUT_KEYWORDS: dict[str, tuple[str, ...]] = {
     "high": ("high-cut", "high cut", "high-leg", "high leg", "french cut", "french-cut"),
 }
 
+#: AN1. A gown or skirt opened up one leg: the hem notched to high on her thigh.
+SLIT_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "high": ("high slit", "thigh slit", "thigh-high slit", "side slit", "leg slit", "slit", "split skirt"),
+}
+
+#: AN1. A jacket worn open: its front cut away in a V to the hem, the top under it in view.
+FRONT_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "open": ("open front", "open-front", "worn open", "unbuttoned", "bolero"),
+}
+
 
 @dataclass(slots=True)
 class ParsedPrompt:
@@ -274,6 +284,8 @@ class ParsedPrompt:
     back: str | None = None
     leg_cut: str | None = None
     rise: str | None = None
+    slit: str | None = None
+    front: str | None = None
     matched: list[str] = None  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
@@ -342,6 +354,8 @@ def parse_prompt(prompt: str) -> ParsedPrompt:
         ("back", BACK_KEYWORDS),
         ("leg_cut", LEG_CUT_KEYWORDS),
         ("rise", RISE_KEYWORDS),
+        ("slit", SLIT_KEYWORDS),
+        ("front", FRONT_KEYWORDS),
     ):
         value, matched = _find(text, table)
         setattr(parsed, attribute, value)
@@ -717,6 +731,8 @@ def resolve_style(parsed: ParsedPrompt, request: OutfitRequest, template: Garmen
         back=parsed.back or fit.back,
         legCut=parsed.leg_cut or fit.leg_cut,
         rise=parsed.rise or "",
+        slit=parsed.slit or "",
+        front=parsed.front or "",
     )
 
 

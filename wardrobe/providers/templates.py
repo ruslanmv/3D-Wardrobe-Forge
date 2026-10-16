@@ -51,6 +51,10 @@ class TemplateGarmentProvider(GarmentProvider):
             key += f"|briefRise={style.brief_rise}"
         if style.whale_tail is not None:  # likewise (P2)
             key += "|whaleTail=" + ",".join(f"{k}={style.whale_tail[k]}" for k in sorted(style.whale_tail))
+        if style.slit:  # likewise (AN1)
+            key += f"|slit={style.slit}"
+        if style.front:  # likewise (AN1)
+            key += f"|front={style.front}"
         if style.collection is not None:  # likewise (LC1): a thong set and a Brazilian set differ
             key += "|collection=" + json.dumps(style.collection, sort_keys=True)
         digest = sha1(key.encode()).hexdigest()[:12]
@@ -83,6 +87,11 @@ class TemplateGarmentProvider(GarmentProvider):
                 "rise": style.rise,
             },
         )
+        # AN1. Only when asked for: every other garment's metadata is exactly what it was.
+        if style.slit:
+            artifact.metadata["slit"] = style.slit
+        if style.front:
+            artifact.metadata["front"] = style.front
         # Hosiery: the outfit's design, and the belt's style, for the builders that read them.
         # Absent for every other garment, so their metadata is exactly what it was.
         if plan.hosiery is not None:

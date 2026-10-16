@@ -312,6 +312,15 @@ OCCASIONS: tuple[Occasion, ...] = (
                 "Sun, sand, swim",
                 ("cami-denim-shorts", "triangle-bikini", "bandeau-bikini", "one-piece", "skirted-swimsuit"),
             ),
+            # AN2. The collection's beach looks, here too: the sarong look for everyone, the
+            # striped bikini with private mode.
+            Style(
+                "anime-beach",
+                "Anime beach",
+                "🌸",
+                "Striped bikini, floral sarong",
+                ("anime-island-archaeologist", "anime-ocean-navigator"),
+            ),
             Style(
                 "sightseeing",
                 "Sightseeing",
@@ -346,32 +355,62 @@ OCCASIONS: tuple[Occasion, ...] = (
             Style("sporty", "Sporty", "⚽", "Tee and leggings", ("gym-tee-leggings", "tee-trousers-flats")),
         ),
     ),
+    # AN2. Anime fan service: twelve original looks in the spirit of anime heroines, in the four
+    # sections the collection was designed in (docs/ANIME_FAN_SERVICE.md). Private as a whole,
+    # like Private: it is not shown, or shown locked, without private mode. Three of its looks
+    # also need the avatar's adult declaration (the bikini, the leotard, the bodysuit); the
+    # server's gate decides that on every job, as it does for any look.
+    Occasion(
+        "anime",
+        "Anime fan service",
+        "🌸",
+        "Which heroine tonight?",
+        (
+            Style(
+                "anime-beach",
+                "Beach & pool",
+                "🏝️",
+                "Striped bikini, floral sarong",
+                ("anime-ocean-navigator", "anime-island-archaeologist"),
+                content=_profile("waist", ("waistline", "lower-back"),
+                                 ("sigil-heart-01", "swirl-butterfly-01", "tribal-curls-diamond-01")),
+            ),
+            Style(
+                "anime-retro",
+                "Retro & catsuits",
+                "💋",
+                "Latex, crop tops, over-the-knee boots",
+                ("anime-retro-bounty", "anime-midnight-thief"),
+                content=_profile("waist", ("waistline", "lower-back"), ("devil-wings-01", "sigil-jewel-01")),
+            ),
+            Style(
+                "anime-glamour",
+                "Glamour & fantasy",
+                "👑",
+                "Gowns slit to the thigh",
+                ("anime-thorn-assassin", "anime-serpent-empress", "anime-abyss-guardian",
+                 "anime-reaper-lieutenant"),
+                content=_profile("legs", ("upper-back", "spine-upper"),
+                                 ("lace-ornament-01", "spine-vine-01")),
+            ),
+            Style(
+                "anime-action",
+                "Action heroines",
+                "⚡",
+                "Bodysuits, leotards, boots",
+                ("anime-rose-commander", "anime-moon-rabbit", "anime-ice-general", "anime-ghost-operative"),
+                content=_profile("boots", ("upper-back", "lower-back"),
+                                 ("tribal-crossing-01", "bat-heart-blades-01")),
+            ),
+        ),
+        private=True,
+    ),
     Occasion(
         "private",
         "Private",
         "🔒",
         "Just for the two of you?",
         (
-            Style(
-                "anime-cosplay",
-                "Anime cosplay references",
-                "✨",
-                "Twelve adult-only anime-inspired costume proxies; franchise license review required",
-                (
-                    "anime-nami",
-                    "anime-faye",
-                    "anime-yor",
-                    "anime-hancock",
-                    "anime-robin",
-                    "anime-fujiko",
-                    "anime-reiju",
-                    "anime-mirko",
-                    "anime-esdeath",
-                    "anime-motoko",
-                    "anime-rangiku",
-                    "anime-albedo",
-                ),
-            ),
             Style(
                 "fan-service",
                 "Fan service",

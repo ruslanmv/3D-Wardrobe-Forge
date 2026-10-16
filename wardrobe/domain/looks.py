@@ -165,6 +165,10 @@ class StylePlan(BaseModel):
     leg_cut: str = Field(default="", alias="legCut")
     #: "" | high | low — where briefs' waistband sits.
     rise: str = ""
+    #: AN1. "" | high — a dress or skirt slit up one leg (procedural.slit_profile).
+    slit: str = ""
+    #: AN1. "" | open — a jacket worn open, its front cut away (procedural.open_front_profile).
+    front: str = ""
     #: P1. Where a pattern-block brief's waistline sits, as a fraction of her crotch → waist
     #: span (wardrobe.lingerie.specs.RISES), overriding the template's. Set only by a look
     #: that places underwear against another garment's waistband (the visible-thong block);

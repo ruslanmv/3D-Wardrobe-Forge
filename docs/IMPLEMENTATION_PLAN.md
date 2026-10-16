@@ -174,6 +174,11 @@ the original next-steps list are kept, struck through, so the history reads.
 - ~~BA9 more placements~~ — built for ribs, sternum, under the bust and thighs; the hips are still to do.
 - ~~BA10 custom tattoo import~~ — built (`wardrobe/body_art/custom.py`, `/v1/admin/body-art`).
 
+**From [ANIME_FAN_SERVICE](ANIME_FAN_SERVICE.md)** (AN0–AN2 built)
+
+- AN4 accessories: gloves and the ribbon family (sashes, belts, braces) first,
+  then headpieces (ears, horns, a cap), then wings and capes.
+
 **From [HOSIERY](HOSIERY.md)** (the [HOSIERY_UPGRADE](HOSIERY_UPGRADE.md) design is built)
 
 - ~~`briefsOver`~~ — built (`suspenderBelt.briefsOver`).

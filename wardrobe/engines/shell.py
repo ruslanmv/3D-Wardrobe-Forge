@@ -132,7 +132,7 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
 
         hip = context.measurements.bone_positions.get("hips")
         drawn = drawn_surface(context.document, y_max=float(hip[1]) if hip is not None else 1.0)
-        reach = drawn if context.collision_points is None else np.vstack([drawn, context.collision_points])
+        reach = np.vstack([drawn, *_leg_layers(context)])
         metadata["bootBody"] = _boot_body(context, reach)
     stockings = ((artifact.metadata.get("hosiery") or {}).get("stockings") or {})
     if kind == "legwear" and stockings.get("foot") == "full":
@@ -630,6 +630,30 @@ def _skinned_to(context: PipelineContext, body: np.ndarray, bones: frozenset[str
         return None
     selected = body[select_region_points(body, segments, set(bones))]
     return selected if selected.shape[0] >= MIN_REGION_POINTS else None
+
+
+#: AN1. Layers a boot is never cut round: they hang over her legs, they do not hug them.
+HANGING_CATEGORIES = frozenset({"dress", "skirt", "jacket", "nightwear"})
+
+
+def _leg_layers(context: PipelineContext) -> list[np.ndarray]:
+    """The layers fitted this job that a boot goes over: stockings, trousers, a catsuit's legs.
+
+    Not a skirt or a gown. Cut round every fitted layer, a boot under a floor-length gown
+    was cut round the gown's hem — a black drum 30 cm across at her ankles — and over-the-knee
+    boots under a pencil skirt took the skirt's width all the way down. A boot goes under
+    what hangs over it; the skirt was fitted first and is wider, so it stays outside.
+    """
+    from wardrobe.engines.geometry_checks import SURFACE_SPACING_M, _surface_samples
+
+    out = []
+    for layer in context.built or ():
+        if layer.plan.category in HANGING_CATEGORIES:
+            continue
+        positions = layer.mesh.positions.astype(np.float64)
+        triangles = layer.mesh.indices.reshape(-1, 3).astype(np.int64)
+        out += [positions, _surface_samples(positions, triangles, SURFACE_SPACING_M)]
+    return out
 
 
 def _boot_body(context: PipelineContext, body: np.ndarray) -> dict:

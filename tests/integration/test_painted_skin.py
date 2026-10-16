@@ -87,6 +87,14 @@ async def test_an_ordinary_outfit_never_touches_her_skin(orchestrator, store):
     assert record.fit_report.base_body["paintedSkin"]["checked"]
 
 
+async def test_a_plunge_restores_her_skin_where_it_opens(orchestrator, store):
+    """AN1. An outer garment cut to show skin her clothes hid: the plunge opened onto paint."""
+    record = await run(orchestrator, store, SAMPLE_B, {"prompt": "black latex catsuit with plunging neckline"})
+    assert record.state is JobState.COMPLETED, record.error
+    assert record.fit_report.base_body["skinRestored"]["restoredTexels"] > 0
+    assert any("open cut" in w for w in record.fit_report.warnings)
+
+
 async def test_lingerie_on_a_bare_body_passes_every_check(orchestrator, store):
     record = await run(orchestrator, store, MODEL_GIRL, LACE_SET, baseBody="replace-outer")
     assert record.state is JobState.COMPLETED, record.error

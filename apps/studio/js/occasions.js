@@ -175,6 +175,8 @@ const OCCASION_WORDS = [
     [/\b(vacation|holiday|holidays|resort|trip|travel|sightseeing)\b/, 'vacation', null],
     [/\b(campus|school|college|class|classes|university|uni)\b/, 'campus', null],
     [/\b(body art|lower[ -]back tattoo|waistline tattoo)\b/, 'private', 'body-art-focus'],
+    // AN2. Before "fan service": "anime fan service" is the collection, not the Private occasion.
+    [/\b(anime|cosplay)\b/, 'anime', null],
     [/\b(fan service|lingerie|private)\b/, 'private', null],
 ];
 

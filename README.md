@@ -231,6 +231,33 @@ cut round her foot as she stands. In the Studio, make the dress once, then try
 each pair on it: only the boots are re-fitted. See
 [docs/DISCOTECA.md](docs/DISCOTECA.md).
 
+### Anime Fan Service: twelve heroines, four sections
+
+![The Anime Fan Service collection on VRoid Female: Ocean Navigator, Island Archaeologist, Retro Bounty Hunter, Midnight Thief, Thorn Assassin, Serpent Empress, Abyss Guardian, Reaper Lieutenant, Rose Commander, Moon Rabbit Hero, Ice General and Ghost Operative](docs/images/anime-fan-service-avatar.webp)
+
+Twelve original costumes in the spirit of well-known adult anime heroines,
+grouped in four sections:
+
+| Section | Looks |
+| --- | --- |
+| **Beach & pool** | Ocean Navigator: striped bikini under low-rise jeans. Island Archaeologist: purple crop cami and a floral sarong slit to the thigh. |
+| **Retro & catsuits** | Retro Bounty Hunter: yellow halter and shorts, red jacket worn open, white over-the-knee boots. Midnight Thief: plunging black latex catsuit. |
+| **Glamour & fantasy** | Thorn Assassin, Serpent Empress and Abyss Guardian: satin halter gowns slit to the thigh, in black, red floral and white. Reaper Lieutenant: a plunging black wrap robe. |
+| **Action heroines** | Rose Commander: pink latex catsuit. Moon Rabbit Hero: white high-cut leotard. Ice General: white blazer and mini pencil skirt. Ghost Operative: black bodysuit and an open jacket. |
+
+It is its own occasion, hidden without private mode. Each look is an
+outfit-dictionary entry, rated by Forge's planner, not by the collection: the
+bikini, the leotard and the bodysuit need the avatar's adult declaration, and the
+server's gate checks that on every job. The looks are named by the collection,
+never by a character, and use no character's emblem, logo or artwork.
+
+Building it added three general words to the planner. *Thigh slit* cuts a gown or
+skirt up one leg. *Worn open* cuts a jacket's front away. *Floral* is a new
+two-colour print. Two general fixes came with it: her skin is restored under a
+plunge or a slit, as it is under underwear, and boots go under a gown or skirt
+instead of being cut round its hem. Headpieces, wings, gloves and sashes are
+designed and come next. See [docs/ANIME_FAN_SERVICE.md](docs/ANIME_FAN_SERVICE.md).
+
 ### Body art, clothes first
 
 ![Body art on VRoid Female, each tattoo requested together with its outfit: Waist Filigree above the waistband of a club corset and low-rise mini, a Lace Ornament on an open-back dress, a Tribal Butterfly over Y2K low-rise jeans, and Tribal Wings under a jacket, refused because the jacket covers her upper back](docs/images/body-art-avatar.webp)
@@ -643,7 +670,8 @@ and layered outfits, styling and materials, hosiery and suspenders (stockings wi
 lingerie blocks and collections (L1–L5, LC), fabrics, elastic tension and
 garment rules (L7–L9), skin restoration and body completion under underwear,
 body art (BA1–BA11, custom import included) and the neo-tribal set, the Discoteca
-collection, occasions and the Try-on haul, and the Studio.
+collection, the Anime Fan Service collection (AN0–AN2), occasions and the Try-on
+haul, and the Studio.
 
 Still open, gathered from every plan and checked against the code in
 [What is left](docs/IMPLEMENTATION_PLAN.md#what-is-left):
@@ -653,6 +681,8 @@ Still open, gathered from every plan and checked against the code in
 - **Lingerie**: tights with feet, a dart-shaped or shelf-bra bodysuit, and
   promoting the L9 rules from warnings to errors once tuned.
 - **Body art**: hip placements.
+- **Anime Fan Service**: the accessories (AN4): headpieces, wings, gloves,
+  sashes and braces, capes, jewellery.
 - **Platform**: spring bones for generated garments, PostgreSQL repositories.
 
 ---
@@ -661,10 +691,11 @@ Still open, gathered from every plan and checked against the code in
 
 Stated plainly, because the gallery shows them:
 
-- **Painted clothing is restored only under underwear.** For underwear or
-  swimwear the person asked for, her skin texture is restored under it (SR1).
-  Every other outfit leaves her texture exactly as it is, so a low-cut outfit
-  shows whatever the texture paints under it.
+- **Painted clothing is restored only where something is meant to show skin.**
+  For underwear or swimwear the person asked for, and for an outer garment cut to
+  show skin (a V or plunging neckline, an open back, a slit), her skin texture is
+  restored under it (SR1, AN1). Every other outfit leaves her texture exactly as
+  it is, so a crop top's midriff shows whatever the texture paints there.
 - **Tights stop above the foot.** Stockings can be knitted on over her heel and
   toes (`hosiery.foot: "full"`); plain tights cannot yet.
 - **Jackets and coats are boxy at the shoulder.** Their sleeves are measured
@@ -690,6 +721,7 @@ Stated plainly, because the gallery shows them:
 | [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | the design: flat straps, clip hardware, denier falloff and the web preview backend |
 | [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section, the lower-back set, neo-tribal designs, custom import (BA1–BA11 and NT1 built; the hips open) |
 | [DISCOTECA](docs/DISCOTECA.md) | Sexy Discoteca — All Black: the bodycon dress, four boots built round her posed foot, heels as a stance baked into the rest pose, the Studio's Collection panel |
+| [ANIME_FAN_SERVICE](docs/ANIME_FAN_SERVICE.md) | Anime Fan Service: twelve original looks in four sections, who sees them, the slit, open-front and floral vocabulary it added, and the accessories designed next (AN4) |
 | [OCCASIONS](docs/OCCASIONS.md) | Occasion → style → look: the Studio's first screen, who sees which look, the `occasion` label on a look, quick changes, and Compare as two viewports |
 | [LINGERIE_COLLECTION](docs/LINGERIE_COLLECTION.md) | collections: the Italian lace bralette with a thong or Brazilian bottom, finishing built on the fitted garment, named components, the product sheet |
 | [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the lingerie design record: fashion-fit forms, ribbon straps, brief, bra and bodysuit blocks, stocking feet, fabrics, elastic tension and garment rules (L1–L9 built) |

@@ -11,7 +11,7 @@ Two kinds of image come out:
 
 * **Pattern tiles** — lace and fishnet carry their holes in alpha (the material
   masks them); sequins are a grey relief the garment colour tints; stripes,
-  dots and gingham carry their colours, because a two-colour pattern cannot be
+  dots, gingham, plaid and florals carry their colours, because a two-colour pattern cannot be
   expressed as one tint.
 * **Matcaps** — the highlight a toon shader adds by the surface's view-space
   normal. This is how gloss, latex and metal survive MToon, which has no
@@ -173,6 +173,41 @@ def _plaid(base: Colour, other: Colour, size: int = 128) -> bytes:
     return _rgba(rgb)
 
 
+def _floral(base: Colour, other: Colour, size: int = 128) -> bytes:
+    """AN1. A resort print: five-petal blossoms in ``other`` on a ``base`` ground, with leaves.
+
+    Two blossoms a tile, of two sizes and turned against each other, and a leaf pair at
+    each, so the repeat does not read as a grid on a skirt. Every shape is periodic in
+    the tile. The blossom's heart is the ground's colour lifted toward white, which
+    keeps a red-on-red print legible; the leaves are the ground darkened, never a third
+    hue the prompt did not ask for.
+    """
+    u, v = _grid(size)
+    ground = np.asarray(base)
+    petal_rgb = np.asarray(other)
+    heart_rgb = 0.55 * ground + 0.45
+    leaf_rgb = ground * 0.62
+    rgb = np.broadcast_to(ground, u.shape + (3,)).copy()
+    for cx, cy, radius, turn in ((0.28, 0.3, 0.17, 0.0), (0.76, 0.74, 0.12, 0.6)):
+        dx, dy = _periodic(u - cx), _periodic(v - cy)
+        r = np.hypot(dx, dy)
+        theta = np.arctan2(dy, dx) + turn
+        for side in (-1.0, 1.0):  # a pair of leaves behind each blossom
+            lx = dx * np.cos(turn + 2.3 * side) + dy * np.sin(turn + 2.3 * side)
+            ly = -dx * np.sin(turn + 2.3 * side) + dy * np.cos(turn + 2.3 * side)
+            leaf = ((lx - radius * 1.05) / (radius * 0.75)) ** 2 + (ly / (radius * 0.3)) ** 2
+            # Soft-edged: the ellipse's value falls through 1 over about a pixel at this size.
+            cover = np.clip((1.0 - leaf) * radius * size * 0.4, 0.0, 1.0)[..., None]
+            rgb = rgb * (1.0 - cover) + leaf_rgb * cover
+        edge = radius * (0.62 + 0.38 * np.abs(np.cos(2.5 * theta)))
+        petals = np.clip((edge - r) * size + 0.5, 0.0, 1.0)
+        vein = 0.88 + 0.12 * np.clip(r / radius, 0.0, 1.0)
+        rgb = rgb * (1.0 - petals[..., None]) + (petal_rgb * vein[..., None]) * petals[..., None]
+        heart = _coverage(r, radius * 0.2, size)
+        rgb = rgb * (1.0 - heart[..., None]) + heart_rgb * heart[..., None]
+    return _rgba(rgb)
+
+
 @lru_cache(maxsize=64)
 def pattern_texture(
     name: str, base: Colour = (1.0, 1.0, 1.0), other: Colour = (1.0, 1.0, 1.0), *, lined: bool = False
@@ -196,6 +231,8 @@ def pattern_texture(
         return _gingham(base, other)
     if name == "plaid":
         return _plaid(base, other)
+    if name == "floral":
+        return _floral(base, other)
     return None
 
 
