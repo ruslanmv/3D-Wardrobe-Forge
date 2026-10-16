@@ -70,11 +70,18 @@ class FailureReason(StrEnum):
     ADULT_DECLARATION_REQUIRED = "requires_adult_declaration"
     BODY_INCOMPLETE = "source_body_incomplete_under_clothing"
     FOUNDATION_OVER_CLOTHING = "foundation_would_sit_over_worn_clothing"
+    #: PB1. Clothing painted on her skin texture would show around or through the underwear.
+    PAINTED_CLOTHING_SHOWS = "source_skin_has_painted_clothing"
     #: BA6. A tattoo-only job needs a finished Forge look to put it on (clothes first).
     BODY_ART_NEEDS_LOOK = "body_art_needs_a_finished_look"
     #: BA6. A tattoo-only job that changed nothing: every tattoo it asked for was refused.
     BODY_ART_NOT_APPLIED = "body_art_not_applied"
     INTERNAL = "internal_error"
+
+
+class OccasionTag(BaseModel):
+    occasion: str = Field(max_length=40)
+    style: str | None = Field(default=None, max_length=40)
 
 
 class JobOptions(BaseModel):
@@ -104,6 +111,10 @@ class JobOptions(BaseModel):
     #: tube top and slip shorts on any other: no avatar needs a declaration to get dressed.
     #: Off by default, so a job that never asked is planned exactly as before.
     ensure_foundation: bool = Field(default=False, alias="ensureFoundation")
+    #: OC1. What the look was made for — ``{"occasion": "night-out", "style": "discoteca"}`` —
+    #: kept on the wardrobe entry so a shelf can group by occasion. A label only: it plans and
+    #: gates nothing, and one naming no occasion in wardrobe.pipeline.occasions is dropped.
+    occasion: OccasionTag | None = None
     #: Set by the server, never by a caller: the job relied on an admin session's
     #: adult declaration, so it and its look are shown only to an admin session
     #: (apps/api/admin.py). The public job routes force it off.
@@ -237,6 +248,7 @@ _REJECTION_REASONS = frozenset(
         FailureReason.ADULT_DECLARATION_REQUIRED,
         FailureReason.BODY_INCOMPLETE,
         FailureReason.FOUNDATION_OVER_CLOTHING,
+        FailureReason.PAINTED_CLOTHING_SHOWS,
         FailureReason.BODY_ART_NEEDS_LOOK,
         FailureReason.BODY_ART_NOT_APPLIED,
     }

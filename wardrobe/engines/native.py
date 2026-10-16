@@ -264,6 +264,12 @@ class NativeEngine(FittingEngine):
             matrix = document.world_matrices()[node_index]
             skinned = "skin" in node
             colour_of_garment = colours.get(mesh.get("name"))
+            # OC3. A Forge garment carried from the look this job was built on (baseLookId) is
+            # not in this job's plan; without its own colour it was drawn the skin's, so a navy
+            # blouse put on a black pencil skirt showed on the shelf over a white one.
+            tag = (node.get("extras") or {}).get("wardrobeForge") or {}
+            if colour_of_garment is None and tag.get("kind") == "garment":
+                colour_of_garment = _material_colour(document, mesh)
 
             for primitive in mesh.get("primitives", []):
                 attributes = primitive.get("attributes", {})
@@ -282,6 +288,19 @@ class NativeEngine(FittingEngine):
                 layers.append(RenderLayer(positions=points, indices=indices, color=colour))
 
         return layers
+
+
+def _material_colour(document, mesh: dict) -> tuple[float, float, float] | None:
+    """The base colour of a mesh's first material, or None when it names none."""
+    materials = document.gltf.get("materials") or []
+    for primitive in mesh.get("primitives", []):
+        index = primitive.get("material")
+        if index is None or index >= len(materials):
+            continue
+        factor = (materials[index].get("pbrMetallicRoughness") or {}).get("baseColorFactor")
+        if factor and len(factor) >= 3:
+            return tuple(float(c) for c in factor[:3])
+    return None
 
 
 __all__ = ["NativeEngine", "GENERATOR"]
