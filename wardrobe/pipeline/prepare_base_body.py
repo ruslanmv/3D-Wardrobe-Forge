@@ -38,6 +38,7 @@ from __future__ import annotations
 from wardrobe.domain.jobs import JobState
 from wardrobe.errors import BodyIncomplete, FoundationOverClothing
 from wardrobe.pipeline.context import PipelineContext
+from wardrobe.vrm.body_completion import complete_body
 from wardrobe.vrm.body_integrity import check_body
 from wardrobe.vrm.garment_inventory import (
     FOUNDATION_ROLES,
@@ -48,6 +49,7 @@ from wardrobe.vrm.garment_inventory import (
 )
 from wardrobe.vrm.garments import KIND_REGIONS
 from wardrobe.vrm.measure import MeasurementError, measure_body
+from wardrobe.vrm.skin_restore import restore_skin
 
 
 def layer_kinds(context: PipelineContext) -> list[tuple[str, str]]:
@@ -109,6 +111,16 @@ async def run(context: PipelineContext) -> None:
     conflicts = foundation_conflicts(plan.retain, layers)
     if conflicts:
         _refuse_foundation_over(conflicts, layers)
+    if context.requested_foundation:
+        # SR1. Underwear goes on her skin, so her skin is made skin first: clothing painted on
+        # it, and skin her texture cuts away, restored from the skin round it. Before the body
+        # check, so a cut-away chest (AvatarSample_O) is counted as the body it is.
+        restored = restore_skin(context.document, context.measurements,
+                                {(g.mesh, g.primitive) for g in inventory})
+        if restored is not None:
+            report.base_body["skinRestored"] = restored.to_dict()
+            context.warn(f"restored her skin under the underwear: {restored.restored_texels} texels of "
+                         "painted clothing or cut-away skin filled from the skin round them")
     if not plan.remove:
         if inventory:
             worn = sorted({garment.slot for garment in inventory})
@@ -124,13 +136,29 @@ async def run(context: PipelineContext) -> None:
         without={(g.mesh, g.primitive) for g in removing}, also_without=staying,
     )
     missing = {region for region, check in integrity.regions.items() if not check.present}
+    needs_body = mode == "underwear-base" or any(p.role == "foundation" for p in context.plan.garments)
+    if missing and needs_body:
+        # BC1. Her export deleted the body her clothes hid (AvatarSample_O's chest): a skin patch
+        # is drawn there from the garment that covered it, then the body is checked again.
+        completed = complete_body(context.document, body, [g for g in removing if g.regions & missing],
+                                  {(g.mesh, g.primitive) for g in inventory})
+        if completed is not None:
+            report.base_body["bodyCompleted"] = completed
+            context.warn("completed her body where her export left none under her clothes: a skin patch "
+                         f"{completed['spanM'][0]}-{completed['spanM'][1]} m up her, drawn from the garment")
+            integrity = check_body(
+                context.document, body, set().union(*(g.regions for g in removing)),
+                without={(g.mesh, g.primitive) for g in removing}, also_without=staying,
+            )
+            missing = {region for region, check in integrity.regions.items() if not check.present}
     if missing:
-        needs_body = mode == "underwear-base" or any(p.role == "foundation" for p in context.plan.garments)
         if needs_body:
+            # PB2. Said as what it means for the person choosing, not only as what is missing.
+            where = " and ".join({"upper": "torso", "lower": "hips"}.get(r, r) for r in sorted(missing))
             raise BodyIncomplete(
-                "there is no authored body under this avatar's clothes at "
-                f"{', '.join(sorted(missing))}; it cannot be undressed there, and nothing is generated "
-                "in its place",
+                f"this avatar's {where} could not be completed: her body mesh is missing beneath her own "
+                "outfit there and the garment over it gives no shape to rebuild it from. Choose another "
+                "avatar, or keep her original clothes",
                 detail={"missingRegions": sorted(missing), "integrity": integrity.to_dict()},
             )
         kept = [g for g in removing if g.regions & missing]

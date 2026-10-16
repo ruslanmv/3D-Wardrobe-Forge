@@ -25,8 +25,13 @@ class WardrobeLook(BaseModel):
     prompt: str | None = None
     created_at: datetime | None = Field(default=None, alias="createdAt")
     fit_passed: bool | None = Field(default=None, alias="fitPassed")
+    #: PB2. passed, styled (layered over her clothes on purpose) or failed; absent on older looks.
+    fit_verdict: str | None = Field(default=None, alias="fitVerdict")
     #: Made under an admin session's declaration: listed only to an admin session.
     private: bool = False
+    #: OC1. The occasion and style it was made for (wardrobe.pipeline.occasions), when the job said.
+    occasion: str | None = None
+    style: str | None = None
 
     def to_avatar_item(self) -> dict:
         """Render as a 3D-Avatar-Chatbot ``avatars.json`` item."""

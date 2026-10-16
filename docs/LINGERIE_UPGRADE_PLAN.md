@@ -1,28 +1,25 @@
 # Lingerie quality upgrade plan
 
-> Status: in progress. **L3b done**: the bottom-pattern grammar
-> (`BriefSpec` in `wardrobe/lingerie/specs.py`, `BOTTOM_PRESETS`): rise, side
-> type/width, leg cut, front/back coverage (solved exactly), V-shaping,
-> back-centre width, leg extension; sixteen presets, tie bows, boyshort legs;
-> tested in `tests/unit/test_bottom_grammar.py`. **L4 done**: the bra block — cups on her bust points
-> (triangle, balconette, plunge, full), a gore on her sternum, a level band
-> under the fold with wings, ribbon straps from the cups' published anchors
-> (`wardrobe/lingerie/blocks/bra.py`, `surface.py`); every placed vertex is
-> pushed clear of her posed surface after the shell (`fit.after_shell`).
-> **L3 done**: the brief block — front and back panels, a
-> gusset across the crotch seated on her posed surface, three openings
-> (`wardrobe/lingerie/blocks/brief.py`, `fit.py`, `seams.py`), with tailored
-> brief, high-leg, string, thong and bikini-bottom templates (schemaVersion 2,
-> opt-in). **L2 done**: flat ribbon straps between anchors
-> (`wardrobe/lingerie/straps.py`, `contract.py`, `specs.py`; the ribbon moved to
-> `wardrobe/geometry/ribbon.py`). **L1 done**: the fashion-fit forms
-> (`wardrobe/vrm/fashion_body.py`, declared adult in
-> `assets/calibration/policy.json`) and the landmarks
-> (`wardrobe/lingerie/landmarks.py`), tested in `tests/unit/test_fashion_form.py`.
-> It answers the visual
-> review of looks #2–#11 (clearance passed, but the garments were not built the
-> way lingerie is built) and follows the owner's priority order. Every file and
-> function it names was read in this repository.
+> **Status: L1–L5 built; L7 and L9 partly built; L6 and L8 open.** What shipped is
+> described in [STYLING](STYLING.md), [LINGERIE_COLLECTION](LINGERIE_COLLECTION.md)
+> and the README; this document stays as the design record and the plan for what
+> is left. Every file and function it names was read in this repository.
+>
+> | Phase | State | Where |
+> | --- | --- | --- |
+> | L1 fashion-fit forms + landmarks | **built** | `wardrobe/vrm/fashion_body.py`, `wardrobe/lingerie/landmarks.py`; declared adult in `assets/calibration/policy.json` |
+> | L2 flat ribbon straps | **built** | `wardrobe/lingerie/straps.py`, `wardrobe/geometry/ribbon.py` |
+> | L3 brief block, L3b bottom grammar | **built** | `wardrobe/lingerie/blocks/brief.py`; sixteen presets in `specs.py BOTTOM_PRESETS`, coverage solved exactly |
+> | L4 bra block | **built** | `wardrobe/lingerie/blocks/bra.py`; PB3 refined the plunge cups, gore and underband |
+> | L5 bodysuit / swimsuit block | **built** | `wardrobe/lingerie/blocks/bodysuit.py`; a dart-shaped or shelf-bra variant is still to do (see L5 below) |
+> | L6 stockings and tights with feet | **open** | stockings still end above the foot |
+> | L7 physical fabric model | **partly built** | the collection fabrics (sheer mesh, galloon lace, elastic, satin) are in `wardrobe/lingerie/fabrics.py` (LC3); the general `FabricSpec` → `VisualSpec` model is not |
+> | L8 elastic tension | **open** | edges carry no cut ratio, force or pressure |
+> | L9 garment-specific validation | **partly built** | the fit report's independent checks and verdict (PB2: structure, body preparation, layer order, skin, clearance); the per-garment rule sets of §5 are not |
+>
+> Built alongside the plan: lingerie collections (LC1–LC5), skin restoration and
+> body completion under underwear (SR1, BC1), and the README sheets on a real
+> avatar (RA1).
 
 The code review behind the lingerie analysis holds. Reading further turned up six facts that shape the plan:
 

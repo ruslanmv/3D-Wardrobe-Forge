@@ -10,7 +10,7 @@ from wardrobe.pipeline.context import PipelineContext
 from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
 from wardrobe.policy import intimate
 from wardrobe.providers import provider_for_mode
-from wardrobe.vrm.garment_inventory import garment_inventory
+from wardrobe.vrm.garment_inventory import FOUNDATION_ROLES, garment_inventory
 
 #: What underwear-base puts on when the outfit names no underwear: plain and
 #: neutral, a foundation for the outer layers rather than a look of its own.
@@ -37,6 +37,8 @@ async def plan(context: PipelineContext) -> None:
     request = context.record.request.outfit
     outfit_plan = plan_outfit_stack(request, context.catalog)
     mode = context.record.request.options.base_body_mode
+    # PB1. Read before any foundation is added: underwear she asked for, not one put under clothes.
+    context.requested_foundation = any(g.role in FOUNDATION_ROLES for g in outfit_plan.garments)
     if context.record.request.options.ensure_foundation and mode != "preserve":
         founded, added = ensure_foundation(outfit_plan, request, context.catalog, _worn(context),
                                            depicts_adult=context.record.request.avatar.depicts_adult)
@@ -188,7 +190,14 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
             reach |= garment.regions & set(FOUNDATION_REGIONS)
     kept = set().union(*(g.regions for g in worn if g.role in FOUNDATION_ROLES))
     needed = reach - regions(outfit_plan.garments, FOUNDATION_ROLES) - kept
-    halves = NEUTRAL_HALF if depicts_adult else GENERAL_FOUNDATION
+    halves = dict(NEUTRAL_HALF if depicts_adult else GENERAL_FOUNDATION)
+    # CR1. Never higher than the outfit's own waistband: under a low-rise skirt or low-rise jeans
+    # slip shorts at their usual rise showed as a beige band across the bare waist the look is for.
+    # A step below it, not at it: "low" is drawn a little differently by each garment, and slip
+    # shorts at the skirt's own low rise still stood 8 mm above its waistband.
+    rise = _lowest_rise(outfit_plan.garments)
+    if rise:
+        halves["lower"] = halves["lower"].replace("beige ", "beige ultra-low-rise ", 1)
     prompts = [halves[region] for region in FOUNDATION_REGIONS if region in needed]
     if not prompts:
         return outfit_plan, []
@@ -204,6 +213,16 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
         else:
             rest.append(garment)
     return stacked.model_copy(update={"layers": [*base, *rest], "name": outfit_plan.name}), prompts
+
+
+#: Rises lower than a garment's ordinary waist, lowest first, as the planner names them.
+LOW_RISES = ("ultra-low", "low")
+
+
+def _lowest_rise(garments) -> str | None:
+    """The lowest named rise among an outfit's bottoms, when it is below the ordinary one."""
+    rises = {getattr(g.style, "rise", None) for g in garments if g.category in HIP_COVERING | {"skirt"}}
+    return next((rise for rise in LOW_RISES if rise in rises), None)
 
 
 def wears_her_own_bottoms(context: PipelineContext) -> bool:

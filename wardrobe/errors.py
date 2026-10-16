@@ -56,6 +56,12 @@ class FoundationOverClothing(WardrobeError):
     reason = FailureReason.FOUNDATION_OVER_CLOTHING
 
 
+class PaintedClothingShows(WardrobeError):
+    """Clothes painted on her skin would show round the underwear; her skin is never repainted."""
+
+    reason = FailureReason.PAINTED_CLOTHING_SHOWS
+
+
 class BodyArtNeedsLook(WardrobeError):
     """BA6. A tattoo-only job on something that is not a finished Forge look."""
 

@@ -1,6 +1,9 @@
 # Implementation plan
 
-The plan this upgrade was built to, and the state of each milestone.
+The plan the service was built to, and the state of each milestone. The
+features added since (styling, hosiery, lingerie, body art, occasions) each have
+their own document; the open work across all of them is gathered under
+[What is left](#what-is-left) at the end.
 
 ## Design decisions taken
 
@@ -34,8 +37,8 @@ body proportions" requirement is satisfied by construction.
 | **M0** Foundation | API, queue, storage, VRM import/export | **done** |
 | **M1** First outfit | one VRM + one template → a valid new VRM | **done** |
 | **M2** Automatic fitting | the same garment across several different VRMs | **done** |
-| **M3** Wardrobe library | tops, dresses, jackets, trousers, skirts, shoes | **done** (17 templates) |
-| **M4** AI styling | prompt → template + shape + material | **done** (rule-based; LLM hook present) |
+| **M3** Wardrobe library | tops, dresses, jackets, trousers, skirts, shoes | **done** (17 templates at M3; 91 today, 59 everyday and 32 opt-in) |
+| **M4** AI styling | prompt → template + shape + material | **done** (rule-based; LLM hook present; outfit dictionary and occasions on top) |
 | **M5** AI mesh generation | Meshy/Tripo meshes through cleanup and fitting | **adapters + Blender cleanup written; unverified against the live APIs** |
 | **M6** Chatbot integration | `WardrobeClient` + `WardrobeController` + Try-On Haul | **done** |
 | **M7** On-demand wardrobe | generate, cache and keep looks per character | **done** |
@@ -63,7 +66,11 @@ that needs keys, and it is what `nightly-provider-smoke.yml` exists to do.
 Until then the native engine refuses generated meshes with a clear message
 rather than pretending it can fit them.
 
-## What got built
+## What got built at M7
+
+The tree as it stood when the milestones closed. It has grown since (the
+lingerie blocks, hosiery, body art, the Studio); [ARCHITECTURE](ARCHITECTURE.md)
+is the current map.
 
 ```
 wardrobe/
@@ -132,18 +139,44 @@ the geometry was visibly wrong. Clearance measured against the wrong reference
 happily reports "passed". Rendering a preview and looking at it is part of the
 verification, not decoration.
 
-## Next steps
+## What is left
 
-Roughly in order of value:
+Gathered from every plan in `docs/`, checked against the code. Done items from
+the original next-steps list are kept, struck through, so the history reads.
+
+**From this plan**
 
 1. **Verify M5 against the live provider APIs.** Add keys, let the nightly smoke
    test run, fix whatever the real payloads disagree about.
-2. **Spring bones for generated garments.** A long skirt currently deforms
-   correctly but has no secondary motion.
-3. **Pattern textures.** Material parameters are planned from the prompt;
-   generated texture maps are not.
-4. **More templates.** The cheapest quality win — new JSON, no new code.
+2. **Spring bones for generated garments.** A long skirt deforms correctly but
+   has no secondary motion.
+3. ~~Pattern textures~~ — done: stripes, dots, gingham, plaid, lace, fishnet and
+   the collection fabrics are generated textures (`wardrobe/materials/textures.py`,
+   `wardrobe/lingerie/fabrics.py`).
+4. ~~More templates~~ — done: 17 at M3, 91 today.
 5. **PostgreSQL repositories.** The interfaces are in place; the JSON-on-disk
    implementation is the current durable option.
-6. **Authentication.** The service has none by design; it needs a gateway in
-   front before public exposure.
+6. ~~Authentication~~ — done for the service itself: `WARDROBE_AUTH_MODE=api_key`
+   and the Studio's admin session (`apps/api/routes/admin.py`). A public
+   deployment should still sit behind a gateway.
+
+**From [LINGERIE_UPGRADE_PLAN](LINGERIE_UPGRADE_PLAN.md)** (L1–L5 built)
+
+- L6 stockings and tights with feet, fitted to the measured leg.
+- L7 the general physical fabric model (the collection fabrics are built).
+- L8 elastic tension: cut ratio, worn strain, force and pressure per edge.
+- L9 the per-garment validation rules (the fit report's checks are built).
+- A dart-shaped or shelf-bra bodysuit.
+
+**From [BODY_ART_PLAN](BODY_ART_PLAN.md)** (BA1–BA7 and BA11 built)
+
+- BA8 body art in packs and the chatbot's rating.
+- BA9 more placements (hip, rib, thigh, sternum), each with its own rating.
+- BA10 custom tattoo import, admin session only.
+
+**From [HOSIERY](HOSIERY.md)** (the [HOSIERY_UPGRADE](HOSIERY_UPGRADE.md) design is built)
+
+- `briefsOver`: briefs worn over the suspender straps.
+- The stocking foot, carried as L6 above.
+- Its §11 lists what the build simplifies (poses are fixed rotations, side
+  darkening is baked); those are limits, not planned work.

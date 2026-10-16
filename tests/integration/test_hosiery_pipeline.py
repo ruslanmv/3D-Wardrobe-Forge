@@ -325,3 +325,41 @@ def test_a_seated_preview_is_a_valid_vrm_with_her_knees_forward(looks):
     points = document.read_accessor(stockings["primitives"][0]["attributes"]["POSITION"])
     knee_z = context.measurements.bone_positions["leftLowerLeg"][2]
     assert (points[:, 2] * facing).max() > knee_z * facing + 0.3  # thighs out in front of her
+
+
+def test_seated_stockings_stay_outside_her_skin_behind_the_knee(looks):
+    """RA2. Skinned to 85° the stocking sank under the back of her knee, and her skin showed."""
+    from wardrobe.hosiery.previews import LEGWEAR_CLEARANCE_M, bake_pose
+
+    record, data, context = looks["glimpse"]
+    facing = hosiery_fit.forward(context)
+    reveal = record.fit_report.hosiery["reveal"]
+    pivots = context.measurements.bone_positions
+    seated = bake_pose(data, "sit", forward=facing, pivots=pivots, rings=reveal["ringM"]["sit"],
+                       hem_d=reveal["ringM"]["stand"])
+    document = GltfDocument.from_bytes(seated)
+    meshes = [(document.nodes[i], document.meshes[document.nodes[i]["mesh"]]) for i in document.mesh_nodes()]
+    stockings = next(mesh for node, mesh in meshes if "Stockings" in node.get("name", ""))
+    skin = [node for node, _ in meshes if not (node.get("extras") or {}).get("wardrobeForge")]
+
+    from wardrobe.hosiery.poses import surface_samples
+    from wardrobe.hosiery.previews import _normals, _triangles
+
+    sock = np.vstack([document.read_accessor(p["attributes"]["POSITION"])[:, :3]
+                      for p in stockings["primitives"]]).astype(np.float64)
+    body, normal = [], []
+    for node in skin:
+        for source in {p["attributes"]["POSITION"] for p in document.meshes[node["mesh"]]["primitives"]}:
+            points = document.read_accessor(source)[:, :3].astype(np.float64)
+            triangles = _triangles(document, node, source)
+            legs = points[triangles].mean(axis=1)[:, 1] < pivots["hips"][1] + 0.05
+            p, n = surface_samples(points, _normals(points, document, node, source), triangles[legs], 0.01)
+            body.append(p)
+            normal.append(n)
+    body, normal = np.vstack(body), np.vstack(normal)
+    sample = sock[:: max(len(sock) // 400, 1)]
+    nearest = np.argmin(((sample[:, None] - body[None]) ** 2).sum(axis=2), axis=1)
+    depth = ((sample - body[nearest]) * normal[nearest]).sum(axis=1)
+    # Kept out to LEGWEAR_CLEARANCE_M; a pushed vertex may settle a fraction of a millimetre
+    # short where two skin samples disagree. Unfixed, the knee sank 11 mm.
+    assert depth.min() > -0.001 and np.median(depth) > LEGWEAR_CLEARANCE_M

@@ -1247,6 +1247,10 @@ HAUL_KINDS = frozenset(
 
 #: A corset's centre-front point below its waistline, for a 1.6 m figure (P1).
 CORSET_POINT_M = 0.035
+#: CR1. Where the cropped corset ends, as a share of waist → chest above her natural waist.
+CROP_ABOVE_WAIST = 0.06
+#: CR1. How much higher its back is cut, as a share of its height.
+CROP_BACK_LIFT = 0.22
 #: Distance between boning channels round a corset (P1).
 CORSET_BONING_PITCH_M = 0.045
 
@@ -1629,12 +1633,29 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         # a corset's whole point is the waist it shapes, so it must reach it.
         top_y = bust_top
         bottom_y = params.waist_y - rise * 0.08
-        body = build_band(params, y_bottom=bottom_y, y_top=top_y, rows=10, name="corset")
+        if str(meta.get("hem") or "") == "crop":
+            # CR1. The cropped corset (top-corset-cropped-v1) stops above her natural waist, so
+            # a low-rise waistband leaves her waist bare front and back — the Club Waistline
+            # look, and the skin a waistline tattoo needs. The corset above keeps its own hem.
+            bottom_y = params.waist_y + torso * CROP_ABOVE_WAIST
+        # The cropped body ends near her under-bust fold, where ten rows cut the curve in and
+        # her skin showed through in two slits: twenty follow it.
+        rows = 20 if str(meta.get("hem") or "") == "crop" else 10
+        body = build_band(params, y_bottom=bottom_y, y_top=top_y, rows=rows, name="corset")
         span = top_y - bottom_y
         neck = neckline_profile(neckline or "sweetheart", params, span * 0.35)
         point = min(CORSET_POINT_M * params.height / 1.6, span * 0.3)
+        if str(meta.get("hem") or "") == "crop":
+            # On the shorter cropped body the full point cut through its own bottom rows
+            # and left two slits beside it: a shallower point, cut through no row.
+            point = min(point, span * 0.12)
+        # CR1. The cropped corset's back is cut higher: the bare band above her waistband is
+        # widest where a waistline tattoo sits, and its sides stay clear of the under-bust
+        # fold that a whole higher hem ran into (her skin showed through there in slits).
+        lift = span * CROP_BACK_LIFT if str(meta.get("hem") or "") == "crop" else 0.0
         body = trim(body, params, y_bottom=bottom_y, y_top=top_y, top=neck,
-                    bottom=lambda phi: -point * _plateau(phi, 0.0, 0.45))
+                    bottom=lambda phi: -point * _plateau(phi, 0.0, 0.45)
+                    + lift * _plateau(_wrap(phi - np.pi), 0.35, 0.9))
         # Boning channels read by their shading, as knife pleats do (native assembly draws them).
         body.metadata["boningPitchM"] = CORSET_BONING_PITCH_M
         return [body, *top_straps(params, top_y=top_y, style=straps or "shoulder", underbust_y=underbust)]
