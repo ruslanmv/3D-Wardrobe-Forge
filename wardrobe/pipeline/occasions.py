@@ -353,6 +353,26 @@ OCCASIONS: tuple[Occasion, ...] = (
         "Just for the two of you?",
         (
             Style(
+                "anime-cosplay",
+                "Anime cosplay references",
+                "✨",
+                "Twelve adult-only anime-inspired costume proxies; franchise license review required",
+                (
+                    "anime-nami",
+                    "anime-faye",
+                    "anime-yor",
+                    "anime-hancock",
+                    "anime-robin",
+                    "anime-fujiko",
+                    "anime-reiju",
+                    "anime-mirko",
+                    "anime-esdeath",
+                    "anime-motoko",
+                    "anime-rangiku",
+                    "anime-albedo",
+                ),
+            ),
+            Style(
                 "fan-service",
                 "Fan service",
                 "✨",

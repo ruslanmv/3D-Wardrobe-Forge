@@ -53,8 +53,16 @@ def test_the_served_catalogue_carries_the_profiles(template_catalog):
     assert club["content"]["bodyArt"]["placements"][0] == "waistline"
     assert club["content"]["shots"] == list(oc.SHOTS) and club["content"]["detail"] == "waist"
     private = [s["id"] for s in served["private"]["styles"]]
-    assert private == ["fan-service", "y2k-reveal", "lingerie", "corsetry", "glamour", "sheer-layering",
-                       "body-art-focus"]
+    assert private == [
+        "anime-cosplay",
+        "fan-service",
+        "y2k-reveal",
+        "lingerie",
+        "corsetry",
+        "glamour",
+        "sheer-layering",
+        "body-art-focus",
+    ]
 
 
 def test_the_cropped_corset_is_chosen_only_when_named(template_catalog):
