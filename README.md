@@ -185,7 +185,8 @@ cheeky, Brazilian, tanga, thong, high-waist thong, G-string, V-string, string,
 string bikini and bikini. `tools/gallery/bottoms.py` renders every preset,
 front, side and back, through the real pipeline, on a fashion-fit form that
 `assets/calibration/policy.json` declares adult. It is intimate wear, so it goes
-through the adult gate like any request. The plan and progress are in
+through the adult gate like any request. How the blocks are built, and the
+lingerie work still open, are in
 [docs/LINGERIE_UPGRADE_PLAN.md](docs/LINGERIE_UPGRADE_PLAN.md).
 
 ### Lingerie collections: one bra, coordinated bottoms
@@ -273,14 +274,15 @@ pipeline, no retouching. It also shows the adult gate at work:
   which she wears over her own loafers. Taupe is the nearest the gate allows
   to sheer nude: the colour and a soft sheen, but nothing is seen through
   them.
-- Light stockings show two defects that black ones hid. At the inner thigh,
+- Light stockings show two defects that black ones hide. At the inner thigh,
   where her legs nearly touch, her painted body comes through as a dark mark.
   At the ankle, where the stockings stop above the foot, her painted tights
-  show. Both are in phase L6 of the plan (stockings with feet, measured legs).
+  show. Stockings with feet, fitted to the measured leg, are the open L6 in
+  [What is left](docs/IMPLEMENTATION_PLAN.md#what-is-left).
 
-The mannequin is the plain calibration form, and its ridged hip shows why a
-realistic fashion-fit form is the first step of the
-[lingerie upgrade plan](docs/LINGERIE_UPGRADE_PLAN.md).
+This sheet keeps the plain calibration mannequin as the regression picture for
+the reference look. The hosiery, lingerie and body-art sheets above are on a
+real avatar, and lingerie is developed on the adult fashion-fit forms.
 
 ---
 
@@ -607,10 +609,22 @@ Rinna is never used for gated looks, whatever is passed.
 
 ### Status
 
-M0–M4, M6 and M7 are done; M5 (AI-generated meshes) has adapters and Blender-side
-cleanup written but is unverified against the live provider APIs. The state of
-every milestone, the design decisions behind it, and the bugs the acceptance
-matrix caught are in [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
+Built and in CI: the core service (milestones M0–M4, M6, M7), Base Body Prep
+and layered outfits, styling and materials, hosiery and suspenders, the
+lingerie blocks and collections (L1–L5, LC), skin restoration and body
+completion under underwear, body art (BA1–BA7, BA11), the Discoteca
+collection, occasions and the Try-on haul, and the Studio.
+
+Still open, gathered from every plan and checked against the code in
+[What is left](docs/IMPLEMENTATION_PLAN.md#what-is-left):
+
+- **AI-generated meshes (M5)**: adapters and Blender cleanup written, not yet
+  verified against the live provider APIs.
+- **Lingerie**: stockings with feet (L6), a general fabric model (L7), elastic
+  tension (L8), per-garment validation rules (L9).
+- **Body art**: packs and chatbot rating (BA8), more placements (BA9), custom
+  import (BA10).
+- **Platform**: spring bones for generated garments, PostgreSQL repositories.
 
 ---
 
@@ -618,9 +632,12 @@ matrix caught are in [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
 Stated plainly, because the gallery shows them:
 
-- **Clothing painted onto an avatar's skin texture stays.** Only garment meshes
-  can be taken off, so a low-cut outfit shows whatever the texture paints under
-  it.
+- **Painted clothing is restored only under underwear.** For underwear or
+  swimwear the person asked for, her skin texture is restored under it (SR1).
+  Every other outfit leaves her texture exactly as it is, so a low-cut outfit
+  shows whatever the texture paints under it.
+- **Stockings stop above the foot**, and on a pale pair her painted tights can
+  show at the ankle (L6 is open).
 - **Jackets and coats are boxy at the shoulder.** Their sleeves are measured
   from the arm; their shoulders are not yet.
 - **Legs that touch give trousers that touch.** The two legs are separate
@@ -639,14 +656,14 @@ Stated plainly, because the gallery shows them:
 | [STYLING](docs/STYLING.md) | materials, cuts, straps, Base Body Prep and layered outfits, the adult gate |
 | [FIT_QUALITY](docs/FIT_QUALITY.md) | fitting a real avatar: what broke on the library avatars, and what the fitter does now |
 | [HOSIERY](docs/HOSIERY.md) | hosiery and suspenders as built: the fit contract, tension, the reveal model, previews, limits |
-| [HOSIERY_UPGRADE](docs/HOSIERY_UPGRADE.md) | the design: the complete hosiery plan, the `garter_belt.py` analysis, the renderer contract |
+| [HOSIERY_UPGRADE](docs/HOSIERY_UPGRADE.md) | the design (built): the complete hosiery plan, the `garter_belt.py` analysis, the renderer contract |
 | [HOSIERY_STYLING](docs/HOSIERY_STYLING.md) | the design: suspender belts, stockings and the reveal control |
 | [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | the design: flat straps, clip hardware, denier falloff and the web preview backend |
-| [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section, the lower-back set; BA1–BA7 and BA11 built |
+| [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section, the lower-back set (BA1–BA7 and BA11 built; BA8–BA10 open) |
 | [DISCOTECA](docs/DISCOTECA.md) | Sexy Discoteca — All Black: the bodycon dress, four boots built round her posed foot, heels as a stance baked into the rest pose, the Studio's Collection panel |
 | [OCCASIONS](docs/OCCASIONS.md) | Occasion → style → look: the Studio's first screen, who sees which look, the `occasion` label on a look, quick changes, and Compare as two viewports |
 | [LINGERIE_COLLECTION](docs/LINGERIE_COLLECTION.md) | collections: the Italian lace bralette with a thong or Brazilian bottom, finishing built on the fitted garment, named components, the product sheet |
-| [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the plan (not yet built): fashion-fit mannequin, ribbon straps, brief, bra and bodysuit blocks, feet, fabrics, elastic tension, validation |
+| [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the lingerie design record: fashion-fit forms, ribbon straps, brief, bra and bodysuit blocks (L1–L5 built); feet, fabrics, elastic tension and validation still open |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | components, layers, extension points |
 | [PIPELINE](docs/PIPELINE.md) | the ten stages and the failure model |
 | [API](docs/API.md) | HTTP reference |
@@ -657,7 +674,7 @@ Stated plainly, because the gallery shows them:
 | [SECURITY](docs/SECURITY.md) | threat model and privacy |
 | [LICENSING](docs/LICENSING.md) | usage terms as a pipeline stage |
 | [3D_AVATAR_CHATBOT_INTEGRATION](docs/3D_AVATAR_CHATBOT_INTEGRATION.md) | client integration |
-| [IMPLEMENTATION_PLAN](docs/IMPLEMENTATION_PLAN.md) | milestones and next steps |
+| [IMPLEMENTATION_PLAN](docs/IMPLEMENTATION_PLAN.md) | milestones, the bugs the acceptance matrix caught, and **what is left** across every plan |
 | [YOURFRIEND_ASSET_BUNDLE](docs/YOURFRIEND_ASSET_BUNDLE.md) | static product bundle contract |
 | [HUGGING FACE](deploy/huggingface/README.md) | Docker Space, the Studio, and production profiles |
 
