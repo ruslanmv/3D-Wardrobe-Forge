@@ -50,20 +50,23 @@ class BodyArtDesign(BaseModel):
 
 
 class BodyArtCatalog:
-    def __init__(self, designs: list[BodyArtDesign], root: Path | None = None):
+    def __init__(self, designs: list[BodyArtDesign], root: Path | None = None, custom=None):
         self.root = root
         self._designs = {design.id: design for design in designs}
         if len(self._designs) != len(designs):
             raise ValueError("duplicate body-art design ids")
+        #: BA10. The operator's own uploads (``custom.CustomBodyArt``). Resolved by ``get`` so the
+        #: pipeline draws them like any design, and never listed by ``all`` or ``to_public``.
+        self.custom = custom
 
     @classmethod
-    def from_directory(cls, root: str | Path) -> BodyArtCatalog:
+    def from_directory(cls, root: str | Path, custom=None) -> BodyArtCatalog:
         root = Path(root)
         path = root / MANIFEST
         if not path.exists():
-            return cls([], root)
+            return cls([], root, custom)
         payload = json.loads(path.read_text(encoding="utf-8"))
-        return cls([BodyArtDesign.model_validate(d) for d in payload.get("designs", [])], root)
+        return cls([BodyArtDesign.model_validate(d) for d in payload.get("designs", [])], root, custom)
 
     def __len__(self) -> int:
         return len(self._designs)
@@ -72,7 +75,17 @@ class BodyArtCatalog:
         return list(self._designs.values())
 
     def get(self, design_id: str) -> BodyArtDesign | None:
-        return self._designs.get(design_id)
+        design = self._designs.get(design_id)
+        if design is None and self.custom is not None and self.is_custom(design_id):
+            fields = self.custom.design(design_id)
+            design = BodyArtDesign.model_validate(fields) if fields else None
+        return design
+
+    def is_custom(self, design_id: str) -> bool:
+        """BA10. A custom upload's id: private, never served to anyone but an admin session."""
+        from wardrobe.body_art.custom import is_custom
+
+        return design_id not in self._designs and is_custom(design_id)
 
     def for_placement(self, placement: str) -> list[BodyArtDesign]:
         return [d for d in self._designs.values() if placement in d.placements]
@@ -80,10 +93,13 @@ class BodyArtCatalog:
     def rating(self, design_id: str, placement: str) -> str:
         """The stronger of the placement's rating and the design's own there."""
         floor = PLACEMENTS[placement].rating
-        own = self._designs[design_id].rating.get(placement, floor)
+        design = self.get(design_id)
+        own = design.rating.get(placement, floor) if design else floor
         return max(floor, own, key=rating_rank)
 
     def artwork_path(self, design: BodyArtDesign) -> Path:
+        if self.custom is not None and self.is_custom(design.id):
+            return self.custom.artwork(design.id)
         if self.root is None:
             raise ValueError("catalogue has no root")
         return self.root / design.paths

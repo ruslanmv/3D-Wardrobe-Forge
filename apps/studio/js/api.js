@@ -175,6 +175,15 @@ export const api = {
 
     /** BA7. The tattoo catalogue, and where a finished look leaves her skin visible. */
     bodyArt: () => request('/v1/body-art'),
+    /** BA10. The operator's own tattoo artwork: an admin session's only, and private. */
+    customBodyArt: () => request('/v1/admin/body-art'),
+    uploadBodyArt: (file, name) => {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('name', name || '');
+        return request('/v1/admin/body-art', { method: 'POST', form });
+    },
+    deleteBodyArt: (id) => request(`/v1/admin/body-art/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     lookExposure: (slug, lookId) =>
         request(`/v1/library/${encodeURIComponent(slug)}/looks/${encodeURIComponent(lookId)}/exposure`),
 

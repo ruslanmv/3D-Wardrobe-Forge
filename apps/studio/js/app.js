@@ -89,6 +89,8 @@ const state = {
         seam: false,
         // L6. Knitted on over her heel and toes; off by default, as in the API.
         foot: false,
+        // H2. Briefs on over the suspender straps; off by default, as in the API.
+        briefsOver: false,
         belt: 'classic',
         strapCount: 4,
         hardware: 'silver',
@@ -133,6 +135,9 @@ const state = {
         opacity: 0.9,
         mirror: false,
         thumbs: {},
+        // BA10. The operator's own uploads, listed only in an admin session; their looks are private.
+        custom: [],
+        uploadError: '',
     },
 };
 
@@ -703,7 +708,24 @@ function setSession(session) {
         const left = new Date(session.expiresAt).getTime() - Date.now();
         account.timer = setTimeout(() => endSession('Your admin session ended.'), Math.max(left, 0));
     }
+    loadCustomBodyArt(signedIn);
     if ($('settings-dialog').open) renderSettings();
+}
+
+/** BA10. The custom designs, for an admin session; a guest's list is always empty. */
+async function loadCustomBodyArt(signedIn) {
+    const art = state.bodyArt;
+    if (!signedIn) {
+        art.custom = [];
+    } else {
+        try {
+            art.custom = (await api.customBodyArt()).designs || [];
+        } catch (error) {
+            console.warn('custom tattoos unavailable', error);
+            art.custom = [];
+        }
+    }
+    if (art.exposure) drawBodyArt();
 }
 
 function endsAt(session) {
@@ -1475,6 +1497,8 @@ function renderHosiery(adult) {
     $('back-seam').onchange = () => (h.seam = $('back-seam').checked);
     $('stocking-foot').checked = h.foot;
     $('stocking-foot').onchange = () => (h.foot = $('stocking-foot').checked);
+    $('briefs-over').checked = h.briefsOver;
+    $('briefs-over').onchange = () => (h.briefsOver = $('briefs-over').checked);
 }
 
 function hosieryRequest() {
@@ -1494,6 +1518,7 @@ function hosieryRequest() {
             style: h.belt,
             strapCount: h.strapCount,
             hardware: { color: h.hardware },
+            ...(h.briefsOver ? { briefsOver: true } : {}),
         },
         reveal: { level: h.reveal },
     };
@@ -2712,7 +2737,15 @@ function placementInfo(id) {
 }
 
 function designInfo(id) {
-    return state.bodyArt.catalog.designs.find((d) => d.id === id) || { id, name: id };
+    const art = state.bodyArt;
+    return art.catalog.designs.find((d) => d.id === id) || art.custom.find((d) => d.id === id) || { id, name: id };
+}
+
+/** BA10. Where a design's picture is: a custom one only through the admin route. */
+function designImagePath(designId) {
+    return state.bodyArt.custom.some((d) => d.id === designId)
+        ? `/v1/admin/body-art/${encodeURIComponent(designId)}.png`
+        : `/v1/body-art/designs/${encodeURIComponent(designId)}.png`;
 }
 
 /** A design's picture, inked: its PNG is white with the ink as alpha, so it masks a colour. */
@@ -2725,7 +2758,7 @@ function inkSwatch(designId) {
     };
     if (art.thumbs[designId]) paint(art.thumbs[designId]);
     else
-        api.blobUrl(`/v1/body-art/designs/${encodeURIComponent(designId)}.png`)
+        api.blobUrl(designImagePath(designId))
             .then((url) => {
                 art.thumbs[designId] = url; // kept for the session: ten small PNGs
                 paint(url);
@@ -2815,7 +2848,9 @@ function drawBodyArt() {
         )
     );
 
-    const designs = art.catalog.designs.filter((d) => d.placements.includes(art.placement));
+    // A custom design is drawn at any placement; the placement's own rating and gate still apply.
+    const custom = account.session ? art.custom.map((d) => ({ ...d, placements: [art.placement] })) : [];
+    const designs = [...art.catalog.designs.filter((d) => d.placements.includes(art.placement)), ...custom];
     if (!designs.some((d) => d.id === art.design)) art.design = designs.length ? designs[0].id : null;
     parts.push(
         el(
@@ -2836,11 +2871,12 @@ function drawBodyArt() {
                         },
                     },
                     inkSwatch(d.id),
-                    el('span', { class: 'tattoo-name', text: d.name })
+                    el('span', { class: 'tattoo-name', text: d.private ? `${d.name} · private` : d.name })
                 )
             )
         )
     );
+    if (account.session) parts.push(customArtUpload());
 
     const ink = el('input', { type: 'color', value: art.ink });
     ink.addEventListener('change', () => {
@@ -2901,6 +2937,64 @@ function drawBodyArt() {
     );
     box.replaceChildren(...parts);
     syncExtras();
+}
+
+/**
+ * BA10. Upload your own artwork: a PNG or WebP whose transparency is the ink. The server
+ * checks and re-encodes it; a look that wears it is private to admin sessions.
+ */
+function customArtUpload() {
+    const art = state.bodyArt;
+    const input = el('input', { type: 'file', accept: 'image/png,image/webp' });
+    input.hidden = true;
+    input.addEventListener('change', async () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        art.uploadError = '';
+        try {
+            const design = await api.uploadBodyArt(file, file.name.replace(/\.[a-z0-9]+$/i, ''));
+            if (!art.custom.some((d) => d.id === design.id)) art.custom.push(design);
+            art.design = design.id;
+        } catch (error) {
+            art.uploadError = error.message || 'That picture could not be used.';
+        }
+        drawBodyArt();
+    });
+    const pick = el('button', {
+        class: 'link',
+        type: 'button',
+        text: 'Upload your own artwork',
+        title: 'PNG or WebP with transparency, up to 2048 px and 4 MB. Private to admin sessions.',
+        onclick: () => input.click(),
+    });
+    const children = [pick, input];
+    const chosen = art.custom.find((d) => d.id === art.design);
+    if (chosen)
+        children.push(
+            el('button', {
+                class: 'link',
+                type: 'button',
+                text: 'Delete this one',
+                onclick: async () => {
+                    try {
+                        await api.deleteBodyArt(chosen.id);
+                        art.custom = art.custom.filter((d) => d.id !== chosen.id);
+                        art.design = null;
+                    } catch (error) {
+                        art.uploadError = error.message;
+                    }
+                    drawBodyArt();
+                },
+            })
+        );
+    if (art.uploadError) children.push(el('p', { class: 'report-line warn', text: art.uploadError }));
+    children.push(
+        el('p', {
+            class: 'export-hint',
+            text: 'Its transparency is the ink. A look wearing it is private: never in the public wardrobe or a public export.',
+        })
+    );
+    return el('div', { class: 'body-art-custom' }, ...children);
 }
 
 function syncBodyArtButton() {

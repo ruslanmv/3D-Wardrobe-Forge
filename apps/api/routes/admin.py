@@ -5,12 +5,16 @@ The rules are in :mod:`apps.api.admin`; this is only their HTTP shape.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Header, HTTPException, Request, status
+from fastapi import APIRouter, File, Form, Header, HTTPException, Request, Response, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from apps.api.admin import MIN_PASSWORD_LENGTH, AdminDep, AdminError, AdminSessionsDep
+from apps.api.dependencies import OrchestratorDep
+from wardrobe.body_art.custom import MAX_BYTES, CustomArtError, is_custom
+from wardrobe.body_art.raster import artwork_png
 
 router = APIRouter(tags=["admin"])
 
@@ -86,6 +90,68 @@ def declare(
         )
     admins.declare(admin, avatar.slug, body.depicts_adult)
     return admin.to_dict()
+
+
+# BA10. The operator's own tattoo artwork. Every route here is an admin session's only: the
+# rules (PNG or WebP bytes, limits before pixels, real alpha, re-encoded, private) are in
+# wardrobe.body_art.custom, and a job that uses one is made private by the Studio's job route.
+CUSTOM_THUMBNAIL = 256
+
+
+def _custom(orchestrator):
+    custom = orchestrator.body_art.custom
+    if custom is None:
+        detail = {"reason": "unavailable", "message": "no custom tattoos here"}
+        raise HTTPException(status_code=404, detail=detail)
+    return custom
+
+
+def _public(meta: dict) -> dict:
+    keys = ("id", "name", "aspect", "width", "height", "ink", "createdAt")
+    return {**{key: meta[key] for key in keys}, "private": True, "family": "custom"}
+
+
+@router.get("/admin/body-art")
+def list_custom_body_art(orchestrator: OrchestratorDep, admin: AdminDep) -> dict:
+    _signed_in(admin)
+    return {"designs": [_public(meta) for meta in _custom(orchestrator).list()]}
+
+
+@router.post("/admin/body-art", status_code=status.HTTP_201_CREATED)
+async def upload_custom_body_art(
+    orchestrator: OrchestratorDep,
+    admin: AdminDep,
+    file: UploadFile = File(...),
+    name: str = Form(default=""),
+) -> dict:
+    """A PNG or WebP picture, its alpha the ink. Uploaded bytes only: there is no URL field."""
+    _signed_in(admin)
+    data = await file.read(MAX_BYTES + 1)
+    try:
+        meta = _custom(orchestrator).add(data, name, created_at=datetime.now(UTC).isoformat())
+    except CustomArtError as error:
+        code = 413 if error.reason == "too_large" else 422
+        raise HTTPException(status_code=code, detail={"reason": f"body_art_{error.reason}",
+                                                       "message": error.message}) from error
+    return _public(meta)
+
+
+@router.get("/admin/body-art/{design_id}.png")
+def custom_body_art_thumbnail(design_id: str, orchestrator: OrchestratorDep, admin: AdminDep) -> Response:
+    _signed_in(admin)
+    custom = _custom(orchestrator)
+    if not is_custom(design_id) or custom.entry(design_id) is None:
+        raise HTTPException(status_code=404, detail="no such custom tattoo")
+    png = artwork_png(custom.artwork(design_id), CUSTOM_THUMBNAIL)
+    return Response(png, media_type="image/png", headers={"Cache-Control": "private, no-store"})
+
+
+@router.delete("/admin/body-art/{design_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_custom_body_art(design_id: str, orchestrator: OrchestratorDep, admin: AdminDep) -> None:
+    """Its looks keep their tattoo; a new job naming it is refused as an unknown design."""
+    _signed_in(admin)
+    if not _custom(orchestrator).remove(design_id):
+        raise HTTPException(status_code=404, detail="no such custom tattoo")
 
 
 __all__ = ["router"]

@@ -168,15 +168,15 @@ the original next-steps list are kept, struck through, so the history reads.
 - ~~L9 the per-garment rules~~ — built, as warnings until tuned.
 - A dart-shaped or shelf-bra bodysuit.
 
-**From [BODY_ART_PLAN](BODY_ART_PLAN.md)** (BA1–BA9, BA11 and NT1 built)
+**From [BODY_ART_PLAN](BODY_ART_PLAN.md)** (BA1–BA11 and NT1 built)
 
 - ~~BA8 body art in packs and rating~~ — built.
 - ~~BA9 more placements~~ — built for ribs, sternum, under the bust and thighs; the hips are still to do.
-- BA10 custom tattoo import, admin session only.
+- ~~BA10 custom tattoo import~~ — built (`wardrobe/body_art/custom.py`, `/v1/admin/body-art`).
 
 **From [HOSIERY](HOSIERY.md)** (the [HOSIERY_UPGRADE](HOSIERY_UPGRADE.md) design is built)
 
-- `briefsOver`: briefs worn over the suspender straps.
+- ~~`briefsOver`~~ — built (`suspenderBelt.briefsOver`).
 - ~~The stocking foot~~ — built (L6).
 - Its §11 lists what the build simplifies (poses are fixed rotations, side
   darkening is baked); those are limits, not planned work.
