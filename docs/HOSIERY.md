@@ -242,6 +242,14 @@ line, each half is carried by the thigh it hangs over and gathered to where the
 reveal model put the hem ring. So the seated picture shows what the report states
 in numbers, and the baked file is still a valid VRM.
 
+The stockings are the other exception (RA2). Skinned by their own weights to a
+knee bent 85°, they pinched behind the knee and sank under her skin, and the
+seated picture showed her skin through them in jagged patches. In a posed view
+each stocking point now rides on the skin under it: it takes the posed position
+of the nearest point of her leg at rest, sampled about every centimetre across
+her triangles, at its rest height above it. The reveal and the strap tension are
+computed as before; only the picture changed.
+
 | Backend | Renders with |
 | --- | --- |
 | `native` | The software rasteriser. Flat shading; the default, and always available |

@@ -65,6 +65,9 @@ class PipelineContext:
     artifacts: list[GarmentArtifact] = field(default_factory=list)
     #: Every garment fitted so far, inner first; assembly attaches all of them.
     built: list[BuiltLayer] = field(default_factory=list)
+    #: PB1. The outfit asked for is itself underwear or swimwear (not a foundation the
+    #: pipeline added under clothes): it must end up on bare skin, and is checked for it.
+    requested_foundation: bool = False
     #: Surface points of the layers already fitted: what the next layer must clear.
     collision_points: np.ndarray | None = None
 

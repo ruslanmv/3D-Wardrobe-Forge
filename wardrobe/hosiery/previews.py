@@ -66,7 +66,8 @@ def bake_pose(data: bytes, pose: str, *, forward: float, pivots: dict, rings: di
 
     ``rings`` are the hem ring's positions down each thigh in this pose and ``hem_d``
     the standing ones (from the reveal result); without them the skirt is carried by
-    the thighs unchanged.
+    the thighs unchanged. Stockings are then kept just outside her posed legs
+    (``_clear_legwear``): skinning alone pinched them under her skin behind a bent knee.
     """
     document = GltfDocument.from_bytes(data)
     info = inspect_document(document)
@@ -81,35 +82,144 @@ def bake_pose(data: bytes, pose: str, *, forward: float, pivots: dict, rings: di
         axis = (knee - hip) / max(float(np.linalg.norm(knee - hip)), 1e-9)
         legs[side] = (hip, axis, table[node])
     hips_node = info.humanoid_bones.get("hips")
+    # Pose everything first, write afterwards: the stockings are corrected against her
+    # posed skin, wherever her body comes in the node order.
+    posed_by_source: dict[int, list] = {}
+    order: list[tuple[dict, int, str | None]] = []
     for node_index in document.mesh_nodes():
         node = document.nodes[node_index]
         forge = (node.get("extras") or {}).get("wardrobeForge") or {}
         skirt = forge.get("hosiery") in {"main", "one-piece", "outer"}  # the garment whose hem reveals
-        replaced: dict[int, int] = {}
         for primitive in document.meshes[node["mesh"]].get("primitives", []):
-            attributes = primitive.get("attributes", {})
-            source = attributes.get("POSITION")
+            source = primitive.get("attributes", {}).get("POSITION")
             if source is None:
                 continue
-            if source not in replaced:
-                result = posed_primitive(document, node, primitive, table, normals=True)
-                if result is None:
-                    continue
-                posed, normals = result
-                if skirt and len(legs) == 2 and hips_node is not None:
-                    rest = document.read_accessor(source).astype(np.float64)[:, :3]
-                    posed = _drape(rest, posed, legs, table[hips_node], rings, hem_d)
-                    normals = _normals(posed, document, node, source)
-                baked_normals = None
-                if normals is not None:
-                    baked_normals = document.add_accessor(normals.astype(np.float32), target=ARRAY_BUFFER)
-                replaced[source] = (document.add_accessor(posed.astype(np.float32), target=ARRAY_BUFFER,
-                                                          include_bounds=True), baked_normals)
-            position, normal = replaced[source]
-            attributes["POSITION"] = position
-            if normal is not None:
-                attributes["NORMAL"] = normal
+            order.append((primitive, source, forge.get("hosiery") or ("skin" if not forge else None)))
+            if source in posed_by_source:
+                continue
+            result = posed_primitive(document, node, primitive, table, normals=True)
+            if result is None:
+                continue
+            posed, normals = result
+            if skirt and len(legs) == 2 and hips_node is not None:
+                rest = document.read_accessor(source).astype(np.float64)[:, :3]
+                posed = _drape(rest, posed, legs, table[hips_node], rings, hem_d)
+                normals = _normals(posed, document, node, source)
+            role = order[-1][2]
+            # The stocking correction needs her skin's normals; a body exported without any
+            # (the calibration forms) gets them from its triangles. Only for that check: a
+            # primitive written without normals is still written without them.
+            surface = None
+            if role in {"skin", "legwear"}:
+                rest = document.read_accessor(source).astype(np.float64)[:, :3]
+                surface = (rest, _normals(rest, document, node, source),
+                           normals if normals is not None else _normals(posed, document, node, source),
+                           _triangles(document, node, source))
+            posed_by_source[source] = [posed, normals, role, surface]
+    _clear_legwear(posed_by_source, pivots)
+    replaced: dict[int, tuple] = {}
+    for primitive, source, _ in order:
+        if source not in posed_by_source:
+            continue
+        if source not in replaced:
+            posed, normals, _, _ = posed_by_source[source]
+            baked_normals = None
+            if normals is not None:
+                baked_normals = document.add_accessor(normals.astype(np.float32), target=ARRAY_BUFFER)
+            replaced[source] = (document.add_accessor(posed.astype(np.float32), target=ARRAY_BUFFER,
+                                                      include_bounds=True), baked_normals)
+        position, normal = replaced[source]
+        primitive["attributes"]["POSITION"] = position
+        if normal is not None:
+            primitive["attributes"]["NORMAL"] = normal
     return document.to_bytes()
+
+
+#: RA2. The least a stocking sits above her skin once it follows it into a pose.
+LEGWEAR_CLEARANCE_M = 0.0015
+
+
+def _clear_legwear(posed: dict[int, list], pivots: dict) -> None:  # [points, normals, role, surface]
+    """Carry each stocking point with the skin under it, at its rest-pose height above it.
+
+    Skinned by its own weights, a stocking pinched behind a knee bent 85° and sank under
+    her skin, and the seated picture showed her skin through it in jagged patches. Her
+    skin pinches too, but stays her surface; a stocking that rides on it stays outside.
+    Each stocking vertex finds the nearest point of her leg skin at rest (sampled about
+    every centimetre across the triangles, so a low-poly body is followed as well as a
+    dense one), and is placed at that point's posed position, out along its posed normal
+    by its rest height above it.
+    """
+    from wardrobe.hosiery.poses import surface_samples
+
+    hips = pivots.get("hips")
+    if hips is None:
+        return
+    rest_s, posed_s, rest_n, posed_n = [], [], [], []
+    for points, _, role, surface in posed.values():
+        if role != "skin" or surface is None or not len(surface[3]):
+            continue
+        rest, normals_rest, normals_posed, triangles = surface
+        legs = triangles[rest[triangles].mean(axis=1)[:, 1] < float(hips[1]) + 0.05]
+        # Sampled with the same grid at rest and posed: sample i is the same point of her skin.
+        a, na = surface_samples(rest, normals_rest, legs, 0.01)
+        b, nb = _same_samples(rest, points, normals_posed, legs, 0.01)
+        rest_s.append(a)
+        rest_n.append(na)
+        posed_s.append(b)
+        posed_n.append(nb)
+    if not rest_s:
+        return
+    rest_s, posed_s = np.vstack(rest_s), np.vstack(posed_s)
+    rest_n, posed_n = np.vstack(rest_n), np.vstack(posed_n)
+    for entry in posed.values():
+        if entry[2] != "legwear" or entry[3] is None:
+            continue
+        rest = entry[3][0]
+        out = entry[0]
+        for start in range(0, len(rest), 64):
+            chunk = rest[start:start + 64]
+            nearest = np.argmin(((chunk[:, None, :] - rest_s[None, :, :]) ** 2).sum(axis=2), axis=1)
+            height = ((chunk - rest_s[nearest]) * rest_n[nearest]).sum(axis=1)
+            height = np.maximum(height, LEGWEAR_CLEARANCE_M)
+            out[start:start + 64] = posed_s[nearest] + posed_n[nearest] * height[:, None]
+
+
+def _same_samples(rest: np.ndarray, posed: np.ndarray, normals: np.ndarray, triangles: np.ndarray,
+                  spacing: float) -> tuple[np.ndarray, np.ndarray]:
+    """The posed surface sampled on the grid ``poses.surface_samples`` chose for it at rest.
+
+    That helper picks each triangle's grid from its edge lengths, which a pose changes;
+    this is its loop with the steps taken from the rest lengths, so sample i here is
+    sample i of the rest surface.
+    """
+    if triangles.size == 0:
+        return np.zeros((0, 3)), np.zeros((0, 3))
+    a, b, c = (rest[triangles[:, i]] for i in range(3))
+    longest = np.maximum.reduce([np.linalg.norm(b - a, axis=1), np.linalg.norm(c - b, axis=1),
+                                 np.linalg.norm(a - c, axis=1)])
+    steps = np.clip(np.ceil(longest / spacing), 1, 16).astype(int)
+    pa, pb, pc = (posed[triangles[:, i]] for i in range(3))
+    na, nb, nc = (normals[triangles[:, i]] for i in range(3))
+    out_p, out_n = [], []
+    for k in np.unique(steps):
+        chosen = steps == k
+        grid = np.array([(i / k, j / k) for i in range(k + 1) for j in range(k + 1 - i)], dtype=np.float64)
+        u, v = grid[:, 0][None, :, None], grid[:, 1][None, :, None]
+        for (x, y, z), sink in (((pa, pb, pc), out_p), ((na, nb, nc), out_n)):
+            ta, tb, tc = x[chosen][:, None, :], y[chosen][:, None, :], z[chosen][:, None, :]
+            sink.append((ta + (tb - ta) * u + (tc - ta) * v).reshape(-1, 3))
+    p, n = np.vstack(out_p), np.vstack(out_n)
+    n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+    return p, n
+
+
+def _triangles(document, node: dict, source: int) -> np.ndarray:
+    """Every triangle of ``node``'s primitives over ``source``."""
+    out = [document.read_accessor(p["indices"]).reshape(-1, 3).astype(np.int64)
+           for p in document.meshes[node["mesh"]].get("primitives", [])
+           if p.get("attributes", {}).get("POSITION") == source and p.get("indices") is not None]
+    return np.vstack(out) if out else np.zeros((0, 3), dtype=np.int64)
 
 
 def _normals(points: np.ndarray, document, node: dict, source: int) -> np.ndarray:

@@ -109,6 +109,8 @@ export const api = {
     capabilities: () => request('/v1/capabilities'),
     library: () => request('/v1/library'),
     vocabulary: () => request('/v1/vocabulary'),
+    /** OC3. The outfit dictionary and the occasions built on it: the Studio's first screen. */
+    outfits: () => request('/v1/outfits'),
     inspectAvatar(file) {
         const form = new FormData();
         form.append('file', file, file.name);
