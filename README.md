@@ -148,6 +148,9 @@ against them. Strap tension is measured over her posed body, standing, walking
 and seated, and reported per strap. Denier maps onto the transparency scale and
 the sides are baked darker. Tops come plain, wide, lace or silicone, with a
 rolled edge; seams stay down the back of the leg; fishnet uses the same contract.
+Stockings can be knitted on over her heel and toes (`hosiery.foot: "full"`), and
+briefs can go on over the straps the traditional way, so they come off without
+unclipping (`suspenderBelt.briefsOver`).
 
 Every caption on the sheet above is the job's own report, rendered in the
 Studio's viewer. Seated, the stockings ride on her skin rather than on their own
@@ -253,7 +256,10 @@ Each tattoo becomes a new look built on that one. A tattoo travels with her: a
 later outfit that covers it drops the decal but keeps the recipe, and the next
 outfit that bares the spot puts it back. Thirty designs ship as vector art
 authored in this repository; raster art comes in only through
-`tools/body_art/install_design.py`. The plan and what was built are in
+`tools/body_art/install_design.py`. An operator signed in to the Studio can also
+upload their own PNG or WebP. It is checked and re-encoded, and any look that
+wears it is private: it never appears in the public wardrobe, the public
+catalogue or a public export. The plan and what was built are in
 [docs/BODY_ART_PLAN.md](docs/BODY_ART_PLAN.md).
 
 #### The neo-tribal lower-back set
@@ -633,10 +639,10 @@ Rinna is never used for gated looks, whatever is passed.
 ### Status
 
 Built and in CI: the core service (milestones M0–M4, M6, M7), Base Body Prep
-and layered outfits, styling and materials, hosiery and suspenders (stockings with feet), the
+and layered outfits, styling and materials, hosiery and suspenders (stockings with feet, briefs over the straps), the
 lingerie blocks and collections (L1–L5, LC), fabrics, elastic tension and
 garment rules (L7–L9), skin restoration and body completion under underwear,
-body art (BA1–BA9, BA11) and the neo-tribal set, the Discoteca
+body art (BA1–BA11, custom import included) and the neo-tribal set, the Discoteca
 collection, occasions and the Try-on haul, and the Studio.
 
 Still open, gathered from every plan and checked against the code in
@@ -646,7 +652,7 @@ Still open, gathered from every plan and checked against the code in
   verified against the live provider APIs.
 - **Lingerie**: tights with feet, a dart-shaped or shelf-bra bodysuit, and
   promoting the L9 rules from warnings to errors once tuned.
-- **Body art**: hip placements, custom import (BA10).
+- **Body art**: hip placements.
 - **Platform**: spring bones for generated garments, PostgreSQL repositories.
 
 ---
@@ -682,11 +688,11 @@ Stated plainly, because the gallery shows them:
 | [HOSIERY_UPGRADE](docs/HOSIERY_UPGRADE.md) | the design (built): the complete hosiery plan, the `garter_belt.py` analysis, the renderer contract |
 | [HOSIERY_STYLING](docs/HOSIERY_STYLING.md) | the design: suspender belts, stockings and the reveal control |
 | [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | the design: flat straps, clip hardware, denier falloff and the web preview backend |
-| [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section, the lower-back set (BA1–BA7 and BA11 built; BA8–BA10 open) |
+| [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section, the lower-back set, neo-tribal designs, custom import (BA1–BA11 and NT1 built; the hips open) |
 | [DISCOTECA](docs/DISCOTECA.md) | Sexy Discoteca — All Black: the bodycon dress, four boots built round her posed foot, heels as a stance baked into the rest pose, the Studio's Collection panel |
 | [OCCASIONS](docs/OCCASIONS.md) | Occasion → style → look: the Studio's first screen, who sees which look, the `occasion` label on a look, quick changes, and Compare as two viewports |
 | [LINGERIE_COLLECTION](docs/LINGERIE_COLLECTION.md) | collections: the Italian lace bralette with a thong or Brazilian bottom, finishing built on the fitted garment, named components, the product sheet |
-| [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the lingerie design record: fashion-fit forms, ribbon straps, brief, bra and bodysuit blocks (L1–L5 built); feet, fabrics, elastic tension and validation still open |
+| [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the lingerie design record: fashion-fit forms, ribbon straps, brief, bra and bodysuit blocks, stocking feet, fabrics, elastic tension and garment rules (L1–L9 built) |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | components, layers, extension points |
 | [PIPELINE](docs/PIPELINE.md) | the ten stages and the failure model |
 | [API](docs/API.md) | HTTP reference |

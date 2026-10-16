@@ -113,6 +113,10 @@ class SuspenderBeltOptions(_Options):
     hardware: HardwareOptions = Field(default_factory=HardwareOptions)
     visibility: Visibility = "hidden_under_skirt"
     matching_set_id: str | None = Field(default=None, alias="matchingSetId", max_length=64)
+    #: H2. The traditional order: briefs on *over* the suspender straps, so they come off
+    #: without unclipping. Default ``False``, the order every look before it was made in:
+    #: briefs first, the straps laid over them.
+    briefs_over: bool = Field(default=False, alias="briefsOver")
 
 
 class RevealOptions(_Options):
@@ -199,6 +203,9 @@ class BeltPlan(BaseModel):
     adjuster: bool = True
     ring: bool = False
     visibility: str = "hidden_under_skirt"
+    #: H2. ``True`` only when asked for; absent otherwise, so a plan made without it serialises
+    #: (and hashes, ``connector_artifact``) exactly as it did before the field existed.
+    briefs_over: bool | None = Field(default=None, alias="briefsOver")
 
 
 class RevealPlan(BaseModel):

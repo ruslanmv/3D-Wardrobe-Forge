@@ -326,7 +326,20 @@ request, plan and report fields default to empty, and the extras keys `setId` an
   documented deviation from HOSIERY_STYLING §4.2.
 - **The planner does not lengthen a strap's tab drop and re-check.** The tab search
   replaced that step.
-- **`briefsOver` is not built.** Briefs are fitted before the straps, as today.
+- **`briefsOver` is an order, not a fit of its own.** With
+  `suspenderBelt.briefsOver: true` the planner moves every bottom that covers only
+  her hips (briefs, a thong, a tanga, a boyshort: read from the template's
+  coverage) to just after the straps, and the ordinary layer clearance does the
+  rest: on the tall mannequin every strap vertex under the briefs is at least
+  2.4 mm inside them. Off — the default — the briefs are fitted first and the
+  straps laid over them, as before; a plan without the field is byte-identical.
+  Nothing pins the briefs' leg elastic under the straps in a pose: the clearance
+  is checked at rest (`tests/integration/test_briefs_over.py`). The briefs clear
+  whatever is under them, the straps' top tabs and adjusters included, and at the
+  sides of her hips those stand about 1 cm off the belt. So the briefs' waistband
+  stands off there by about as much (largest radius 0.184 m against 0.171 m
+  without the option, on the tall mannequin). It reads as a soft flare at the
+  hip, not an intersection.
 - **Stockings bound down the whole leg.** Hosiery stockings are bound to the thighs,
   shins and feet, so they follow a bent knee. Plain thigh-highs asked for in words
   keep the thigh-only binding they always had, and with it the old limitation.

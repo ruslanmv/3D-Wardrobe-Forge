@@ -160,6 +160,8 @@ def apply(plan: OutfitPlan, request: OutfitRequest, catalog) -> OutfitPlan:
         if update:
             garments[i] = garment.model_copy(update=update)
     garments.sort(key=lambda g: (g.layer, 1 if g.role == "connector" else 0))
+    if belt is not None and belt.briefs_over:
+        garments = _briefs_over(garments, catalog, notes)
     stacked = _stack(garments) if len(garments) > 1 else garments[0]
     return stacked.model_copy(update={
         "hosiery": design,
@@ -206,7 +208,42 @@ def _belt_plan(options, style: str) -> BeltPlan:
         adjuster=hardware.adjuster_enabled,
         ring=style in RING_STYLES if hardware.ring_enabled is None else hardware.ring_enabled,
         visibility=options.visibility,
+        briefsOver=True if options.briefs_over else None,
     )
+
+
+def _is_brief(garment, catalog) -> bool:
+    """A bottom that covers her hips and nothing else: briefs, a thong, a tanga, a boyshort.
+
+    Read from the template's coverage, not its name, so a new bottom template is a brief
+    the moment it exists. The belts cover the waist too, a bodysuit the chest, a garter set
+    the thighs: none of them is a brief, and none of them is moved.
+    """
+    if garment.category != "underwear" or garment.template_id in BELT_TEMPLATES.values():
+        return False
+    template = catalog.get(garment.template_id) if garment.template_id else None
+    return template is not None and set(template.coverage) == {"hips"}
+
+
+def _briefs_over(garments: list, catalog, notes: list[str]) -> list:
+    """H2. The briefs moved to just after the straps, so they are fitted over them.
+
+    The fitting loop clears every garment against the layers fitted before it
+    (``fit_garment`` → ``collision_points``), so the order is the whole mechanism: fitted
+    after the connector, the briefs clear the straps as a dress clears the briefs, and the
+    straps, fitted before the briefs, are laid on the belt, the stockings and her skin.
+    """
+    connector = next((i for i, g in enumerate(garments) if g.role == "connector"), None)
+    briefs = [g for g in garments if _is_brief(g, catalog)]
+    if connector is None:
+        notes.append("briefs over the straps needs a suspender belt and stockings; it was not applied")
+        return garments
+    if not briefs:
+        notes.append("briefs over the straps needs briefs in the outfit; it was not applied")
+        return garments
+    rest = [g for g in garments if not any(g is b for b in briefs)]
+    at = next(i for i, g in enumerate(rest) if g.role == "connector") + 1
+    return rest[:at] + briefs + rest[at:]
 
 
 def _belt_name(belt: BeltPlan) -> str:
