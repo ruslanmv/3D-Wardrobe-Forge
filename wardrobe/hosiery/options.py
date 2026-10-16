@@ -57,6 +57,9 @@ BeltMaterial = Literal["satin", "lace", "microfiber", "mesh"]
 HardwareColour = Literal["silver", "gold", "black"]
 Visibility = Literal["full", "hidden_under_skirt", "straps_only"]
 RevealLevel = Literal["discreet", "glimpse", "statement"]
+#: L6. ``none`` ends the stocking above the foot, as it always has; ``full`` knits it on
+#: over her heel and toes and closes it under her sole.
+StockingFoot = Literal["none", "full"]
 
 
 class _Options(BaseModel):
@@ -85,6 +88,9 @@ class HosieryOptions(_Options):
     top_width_cm: float | None = Field(default=None, alias="topWidthCm", ge=1.5, le=10.0)
     rolled_edge: bool = Field(default=True, alias="rolledEdge")
     back_seam: BackSeamOptions = Field(default_factory=BackSeamOptions, alias="backSeam")
+    #: L6. Default ``none``: every look made before L6 keeps its geometry. Switching the
+    #: default is a deliberate re-baseline of the gallery, not a side effect.
+    foot: StockingFoot = "none"
 
 
 class HardwareOptions(_Options):
@@ -175,6 +181,7 @@ class StockingPlan(BaseModel):
     seam: bool = False
     seam_width_m: float = Field(default=0.0025, alias="seamWidthM")
     seam_color: str | None = Field(default=None, alias="seamColor")
+    foot: str = "none"
 
 
 class BeltPlan(BaseModel):

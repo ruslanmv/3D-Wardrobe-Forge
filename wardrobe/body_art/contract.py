@@ -37,8 +37,8 @@ class Placement:
     region: str
 
 
-#: v1 placements (BA1-BA4). All seen in everyday clothes, so all general (plan §5);
-#: the hip, rib, thigh and front placements come with BA9 and their own ratings.
+#: v1 placements (BA1-BA4) are all seen in everyday clothes, so all general (plan §5);
+#: BA9 adds the hip, rib, front and thigh placements, each with its own rating.
 PLACEMENTS: dict[str, Placement] = {
     p.id: p
     for p in (
@@ -52,6 +52,16 @@ PLACEMENTS: dict[str, Placement] = {
         # Just above whatever waistband the outfit has: found on the finished look, not
         # assumed from her bones (placement.rect_for, exposure.waistband_y).
         Placement("waistline", "Just above the waistband", "general", "back", "lower"),
+        # BA9. Seen in swimwear (ribs), in underwear (front of the chest, upper thigh),
+        # or in everyday shorts and skirts (outer thigh): each rated for where it is seen.
+        Placement("left-rib", "Left ribs", "swimwear", "left", "upper"),
+        Placement("right-rib", "Right ribs", "swimwear", "right", "upper"),
+        Placement("sternum", "Sternum", "intimate", "front", "upper"),
+        Placement("under-bust", "Under the bust", "intimate", "front", "upper"),
+        Placement("left-upper-thigh", "Left upper thigh", "intimate", "front", "lower"),
+        Placement("right-upper-thigh", "Right upper thigh", "intimate", "front", "lower"),
+        Placement("left-outer-thigh", "Left outer thigh", "general", "left", "lower"),
+        Placement("right-outer-thigh", "Right outer thigh", "general", "right", "lower"),
     )
 }
 

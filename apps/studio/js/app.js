@@ -87,6 +87,8 @@ const state = {
         topStyle: 'wide',
         rolledEdge: true,
         seam: false,
+        // L6. Knitted on over her heel and toes; off by default, as in the API.
+        foot: false,
         belt: 'classic',
         strapCount: 4,
         hardware: 'silver',
@@ -1471,6 +1473,8 @@ function renderHosiery(adult) {
     $('rolled-edge').onchange = () => (h.rolledEdge = $('rolled-edge').checked);
     $('back-seam').checked = h.seam;
     $('back-seam').onchange = () => (h.seam = $('back-seam').checked);
+    $('stocking-foot').checked = h.foot;
+    $('stocking-foot').onchange = () => (h.foot = $('stocking-foot').checked);
 }
 
 function hosieryRequest() {
@@ -1484,6 +1488,7 @@ function hosieryRequest() {
             topStyle: h.topStyle,
             rolledEdge: h.rolledEdge,
             backSeam: { enabled: h.seam },
+            ...(h.foot ? { foot: 'full' } : {}),
         },
         suspenderBelt: {
             style: h.belt,

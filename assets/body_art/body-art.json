@@ -67,7 +67,8 @@
       "name": "Lace Ornament",
       "family": "upper-back-tribal",
       "placements": [
-        "upper-back"
+        "upper-back",
+        "under-bust"
       ],
       "aspect": 2.4,
       "paths": "designs/lace-ornament-01.json",
@@ -80,7 +81,14 @@
       "family": "shoulder-blade",
       "placements": [
         "left-shoulder-blade",
-        "right-shoulder-blade"
+        "right-shoulder-blade",
+        "left-rib",
+        "right-rib",
+        "sternum",
+        "left-outer-thigh",
+        "right-outer-thigh",
+        "left-upper-thigh",
+        "right-upper-thigh"
       ],
       "aspect": 0.8333,
       "paths": "designs/flame-01.json",
@@ -93,7 +101,13 @@
       "family": "spine",
       "placements": [
         "spine-upper",
-        "spine-full"
+        "spine-full",
+        "left-rib",
+        "right-rib",
+        "left-outer-thigh",
+        "right-outer-thigh",
+        "left-upper-thigh",
+        "right-upper-thigh"
       ],
       "aspect": 0.2222,
       "paths": "designs/spine-vine-01.json",
@@ -106,7 +120,8 @@
       "family": "lower-back",
       "placements": [
         "lower-back",
-        "waistline"
+        "waistline",
+        "under-bust"
       ],
       "aspect": 2.6,
       "paths": "designs/lotus-ornament-01.json",
@@ -118,7 +133,8 @@
       "name": "Crescent and Star",
       "family": "nape",
       "placements": [
-        "nape"
+        "nape",
+        "sternum"
       ],
       "aspect": 1.0,
       "paths": "designs/nape-crescent-01.json",
@@ -157,7 +173,8 @@
       "family": "lower-back-ornamental",
       "placements": [
         "lower-back",
-        "waistline"
+        "waistline",
+        "under-bust"
       ],
       "aspect": 3.4,
       "paths": "designs/waist-filigree-01.json",
@@ -222,7 +239,8 @@
       "family": "lower-back-ornamental",
       "placements": [
         "lower-back",
-        "waistline"
+        "waistline",
+        "under-bust"
       ],
       "aspect": 2.5,
       "paths": "designs/ornamental-butterfly-01.json",
@@ -241,6 +259,149 @@
       "paths": "designs/dragonfly-01.json",
       "license": "Apache-2.0",
       "description": "A delicate dragonfly centrepiece with long curling side flourishes."
+    },
+    {
+      "id": "sigil-jewel-01",
+      "name": "Sigil Jewel",
+      "family": "lower-back-neotribal",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 2.9231,
+      "paths": "designs/sigil-jewel-01.json",
+      "license": "Apache-2.0",
+      "description": "Fine sigil wings round a set stone, with dotted chains and four-point sparkles."
+    },
+    {
+      "id": "sigil-heart-01",
+      "name": "Sigil Heart",
+      "family": "lower-back-neotribal",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 3.04,
+      "paths": "designs/sigil-heart-01.json",
+      "license": "Apache-2.0",
+      "description": "Fine-line neo-tribal wings round an outlined heart, two sparkles."
+    },
+    {
+      "id": "tribal-butterfly-blades-01",
+      "name": "Butterfly Blades",
+      "family": "lower-back-neotribal",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 2.9231,
+      "paths": "designs/tribal-butterfly-blades-01.json",
+      "license": "Apache-2.0",
+      "description": "Heavy tribal blades with claws, round a fine-line butterfly."
+    },
+    {
+      "id": "heart-chains-01",
+      "name": "Heart & Chains",
+      "family": "lower-back-neotribal",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 2.5333,
+      "paths": "designs/heart-chains-01.json",
+      "license": "Apache-2.0",
+      "description": "Fine wings framing a heart, with dotted chains and tiny hanging hearts."
+    },
+    {
+      "id": "swirl-butterfly-01",
+      "name": "Swirl Butterfly",
+      "family": "lower-back-neotribal",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 2.9231,
+      "paths": "designs/swirl-butterfly-01.json",
+      "license": "Apache-2.0",
+      "description": "Bold hooked swirls each side of a fine butterfly, sparkles and dots above."
+    },
+    {
+      "id": "devil-wings-01",
+      "name": "Devil Wings",
+      "family": "lower-back-neotribal",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 2.5333,
+      "paths": "designs/devil-wings-01.json",
+      "license": "Apache-2.0",
+      "description": "Bat wings in tribal points round a small heart, with a pointed devil's tail."
+    },
+    {
+      "id": "neotribal-heart-bold-01",
+      "name": "Bold Neo-Tribal Heart",
+      "family": "lower-back-neotribal",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 3.04,
+      "paths": "designs/neotribal-heart-bold-01.json",
+      "license": "Apache-2.0",
+      "description": "An outlined heart in heavy clawed blades, two sparkles."
+    },
+    {
+      "id": "bat-heart-blades-01",
+      "name": "Bat Heart Blades",
+      "family": "lower-back-neotribal",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 3.3333,
+      "paths": "designs/bat-heart-blades-01.json",
+      "license": "Apache-2.0",
+      "description": "Very long fine blades and a heart with small bat wings."
+    },
+    {
+      "id": "tribal-curls-diamond-01",
+      "name": "Tribal Curls & Diamond",
+      "family": "lower-back-neotribal",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 2.8148,
+      "paths": "designs/tribal-curls-diamond-01.json",
+      "license": "Apache-2.0",
+      "description": "Classic tribal: bold curls, a diamond above and a point below."
+    },
+    {
+      "id": "tribal-heart-curls-01",
+      "name": "Tribal Heart & Curls",
+      "family": "lower-back-neotribal",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 3.0833,
+      "paths": "designs/tribal-heart-curls-01.json",
+      "license": "Apache-2.0",
+      "description": "Classic tribal: a solid heart between bold curls and clawed swooshes."
+    },
+    {
+      "id": "tribal-crossing-01",
+      "name": "Crossing Blades",
+      "family": "lower-back-neotribal",
+      "placements": [
+        "lower-back",
+        "waistline"
+      ],
+      "aspect": 2.6207,
+      "paths": "designs/tribal-crossing-01.json",
+      "license": "Apache-2.0",
+      "description": "Classic tribal: clawed blades crossing under the centre into a point."
     }
   ]
 }

@@ -81,6 +81,9 @@ async def test_a_tattoo_follows_her_through_the_looks(orchestrator, store):
     look_b = json.loads(await store.get(f"looks/{record_b.look.id}/look.json"))
     assert look_b["garments"] == look_a["garments"] and look_b["rating"] == look_a["rating"]
     assert look_b["baseLookId"] == record_a.look.id
+    # BA8. look.json says which tattoos the look wears, for the pack's provenance.
+    assert {(t["design"], t["placement"]) for t in look_a["bodyArt"]} == {(LOTUS["design"], "lower-back")}
+    assert {t["placement"] for t in look_b["bodyArt"]} == {"lower-back", "upper-back"}
 
     # A tee over it: both decals leave the geometry (no ink under clothes), both recipes stay.
     record_c, c = await run(orchestrator, store, "white tee", source=b)

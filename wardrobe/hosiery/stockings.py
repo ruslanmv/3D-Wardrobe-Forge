@@ -53,6 +53,17 @@ SEAM_LIFT_M = 0.0004
 FISHNET_DIAMONDS = 30
 #: Lace band tile, metres (the lace pattern's own).
 LACE_TILE_M = 0.07
+#: L6. The foot: rings every 5 mm from the ankle joint down to her sole, eased this far
+#: off her skin, and closed under her sole this far below it.
+FOOT_ROW_M = 0.005
+FOOT_EASE_M = 0.0025
+SOLE_DROP_M = 0.001
+#: The foot's rings start this far above the ankle joint, where the leg's stop: the leg's
+#: rings are round, and the last one at the joint itself cut through the top of her instep.
+FOOT_START_M = 0.045
+#: Fewer of her points than this in a foot and it is not read as a foot (an export that
+#: deleted the feet under her shoes): the stocking ends above the foot, as before.
+MIN_FOOT_POINTS = 48
 
 
 def _frame(axis: np.ndarray, forward: float) -> tuple[np.ndarray, np.ndarray]:
@@ -146,22 +157,210 @@ def build_stockings(params, *, top_y: float, plan: dict) -> list[Mesh]:
         band, _ = _tube([(p, radius_at(p)) for p in band_stations], axis_of, segments, forward,
                         outward_sign, f"hosiery-band-{side}")
         band_top_v = 0.0
-        # The leg: from the band's bottom ring down to the foot, 3 cm apart, knee exact.
+        foot_rings = None
+        if plan.get("foot") == "full":
+            foot_rings = _foot_rings(params, side, foot, segments, forward, outward_sign)
+            if foot_rings is None:
+                # Said in the fit report (hosiery.fit.after_shell); a key per side, because
+                # merging the pieces' metadata keeps one value per key.
+                band.metadata[f"hosieryFootNote-{side}"] = (
+                    f"the {side} stocking ends above the foot: this avatar has no foot of her own "
+                    "to knit it round (no toe bone, or no foot under her shoes)")
+        # The leg: from the band's bottom ring down to the foot, 3 cm apart, knee exact. With a
+        # foot it runs on to the ankle joint, where the foot's rings take over.
         leg_points = [band_stations[-1]]
-        end = foot + np.array([0.0, params.height * 0.02, 0.0])
+        end = foot + np.array([0.0, FOOT_START_M if foot_rings is not None else params.height * 0.02, 0.0])
         for a, b in ((band_stations[-1], knee), (knee, end)):
             steps = max(int(math.ceil(float(np.linalg.norm(b - a)) / LEG_ROW_M)), 1)
             leg_points += [a + (b - a) * (k / steps) for k in range(1, steps + 1)]
-        leg, arc = _tube([(p, radius_at(p)) for p in leg_points], axis_of, segments, forward,
-                         outward_sign, f"hosiery-leg-{side}")
+        if foot_rings is None:
+            leg, arc = _tube([(p, radius_at(p)) for p in leg_points], axis_of, segments, forward,
+                             outward_sign, f"hosiery-leg-{side}")
+        else:
+            rings = [_ring(p, axis_of(p), radius_at(p), segments, forward, outward_sign)[0]
+                     for p in leg_points]
+            leg = _tube_of_rings(rings + foot_rings, f"hosiery-leg-{side}", cap=True)
+            leg.metadata["hosieryFoot"] = {"side": side, "rows": len(foot_rings)}
+            # The foot is built at its final shape round her own foot: the limb pass, which
+            # reads her shin's reach, pulled its rings in over her instep at the ankle and
+            # her skin showed through. Placed, no pass moves it.
+            placed = np.zeros(leg.vertex_count, dtype=bool)
+            placed[len(rings) * (segments + 1):] = True
+            leg.metadata["placed"] = placed
         leg.uvs[:, 1] += width  # metres below the band's top, continuous with the band
-        for mesh, rows in ((band, band_rows + 1), (leg, len(leg_points))):
+        leg_rows = len(leg_points) + (len(foot_rings) if foot_rings is not None else 0)
+        for mesh, rows in ((band, band_rows + 1), (leg, leg_rows)):
             mesh.metadata[f"hosieryTube-{side}-{mesh.metadata['section'].split('-')[1]}"] = {
                 "order": order, "rows": rows, "ring": segments + 1, "vertexCount": mesh.vertex_count,
             }
         band.metadata["hosieryBand"] = {"width": width, "topV": band_top_v}
         meshes += [band, leg]
     return meshes
+
+
+# ----------------------------------------------------------------------
+# L6: the foot
+# ----------------------------------------------------------------------
+def _foot_rings(params, side: str, ankle: np.ndarray, segments: int, forward: float,
+                outward_sign: float) -> list[np.ndarray] | None:
+    """Horizontal rings round her own foot, from just above the ankle down to under her sole.
+
+    Each ring is her foot cut at that height (her skin only: see the shell), enclosed
+    by its convex hull and eased off it. Its vertices are cast from the hull's centre
+    at exactly the angles the leg's rings use, starting at her back, so ring k of the
+    foot lies under ring k of the leg: the knit runs on down the heel and over the
+    instep with no seam, and the back seam (column 0) runs on down her heel. A hull is
+    convex, so the toes are knitted as one toe box, as a stocking's is. Rings below the
+    ankle are left as built by the limb fit ("past the ankle nothing moves"), so this
+    is their final shape.
+    """
+    points = (params.metadata.get("stockingFootBody") or {}).get(side)
+    if points is None:
+        return None
+    points = np.asarray(points, dtype=np.float64)
+    toes = params.measurements.bone_positions.get(f"{side}Toes")
+    if toes is None:
+        return None
+    toes = np.asarray(toes, dtype=np.float64)
+    # Her foot: below the ankle joint, and nearer this foot than the other leg.
+    reach = max(float(np.linalg.norm(toes - ankle)) * 2.2, 0.08)
+    near = points[(points[:, 1] <= ankle[1] + FOOT_START_M + 0.01)
+                  & (np.linalg.norm((points - ankle)[:, [0, 2]], axis=1) <= reach)]
+    if near.shape[0] < MIN_FOOT_POINTS:
+        return None
+    sole = float(near[:, 1].min())
+    levels = np.arange(float(ankle[1]) + FOOT_START_M - FOOT_ROW_M, sole, -FOOT_ROW_M)
+    if levels.size < 3:
+        return None
+    front, side_axis = _frame(np.array([0.0, -1.0, 0.0]), forward)
+    u = np.linspace(-0.5, 0.5, segments + 1)
+    directions = (np.outer(np.cos(2.0 * math.pi * u), front)
+                  + np.outer(np.sin(2.0 * math.pi * u), side_axis * outward_sign))[:, [0, 2]]
+    rings = []
+    for y in [*levels, sole - SOLE_DROP_M]:
+        cut = near[np.abs(near[:, 1] - y) <= FOOT_ROW_M]
+        if cut.shape[0] < 6:
+            cut = near[np.abs(near[:, 1] - y) <= FOOT_ROW_M * 3]
+        if cut.shape[0] < 6:
+            continue
+        hull = _hull_xz(cut[:, [0, 2]])
+        if hull.shape[0] < 3:
+            continue
+        centre = hull.mean(axis=0)
+        reach_out = _enclose(hull, centre, directions, _cast(hull, centre, directions) + FOOT_EASE_M)
+        ring = np.column_stack([centre[0] + directions[:, 0] * reach_out, np.full(len(u), y),
+                                centre[1] + directions[:, 1] * reach_out])
+        rings.append(ring)
+    return rings if len(rings) >= 3 else None
+
+
+def _hull_xz(points: np.ndarray) -> np.ndarray:
+    """Convex hull of 2D points, counter-clockwise (Andrew's monotone chain)."""
+    pts = np.unique(np.round(points, 6), axis=0)
+    pts = pts[np.lexsort((pts[:, 1], pts[:, 0]))]
+    if pts.shape[0] < 3:
+        return pts
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower, upper = [], []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    for p in pts[::-1]:
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return np.array(lower[:-1] + upper[:-1])
+
+
+def _cast(hull: np.ndarray, centre: np.ndarray, directions: np.ndarray) -> np.ndarray:
+    """How far from ``centre`` each unit direction leaves the convex polygon ``hull``."""
+    a = hull - centre
+    b = np.roll(hull, -1, axis=0) - centre
+    edge = b - a
+    out = np.zeros(directions.shape[0])
+    for i, d in enumerate(directions / np.linalg.norm(directions, axis=1, keepdims=True)):
+        # Solve centre + t·d = a + s·edge for every edge; keep t > 0 with s in [0, 1].
+        den = d[0] * edge[:, 1] - d[1] * edge[:, 0]
+        ok = np.abs(den) > 1e-12
+        t = np.where(ok, (a[:, 0] * edge[:, 1] - a[:, 1] * edge[:, 0]) / np.where(ok, den, 1.0), np.inf)
+        s_ = np.where(ok, (a[:, 0] * d[1] - a[:, 1] * d[0]) / np.where(ok, den, 1.0), -1.0)
+        hit = ok & (t > 0) & (s_ >= -1e-9) & (s_ <= 1 + 1e-9)
+        out[i] = float(t[hit].min()) if hit.any() else float(np.linalg.norm(a, axis=1).max())
+    return out
+
+
+def _enclose(hull: np.ndarray, centre: np.ndarray, directions: np.ndarray, reach: np.ndarray) -> np.ndarray:
+    """Grow the ring's radii until every hull vertex is inside its polygon by ``FOOT_EASE_M``.
+
+    The ring has the leg's vertex count, a few dozen round a foot 25 cm round, so its
+    edges are chords: on the curve of her heel, the tip of her toes and the front of her
+    ankle they cut inside her, and her skin showed through the stocking there. For each
+    hull vertex the chord of its sector is met along the ray to it; where the chord is
+    short of the vertex plus the ease, both ends of the chord are moved out by the ratio.
+    """
+    unit = directions / np.linalg.norm(directions, axis=1, keepdims=True)
+    angles = np.unwrap(np.arctan2(unit[:-1, 1], unit[:-1, 0]))
+    sign = 1.0 if angles[-1] > angles[0] else -1.0
+    count = len(reach) - 1  # the ring's last vertex is its first again
+    reach = reach.copy()
+    for _ in range(3):
+        moved = False
+        for h in hull:
+            v = h - centre
+            r = float(np.linalg.norm(v))
+            if r < 1e-9:
+                continue
+            a = (np.arctan2(v[1], v[0]) - angles[0]) * sign % (2.0 * np.pi)
+            k = int(a / (2.0 * np.pi) * count) % count
+            j = (k + 1) % count
+            p0, p1 = unit[k] * reach[k], unit[j] * reach[j]
+            # Where the ray to h meets the chord p0-p1.
+            d = v / r
+            edge = p1 - p0
+            den = d[0] * edge[1] - d[1] * edge[0]
+            if abs(den) < 1e-12:
+                continue
+            t = (p0[0] * edge[1] - p0[1] * edge[0]) / den
+            need = r + FOOT_EASE_M
+            if 0.0 < t < need:
+                scale = need / t
+                reach[k] *= scale
+                reach[j] *= scale
+                moved = True
+        reach[-1] = reach[0]
+        if not moved:
+            break
+    return reach
+
+
+def _tube_of_rings(rings: list[np.ndarray], name: str, *, cap: bool = False) -> Mesh:
+    """``_tube`` over rings already placed, closed at the last with a fan when ``cap``."""
+    ring_n = rings[0].shape[0]
+    segments = ring_n - 1
+    positions = np.vstack(rings)
+    centres = np.array([r[:-1].mean(axis=0) for r in rings])
+    arc = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(centres, axis=0), axis=1))])
+    us = np.linspace(-0.5, 0.5, ring_n)
+    faces = []
+    for row in range(len(rings) - 1):
+        top, below = row * ring_n, (row + 1) * ring_n
+        for k in range(segments):
+            a, b, c, d = top + k, top + k + 1, below + k + 1, below + k
+            faces += [(a, c, b), (a, d, c)]
+    uv = np.column_stack([np.tile(us, len(rings)), np.repeat(arc, ring_n)])
+    if cap:
+        last = (len(rings) - 1) * ring_n
+        centre_index = positions.shape[0]
+        positions = np.vstack([positions, centres[-1:]])
+        uv = np.vstack([uv, [[0.0, arc[-1] + 0.02]]])
+        faces += [(last + k, last + k + 1, centre_index) for k in range(segments)]
+    mesh = Mesh(positions=positions.astype(np.float32), indices=np.array(faces, dtype=np.uint32).reshape(-1),
+                uvs=uv.astype(np.float32), metadata={"section": name})
+    return mesh.compute_normals()
 
 
 # ----------------------------------------------------------------------

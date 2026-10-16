@@ -160,23 +160,23 @@ the original next-steps list are kept, struck through, so the history reads.
    and the Studio's admin session (`apps/api/routes/admin.py`). A public
    deployment should still sit behind a gateway.
 
-**From [LINGERIE_UPGRADE_PLAN](LINGERIE_UPGRADE_PLAN.md)** (L1–L5 built)
+**From [LINGERIE_UPGRADE_PLAN](LINGERIE_UPGRADE_PLAN.md)** (L1–L9 built)
 
-- L6 stockings and tights with feet, fitted to the measured leg.
-- L7 the general physical fabric model (the collection fabrics are built).
-- L8 elastic tension: cut ratio, worn strain, force and pressure per edge.
-- L9 the per-garment validation rules (the fit report's checks are built).
+- ~~L6 stockings with feet~~ — built (`hosiery.foot`); tights still end above the foot.
+- ~~L7 the physical fabric model~~ — built (`wardrobe/materials/fabrics.py`).
+- ~~L8 elastic tension~~ — built (`wardrobe/lingerie/elastic.py`).
+- ~~L9 the per-garment rules~~ — built, as warnings until tuned.
 - A dart-shaped or shelf-bra bodysuit.
 
-**From [BODY_ART_PLAN](BODY_ART_PLAN.md)** (BA1–BA7 and BA11 built)
+**From [BODY_ART_PLAN](BODY_ART_PLAN.md)** (BA1–BA9, BA11 and NT1 built)
 
-- BA8 body art in packs and the chatbot's rating.
-- BA9 more placements (hip, rib, thigh, sternum), each with its own rating.
+- ~~BA8 body art in packs and rating~~ — built.
+- ~~BA9 more placements~~ — built for ribs, sternum, under the bust and thighs; the hips are still to do.
 - BA10 custom tattoo import, admin session only.
 
 **From [HOSIERY](HOSIERY.md)** (the [HOSIERY_UPGRADE](HOSIERY_UPGRADE.md) design is built)
 
 - `briefsOver`: briefs worn over the suspender straps.
-- The stocking foot, carried as L6 above.
+- ~~The stocking foot~~ — built (L6).
 - Its §11 lists what the build simplifies (poses are fixed rotations, side
   darkening is baked); those are limits, not planned work.

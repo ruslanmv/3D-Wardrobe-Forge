@@ -70,6 +70,8 @@ class PackLook:
     clipping: str | None = None
     engine: str = "native"
     garments: tuple[str, ...] = field(default=())
+    #: BA8. The tattoos the look wears: {design, placement, rating} each.
+    body_art: tuple[dict, ...] = field(default=())
 
 
 #: SPDX ids for the licence words the library manifest uses.
@@ -91,17 +93,20 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def rating_for(plan) -> str:
+def rating_for(plan, body_art=()) -> str:
     """What a plan built, for the app's listing gate: general unless the planner gated it.
 
     Swimwear only when every gated garment is swimwear; any other gated garment
-    (underwear, sheer, lingerie) makes the look intimate.
+    (underwear, sheer, lingerie) makes the look intimate. BA8: a tattoo the look wears
+    (``{"rating": ...}`` each) makes it at least that strong — the stronger of the
+    clothes and the body art, never weaker.
     """
     garments = plan.garments if plan is not None else []
     gated = [g for g in garments if getattr(g, "requires_adult", False)]
-    if not gated:
-        return "general"
-    return "swimwear" if all(g.category == "swimwear" for g in gated) else "intimate"
+    clothes = ("general" if not gated
+               else "swimwear" if all(g.category == "swimwear" for g in gated) else "intimate")
+    inked = [str(item.get("rating")) for item in body_art if item.get("rating") in RATINGS]
+    return max([clothes, *inked], key=RATINGS.index)
 
 
 def build_pack(
@@ -162,6 +167,7 @@ def build_pack(
                 "recipeId": look.recipe_id,
                 "prompt": look.prompt,
                 "garments": list(look.garments),
+                **({"bodyArt": [dict(item) for item in look.body_art]} if look.body_art else {}),
             },
             "license": {"spdx": by_avatar[look.avatar_id].license_spdx, "derivedFrom": look.avatar_id},
         }

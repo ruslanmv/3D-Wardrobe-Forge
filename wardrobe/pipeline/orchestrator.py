@@ -308,6 +308,12 @@ class Orchestrator:
             described["rating"] = max([described["rating"] or "general", *stronger], key=RATINGS.index)
         else:
             del described["rating"]
+        # BA8. Which tattoos this look wears, for the pack export's provenance: a pack never
+        # loses what made a look the rating it is.
+        worn = [{"design": o.request.design, "placement": o.request.placement, "rating": o.rating}
+                for o in context.body_art if o.applied]
+        if worn:
+            described["bodyArt"] = worn
         if record.request.body_art_only:
             name = _tattooed_name(name, context)
         await self.store.put(

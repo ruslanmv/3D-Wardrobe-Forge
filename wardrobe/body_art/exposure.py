@@ -48,6 +48,14 @@ DEFAULT_ASPECT = {
     "nape": 1.0,
     "left-shoulder-blade": 0.83,
     "right-shoulder-blade": 0.83,
+    "left-rib": 0.35,
+    "right-rib": 0.35,
+    "sternum": 0.6,
+    "under-bust": 3.0,
+    "left-upper-thigh": 0.7,
+    "right-upper-thigh": 0.7,
+    "left-outer-thigh": 0.5,
+    "right-outer-thigh": 0.5,
 }
 
 
