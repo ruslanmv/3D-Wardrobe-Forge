@@ -4,10 +4,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from wardrobe.pipeline import outfit_dictionary as od
 from wardrobe.pipeline import occasions as oc
+from wardrobe.pipeline import outfit_dictionary as od
 
-CATALOG = json.loads((Path(__file__).resolve().parents[2] / "assets/cosplay/anime_reference_catalog.json").read_text())
+CATALOG = json.loads(
+    (Path(__file__).resolve().parents[2] / "assets/cosplay/anime_reference_catalog.json").read_text()
+)
 
 
 def test_anime_reference_catalog_is_unique_and_pending_rights():
