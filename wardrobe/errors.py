@@ -74,6 +74,18 @@ class BodyArtNotApplied(WardrobeError):
     reason = FailureReason.BODY_ART_NOT_APPLIED
 
 
+class BodySurfaceUnavailable(WardrobeError):
+    """BS1. The job named a body-surface profile this server does not have, or could not verify."""
+
+    reason = FailureReason.BODY_SURFACE_UNAVAILABLE
+
+
+class BodySurfaceNotPermitted(WardrobeError):
+    """BS1. An adult body surface refused: the model's terms, the operator's switch, or no declaration."""
+
+    reason = FailureReason.BODY_SURFACE_NOT_PERMITTED
+
+
 class NotHumanoid(WardrobeError):
     reason = FailureReason.SOURCE_NOT_HUMANOID
 
