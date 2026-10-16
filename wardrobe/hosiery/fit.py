@@ -60,6 +60,9 @@ def after_shell(context, mesh):
     if role(context) != "legwear" or not stocking_parts.tube_layout(mesh):
         return mesh
     plan = design(context).get("stockings") or {}
+    for key, note in sorted(mesh.metadata.items()):
+        if key.startswith("hosieryFootNote-"):
+            context.warn(note)
     mesh = stocking_parts.finish_stockings(mesh, plan, forward=forward(context))
     stocking_parts.stocking_uvs(mesh, plan)
     return mesh

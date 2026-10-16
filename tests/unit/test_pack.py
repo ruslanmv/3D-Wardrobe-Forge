@@ -88,6 +88,28 @@ def test_the_rating_comes_from_what_the_planner_gated():
     assert rating_for(None) == "general"
 
 
+def test_a_tattoo_makes_the_look_at_least_its_rating_never_weaker():
+    """BA8. The stronger of the clothes and the body art."""
+    def plan(*garments):
+        return SimpleNamespace(garments=[SimpleNamespace(category=c, requires_adult=g) for c, g in garments])
+
+    tops = plan(("tops", False))
+    assert rating_for(tops, [{"rating": "general"}]) == "general"
+    assert rating_for(tops, [{"rating": "swimwear"}]) == "swimwear"
+    assert rating_for(plan(("underwear", True)), [{"rating": "swimwear"}]) == "intimate"
+    assert rating_for(tops, [{"rating": "made-up"}]) == "general"  # an unknown word cannot raise or lower
+
+
+def test_the_body_art_a_look_wears_travels_in_its_provenance():
+    art = ({"design": "waist-filigree-01", "placement": "waistline", "rating": "general"},)
+    files = pack([look(body_art=art), look("plain")])
+    entries = {e["id"]: e for e in json.loads(files["wardrobe.json"])["looks"]}
+    assert entries["crop-top-jeans"]["provenance"]["bodyArt"] == [dict(art[0])]
+    assert "bodyArt" not in entries["plain"]["provenance"]  # a look without tattoos is what it was
+    provenance = {e["id"]: e for e in json.loads(files["provenance.json"])["looks"]}
+    assert provenance["crop-top-jeans"]["bodyArt"][0]["design"] == "waist-filigree-01"
+
+
 def test_the_zip_is_the_same_files():
     files = pack([look()])
     with zipfile.ZipFile(io.BytesIO(zip_pack(files))) as archive:

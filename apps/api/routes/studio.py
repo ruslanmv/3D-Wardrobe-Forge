@@ -677,6 +677,7 @@ async def export_wardrobe_pack(
             preview=await _optional(store, f"{base}/preview.webp"), prompt=look.prompt,
             recipe_id=look_id, rating=rating, fit_passed=bool(look.fit_passed),
             garments=tuple(meta.get("garments") or ()),
+            body_art=tuple(item for item in meta.get("bodyArt") or () if isinstance(item, dict)),
         ))
     if not looks:
         raise HTTPException(status_code=409, detail="wardrobe has no looks to export")

@@ -272,8 +272,12 @@ async def test_the_underwear_survives_under_a_sheer_or_an_opaque_dress(orchestra
     names = [m.get("name", "") for m in document.materials]
     outer = next(m for m in document.materials if m.get("name", "").startswith(record.plan.garments[-1].name))
     assert outer.get("alphaMode", "OPAQUE") == alpha
-    fabric = [name for name in names if name.startswith("Black Lace") and " Trim " not in name]
-    assert len(fabric) == 2  # bralette and briefs, both there
+    # Bralette and briefs, both there; the briefs' gusset (L7) is its own lined, opaque material.
+    fabric = [name for name in names if name.startswith("Black Lace") and " Trim " not in name
+              and " Gusset [" not in name]
+    assert len(fabric) == 2
+    gussets = [m for m in document.materials if " Gusset [" in m.get("name", "")]
+    assert all(m.get("alphaMode", "OPAQUE") == "OPAQUE" for m in gussets)
 
 
 async def test_the_dress_clears_the_underwear_not_just_the_body(orchestrator, store, body):

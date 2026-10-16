@@ -25,9 +25,11 @@ from wardrobe.geometry.waistband import WAISTBAND_SHADE, waistband_mask
 from wardrobe.hosiery import assembly as hosiery_assembly
 from wardrobe.hosiery import fit as hosiery_fit
 from wardrobe.hosiery.materials import shade_material
+from wardrobe.lingerie import LINGERIE_KINDS
 from wardrobe.lingerie import assembly as lingerie_assembly
 from wardrobe.lingerie.atelier import component_table
 from wardrobe.materials import boots as boot_assembly
+from wardrobe.materials.fabrics import gusset_material
 from wardrobe.materials.textures import boning_shading, pleat_shading
 from wardrobe.pipeline.context import BuiltLayer, PipelineContext
 from wardrobe.vrm.garments import garment_material_name, garment_slot
@@ -177,6 +179,13 @@ class NativeEngine(FittingEngine):
                 band = waistband_mask(layer.mesh)
                 extra = [(band, shade_material(garment_material_name(f"{layer.plan.name} Waistband", kind),
                                                material, WAISTBAND_SHADE))] if band.any() else None
+                gusset = (_gusset_triangles(layer.mesh) if kind in LINGERIE_KINDS and material.exposes_body
+                          else None)
+                if gusset is not None and gusset.any():
+                    # L7. Every brief's gusset is lined and opaque, whatever its panels are: a
+                    # sheer or lace brief was see-through there too.
+                    extra = [*(extra or []), (gusset, GarmentMaterial.from_plan(
+                        garment_material_name(f"{layer.plan.name} Gusset", kind), gusset_material(material)))]
                 attached = attach_garment(
                     context.document,
                     context.info,
@@ -304,3 +313,14 @@ def _material_colour(document, mesh: dict) -> tuple[float, float, float] | None:
 
 
 __all__ = ["NativeEngine", "GENERATOR"]
+
+
+def _gusset_triangles(mesh) -> np.ndarray:
+    """One bool per triangle: those of a lingerie block's gusset section."""
+    from wardrobe.geometry.mesh import section_ranges
+
+    mask = np.zeros(mesh.triangle_count, dtype=bool)
+    for name, first, count in section_ranges(mesh):
+        if name == "gusset":
+            mask[first:first + count] = True
+    return mask

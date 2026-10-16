@@ -1,6 +1,6 @@
 # Lingerie quality upgrade plan
 
-> **Status: L1–L5 built; L7 and L9 partly built; L6 and L8 open.** What shipped is
+> **Status: L1–L9 built**, with the gaps each row names. What shipped is
 > described in [STYLING](STYLING.md), [LINGERIE_COLLECTION](LINGERIE_COLLECTION.md)
 > and the README; this document stays as the design record and the plan for what
 > is left. Every file and function it names was read in this repository.
@@ -12,10 +12,10 @@
 > | L3 brief block, L3b bottom grammar | **built** | `wardrobe/lingerie/blocks/brief.py`; sixteen presets in `specs.py BOTTOM_PRESETS`, coverage solved exactly |
 > | L4 bra block | **built** | `wardrobe/lingerie/blocks/bra.py`; PB3 refined the plunge cups, gore and underband |
 > | L5 bodysuit / swimsuit block | **built** | `wardrobe/lingerie/blocks/bodysuit.py`; a dart-shaped or shelf-bra variant is still to do (see L5 below) |
-> | L6 stockings and tights with feet | **open** | stockings still end above the foot |
-> | L7 physical fabric model | **partly built** | the collection fabrics (sheer mesh, galloon lace, elastic, satin) are in `wardrobe/lingerie/fabrics.py` (LC3); the general `FabricSpec` → `VisualSpec` model is not |
-> | L8 elastic tension | **open** | edges carry no cut ratio, force or pressure |
-> | L9 garment-specific validation | **partly built** | the fit report's independent checks and verdict (PB2: structure, body preparation, layer order, skin, clearance); the per-garment rule sets of §5 are not |
+> | L6 stockings and tights with feet | **built for stockings** | `hosiery.foot: "full"` (default `none`): horizontal rings round her own foot, enclosing every point of it, placed so no pass moves them (`wardrobe/hosiery/stockings.py`); no foot to knit round → the old ending and a warning per leg. Tights (`build_legwear`) still end above the foot |
+> | L7 physical fabric model | **built** | `wardrobe/materials/fabrics.py`: `FabricSpec`, a nine-fabric starter library, `derive_visual()` (a net drawn at its own hole size), panel defaults; every lingerie gusset is lined and opaque under a sheer or lace request. Words planned the v1 way are untouched |
+> | L8 elastic tension | **built** | `wardrobe/lingerie/elastic.py`: waist, leg openings and underband measured on her skin in each pose; strain, force and Laplace pressure in `fitReport.lingerie`. Force curves are typical of their class, not a lot's |
+> | L9 garment-specific validation | **built as warnings** | `wardrobe/lingerie/validate.py` + `report.py`: the §5 rules (elastics, gusset midline, coverage, underband level, cup symmetry, strap stretch) as rows in `fitReport.lingerie`; a failed row is a warning, never an error, until tuned |
 >
 > Built alongside the plan: lingerie collections (LC1–LC5), skin restoration and
 > body completion under underwear (SR1, BC1), and the README sheets on a real

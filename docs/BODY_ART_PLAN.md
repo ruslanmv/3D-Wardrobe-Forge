@@ -4,7 +4,7 @@
 > (request fields and catalogue; exposure on the finished outfit; projection;
 > the two stages; nineteen designs, raster install and the back-view preview;
 > tattoo-only jobs and the lifecycle; the Studio section; the lower-back set
-> and "just above the waistband"). BA8–BA10 are still a plan. Three things were built differently from what is
+> and "just above the waistband"). **BA8** (tattoos in `look.json` and a pack's provenance; the rating is the stronger of clothes and ink) and **BA9** (ribs, sternum, under the bust, upper and outer thighs, each with its rating; charted from the front, the side or a thigh by `placement.frame_for`) are built; the hips are left out — the calibration bodies' leg tubes fold the skin there and every design stretched 2.7–6.8×. **NT1** adds eleven neo-tribal lower-back designs (`tools/body_art/generate_neotribal.py`), thirty in all. BA10 is still a plan. Three things were built differently from what is
 > written below, each for a measured reason — see "As built" at the end.
 > Batches are `BA1`–`BA10`; commit subjects and code comments carry the prefix
 > (`BA3: …`). Every file, function and number below was read or measured in

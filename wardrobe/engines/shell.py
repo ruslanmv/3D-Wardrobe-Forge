@@ -134,6 +134,17 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         drawn = drawn_surface(context.document, y_max=float(hip[1]) if hip is not None else 1.0)
         reach = drawn if context.collision_points is None else np.vstack([drawn, context.collision_points])
         metadata["bootBody"] = _boot_body(context, reach)
+    stockings = ((artifact.metadata.get("hosiery") or {}).get("stockings") or {})
+    if kind == "legwear" and stockings.get("foot") == "full":
+        # L6. A stocking foot is knitted round her foot itself, not round whatever she
+        # stands in: her own garments (her shoes) are left out of the cut, so the foot sits
+        # on her skin and inside any shoe she keeps.
+        from wardrobe.vrm.garment_inventory import garment_inventory
+
+        worn = {(g.mesh, g.primitive) for g in garment_inventory(context.document)}
+        # Sampled finer than the body index (1.2 cm): a toe or the curve of a heel is smaller.
+        foot = body_points(context.document, skip=worn, spacing=0.003)
+        metadata["stockingFootBody"] = _boot_body(context, foot)
     folds = int(artifact.metadata.get("drapeFolds") or 0)
     if folds and kind in SKIRTED_KINDS:
         # Six vertices a fold, or the drape aliases into facets.

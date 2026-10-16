@@ -251,10 +251,33 @@ jeans alike. The Studio offers body art only at placements the look on stage
 leaves bare, and the Try-on haul suggests designs from the same measurement.
 Each tattoo becomes a new look built on that one. A tattoo travels with her: a
 later outfit that covers it drops the decal but keeps the recipe, and the next
-outfit that bares the spot puts it back. Nineteen designs ship as vector art
+outfit that bares the spot puts it back. Thirty designs ship as vector art
 authored in this repository; raster art comes in only through
 `tools/body_art/install_design.py`. The plan and what was built are in
 [docs/BODY_ART_PLAN.md](docs/BODY_ART_PLAN.md).
+
+#### The neo-tribal lower-back set
+
+![Eleven neo-tribal lower-back tattoos on VRoid Female, each laid just above the waistband of a low-rise pleated mini: sigil jewel, sigil heart, butterfly blades, heart and chains, swirl butterfly, devil wings, bold neo-tribal heart, bat heart blades, tribal curls and diamond, tribal heart and curls, crossing blades](docs/images/body-art-neotribal.webp)
+
+Eleven designs in the style lower-back pieces are worn in now: long, needle-sharp
+blades sweeping out to the hips, claws growing off them and hooking back to the
+centre, and a small centrepiece. Some are fine-line "cyber-sigil" pieces with a
+set stone, a heart, dotted chains and four-point sparkles. Some are bold
+neo-tribal, with a butterfly, bat wings, a devil's tail or a heart in heavy
+blades. Three are classic tribal, with curls, a diamond and a downward point.
+Every one is drawn by `tools/body_art/generate_neotribal.py` from the same
+primitives as the rest of the catalogue, symmetric by construction, and
+Apache-2.0. Nothing is traced from anyone's drawing. Each is offered for the
+lower back and for "just above the waistband"; the sheet above is that
+placement, built by the real pipeline on a low-rise outfit.
+
+<details>
+<summary>The eleven designs as artwork</summary>
+
+![The eleven neo-tribal lower-back designs as flat artwork, black on white](docs/images/body-art-neotribal-designs.webp)
+
+</details>
 
 ### Reference look: red bodycon, stockings and suspenders
 
@@ -610,9 +633,10 @@ Rinna is never used for gated looks, whatever is passed.
 ### Status
 
 Built and in CI: the core service (milestones M0–M4, M6, M7), Base Body Prep
-and layered outfits, styling and materials, hosiery and suspenders, the
-lingerie blocks and collections (L1–L5, LC), skin restoration and body
-completion under underwear, body art (BA1–BA7, BA11), the Discoteca
+and layered outfits, styling and materials, hosiery and suspenders (stockings with feet), the
+lingerie blocks and collections (L1–L5, LC), fabrics, elastic tension and
+garment rules (L7–L9), skin restoration and body completion under underwear,
+body art (BA1–BA9, BA11) and the neo-tribal set, the Discoteca
 collection, occasions and the Try-on haul, and the Studio.
 
 Still open, gathered from every plan and checked against the code in
@@ -620,10 +644,9 @@ Still open, gathered from every plan and checked against the code in
 
 - **AI-generated meshes (M5)**: adapters and Blender cleanup written, not yet
   verified against the live provider APIs.
-- **Lingerie**: stockings with feet (L6), a general fabric model (L7), elastic
-  tension (L8), per-garment validation rules (L9).
-- **Body art**: packs and chatbot rating (BA8), more placements (BA9), custom
-  import (BA10).
+- **Lingerie**: tights with feet, a dart-shaped or shelf-bra bodysuit, and
+  promoting the L9 rules from warnings to errors once tuned.
+- **Body art**: hip placements, custom import (BA10).
 - **Platform**: spring bones for generated garments, PostgreSQL repositories.
 
 ---
@@ -636,8 +659,8 @@ Stated plainly, because the gallery shows them:
   swimwear the person asked for, her skin texture is restored under it (SR1).
   Every other outfit leaves her texture exactly as it is, so a low-cut outfit
   shows whatever the texture paints under it.
-- **Stockings stop above the foot**, and on a pale pair her painted tights can
-  show at the ankle (L6 is open).
+- **Tights stop above the foot.** Stockings can be knitted on over her heel and
+  toes (`hosiery.foot: "full"`); plain tights cannot yet.
 - **Jackets and coats are boxy at the shoulder.** Their sleeves are measured
   from the arm; their shoulders are not yet.
 - **Legs that touch give trousers that touch.** The two legs are separate
