@@ -92,10 +92,15 @@ def nape_anchor(params: FitParameters, side: str, sign: float, centre_x: float, 
     if neck is None:
         return None
     x = centre_x + sign * HALTER_NAPE_SPREAD_M
-    y = float(neck[1]) - HALTER_NAPE_DROP_M
-    p = _point(params, x, y, "back", lift)
-    n = surface_normal(params, x, y, "back")
-    if p is None or n is None:
+    # Where her measured back runs out below her neck (a body whose surface map stops at her
+    # shoulders), the tie is lower down her back: the first point the map has, a centimetre a step.
+    for step in range(6):
+        y = float(neck[1]) - HALTER_NAPE_DROP_M - step * 0.01
+        p = _point(params, x, y, "back", lift)
+        n = surface_normal(params, x, y, "back")
+        if p is not None and n is not None:
+            break
+    else:
         return None
     return Anchor(name="halter-nape", side=side, position=p, normal=n, tangent=np.array([0.0, 1.0, 0.0]),
                   source="neck")

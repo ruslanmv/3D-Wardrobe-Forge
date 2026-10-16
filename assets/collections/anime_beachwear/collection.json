@@ -15,20 +15,70 @@
   "statuses": {
     "existing-template-proxy": "the right kind of swimsuit from an existing template, without the design's own construction",
     "implemented": "the design's construction is built and the fit passes; not yet reviewed in pictures",
-    "visually-validated": "front, side and back previews reviewed: no clipping, no foundation showing, no broken geometry"
+    "visually-validated": "front, side and back previews reviewed by a person: no clipping, no foundation showing, no broken geometry, and nothing the design names left unbuilt"
   },
   "customize": {
     "colours": [
-      "#141417",
-      "#f6f5f0",
-      "#c8202f",
-      "#f28a2e",
-      "#f596b8",
-      "#7a4bc2",
-      "#1d2b5a",
-      "#1f5fbf",
-      "#22b5b0",
-      "#2b9c80"
+      {
+        "name": "black",
+        "hex": "#15151a"
+      },
+      {
+        "name": "white",
+        "hex": "#f3f2ee"
+      },
+      {
+        "name": "red",
+        "hex": "#b3202b"
+      },
+      {
+        "name": "coral",
+        "hex": "#e4715c"
+      },
+      {
+        "name": "orange",
+        "hex": "#d9772f"
+      },
+      {
+        "name": "yellow",
+        "hex": "#e3c341"
+      },
+      {
+        "name": "pink",
+        "hex": "#e59ab8"
+      },
+      {
+        "name": "lavender",
+        "hex": "#c3aede"
+      },
+      {
+        "name": "purple",
+        "hex": "#6b3f9e"
+      },
+      {
+        "name": "navy",
+        "hex": "#1e2a4d"
+      },
+      {
+        "name": "blue",
+        "hex": "#2f5fa8"
+      },
+      {
+        "name": "turquoise",
+        "hex": "#35a8a5"
+      },
+      {
+        "name": "teal",
+        "hex": "#237c7f"
+      },
+      {
+        "name": "mint",
+        "hex": "#a9d8c2"
+      },
+      {
+        "name": "green",
+        "hex": "#3f7a4f"
+      }
     ],
     "finishes": [
       "matte",
@@ -65,11 +115,15 @@
         "existing:brief-block bikini"
       ],
       "missing": [],
-      "status": "implemented",
+      "status": "visually-validated",
       "preview": {
         "front": "previews/beach-ocean-stripe-front.webp",
         "side": "previews/beach-ocean-stripe-side.webp",
         "back": "previews/beach-ocean-stripe-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     },
     {
@@ -98,11 +152,15 @@
         "existing:brief-block string-bikini (tie sides with bows)"
       ],
       "missing": [],
-      "status": "implemented",
+      "status": "visually-validated",
       "preview": {
         "front": "previews/beach-sakura-ties-front.webp",
         "side": "previews/beach-sakura-ties-side.webp",
         "back": "previews/beach-sakura-ties-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     },
     {
@@ -146,11 +204,15 @@
         "existing:brief-block string"
       ],
       "missing": [],
-      "status": "implemented",
+      "status": "visually-validated",
       "preview": {
         "front": "previews/beach-midnight-string-front.webp",
         "side": "previews/beach-midnight-string-side.webp",
         "back": "previews/beach-midnight-string-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     },
     {
@@ -191,6 +253,10 @@
         "front": "previews/beach-violet-halter-front.webp",
         "side": "previews/beach-violet-halter-side.webp",
         "back": "previews/beach-violet-halter-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     },
     {
@@ -226,6 +292,10 @@
         "front": "previews/beach-sunset-bandeau-front.webp",
         "side": "previews/beach-sunset-bandeau-side.webp",
         "back": "previews/beach-sunset-bandeau-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     },
     {
@@ -263,6 +333,10 @@
         "front": "previews/beach-pearl-bandeau-front.webp",
         "side": "previews/beach-pearl-bandeau-side.webp",
         "back": "previews/beach-pearl-bandeau-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     },
     {
@@ -292,11 +366,15 @@
         "existing:bodysuit-block, scoop neckline, low back"
       ],
       "missing": [],
-      "status": "implemented",
+      "status": "visually-validated",
       "preview": {
         "front": "previews/beach-scarlet-scoop-front.webp",
         "side": "previews/beach-scarlet-scoop-side.webp",
         "back": "previews/beach-scarlet-scoop-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     },
     {
@@ -336,6 +414,10 @@
         "front": "previews/beach-indigo-highcut-front.webp",
         "side": "previews/beach-indigo-highcut-side.webp",
         "back": "previews/beach-indigo-highcut-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     },
     {
@@ -366,11 +448,15 @@
         "existing:plunge neckline"
       ],
       "missing": [],
-      "status": "implemented",
+      "status": "visually-validated",
       "preview": {
         "front": "previews/beach-noir-cutout-front.webp",
         "side": "previews/beach-noir-cutout-side.webp",
         "back": "previews/beach-noir-cutout-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     },
     {
@@ -393,12 +479,18 @@
       "geometry": [
         "new:ruffled hem (swim-dress)"
       ],
-      "missing": [],
+      "missing": [
+        "a gathered ruffle: the hem is fluted in twelve soft waves, which reads as a flounce, not ruffles"
+      ],
       "status": "implemented",
       "preview": {
         "front": "previews/beach-rose-ruffle-front.webp",
         "side": "previews/beach-rose-ruffle-side.webp",
         "back": "previews/beach-rose-ruffle-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     },
     {
@@ -428,6 +520,10 @@
         "front": "previews/beach-aqua-skirt-front.webp",
         "side": "previews/beach-aqua-skirt-side.webp",
         "back": "previews/beach-aqua-skirt-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     },
     {
@@ -469,6 +565,10 @@
         "front": "previews/beach-sport-racer-front.webp",
         "side": "previews/beach-sport-racer-side.webp",
         "back": "previews/beach-sport-racer-back.webp"
+      },
+      "fit": {
+        "verdict": "passed",
+        "avatar": "VRoid Female"
       }
     }
   ]

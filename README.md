@@ -228,6 +228,23 @@ cut round her foot as she stands. In the Studio, make the dress once, then try
 each pair on it: only the boots are re-fitted. See
 [docs/DISCOTECA.md](docs/DISCOTECA.md).
 
+### Anime Beachwear: twelve swimsuits, an independent collection
+
+![Anime Beachwear on VRoid Female: twelve original anime-inspired swimsuits, each captioned with its job's own fit verdict](docs/images/anime-beachwear-avatar.webp)
+
+Twelve original, anime-inspired swimsuits for adult anime-style avatars —
+bikinis, bandeaus, one-pieces, a cut-out monokini, a ruffled swimdress and a
+racerback — under **Private → Anime Beachwear** in the Studio, with its own
+gallery (front, side and back pictures, colour and fabric, Generate / Wear /
+Save). It is **added, not swapped in**: its own ids, its own dictionary group,
+its own folder (`assets/collections/anime_beachwear/`) and its own API
+(`/v1/collections`); Vacation → Beach and every existing template, entry and
+look are unchanged, and a test compares them with `main`. The halter, the
+racerback, the waist cut-outs and the fluted hem it needed are new construction
+that a garment gets only when a design asks. Each design says honestly what it
+is — `implemented` or `visually-validated` — and what is not built yet. See
+[docs/ANIME_BEACHWEAR.md](docs/ANIME_BEACHWEAR.md).
+
 ### Body art, clothes first
 
 ![Body art on VRoid Female, each tattoo requested together with its outfit: Waist Filigree above the waistband of a club corset and low-rise mini, a Lace Ornament on an open-back dress, a Tribal Butterfly over Y2K low-rise jeans, and Tribal Wings under a jacket, refused because the jacket covers her upper back](docs/images/body-art-avatar.webp)
@@ -684,6 +701,7 @@ Stated plainly, because the gallery shows them:
 | [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | the design: flat straps, clip hardware, denier falloff and the web preview backend |
 | [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section, the lower-back set (BA1–BA7 and BA11 built; BA8–BA10 open) |
 | [DISCOTECA](docs/DISCOTECA.md) | Sexy Discoteca — All Black: the bodycon dress, four boots built round her posed foot, heels as a stance baked into the rest pose, the Studio's Collection panel |
+| [ANIME_BEACHWEAR](docs/ANIME_BEACHWEAR.md) | Anime Beachwear: an independent collection of twelve swimsuits — the registry, the `design` request block, the opt-in halter / racerback / cut-out / ruffle construction, honest statuses, the Studio gallery, previews and rights |
 | [OCCASIONS](docs/OCCASIONS.md) | Occasion → style → look: the Studio's first screen, who sees which look, the `occasion` label on a look, quick changes, and Compare as two viewports |
 | [LINGERIE_COLLECTION](docs/LINGERIE_COLLECTION.md) | collections: the Italian lace bralette with a thong or Brazilian bottom, finishing built on the fitted garment, named components, the product sheet |
 | [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the lingerie design record: fashion-fit forms, ribbon straps, brief, bra and bodysuit blocks (L1–L5 built); feet, fabrics, elastic tension and validation still open |
