@@ -196,6 +196,10 @@ class StylePlan(BaseModel):
     #: pattern-block fields over the template's (``lingerie``) and its procedural options
     #: (``hem``). None everywhere else, so every other garment is built as it always was.
     design: dict | None = None
+    #: AN1. "" | high — a dress or skirt slit up one leg (procedural.slit_profile).
+    slit: str = ""
+    #: AN1. "" | open — a jacket worn open, its front cut away (procedural.open_front_profile).
+    front: str = ""
     #: P1. Where a pattern-block brief's waistline sits, as a fraction of her crotch → waist
     #: span (wardrobe.lingerie.specs.RISES), overriding the template's. Set only by a look
     #: that places underwear against another garment's waistband (the visible-thong block);

@@ -128,6 +128,8 @@ PATTERNS: dict[str, Pattern] = {
     "dots": Pattern("dots", tile_m=0.04, coloured=True),
     "gingham": Pattern("gingham", tile_m=0.03, coloured=True),
     "plaid": Pattern("plaid", tile_m=0.09, coloured=True),
+    # AN1. One blossom about 4 cm across: a resort print, not a ditsy one.
+    "floral": Pattern("floral", tile_m=0.12, coloured=True),
 }
 
 PATTERN_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -137,6 +139,7 @@ PATTERN_KEYWORDS: dict[str, tuple[str, ...]] = {
     "dots": ("polka dot", "polka dots", "polka-dot", "dotted", "spotted"),
     "gingham": ("gingham", "checked", "checkered"),
     "plaid": ("plaid", "tartan"),
+    "floral": ("floral", "flower print", "flower-print", "flowered", "hibiscus", "blossom print"),
 }
 
 

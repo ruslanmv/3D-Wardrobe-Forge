@@ -51,6 +51,24 @@ from wardrobe.vrm.garments import KIND_REGIONS
 from wardrobe.vrm.measure import MeasurementError, measure_body
 from wardrobe.vrm.skin_restore import restore_skin
 
+#: AN1. Cuts that bare skin her own clothes hid: her texture there may be clothing painted
+#: on, or nothing at all (a VRoid export cuts away skin under its outfit).
+REVEALING_NECKLINES = frozenset({"v", "plunge", "sweetheart"})
+
+
+def reveals_hidden_skin(plan) -> bool:
+    """Whether an outer garment is cut to show skin under her clothes: a plunge, an open back, a slit.
+
+    Underwear and swimwear already restore her skin (``requested_foundation``). An ordinary
+    outfit does not, and must not: what it covers it covers, and her texture is left
+    exactly as it was. These cuts are the exception — a plunging catsuit on VRoid Female
+    opened onto the black top painted on her chest.
+    """
+    return any(
+        g.style.neckline in REVEALING_NECKLINES or g.style.back == "low" or g.style.slit
+        for g in plan.garments
+    )
+
 
 def layer_kinds(context: PipelineContext) -> list[tuple[str, str]]:
     """(shape kind, role) for every garment of the planned outfit."""
@@ -111,15 +129,18 @@ async def run(context: PipelineContext) -> None:
     conflicts = foundation_conflicts(plan.retain, layers)
     if conflicts:
         _refuse_foundation_over(conflicts, layers)
-    if context.requested_foundation:
+    revealing = not context.requested_foundation and reveals_hidden_skin(context.plan)
+    if context.requested_foundation or revealing:
         # SR1. Underwear goes on her skin, so her skin is made skin first: clothing painted on
         # it, and skin her texture cuts away, restored from the skin round it. Before the body
-        # check, so a cut-away chest (AvatarSample_O) is counted as the body it is.
+        # check, so a cut-away chest (AvatarSample_O) is counted as the body it is. AN1: and
+        # so is an outer garment cut to show her skin (a plunge, an open back, a slit).
         restored = restore_skin(context.document, context.measurements,
                                 {(g.mesh, g.primitive) for g in inventory})
         if restored is not None:
             report.base_body["skinRestored"] = restored.to_dict()
-            context.warn(f"restored her skin under the underwear: {restored.restored_texels} texels of "
+            under = "the outfit's open cut" if revealing else "the underwear"
+            context.warn(f"restored her skin under {under}: {restored.restored_texels} texels of "
                          "painted clothing or cut-away skin filled from the skin round them")
     if not plan.remove:
         if inventory:

@@ -1355,6 +1355,44 @@ def ruffle_hem(mesh: Mesh, params: FitParameters, *, y_top: float, y_bottom: flo
     points[:, 1] += RUFFLE_SCALLOP_M * grade * t ** 3 * np.cos(RUFFLE_FLUTES * phi)
     mesh.positions = points.astype(np.float32)
     return mesh.compute_normals()
+#: AN1. A slit rises to this share of the way from her knee to her hip, over the front of her
+#: left thigh, and is this wide at the hem (half-width, radians round her body).
+SLIT_TOP_FRACTION = 0.7
+SLIT_ANGLE = 0.5
+SLIT_HALF_WIDTH = 0.42
+SLIT_MIN_RISE_M = 0.1
+#: AN1. An open front: the V's half-width at the top edge, and the closed strip at the centre.
+OPEN_FRONT_RAMP = 0.62
+OPEN_FRONT_FLAT = 0.06
+
+
+def slit_profile(style: str, params: FitParameters, hem_y: float):
+    """Bottom-edge offset for a slit up one leg, or None (AN1).
+
+    The skirt is lofted from horizontal rings, so a slit is cut the way a neckline is
+    (``trim``): the hem is raised in a narrow notch over the front of her left thigh,
+    to high on it. Not a seam that parts — a notch, widest at the hem and closing to a
+    point at the top, which is how a slit stands open on a gown in a still pose. A hem
+    within ``SLIT_MIN_RISE_M`` of the slit's top (a mini) would get a vent, not a slit,
+    and gets nothing.
+    """
+    if style != "high":
+        return None
+    top = params.knee_y + (params.hip_y - params.knee_y) * SLIT_TOP_FRACTION
+    rise = top - hem_y
+    if rise < SLIT_MIN_RISE_M:
+        return None
+    # Her left: +x when she faces +z, -x when she faces -z (front_angle is in x, not her).
+    angle = SLIT_ANGLE * (1.0 if params.forward >= 0 else -1.0)
+    return lambda phi: rise * _plateau(_wrap(phi - angle), 0.0, SLIT_HALF_WIDTH)
+
+
+def open_front_profile(style: str, span: float):
+    """Top-edge offset for a jacket worn open: a V from her collar to the hem (AN1)."""
+    if style != "open":
+        return None
+    depth = span - MIN_SPAN_M * 1.5
+    return lambda phi: -depth * _plateau(phi, OPEN_FRONT_FLAT, OPEN_FRONT_RAMP)
 
 
 def back_profile(style: str, span: float):
@@ -1735,9 +1773,13 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         inseam = min(0.55 * scale, 0.55) if scale < 1.0 else 0.55
         return build_trousers(params, hem_y=max(hem_y, params.hip_y - thigh * max(inseam, 0.2)), flare=flare)
     if kind == "cropped-jacket":
-        jacket = build_band(params, y_bottom=params.waist_y - rise * 0.1,
-                            y_top=params.chest_y + (params.shoulder_y - params.chest_y) * 0.68,
+        bottom_y = params.waist_y - rise * 0.1
+        top_y = params.chest_y + (params.shoulder_y - params.chest_y) * 0.68
+        jacket = build_band(params, y_bottom=bottom_y, y_top=top_y,
                             looseness=1.06 + (flare - 1.0) * 0.3, name="cropped-jacket")
+        opening = open_front_profile(str(meta.get("front") or ""), top_y - bottom_y)
+        if opening is not None:
+            jacket = trim(jacket, params, y_bottom=bottom_y, y_top=top_y, top=opening)
         return [jacket, *build_sleeves(params, length="long", thickness=1.4)]
     if kind in BELT_KINDS:
         return build_belt(params, kind=kind)
@@ -1827,11 +1869,16 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
 
     if category == "dress":
         top_y = params.top_edge(0.6)
+        skirt = build_skirt(params, y_top=params.hip_y + 1e-3, y_bottom=hem_y, flare=flare,
+                            name="dress-skirt", shape=skirt_shape(params, silhouette, flare),
+                            join=params.hip_half)
+        slit = slit_profile(str(params.metadata.get("slit") or ""), params, hem_y)
+        if slit is not None:
+            skirt = trim(skirt, params, y_bottom=hem_y, y_top=params.hip_y + 1e-3, bottom=slit)
         sections = [
             _cut_bodice(build_bodice(params, y_top=top_y, y_bottom=params.hip_y, name="dress-bodice"),
                         params, params.hip_y, top_y),
-            build_skirt(params, y_top=params.hip_y + 1e-3, y_bottom=hem_y, flare=flare, name="dress-skirt",
-                        shape=skirt_shape(params, silhouette, flare), join=params.hip_half),
+            skirt,
         ]
         sections += build_sleeves(params, length=params.sleeve_length)
         straps = str(params.metadata.get("straps") or "")
@@ -1841,10 +1888,14 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
             sections += top_straps(params, top_y=top_y, style=straps, underbust_y=params.chest_y)
 
     elif category == "skirt":
-        sections = [build_skirt(params, y_top=skirt_top(params), y_bottom=hem_y, flare=flare,
-                                shape=skirt_shape(params, silhouette, flare),
-                                band_m=float(params.metadata.get("waistbandMm") or 0.0) / 1000.0,
-                                even=bool(params.metadata.get("pleats")))]
+        skirt = build_skirt(params, y_top=skirt_top(params), y_bottom=hem_y, flare=flare,
+                            shape=skirt_shape(params, silhouette, flare),
+                            band_m=float(params.metadata.get("waistbandMm") or 0.0) / 1000.0,
+                            even=bool(params.metadata.get("pleats")))
+        slit = slit_profile(str(params.metadata.get("slit") or ""), params, hem_y)
+        if slit is not None:
+            skirt = trim(skirt, params, y_bottom=hem_y, y_top=skirt_top(params), bottom=slit)
+        sections = [skirt]
 
     elif category in {"top", "shirt", "blouse"}:
         top_y = params.top_edge(0.6)
