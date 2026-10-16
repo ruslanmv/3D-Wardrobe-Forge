@@ -1326,6 +1326,37 @@ def neckline_profile(style: str, params: FitParameters, span: float):
     return None
 
 
+#: AB2. A ruffled hem: this many flutes round her, standing out this far at the hem (graded by
+#: her height over 1.68 m) and scalloped this much up and down; the flare grows from nothing at
+#: the skirt's top as the square of the way down, so the yoke stays smooth on her hips.
+RUFFLE_FLUTES = 12
+RUFFLE_OUT_M = 0.03
+RUFFLE_SCALLOP_M = 0.004
+
+
+def ruffle_hem(mesh: Mesh, params: FitParameters, *, y_top: float, y_bottom: float) -> Mesh:
+    """Flute a skirt toward its hem: a ruffle, as a swimdress's flounce is cut (AB2).
+
+    Opt-in by a design (``design.hem == "ruffle"``); every other skirt is built as it was.
+    Each vertex moves out from her axis by a wave round her that grows toward the hem, and
+    the hem itself rises and falls with the same wave, so the flutes read in silhouette and
+    at the edge. Outward only: the clearance passes that follow never meet a fold inside her.
+    """
+    points = mesh.positions.astype(np.float64)
+    hips = params.measurements.bone_positions.get("hips")
+    cx, cz = (float(hips[0]), float(hips[2])) if hips is not None else (0.0, 0.0)
+    grade = params.height / 1.68
+    t = np.clip((y_top - points[:, 1]) / max(y_top - y_bottom, 1e-6), 0.0, 1.0)
+    phi = np.arctan2(points[:, 0] - cx, params.forward * (points[:, 2] - cz))
+    wave = 0.5 + 0.5 * np.cos(RUFFLE_FLUTES * phi)
+    radial = np.stack([points[:, 0] - cx, np.zeros(len(points)), points[:, 2] - cz], axis=1)
+    radial /= np.maximum(np.linalg.norm(radial, axis=1, keepdims=True), 1e-9)
+    points += radial * (RUFFLE_OUT_M * grade * t * t * wave)[:, None]
+    points[:, 1] += RUFFLE_SCALLOP_M * grade * t ** 3 * np.cos(RUFFLE_FLUTES * phi)
+    mesh.positions = points.astype(np.float32)
+    return mesh.compute_normals()
+
+
 def back_profile(style: str, span: float):
     if style == "low":
         depth = span * 0.75
@@ -1675,7 +1706,10 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         return one_piece()
     if kind == "swim-dress":
         hem = params.hip_y - thigh * 0.4 * scale
-        return [*one_piece(), build_skirt(params, y_top=params.hip_y, y_bottom=hem, flare=max(flare, 1.3))]
+        skirt = build_skirt(params, y_top=params.hip_y, y_bottom=hem, flare=max(flare, 1.3))
+        if (meta.get("design") or {}).get("hem") == "ruffle":
+            skirt = ruffle_hem(skirt, params, y_top=params.hip_y, y_bottom=hem)
+        return [*one_piece(), skirt]
     if kind == "slip-dress":
         bodice = build_band(params, y_bottom=params.hip_y, y_top=bust_top, rows=6, name="slip-bodice")
         bodice = cut_top(bodice, params.hip_y, bust_top)

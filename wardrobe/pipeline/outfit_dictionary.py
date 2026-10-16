@@ -75,6 +75,8 @@ GROUPS: tuple[Group, ...] = (
     Group("lingerie", "Lingerie", private=True),
     Group("legwear", "Stockings & legwear", private=True),
     Group("sheer", "Sheer", private=True),
+    # AB. An independent collection's own group (wardrobe.collections): swimwear, so private.
+    Group("anime-beachwear", "Anime Beachwear", private=True),
 )
 
 
@@ -87,11 +89,15 @@ class Outfit:
     #: A look or hosiery preset whose blocks (visible thong, suspenders) the prompt needs.
     preset: str | None = None
     tags: tuple[str, ...] = field(default_factory=tuple)
+    #: AB. (collection, design id): a design of an independent collection (wardrobe.collections).
+    design: tuple[str, str] | None = None
 
     def request(self) -> OutfitRequest:
         fields: dict = {"prompt": self.prompt}
         if self.preset:
             fields["preset"] = self.preset
+        if self.design:
+            fields["design"] = {"collection": self.design[0], "id": self.design[1]}
         return OutfitRequest.model_validate(fields)
 
 
@@ -480,6 +486,31 @@ OUTFITS: tuple[Outfit, ...] = (
         "black lace bralette + sheer white blouse + black mini skirt",
     ),
 )
+
+
+def _collection_outfits() -> tuple[Outfit, ...]:
+    """AB. Every design of every independent collection (wardrobe.collections), as entries.
+
+    Generated from the collection's own record, so a design is described once. Each entry's
+    request names the design, so a job for it builds the design's construction; its prompt is
+    the pieces' own words, which plan on their own too. In a group of its own per collection:
+    nothing here is added to, or changes, an entry above.
+    """
+    from wardrobe.collections import collections
+
+    out = []
+    for collection in collections().values():
+        for d in collection["designs"]:
+            out.append(Outfit(
+                d["id"], f"{d['title']} · {d['subtitle']}", collection["id"],
+                " + ".join(p["prompt"] for p in d["pieces"]),
+                tags=(collection["id"], d["category"].lower().replace(" ", "-"), "beach"),
+                design=(collection["id"], d["id"]),
+            ))
+    return tuple(out)
+
+
+OUTFITS = OUTFITS + _collection_outfits()
 
 
 #: CR2. Stockings as an add-on to a look she wears: the request blocks merged into the look's

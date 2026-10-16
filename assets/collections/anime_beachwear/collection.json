@@ -1,0 +1,475 @@
+{
+  "schemaVersion": 1,
+  "id": "anime-beachwear",
+  "title": "Anime Beachwear",
+  "subtitle": "Japanese Anime-Inspired Swimsuits",
+  "occasion": "Beach & Pool",
+  "target": "Adult female anime-style VRM avatars",
+  "categories": [
+    "Bikini",
+    "One-Piece",
+    "Sporty",
+    "Kawaii",
+    "Beach Glamour"
+  ],
+  "statuses": {
+    "existing-template-proxy": "the right kind of swimsuit from an existing template, without the design's own construction",
+    "implemented": "the design's construction is built and the fit passes; not yet reviewed in pictures",
+    "visually-validated": "front, side and back previews reviewed: no clipping, no foundation showing, no broken geometry"
+  },
+  "customize": {
+    "colours": [
+      "#141417",
+      "#f6f5f0",
+      "#c8202f",
+      "#f28a2e",
+      "#f596b8",
+      "#7a4bc2",
+      "#1d2b5a",
+      "#1f5fbf",
+      "#22b5b0",
+      "#2b9c80"
+    ],
+    "finishes": [
+      "matte",
+      "satin",
+      "gloss"
+    ]
+  },
+  "rights": "Original designs. No character, franchise, logo or third-party artwork; previews are made on the operator-declared adult VRoid Female avatar. Review before any commercial use.",
+  "designs": [
+    {
+      "id": "beach-ocean-stripe",
+      "title": "Ocean Stripe",
+      "subtitle": "Striped triangle bikini",
+      "category": "Bikini",
+      "target": "Green-and-white striped triangle bikini",
+      "palette": [
+        "#2b9c80",
+        "#f4f2ea"
+      ],
+      "pieces": [
+        {
+          "piece": "top",
+          "template": "swim-bikini-top-v2",
+          "prompt": "green and white striped triangle bikini top"
+        },
+        {
+          "piece": "bottom",
+          "template": "swim-bikini-bottom-v2",
+          "prompt": "green and white striped bikini bottoms"
+        }
+      ],
+      "geometry": [
+        "existing:bra-block triangle",
+        "existing:brief-block bikini"
+      ],
+      "missing": [],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-ocean-stripe-front.webp",
+        "side": "previews/beach-ocean-stripe-side.webp",
+        "back": "previews/beach-ocean-stripe-back.webp"
+      }
+    },
+    {
+      "id": "beach-sakura-ties",
+      "title": "Sakura Ties",
+      "subtitle": "Tie-side triangle bikini",
+      "category": "Kawaii",
+      "target": "Pink triangle bikini with side ties",
+      "palette": [
+        "#f596b8"
+      ],
+      "pieces": [
+        {
+          "piece": "top",
+          "template": "swim-bikini-top-v2",
+          "prompt": "pink triangle bikini top"
+        },
+        {
+          "piece": "bottom",
+          "template": "swim-string-bikini-bottom-v2",
+          "prompt": "pink tie-side bikini bottoms"
+        }
+      ],
+      "geometry": [
+        "existing:bra-block triangle",
+        "existing:brief-block string-bikini (tie sides with bows)"
+      ],
+      "missing": [],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-sakura-ties-front.webp",
+        "side": "previews/beach-sakura-ties-side.webp",
+        "back": "previews/beach-sakura-ties-back.webp"
+      }
+    },
+    {
+      "id": "beach-midnight-string",
+      "title": "Midnight String",
+      "subtitle": "String bikini",
+      "category": "Beach Glamour",
+      "target": "Black string bikini",
+      "palette": [
+        "#141417"
+      ],
+      "pieces": [
+        {
+          "piece": "top",
+          "template": "swim-bikini-top-v2",
+          "prompt": "black triangle bikini top",
+          "lingerie": {
+            "bra": {
+              "cupHeight": 0.95,
+              "cupInner": 0.72,
+              "cupOuter": 0.86
+            },
+            "straps": {
+              "widthMm": 5
+            }
+          }
+        },
+        {
+          "piece": "bottom",
+          "template": "swim-string-bikini-bottom-v2",
+          "prompt": "black string bikini bottoms",
+          "lingerie": {
+            "brief": {
+              "preset": "string"
+            }
+          }
+        }
+      ],
+      "geometry": [
+        "existing:bra-block triangle, smaller cups, 5 mm straps",
+        "existing:brief-block string"
+      ],
+      "missing": [],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-midnight-string-front.webp",
+        "side": "previews/beach-midnight-string-side.webp",
+        "back": "previews/beach-midnight-string-back.webp"
+      }
+    },
+    {
+      "id": "beach-violet-halter",
+      "title": "Violet Halter",
+      "subtitle": "Halter-neck bikini",
+      "category": "Bikini",
+      "target": "Purple halter-neck bikini",
+      "palette": [
+        "#7a4bc2"
+      ],
+      "pieces": [
+        {
+          "piece": "top",
+          "template": "swim-bikini-top-v2",
+          "prompt": "purple triangle bikini top",
+          "lingerie": {
+            "straps": {
+              "style": "halter"
+            }
+          }
+        },
+        {
+          "piece": "bottom",
+          "template": "swim-bikini-bottom-v2",
+          "prompt": "purple bikini bottoms"
+        }
+      ],
+      "geometry": [
+        "new:halter straps tied at the nape (bra-block)",
+        "existing:brief-block bikini"
+      ],
+      "missing": [
+        "contrast trim"
+      ],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-violet-halter-front.webp",
+        "side": "previews/beach-violet-halter-side.webp",
+        "back": "previews/beach-violet-halter-back.webp"
+      }
+    },
+    {
+      "id": "beach-sunset-bandeau",
+      "title": "Sunset Bandeau",
+      "subtitle": "Bandeau bikini",
+      "category": "Bikini",
+      "target": "Orange bandeau bikini",
+      "palette": [
+        "#f28a2e"
+      ],
+      "pieces": [
+        {
+          "piece": "top",
+          "template": "top-tube-v1",
+          "prompt": "orange bandeau bikini top"
+        },
+        {
+          "piece": "bottom",
+          "template": "swim-bikini-bottom-v2",
+          "prompt": "orange bikini bottoms"
+        }
+      ],
+      "geometry": [
+        "existing:bandeau (tube top band)",
+        "existing:brief-block bikini"
+      ],
+      "missing": [
+        "centre knot"
+      ],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-sunset-bandeau-front.webp",
+        "side": "previews/beach-sunset-bandeau-side.webp",
+        "back": "previews/beach-sunset-bandeau-back.webp"
+      }
+    },
+    {
+      "id": "beach-pearl-bandeau",
+      "title": "Pearl Bandeau",
+      "subtitle": "Bandeau bikini, aqua accents",
+      "category": "Kawaii",
+      "target": "White bandeau bikini with aqua accents",
+      "palette": [
+        "#f6f5f0",
+        "#38c6c0"
+      ],
+      "pieces": [
+        {
+          "piece": "top",
+          "template": "top-tube-v1",
+          "prompt": "white and turquoise striped bandeau bikini top"
+        },
+        {
+          "piece": "bottom",
+          "template": "swim-bikini-bottom-v2",
+          "prompt": "turquoise bikini bottoms"
+        }
+      ],
+      "geometry": [
+        "existing:bandeau (tube top band)",
+        "existing:brief-block bikini"
+      ],
+      "missing": [
+        "aqua edge trim (the accent is an aqua stripe and aqua bottoms; the planner names the colour turquoise)",
+        "metal ring"
+      ],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-pearl-bandeau-front.webp",
+        "side": "previews/beach-pearl-bandeau-side.webp",
+        "back": "previews/beach-pearl-bandeau-back.webp"
+      }
+    },
+    {
+      "id": "beach-scarlet-scoop",
+      "title": "Scarlet Scoop",
+      "subtitle": "Scoop-neck one-piece",
+      "category": "One-Piece",
+      "target": "Red scoop-neck one-piece",
+      "palette": [
+        "#c8202f"
+      ],
+      "pieces": [
+        {
+          "piece": "one-piece",
+          "template": "swim-one-piece-v2",
+          "prompt": "red one-piece swimsuit",
+          "lingerie": {
+            "bodysuit": {
+              "neckline": "scoop",
+              "back": "low",
+              "sideEaseMm": 8
+            }
+          }
+        }
+      ],
+      "geometry": [
+        "existing:bodysuit-block, scoop neckline, low back"
+      ],
+      "missing": [],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-scarlet-scoop-front.webp",
+        "side": "previews/beach-scarlet-scoop-side.webp",
+        "back": "previews/beach-scarlet-scoop-back.webp"
+      }
+    },
+    {
+      "id": "beach-indigo-highcut",
+      "title": "Indigo High-Cut",
+      "subtitle": "High-cut one-piece",
+      "category": "Sporty",
+      "target": "Navy high-cut one-piece",
+      "palette": [
+        "#1d2b5a"
+      ],
+      "pieces": [
+        {
+          "piece": "one-piece",
+          "template": "swim-one-piece-v2",
+          "prompt": "navy one-piece swimsuit",
+          "lingerie": {
+            "brief": {
+              "preset": "french-cut"
+            },
+            "bodysuit": {
+              "neckline": "high",
+              "back": "scoop",
+              "sideEaseMm": 8
+            }
+          }
+        }
+      ],
+      "geometry": [
+        "existing:bodysuit-block, french-cut leg, high neckline"
+      ],
+      "missing": [
+        "contrast seams"
+      ],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-indigo-highcut-front.webp",
+        "side": "previews/beach-indigo-highcut-side.webp",
+        "back": "previews/beach-indigo-highcut-back.webp"
+      }
+    },
+    {
+      "id": "beach-noir-cutout",
+      "title": "Noir Cut-Out",
+      "subtitle": "Cut-out monokini",
+      "category": "Beach Glamour",
+      "target": "Black cut-out monokini",
+      "palette": [
+        "#141417"
+      ],
+      "pieces": [
+        {
+          "piece": "one-piece",
+          "template": "swim-one-piece-v2",
+          "prompt": "black one-piece swimsuit",
+          "lingerie": {
+            "bodysuit": {
+              "cutouts": "waist-sides",
+              "neckline": "plunge",
+              "sideEaseMm": 10
+            }
+          }
+        }
+      ],
+      "geometry": [
+        "new:waist-side cut-outs (bodysuit-block)",
+        "existing:plunge neckline"
+      ],
+      "missing": [],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-noir-cutout-front.webp",
+        "side": "previews/beach-noir-cutout-side.webp",
+        "back": "previews/beach-noir-cutout-back.webp"
+      }
+    },
+    {
+      "id": "beach-rose-ruffle",
+      "title": "Rose Ruffle",
+      "subtitle": "Ruffled swimdress",
+      "category": "Kawaii",
+      "target": "Pink ruffled swimdress",
+      "palette": [
+        "#f3a3bf"
+      ],
+      "pieces": [
+        {
+          "piece": "swimdress",
+          "template": "swim-skirted-v1",
+          "prompt": "pink skirted swimsuit",
+          "hem": "ruffle"
+        }
+      ],
+      "geometry": [
+        "new:ruffled hem (swim-dress)"
+      ],
+      "missing": [],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-rose-ruffle-front.webp",
+        "side": "previews/beach-rose-ruffle-side.webp",
+        "back": "previews/beach-rose-ruffle-back.webp"
+      }
+    },
+    {
+      "id": "beach-aqua-skirt",
+      "title": "Aqua Skirt",
+      "subtitle": "Skirted swimsuit",
+      "category": "One-Piece",
+      "target": "Turquoise skirted swimsuit",
+      "palette": [
+        "#22b5b0"
+      ],
+      "pieces": [
+        {
+          "piece": "swimdress",
+          "template": "swim-skirted-v1",
+          "prompt": "turquoise skirted swimsuit"
+        }
+      ],
+      "geometry": [
+        "existing:swim-dress"
+      ],
+      "missing": [
+        "wave-print skirt panel"
+      ],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-aqua-skirt-front.webp",
+        "side": "previews/beach-aqua-skirt-side.webp",
+        "back": "previews/beach-aqua-skirt-back.webp"
+      }
+    },
+    {
+      "id": "beach-sport-racer",
+      "title": "Sport Racer",
+      "subtitle": "Racerback one-piece",
+      "category": "Sporty",
+      "target": "Blue sporty racerback swimsuit",
+      "palette": [
+        "#1f5fbf"
+      ],
+      "pieces": [
+        {
+          "piece": "one-piece",
+          "template": "swim-one-piece-v2",
+          "prompt": "blue one-piece swimsuit",
+          "lingerie": {
+            "straps": {
+              "style": "racerback",
+              "widthMm": 14
+            },
+            "bodysuit": {
+              "neckline": "high",
+              "back": "high",
+              "sideEaseMm": 8
+            }
+          }
+        }
+      ],
+      "geometry": [
+        "new:racerback straps (bodysuit-block)",
+        "existing:high neckline, high back"
+      ],
+      "missing": [
+        "white contrast panels"
+      ],
+      "status": "implemented",
+      "preview": {
+        "front": "previews/beach-sport-racer-front.webp",
+        "side": "previews/beach-sport-racer-side.webp",
+        "back": "previews/beach-sport-racer-back.webp"
+      }
+    }
+  ]
+}

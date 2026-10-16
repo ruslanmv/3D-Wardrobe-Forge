@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
 from wardrobe.hosiery.options import HosieryOptions, HosieryPlan, RevealOptions, SuspenderBeltOptions
 
@@ -54,6 +54,30 @@ class LingerieSetOptions(BaseModel):
     bottom_style: Literal["thong", "brazilian"] = Field(default="thong", alias="bottomStyle")
 
 
+class DesignRequest(BaseModel):
+    """AB. One design of an independent collection (``wardrobe.collections``), optionally recoloured.
+
+    The design names its pieces and their construction; ``color`` and ``finish`` are the
+    customisations a collection offers, applied to every piece. It grants nothing: each
+    piece is planned, fitted and gated exactly as if typed.
+    """
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    collection: str = Field(min_length=1, max_length=64)
+    id: str = Field(min_length=1, max_length=64)
+    color: str | None = Field(default=None, max_length=32)
+    finish: Literal["matte", "satin", "gloss"] | None = None
+
+    @model_validator(mode="after")
+    def _known(self) -> DesignRequest:
+        from wardrobe.collections import design
+
+        if design(self.collection, self.id) is None:
+            raise ValueError(f"no design {self.id!r} in collection {self.collection!r}")
+        return self
+
+
 class OutfitRequest(BaseModel):
     """What the caller asked for, in their own words."""
 
@@ -89,6 +113,9 @@ class OutfitRequest(BaseModel):
     visible_thong: VisibleThongOptions | None = Field(default=None, alias="visibleThong")
     #: LC1. A coordinated lingerie collection (wardrobe.lingerie.collections).
     lingerie_set: LingerieSetOptions | None = Field(default=None, alias="lingerieSet")
+    #: AB. A design from an independent collection (wardrobe.collections): its pieces become
+    #: the layers, each with its own construction. Absent, nothing here is consulted.
+    design: DesignRequest | None = None
     #: A named look (wardrobe.pipeline.look_presets, wardrobe.hosiery.presets); explicit
     #: fields above win over it.
     preset: str | None = Field(default=None, max_length=64)
@@ -165,6 +192,10 @@ class StylePlan(BaseModel):
     leg_cut: str = Field(default="", alias="legCut")
     #: "" | high | low — where briefs' waistband sits.
     rise: str = ""
+    #: AB. A collection design's construction for this garment (wardrobe.collections): its
+    #: pattern-block fields over the template's (``lingerie``) and its procedural options
+    #: (``hem``). None everywhere else, so every other garment is built as it always was.
+    design: dict | None = None
     #: P1. Where a pattern-block brief's waistline sits, as a fraction of her crotch → waist
     #: span (wardrobe.lingerie.specs.RISES), overriding the template's. Set only by a look
     #: that places underwear against another garment's waistband (the visible-thong block);

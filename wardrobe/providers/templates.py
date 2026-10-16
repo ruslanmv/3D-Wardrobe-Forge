@@ -51,6 +51,8 @@ class TemplateGarmentProvider(GarmentProvider):
             key += f"|briefRise={style.brief_rise}"
         if style.whale_tail is not None:  # likewise (P2)
             key += "|whaleTail=" + ",".join(f"{k}={style.whale_tail[k]}" for k in sorted(style.whale_tail))
+        if style.design is not None:  # likewise (AB): a collection design's own construction
+            key += "|design=" + json.dumps(style.design, sort_keys=True)
         if style.collection is not None:  # likewise (LC1): a thong set and a Brazilian set differ
             key += "|collection=" + json.dumps(style.collection, sort_keys=True)
         digest = sha1(key.encode()).hexdigest()[:12]
@@ -125,6 +127,15 @@ class TemplateGarmentProvider(GarmentProvider):
                 artifact.metadata["lingerie"] = merge_lingerie(template.lingerie,
                                                                style.collection.get("lingerie"))
                 artifact.metadata["collection"] = dict(style.collection)
+        if style.design is not None:
+            # AB. A collection design: its construction for the builders, and its pattern-block
+            # fields over the template's. Absent for every other garment.
+            artifact.metadata["design"] = dict(style.design)
+            if template.lingerie is not None and style.design.get("lingerie"):
+                from wardrobe.lingerie.collections import merge_lingerie
+
+                artifact.metadata["lingerie"] = merge_lingerie(artifact.metadata.get("lingerie"),
+                                                               style.design["lingerie"])
         if template.id in BELT_STYLE_OF_TEMPLATE:
             artifact.metadata["beltStyle"] = BELT_STYLE_OF_TEMPLATE[template.id]
         return artifact

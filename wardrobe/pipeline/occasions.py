@@ -95,6 +95,15 @@ class Style:
     collection: str | None = None
     #: CR1. How it is filmed and what body art suits it; absent, a style has neither.
     content: ContentProfile | None = None
+    #: AB. An independent collection (wardrobe.collections) whose gallery the Studio opens for it.
+    gallery: str | None = None
+
+
+def _gallery_looks(collection_id: str) -> tuple[str, ...]:
+    from wardrobe.collections import get
+
+    collection = get(collection_id)
+    return tuple(d["id"] for d in collection["designs"]) if collection else ()
 
 
 @dataclass(frozen=True)
@@ -108,6 +117,9 @@ class Occasion:
     #: Hidden as a whole without private mode, whatever its looks are rated.
     private: bool = False
 
+
+#: AB. The Anime Beachwear designs, in the collection's own order.
+ANIME_BEACHWEAR = _gallery_looks("anime-beachwear")
 
 OCCASIONS: tuple[Occasion, ...] = (
     Occasion(
@@ -434,6 +446,15 @@ OCCASIONS: tuple[Occasion, ...] = (
                                  ("tribal-butterfly-01", "waist-filigree-01", "rose-vine-01",
                                   "neotribal-heart-01")),
             ),
+            # AB. An independent collection, added last: every style above is as it was.
+            Style(
+                "anime-beachwear",
+                "Anime Beachwear",
+                "🏖️",
+                "Twelve anime-inspired swimsuits for beach and pool",
+                ANIME_BEACHWEAR,
+                gallery="anime-beachwear",
+            ),
         ),
         private=True,
     ),
@@ -480,6 +501,7 @@ def catalogue(entries: dict[str, dict]) -> list[dict]:
                     "rating": ratings.pop() if len(ratings) == 1 else "mixed",
                     **({"collection": style.collection} if style.collection else {}),
                     **({"content": style.content.to_dict()} if style.content else {}),
+                    **({"gallery": style.gallery} if style.gallery else {}),
                 }
             )
         out.append(

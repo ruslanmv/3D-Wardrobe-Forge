@@ -135,11 +135,13 @@ def plan_outfit_stack(
     its garments and its overrides placed: passing them as extra ``layers``
     instead made "a tee + a skirt" one layer and lost the tee (S2).
     """
+    from wardrobe import collections as independent  # AB: imports the domain, as above
     from wardrobe.lingerie import collections  # it imports the domain this module is planned from
 
-    request = hosiery_presets.expand(look_presets.expand(request))
+    request = independent.expand(hosiery_presets.expand(look_presets.expand(request)))
     plan = hosiery_planning.apply(_plan_stack(request, catalog, list(beneath)), request, catalog)
-    return collections.apply(look_presets.apply(plan, request, catalog), request, catalog)
+    plan = collections.apply(look_presets.apply(plan, request, catalog), request, catalog)
+    return independent.apply(plan, request)
 
 
 def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog, beneath: list[OutfitRequest]) -> OutfitPlan:
