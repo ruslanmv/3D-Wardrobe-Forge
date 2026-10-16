@@ -396,6 +396,9 @@ class FitReport(BaseModel):
     #: DC1. The heel and sole she stands on and the pitch and lift that give them, with the
     #: stance she stood in before. Absent from a job without shoes in it.
     stance: dict | None = Field(default=None, exclude_if=lambda v: v is None)
+    #: BS2. The body surface: profile, regions made or not and why, collision envelope, the
+    #: per-layer signed clearance, and any XPBD relaxation. Absent from a job without one.
+    body_surface: dict | None = Field(default=None, alias="bodySurface", exclude_if=lambda v: v is None)
 
     @property
     def passed(self) -> bool:

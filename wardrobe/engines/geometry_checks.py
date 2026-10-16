@@ -118,6 +118,7 @@ def body_points(
     spacing: float = SURFACE_SPACING_M,
     skip: set[tuple[int, int]] | None = None,
     include_head: bool = False,
+    positions: dict[int, np.ndarray] | None = None,
 ) -> np.ndarray:
     """Rest-pose body surface — vertices plus samples across triangles — subsampled deterministically.
 
@@ -135,6 +136,11 @@ def body_points(
     that moves it most is the head or anything under it — hair, ribbons, ears,
     eyes. Bust and skirt physics bones hang from the chest and hips, not the
     head, so her figure stays.
+
+    ``positions`` (BS2) replaces a skinned buffer's stored positions — POSITION accessor →
+    positions — with the job's collision body. Everything else is read as stored, and every
+    rule above still applies, so the collision body is sampled exactly as her body would be.
+    Absent, nothing changes.
     """
     collected: list[np.ndarray] = []
     accessors = document.gltf.get("accessors") or []
@@ -160,6 +166,8 @@ def body_points(
                 continue
             if position not in cache:
                 points = document.read_accessor(position).astype(np.float64)[:, :3]
+                if positions is not None and skinned and position in positions:
+                    points = np.asarray(positions[position], dtype=np.float64)[:, :3]
                 if not skinned:
                     homogeneous = np.hstack([points, np.ones((points.shape[0], 1))])
                     points = (homogeneous @ matrix.T)[:, :3]

@@ -48,6 +48,7 @@ from wardrobe.pipeline import (
     fit_garment,
     generate_garment,
     prepare_base_body,
+    prepare_body_surface,
     render_preview,
     set_stance,
     validate_output,
@@ -178,6 +179,7 @@ class Orchestrator:
                 engine = self._engine_for_outfit(engine, context)
                 await prepare_base_body.run(context)
                 await set_stance.run(context)  # DC1: on the heels of the shoes she is put in
+                await prepare_body_surface.run(context)  # BS1-BS3: only when the job asks for one
                 await generate_garment.generate(context)
                 await fit_garment.run(context, engine)
                 await assemble_vrm.run(context, engine)

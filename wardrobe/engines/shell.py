@@ -101,7 +101,11 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     metadata = dict(artifact.metadata)
     # Which way she faces, for a rig without toes to say so: VRM 0.x faces -Z.
     metadata.setdefault("forward", -1.0 if context.info.spec is VrmSpec.VRM0 else 1.0)
-    whole = body_points(context.document)
+    body_surface = context.body_surface
+    # BS2. With a body surface, the fitter reads her collision body — her skin, smoothed,
+    # never inside her, a margin proud — in place of her stored skin; nothing else changes.
+    whole = body_points(context.document,
+                        positions=body_surface.collision_positions() if body_surface is not None else None)
     legs = _skinned_to(context, whole, LEG_BONES)
     if legs is not None:
         # Her legs as measured, for anything with legs or a band that stops at the crotch.
@@ -175,6 +179,11 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
             metadata["lingerieLandmarks"] = marks.to_dict()
             for warning in marks.warnings:
                 context.warn(f"lingerie landmarks: {warning}")
+    if (body_surface is not None and body_surface.close_fit_clearance_m is not None and kind in LINGERIE_KINDS
+            and (context.collision_points is None or not context.collision_points.shape[0])):
+        # BS2. A close-fit block on her skin, against a collision body that already carries the
+        # cloth's margin: the profile's close-fit clearance (≈1–1.5 mm) in place of the template's.
+        clearance = body_surface.close_fit_clearance_m
     params = FitParameters(
         measurements=context.measurements,
         clearance_m=clearance,
