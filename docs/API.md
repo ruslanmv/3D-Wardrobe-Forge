@@ -265,6 +265,27 @@ declaration, and a model whose terms disallow sexual usage refuses it.
 The front, side and back pictures (`<design>-front.webp` …). File names are
 checked against `^[a-z0-9][a-z0-9-]{0,80}\.(webp|png)$`; anything else is `404`.
 
+## Body surface (BS1)
+
+### `GET /v1/body-surface/profiles`
+
+```json
+{"version": 1, "adultEnabled": false,
+ "profiles": [{"id": "collision-reference", "title": "Collision body (reference)",
+               "capability": "body_collision", "regions": []}, …]}
+```
+
+Ids, titles, capabilities and region names only. A job names one as
+`bodySurface: {"profileId": "…", "detailLevel": "garment-fitting" | "render"}`
+(a sibling of `outfit`), and may add `options.clothRelaxation: "xpbd"`. An
+unknown profile is `rejected` with `body_surface_profile_unavailable`; an adult
+profile refused by the model's terms, the operator's switch
+(`WARDROBE_ADULT_BODY_SURFACE`) or the missing declaration is `rejected` with
+`body_surface_not_permitted`. The fit report then carries `bodySurface`
+(profile, regions made or not and why, collision envelope, per-layer signed
+clearance) and, per layer, any `relaxation`. See
+[BODY_SURFACE](BODY_SURFACE.md).
+
 ## Wardrobes
 
 | Endpoint | Returns |

@@ -245,6 +245,23 @@ that a garment gets only when a design asks. Each design says honestly what it
 is — `implemented` or `visually-validated` — and what is not built yet. See
 [docs/ANIME_BEACHWEAR.md](docs/ANIME_BEACHWEAR.md).
 
+### Body surface: a collision body, regions as morph targets, XPBD
+
+An opt-in stage between Base Body Prep and fitting builds a **collision body**
+from her skin — smoothed, never inside her, a millimetre proud — that the fitter
+fits to in place of her stored skin, and reports every layer's **signed
+clearance** from her (minimum, and the share of samples below −0.5 and −1 mm,
+face interiors included). Profiles may add **regions** — local displacements
+registered to her measured landmarks by an RBF warp, blended in with a
+Laplacian solve, refused where her mesh is too coarse to hold them, never
+allowed to change her measurements — exported as ordinary glTF morph targets
+only on request. An optional **XPBD** pass relaxes a garment against the
+collision body and is kept only if it makes her clearance no worse. Profiles
+are server-side and allowlisted, templates provenance-checked; intimate regions
+need the model's terms, the operator's switch and the adult declaration, and
+none ship. A job without it is unchanged — all 81 gallery looks are
+byte-identical. See [docs/BODY_SURFACE.md](docs/BODY_SURFACE.md).
+
 ### Body art, clothes first
 
 ![Body art on VRoid Female, each tattoo requested together with its outfit: Waist Filigree above the waistband of a club corset and low-rise mini, a Lace Ornament on an open-back dress, a Tribal Butterfly over Y2K low-rise jeans, and Tribal Wings under a jacket, refused because the jacket covers her upper back](docs/images/body-art-avatar.webp)
@@ -701,6 +718,7 @@ Stated plainly, because the gallery shows them:
 | [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | the design: flat straps, clip hardware, denier falloff and the web preview backend |
 | [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section, the lower-back set (BA1–BA7 and BA11 built; BA8–BA10 open) |
 | [DISCOTECA](docs/DISCOTECA.md) | Sexy Discoteca — All Black: the bodycon dress, four boots built round her posed foot, heels as a stance baked into the rest pose, the Studio's Collection panel |
+| [BODY_SURFACE](docs/BODY_SURFACE.md) | the body surface: collision body, signed clearance, regions as morph targets, XPBD relaxation, material-aware masking, the allowlist and the adult gate — and what is not built |
 | [ANIME_BEACHWEAR](docs/ANIME_BEACHWEAR.md) | Anime Beachwear: an independent collection of twelve swimsuits — the registry, the `design` request block, the opt-in halter / racerback / cut-out / ruffle construction, honest statuses, the Studio gallery, previews and rights |
 | [OCCASIONS](docs/OCCASIONS.md) | Occasion → style → look: the Studio's first screen, who sees which look, the `occasion` label on a look, quick changes, and Compare as two viewports |
 | [LINGERIE_COLLECTION](docs/LINGERIE_COLLECTION.md) | collections: the Italian lace bralette with a thong or Brazilian bottom, finishing built on the fitted garment, named components, the product sheet |
