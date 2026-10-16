@@ -45,6 +45,14 @@ viewer:
 - `red_dress.py` writes `docs/images/red-dress.webp`: the red bodycon reference
   look. The full look is on the mannequin declared adult. For AvatarSample A
   it prints her refusal and renders the look the policy permits.
+- `real_avatar.py` (RA1) writes `docs/images/hosiery-avatar.webp`,
+  `lingerie-collection-avatar.webp` and `body-art-avatar.webp`: the hosiery
+  presets, the Italian lace collection and four clothes-first tattoos on VRoid
+  Female. Hosiery with a belt and lingerie are gated, so it needs
+  `--declare-adult`: the operator's declaration, for that run only, carried by
+  each job's avatar block and written nowhere. Unlike `looks.py` it is run by the
+  operator, not instead of one. It refuses Rinna whatever is passed. Built looks
+  are cached in its output folder; delete them to rebuild.
 
 ## What it needs
 
