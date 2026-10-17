@@ -128,7 +128,8 @@ async def build(out: Path, avatar: str, adult: bool, only: set[str]) -> dict[str
                                                                  "baseBody": "replace-outer"}})
                      for n, o in LINGERIE]
         if "anime" in only:
-            jobs += [(look, {"outfit": {"prompt": prompt}, "options": {"renderPreview": False, "engine": "native"}})
+            native = {"renderPreview": False, "engine": "native"}
+            jobs += [(look, {"outfit": {"prompt": prompt}, "options": native})
                      for look, _, _, prompt in anime_looks()]
         if "body-art" in only:
             jobs += [(f"art-{n}", {"outfit": {"prompt": p}, "bodyArt": [t],

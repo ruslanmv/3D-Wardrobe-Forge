@@ -91,13 +91,23 @@ def test_existing_groups_and_templates_are_untouched():
 def test_existing_occasions_keep_their_styles_and_looks():
     now = {o.id: [(s.id, list(s.looks)) for s in o.styles] for o in oc.OCCASIONS}
     before = {o["id"]: [(s["id"], s["looks"]) for s in o["styles"]] for o in PRESERVED["occasions"]}
-    assert [o.id for o in oc.OCCASIONS] == list(before)  # no occasion added, removed or moved
+    # Every occasion that existed is still here, in the same order; the only one added is the
+    # Anime Fan Service collection's own (docs/ANIME_FAN_SERVICE.md), never by this collection.
+    ids = [o.id for o in oc.OCCASIONS]
+    assert [i for i in ids if i in before] == list(before)
+    assert set(ids) - set(before) <= {"anime"}
     for occasion, styles in before.items():
-        assert now[occasion][: len(styles)] == styles, occasion
-    # Vacation -> Beach exactly as it was; the collection is only added, last, in Private.
-    assert now["vacation"] == before["vacation"]
-    assert [s for s, _ in now["private"]] == [*(s for s, _ in before["private"]), "anime-beachwear"]
-    assert all(now[o] == before[o] for o in before if o != "private")
+        # Every style that existed keeps its looks and its place among the others. The only
+        # styles added are the Anime Fan Service collection's (anime-*) and this one.
+        kept = [style for style in now[occasion] if style[0] in dict(styles)]
+        assert kept == styles, occasion
+        added = {sid for sid, _ in now[occasion]} - {sid for sid, _ in styles}
+        assert all(sid.startswith("anime-") for sid in added), (occasion, added)
+    # Vacation -> Beach exactly as it was; this collection is only added, last, in Private.
+    beach = dict(before["vacation"])["beach"]
+    assert dict(now["vacation"])["beach"] == beach
+    assert [s for s, _ in now["private"]][-1] == "anime-beachwear"
+    assert "anime-beachwear" not in {sid for o in now if o != "private" for sid, _ in now[o]}
 
 
 def test_new_ids_never_reuse_an_existing_one():
