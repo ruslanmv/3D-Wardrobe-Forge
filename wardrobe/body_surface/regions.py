@@ -60,10 +60,22 @@ class MorphTarget:
     indices: np.ndarray  # (K,) uint32
     deltas: np.ndarray  # (K, 3) float32
     default_weight: float = 1.0
+    #: (K, 3) float32: the change in her vertex normals, at the same indices (zero where none).
+    #: Without it a renderer moves the vertices and keeps the old normals, and under toon or soft
+    #: lighting, where shading is all normals, a hollow seen from the front does not show at all —
+    #: the verification render found 5 cm of displacement changing no pixel.
+    normal_deltas: np.ndarray | None = None
 
     def dense(self) -> np.ndarray:
         out = np.zeros((self.count, 3), dtype=np.float32)
         out[self.indices] = self.deltas
+        return out
+
+    def dense_normals(self) -> np.ndarray | None:
+        if self.normal_deltas is None:
+            return None
+        out = np.zeros((self.count, 3), dtype=np.float32)
+        out[self.indices] = self.normal_deltas
         return out
 
     def problems(self) -> list[str]:
@@ -71,6 +83,9 @@ class MorphTarget:
         issues = []
         if not np.isfinite(self.deltas).all():
             issues.append(f"{self.name}: NaN or infinite delta")
+        if self.normal_deltas is not None and (self.normal_deltas.shape != self.deltas.shape
+                                               or not np.isfinite(self.normal_deltas).all()):
+            issues.append(f"{self.name}: normal deltas do not match the position deltas")
         if self.indices.size and (self.indices.max() >= self.count):
             issues.append(f"{self.name}: index past the end of its buffer")
         if self.indices.shape[0] != self.deltas.shape[0]:
@@ -238,10 +253,20 @@ def build_regions(parts: list[SkinPart], profile: Profile, marks, waist_width_m:
             if not moved.size:
                 continue
             biggest = max(biggest, float(np.linalg.norm(delta[moved], axis=1).max()))
+            # Her normals with the region minus without it, on the welded mesh: the moved vertices
+            # and the ring round them, whose faces tilt with them.
+            owner, wpart = welded[accessor]
+            wdelta = np.zeros_like(wpart.positions)
+            np.add.at(wdelta, owner, delta)
+            counts = np.bincount(owner, minlength=wpart.positions.shape[0])[:, None]
+            wdelta /= np.maximum(counts, 1)
+            turned = (g.vertex_normals(wpart.positions + wdelta, wpart.triangles) - normals[accessor])[owner]
+            touched = np.union1d(moved, np.flatnonzero(np.linalg.norm(turned, axis=1) > 1e-4))
             targets.append(MorphTarget(
                 name="Body" + region.key[:1].upper() + region.key[1:], accessor=accessor,
-                count=base[accessor].shape[0], indices=moved.astype(np.uint32),
-                deltas=delta[moved].astype(np.float32), default_weight=region.default_weight))
+                count=base[accessor].shape[0], indices=touched.astype(np.uint32),
+                deltas=delta[touched].astype(np.float32), default_weight=region.default_weight,
+                normal_deltas=turned[touched].astype(np.float32)))
         results.append(RegionResult(region.key, template.id, True, vertices=count,
                                     max_offset_mm=biggest * 1000, registration_mm=residual * 1000,
                                     measurements={k: round(v, 5) for k, v in change.items()}))

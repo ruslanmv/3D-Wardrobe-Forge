@@ -295,6 +295,8 @@ def test_a_region_is_made_on_a_dense_body(navel_on_a_dense_torso):
     assert result.made and result.vertices >= 20 and result.registration_mm < 1e-6
     (morph,) = morphs
     assert morph.name == "BodyNavel" and not morph.problems()
+    # The normals turn with the hollow, so a renderer shades it, not only moves it.
+    assert morph.normal_deltas is not None and np.abs(morph.normal_deltas).max() > 0.01
     delta = render[0] - skin.positions
     normals = g.vertex_normals(skin.positions, skin.triangles)
     moved = np.linalg.norm(delta, axis=1) > 1e-6
@@ -367,7 +369,8 @@ def test_morph_export_is_valid_gltf_and_leaves_positions_alone():
     before = document.read_accessor(skin.accessor).tobytes()
     moved = skin.used[:5]
     morph = MorphTarget("BodyTest", skin.accessor, skin.positions.shape[0], moved.astype(np.uint32),
-                        np.full((5, 3), 0.001, dtype=np.float32), default_weight=0.5)
+                        np.full((5, 3), 0.001, dtype=np.float32), default_weight=0.5,
+                        normal_deltas=np.full((5, 3), 0.02, dtype=np.float32))
     state = build_state([skin], {skin.accessor: skin.positions}, [morph], [], SHIPPED.profiles["collision-reference"],
                         "render")
     assert export_morphs(document, state) == ["BodyTest"]
@@ -379,6 +382,10 @@ def test_morph_export_is_valid_gltf_and_leaves_positions_alone():
     accessor = reread.gltf["accessors"][target]
     assert accessor["count"] == reread.gltf["accessors"][skin.accessor]["count"] and "min" in accessor
     assert np.allclose(reread.read_accessor(target)[moved], 0.001)
+    primitive = mesh["primitives"][0]
+    if "NORMAL" in primitive["attributes"]:
+        normal = primitive["targets"][-1]["NORMAL"]
+        assert np.allclose(reread.read_accessor(normal)[moved], 0.02)
     assert reread.read_accessor(skin.accessor).tobytes() == before  # her POSITION data untouched
     assert inspect_document(reread).humanoid_bones  # still a valid humanoid
 
