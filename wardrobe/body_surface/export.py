@@ -10,6 +10,9 @@ The rules the writer keeps, all from the glTF 2.0 specification:
 * **every primitive of a mesh has the same number of targets**, in the same order — VRoid's
   Body mesh draws skin, tops and shoes from one position buffer, so each of its primitives
   gets the target of its own buffer, or a zero target when that buffer has none;
+* a target carries **NORMAL** deltas beside POSITION where the primitive has normals: moved
+  vertices with their old normals shade exactly as before, and under toon lighting the region
+  does not show at all;
 * targets are **appended**: a mesh's existing targets keep their indices, so a VRM 1.0
   expression or a VRM 0.x blend-shape group bound to them still points at the same shape;
 * ``mesh.weights`` gets each new target's default weight, and ``extras.targetNames`` names
@@ -41,18 +44,23 @@ def export_morphs(document: GltfDocument, state: BodySurfaceState) -> list[str]:
     weights = {m.name: m.default_weight for m in state.morphs}
     meshes = {mesh for part in state.parts for mesh, _ in part.primitives}
     accessors = document.gltf["accessors"]
-    written: dict[tuple[int, str], int] = {}
+    written: dict[tuple[int, str, str], int] = {}
 
-    def target_for(position: int, name: str) -> int:
-        key = (position, name)
+    def target_for(position: int, name: str, attribute: str = "POSITION") -> int | None:
+        key = (position, name, attribute)
         if key not in written:
             count = int(accessors[position]["count"])
             delta = np.zeros((count, 3), dtype=np.float32)
             for morph in by_accessor.get(position, []):
                 if morph.name == name:
-                    delta = morph.dense()
-            written[key] = document.add_accessor(delta, target=ARRAY_BUFFER, include_bounds=True)
-            if not count:
+                    found = morph.dense() if attribute == "POSITION" else morph.dense_normals()
+                    if found is None:
+                        written[key] = None
+                        return None
+                    delta = found
+            written[key] = document.add_accessor(delta, target=ARRAY_BUFFER,
+                                                 include_bounds=attribute == "POSITION")
+            if not count and attribute == "POSITION":
                 accessors[written[key]].update(min=[0.0, 0.0, 0.0], max=[0.0, 0.0, 0.0])
         return written[key]
 
@@ -63,7 +71,13 @@ def export_morphs(document: GltfDocument, state: BodySurfaceState) -> list[str]:
             targets = primitive.setdefault("targets", [])
             position = primitive["attributes"]["POSITION"]
             for name in names:
-                targets.append({"POSITION": target_for(position, name)})
+                target = {"POSITION": target_for(position, name)}
+                if "NORMAL" in primitive["attributes"]:
+                    # The change in her normals, so a renderer shades the region, not only moves it.
+                    normal = target_for(position, name, "NORMAL")
+                    if normal is not None:
+                        target["NORMAL"] = normal
+                targets.append(target)
         mesh_weights = list(mesh.get("weights") or [0.0] * existing)
         mesh["weights"] = mesh_weights + [float(weights[n]) for n in names]
         extras = mesh.setdefault("extras", {})
