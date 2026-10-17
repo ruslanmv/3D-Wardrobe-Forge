@@ -1,0 +1,1067 @@
+{
+  "schema": "wardrobe.anatomy.referenceSizes.v1",
+  "units": "millimetres unless the key says otherwise",
+  "source": {
+    "name": "ANSUR II (2012 U.S. Army Anthropometric Survey), female public file",
+    "url": "https://tools.openlab.psu.edu/publicData/ANSUR_II_FEMALE_Public.csv",
+    "page": "https://www.openlab.psu.edu/ansur2/",
+    "report": "Gordon CC et al. 2012 Anthropometric Survey of U.S. Army Personnel: Methods and Summary Statistics. NATICK/TR-15/007 (2014).",
+    "release": "Approved for public release; distribution is unlimited (report documentation page, block 12)",
+    "sha256": "ed7e800aa97a4d42f8286b988be2fe1883a2e789588169db959864b707d1757a",
+    "subjects": 1986,
+    "subjectsUsed": 1728,
+    "filter": "Age >= 21"
+  },
+  "method": "Each size fixes stature, chest, waist (omphalion) and buttock circumference at the stated percentiles of the filtered sample; every other dimension is its ordinary least-squares prediction from those four over the same sample.",
+  "breastSource": {
+    "citation": "Al-Qattan MM, Aldakhil SS, Al-Hassan TS, Al-Qahtani A. Anthropometric Breast Measurement: Analysis of the Average Breast in Young Nulliparous Saudi Female Population. Plast Reconstr Surg Glob Open. 2019;7(8):e2326.",
+    "doi": "10.1097/GOX.0000000000002326",
+    "licence": "CC BY 4.0",
+    "sample": "53 nulliparous women aged 20-25, BMI 20-25, tape measure, standing, arms at sides",
+    "sternalNotchToNippleMm": 198.0,
+    "internippleDistanceMm": 203.0,
+    "nippleToInframammaryFoldMm": 77.0
+  },
+  "sizes": {
+    "ref-f-median": {
+      "label": "Median",
+      "drivers": {
+        "stature": {
+          "percentile": 50,
+          "mm": 1628.0
+        },
+        "chestcircumference": {
+          "percentile": 50,
+          "mm": 946.0
+        },
+        "waistcircumference": {
+          "percentile": 50,
+          "mm": 860.0
+        },
+        "buttockcircumference": {
+          "percentile": 50,
+          "mm": 1024.5
+        }
+      },
+      "driverMahalanobis": 0.131,
+      "dimensionsMm": {
+        "stature": 1628.0,
+        "crotchheight": 781.3,
+        "waistheightomphalion": 979.7,
+        "buttockheight": 832.7,
+        "trochanterionheight": 844.5,
+        "iliocristaleheight": 995.6,
+        "tenthribheight": 1055.7,
+        "chestheight": 1169.8,
+        "axillaheight": 1238.6,
+        "suprasternaleheight": 1329.2,
+        "acromialheight": 1334.8,
+        "cervicaleheight": 1395.0,
+        "kneeheightmidpatella": 448.6,
+        "lateralmalleolusheight": 62.6,
+        "chestcircumference": 946.0,
+        "chestbreadth": 269.0,
+        "chestdepth": 247.0,
+        "waistcircumference": 860.0,
+        "waistbreadth": 299.7,
+        "waistdepth": 212.9,
+        "buttockcircumference": 1024.5,
+        "buttockdepth": 233.4,
+        "hipbreadth": 355.0,
+        "bicristalbreadth": 273.4,
+        "thighcircumference": 618.5,
+        "lowerthighcircumference": 401.3,
+        "calfcircumference": 373.4,
+        "anklecircumference": 215.2,
+        "neckcircumferencebase": 370.9,
+        "crotchlengthomphalion": 621.7,
+        "crotchlengthposterioromphalion": 342.9,
+        "biacromialbreadth": 365.1,
+        "bideltoidbreadth": 450.1,
+        "footlength": 246.2,
+        "headcircumference": 561.0,
+        "wristcircumference": 154.6,
+        "bicepscircumferenceflexed": 306.2,
+        "weightkg": 67.8
+      },
+      "fit": {
+        "stature": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 49.8
+        },
+        "crotchheight": {
+          "r2": 0.736,
+          "residualSdMm": 23.1,
+          "percentileInSample": 51.4
+        },
+        "waistheightomphalion": {
+          "r2": 0.865,
+          "residualSdMm": 18.5,
+          "percentileInSample": 51.6
+        },
+        "buttockheight": {
+          "r2": 0.719,
+          "residualSdMm": 24.5,
+          "percentileInSample": 50.9
+        },
+        "trochanterionheight": {
+          "r2": 0.739,
+          "residualSdMm": 23.0,
+          "percentileInSample": 49.9
+        },
+        "iliocristaleheight": {
+          "r2": 0.841,
+          "residualSdMm": 19.9,
+          "percentileInSample": 50.6
+        },
+        "tenthribheight": {
+          "r2": 0.884,
+          "residualSdMm": 17.2,
+          "percentileInSample": 50.7
+        },
+        "chestheight": {
+          "r2": 0.853,
+          "residualSdMm": 21.3,
+          "percentileInSample": 50.2
+        },
+        "axillaheight": {
+          "r2": 0.936,
+          "residualSdMm": 14.1,
+          "percentileInSample": 51.2
+        },
+        "suprasternaleheight": {
+          "r2": 0.965,
+          "residualSdMm": 10.7,
+          "percentileInSample": 50.6
+        },
+        "acromialheight": {
+          "r2": 0.947,
+          "residualSdMm": 13.4,
+          "percentileInSample": 51.2
+        },
+        "cervicaleheight": {
+          "r2": 0.969,
+          "residualSdMm": 10.6,
+          "percentileInSample": 50.6
+        },
+        "kneeheightmidpatella": {
+          "r2": 0.714,
+          "residualSdMm": 14.1,
+          "percentileInSample": 50.9
+        },
+        "lateralmalleolusheight": {
+          "r2": 0.197,
+          "residualSdMm": 4.6,
+          "percentileInSample": 47.2
+        },
+        "chestcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 49.9
+        },
+        "chestbreadth": {
+          "r2": 0.624,
+          "residualSdMm": 11.3,
+          "percentileInSample": 48.7
+        },
+        "chestdepth": {
+          "r2": 0.893,
+          "residualSdMm": 9.0,
+          "percentileInSample": 49.4
+        },
+        "waistcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 49.5
+        },
+        "waistbreadth": {
+          "r2": 0.914,
+          "residualSdMm": 9.8,
+          "percentileInSample": 49.1
+        },
+        "waistdepth": {
+          "r2": 0.87,
+          "residualSdMm": 11.5,
+          "percentileInSample": 51.4
+        },
+        "buttockcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 50.0
+        },
+        "buttockdepth": {
+          "r2": 0.794,
+          "residualSdMm": 11.3,
+          "percentileInSample": 51.6
+        },
+        "hipbreadth": {
+          "r2": 0.888,
+          "residualSdMm": 8.9,
+          "percentileInSample": 49.7
+        },
+        "bicristalbreadth": {
+          "r2": 0.607,
+          "residualSdMm": 13.8,
+          "percentileInSample": 49.4
+        },
+        "thighcircumference": {
+          "r2": 0.885,
+          "residualSdMm": 19.1,
+          "percentileInSample": 51.0
+        },
+        "lowerthighcircumference": {
+          "r2": 0.661,
+          "residualSdMm": 20.8,
+          "percentileInSample": 51.9
+        },
+        "calfcircumference": {
+          "r2": 0.554,
+          "residualSdMm": 19.2,
+          "percentileInSample": 52.6
+        },
+        "anklecircumference": {
+          "r2": 0.327,
+          "residualSdMm": 12.1,
+          "percentileInSample": 53.0
+        },
+        "neckcircumferencebase": {
+          "r2": 0.517,
+          "residualSdMm": 13.8,
+          "percentileInSample": 49.6
+        },
+        "crotchlengthomphalion": {
+          "r2": 0.553,
+          "residualSdMm": 28.6,
+          "percentileInSample": 51.7
+        },
+        "crotchlengthposterioromphalion": {
+          "r2": 0.357,
+          "residualSdMm": 23.1,
+          "percentileInSample": 52.1
+        },
+        "biacromialbreadth": {
+          "r2": 0.339,
+          "residualSdMm": 14.9,
+          "percentileInSample": 50.2
+        },
+        "bideltoidbreadth": {
+          "r2": 0.741,
+          "residualSdMm": 14.7,
+          "percentileInSample": 49.2
+        },
+        "footlength": {
+          "r2": 0.536,
+          "residualSdMm": 8.5,
+          "percentileInSample": 50.0
+        },
+        "headcircumference": {
+          "r2": 0.127,
+          "residualSdMm": 18.0,
+          "percentileInSample": 54.7
+        },
+        "wristcircumference": {
+          "r2": 0.482,
+          "residualSdMm": 5.7,
+          "percentileInSample": 51.0
+        },
+        "bicepscircumferenceflexed": {
+          "r2": 0.685,
+          "residualSdMm": 17.5,
+          "percentileInSample": 51.0
+        },
+        "weightkg": {
+          "r2": 0.934,
+          "residualSdMm": 2.85,
+          "percentileInSample": 51.3
+        }
+      },
+      "breast": {
+        "sternalNotchToNippleMm": 198.0,
+        "internippleDistanceMm": 203.0,
+        "nippleToInframammaryFoldMm": 77.0,
+        "basis": "Al-Qattan et al. 2019 means, scaled from the ANSUR II median by stature, chest breadth and chest circumference respectively (scaling by this project, not the source)"
+      }
+    },
+    "ref-f-petite": {
+      "label": "Petite",
+      "drivers": {
+        "stature": {
+          "percentile": 10,
+          "mm": 1549.0
+        },
+        "chestcircumference": {
+          "percentile": 30,
+          "mm": 904.0
+        },
+        "waistcircumference": {
+          "percentile": 30,
+          "mm": 810.0
+        },
+        "buttockcircumference": {
+          "percentile": 30,
+          "mm": 983.0
+        }
+      },
+      "driverMahalanobis": 1.32,
+      "dimensionsMm": {
+        "stature": 1549.0,
+        "crotchheight": 734.8,
+        "waistheightomphalion": 926.0,
+        "buttockheight": 783.7,
+        "trochanterionheight": 796.6,
+        "iliocristaleheight": 939.5,
+        "tenthribheight": 997.4,
+        "chestheight": 1108.0,
+        "axillaheight": 1172.4,
+        "suprasternaleheight": 1259.7,
+        "acromialheight": 1264.6,
+        "cervicaleheight": 1322.8,
+        "kneeheightmidpatella": 421.1,
+        "lateralmalleolusheight": 59.8,
+        "chestcircumference": 904.0,
+        "chestbreadth": 258.5,
+        "chestdepth": 234.3,
+        "waistcircumference": 810.0,
+        "waistbreadth": 281.9,
+        "waistdepth": 200.4,
+        "buttockcircumference": 983.0,
+        "buttockdepth": 223.3,
+        "hipbreadth": 340.6,
+        "bicristalbreadth": 260.0,
+        "thighcircumference": 591.9,
+        "lowerthighcircumference": 384.8,
+        "calfcircumference": 359.6,
+        "anklecircumference": 207.9,
+        "neckcircumferencebase": 358.5,
+        "crotchlengthomphalion": 599.1,
+        "crotchlengthposterioromphalion": 331.8,
+        "biacromialbreadth": 351.9,
+        "bideltoidbreadth": 433.2,
+        "footlength": 235.1,
+        "headcircumference": 553.3,
+        "wristcircumference": 148.8,
+        "bicepscircumferenceflexed": 293.0,
+        "weightkg": 59.1
+      },
+      "fit": {
+        "stature": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 9.8
+        },
+        "crotchheight": {
+          "r2": 0.736,
+          "residualSdMm": 23.1,
+          "percentileInSample": 13.8
+        },
+        "waistheightomphalion": {
+          "r2": 0.865,
+          "residualSdMm": 18.5,
+          "percentileInSample": 13.5
+        },
+        "buttockheight": {
+          "r2": 0.719,
+          "residualSdMm": 24.5,
+          "percentileInSample": 12.8
+        },
+        "trochanterionheight": {
+          "r2": 0.739,
+          "residualSdMm": 23.0,
+          "percentileInSample": 13.3
+        },
+        "iliocristaleheight": {
+          "r2": 0.841,
+          "residualSdMm": 19.9,
+          "percentileInSample": 12.0
+        },
+        "tenthribheight": {
+          "r2": 0.884,
+          "residualSdMm": 17.2,
+          "percentileInSample": 11.1
+        },
+        "chestheight": {
+          "r2": 0.853,
+          "residualSdMm": 21.3,
+          "percentileInSample": 12.8
+        },
+        "axillaheight": {
+          "r2": 0.936,
+          "residualSdMm": 14.1,
+          "percentileInSample": 10.4
+        },
+        "suprasternaleheight": {
+          "r2": 0.965,
+          "residualSdMm": 10.7,
+          "percentileInSample": 9.7
+        },
+        "acromialheight": {
+          "r2": 0.947,
+          "residualSdMm": 13.4,
+          "percentileInSample": 10.0
+        },
+        "cervicaleheight": {
+          "r2": 0.969,
+          "residualSdMm": 10.6,
+          "percentileInSample": 10.1
+        },
+        "kneeheightmidpatella": {
+          "r2": 0.714,
+          "residualSdMm": 14.1,
+          "percentileInSample": 13.5
+        },
+        "lateralmalleolusheight": {
+          "r2": 0.197,
+          "residualSdMm": 4.6,
+          "percentileInSample": 27.1
+        },
+        "chestcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 29.6
+        },
+        "chestbreadth": {
+          "r2": 0.624,
+          "residualSdMm": 11.3,
+          "percentileInSample": 27.2
+        },
+        "chestdepth": {
+          "r2": 0.893,
+          "residualSdMm": 9.0,
+          "percentileInSample": 30.1
+        },
+        "waistcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 29.7
+        },
+        "waistbreadth": {
+          "r2": 0.914,
+          "residualSdMm": 9.8,
+          "percentileInSample": 27.7
+        },
+        "waistdepth": {
+          "r2": 0.87,
+          "residualSdMm": 11.5,
+          "percentileInSample": 36.3
+        },
+        "buttockcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 29.6
+        },
+        "buttockdepth": {
+          "r2": 0.794,
+          "residualSdMm": 11.3,
+          "percentileInSample": 36.6
+        },
+        "hipbreadth": {
+          "r2": 0.888,
+          "residualSdMm": 8.9,
+          "percentileInSample": 29.6
+        },
+        "bicristalbreadth": {
+          "r2": 0.607,
+          "residualSdMm": 13.8,
+          "percentileInSample": 26.0
+        },
+        "thighcircumference": {
+          "r2": 0.885,
+          "residualSdMm": 19.1,
+          "percentileInSample": 31.4
+        },
+        "lowerthighcircumference": {
+          "r2": 0.661,
+          "residualSdMm": 20.8,
+          "percentileInSample": 33.0
+        },
+        "calfcircumference": {
+          "r2": 0.554,
+          "residualSdMm": 19.2,
+          "percentileInSample": 32.3
+        },
+        "anklecircumference": {
+          "r2": 0.327,
+          "residualSdMm": 12.1,
+          "percentileInSample": 30.7
+        },
+        "neckcircumferencebase": {
+          "r2": 0.517,
+          "residualSdMm": 13.8,
+          "percentileInSample": 24.4
+        },
+        "crotchlengthomphalion": {
+          "r2": 0.553,
+          "residualSdMm": 28.6,
+          "percentileInSample": 32.2
+        },
+        "crotchlengthposterioromphalion": {
+          "r2": 0.357,
+          "residualSdMm": 23.1,
+          "percentileInSample": 36.1
+        },
+        "biacromialbreadth": {
+          "r2": 0.339,
+          "residualSdMm": 14.9,
+          "percentileInSample": 21.2
+        },
+        "bideltoidbreadth": {
+          "r2": 0.741,
+          "residualSdMm": 14.7,
+          "percentileInSample": 27.1
+        },
+        "footlength": {
+          "r2": 0.536,
+          "residualSdMm": 8.5,
+          "percentileInSample": 19.2
+        },
+        "headcircumference": {
+          "r2": 0.127,
+          "residualSdMm": 18.0,
+          "percentileInSample": 34.7
+        },
+        "wristcircumference": {
+          "r2": 0.482,
+          "residualSdMm": 5.7,
+          "percentileInSample": 20.6
+        },
+        "bicepscircumferenceflexed": {
+          "r2": 0.685,
+          "residualSdMm": 17.5,
+          "percentileInSample": 32.6
+        },
+        "weightkg": {
+          "r2": 0.934,
+          "residualSdMm": 2.85,
+          "percentileInSample": 21.2
+        }
+      },
+      "breast": {
+        "sternalNotchToNippleMm": 188.4,
+        "internippleDistanceMm": 195.1,
+        "nippleToInframammaryFoldMm": 73.6,
+        "basis": "Al-Qattan et al. 2019 means, scaled from the ANSUR II median by stature, chest breadth and chest circumference respectively (scaling by this project, not the source)"
+      }
+    },
+    "ref-f-full": {
+      "label": "Full",
+      "drivers": {
+        "stature": {
+          "percentile": 50,
+          "mm": 1628.0
+        },
+        "chestcircumference": {
+          "percentile": 85,
+          "mm": 1039.0
+        },
+        "waistcircumference": {
+          "percentile": 75,
+          "mm": 934.2
+        },
+        "buttockcircumference": {
+          "percentile": 90,
+          "mm": 1127.3
+        }
+      },
+      "driverMahalanobis": 1.77,
+      "dimensionsMm": {
+        "stature": 1628.0,
+        "crotchheight": 774.1,
+        "waistheightomphalion": 978.9,
+        "buttockheight": 829.8,
+        "trochanterionheight": 841.8,
+        "iliocristaleheight": 994.7,
+        "tenthribheight": 1056.1,
+        "chestheight": 1164.4,
+        "axillaheight": 1237.1,
+        "suprasternaleheight": 1332.9,
+        "acromialheight": 1337.9,
+        "cervicaleheight": 1395.2,
+        "kneeheightmidpatella": 447.2,
+        "lateralmalleolusheight": 62.3,
+        "chestcircumference": 1039.0,
+        "chestbreadth": 283.3,
+        "chestdepth": 276.6,
+        "waistcircumference": 934.2,
+        "waistbreadth": 324.5,
+        "waistdepth": 235.4,
+        "buttockcircumference": 1127.3,
+        "buttockdepth": 261.5,
+        "hipbreadth": 388.5,
+        "bicristalbreadth": 286.9,
+        "thighcircumference": 690.0,
+        "lowerthighcircumference": 440.5,
+        "calfcircumference": 402.5,
+        "anklecircumference": 225.2,
+        "neckcircumferencebase": 384.7,
+        "crotchlengthomphalion": 665.5,
+        "crotchlengthposterioromphalion": 362.5,
+        "biacromialbreadth": 368.8,
+        "bideltoidbreadth": 478.0,
+        "footlength": 248.9,
+        "headcircumference": 566.0,
+        "wristcircumference": 159.2,
+        "bicepscircumferenceflexed": 339.4,
+        "weightkg": 79.9
+      },
+      "fit": {
+        "stature": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 49.8
+        },
+        "crotchheight": {
+          "r2": 0.736,
+          "residualSdMm": 23.1,
+          "percentileInSample": 45.0
+        },
+        "waistheightomphalion": {
+          "r2": 0.865,
+          "residualSdMm": 18.5,
+          "percentileInSample": 50.9
+        },
+        "buttockheight": {
+          "r2": 0.719,
+          "residualSdMm": 24.5,
+          "percentileInSample": 47.2
+        },
+        "trochanterionheight": {
+          "r2": 0.739,
+          "residualSdMm": 23.0,
+          "percentileInSample": 47.7
+        },
+        "iliocristaleheight": {
+          "r2": 0.841,
+          "residualSdMm": 19.9,
+          "percentileInSample": 49.9
+        },
+        "tenthribheight": {
+          "r2": 0.884,
+          "residualSdMm": 17.2,
+          "percentileInSample": 51.4
+        },
+        "chestheight": {
+          "r2": 0.853,
+          "residualSdMm": 21.3,
+          "percentileInSample": 45.8
+        },
+        "axillaheight": {
+          "r2": 0.936,
+          "residualSdMm": 14.1,
+          "percentileInSample": 50.4
+        },
+        "suprasternaleheight": {
+          "r2": 0.965,
+          "residualSdMm": 10.7,
+          "percentileInSample": 53.1
+        },
+        "acromialheight": {
+          "r2": 0.947,
+          "residualSdMm": 13.4,
+          "percentileInSample": 53.3
+        },
+        "cervicaleheight": {
+          "r2": 0.969,
+          "residualSdMm": 10.6,
+          "percentileInSample": 50.6
+        },
+        "kneeheightmidpatella": {
+          "r2": 0.714,
+          "residualSdMm": 14.1,
+          "percentileInSample": 49.2
+        },
+        "lateralmalleolusheight": {
+          "r2": 0.197,
+          "residualSdMm": 4.6,
+          "percentileInSample": 47.2
+        },
+        "chestcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 84.9
+        },
+        "chestbreadth": {
+          "r2": 0.624,
+          "residualSdMm": 11.3,
+          "percentileInSample": 76.7
+        },
+        "chestdepth": {
+          "r2": 0.893,
+          "residualSdMm": 9.0,
+          "percentileInSample": 83.6
+        },
+        "waistcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 75.0
+        },
+        "waistbreadth": {
+          "r2": 0.914,
+          "residualSdMm": 9.8,
+          "percentileInSample": 76.2
+        },
+        "waistdepth": {
+          "r2": 0.87,
+          "residualSdMm": 11.5,
+          "percentileInSample": 75.3
+        },
+        "buttockcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 90.0
+        },
+        "buttockdepth": {
+          "r2": 0.794,
+          "residualSdMm": 11.3,
+          "percentileInSample": 86.2
+        },
+        "hipbreadth": {
+          "r2": 0.888,
+          "residualSdMm": 8.9,
+          "percentileInSample": 89.8
+        },
+        "bicristalbreadth": {
+          "r2": 0.607,
+          "residualSdMm": 13.8,
+          "percentileInSample": 72.1
+        },
+        "thighcircumference": {
+          "r2": 0.885,
+          "residualSdMm": 19.1,
+          "percentileInSample": 89.4
+        },
+        "lowerthighcircumference": {
+          "r2": 0.661,
+          "residualSdMm": 20.8,
+          "percentileInSample": 87.3
+        },
+        "calfcircumference": {
+          "r2": 0.554,
+          "residualSdMm": 19.2,
+          "percentileInSample": 84.5
+        },
+        "anklecircumference": {
+          "r2": 0.327,
+          "residualSdMm": 12.1,
+          "percentileInSample": 76.9
+        },
+        "neckcircumferencebase": {
+          "r2": 0.517,
+          "residualSdMm": 13.8,
+          "percentileInSample": 75.6
+        },
+        "crotchlengthomphalion": {
+          "r2": 0.553,
+          "residualSdMm": 28.6,
+          "percentileInSample": 83.7
+        },
+        "crotchlengthposterioromphalion": {
+          "r2": 0.357,
+          "residualSdMm": 23.1,
+          "percentileInSample": 76.0
+        },
+        "biacromialbreadth": {
+          "r2": 0.339,
+          "residualSdMm": 14.9,
+          "percentileInSample": 56.5
+        },
+        "bideltoidbreadth": {
+          "r2": 0.741,
+          "residualSdMm": 14.7,
+          "percentileInSample": 82.9
+        },
+        "footlength": {
+          "r2": 0.536,
+          "residualSdMm": 8.5,
+          "percentileInSample": 56.4
+        },
+        "headcircumference": {
+          "r2": 0.127,
+          "residualSdMm": 18.0,
+          "percentileInSample": 64.9
+        },
+        "wristcircumference": {
+          "r2": 0.482,
+          "residualSdMm": 5.7,
+          "percentileInSample": 72.7
+        },
+        "bicepscircumferenceflexed": {
+          "r2": 0.685,
+          "residualSdMm": 17.5,
+          "percentileInSample": 84.8
+        },
+        "weightkg": {
+          "r2": 0.934,
+          "residualSdMm": 2.85,
+          "percentileInSample": 85.6
+        }
+      },
+      "breast": {
+        "sternalNotchToNippleMm": 198.0,
+        "internippleDistanceMm": 213.8,
+        "nippleToInframammaryFoldMm": 84.6,
+        "basis": "Al-Qattan et al. 2019 means, scaled from the ANSUR II median by stature, chest breadth and chest circumference respectively (scaling by this project, not the source)"
+      }
+    },
+    "ref-f-tall": {
+      "label": "Tall",
+      "drivers": {
+        "stature": {
+          "percentile": 90,
+          "mm": 1715.0
+        },
+        "chestcircumference": {
+          "percentile": 40,
+          "mm": 925.0
+        },
+        "waistcircumference": {
+          "percentile": 35,
+          "mm": 822.0
+        },
+        "buttockcircumference": {
+          "percentile": 45,
+          "mm": 1014.0
+        }
+      },
+      "driverMahalanobis": 1.54,
+      "dimensionsMm": {
+        "stature": 1715.0,
+        "crotchheight": 835.9,
+        "waistheightomphalion": 1047.0,
+        "buttockheight": 883.4,
+        "trochanterionheight": 896.7,
+        "iliocristaleheight": 1056.7,
+        "tenthribheight": 1118.9,
+        "chestheight": 1242.7,
+        "axillaheight": 1312.8,
+        "suprasternaleheight": 1403.2,
+        "acromialheight": 1409.3,
+        "cervicaleheight": 1473.8,
+        "kneeheightmidpatella": 478.2,
+        "lateralmalleolusheight": 65.5,
+        "chestcircumference": 925.0,
+        "chestbreadth": 269.2,
+        "chestdepth": 239.5,
+        "waistcircumference": 822.0,
+        "waistbreadth": 290.4,
+        "waistdepth": 198.7,
+        "buttockcircumference": 1014.0,
+        "buttockdepth": 225.8,
+        "hipbreadth": 353.2,
+        "bicristalbreadth": 273.8,
+        "thighcircumference": 608.3,
+        "lowerthighcircumference": 399.1,
+        "calfcircumference": 373.9,
+        "anklecircumference": 218.2,
+        "neckcircumferencebase": 373.9,
+        "crotchlengthomphalion": 635.0,
+        "crotchlengthposterioromphalion": 354.4,
+        "biacromialbreadth": 377.4,
+        "bideltoidbreadth": 448.0,
+        "footlength": 257.3,
+        "headcircumference": 566.9,
+        "wristcircumference": 158.0,
+        "bicepscircumferenceflexed": 298.7,
+        "weightkg": 69.3
+      },
+      "fit": {
+        "stature": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 89.8
+        },
+        "crotchheight": {
+          "r2": 0.736,
+          "residualSdMm": 23.1,
+          "percentileInSample": 88.0
+        },
+        "waistheightomphalion": {
+          "r2": 0.865,
+          "residualSdMm": 18.5,
+          "percentileInSample": 89.8
+        },
+        "buttockheight": {
+          "r2": 0.719,
+          "residualSdMm": 24.5,
+          "percentileInSample": 85.3
+        },
+        "trochanterionheight": {
+          "r2": 0.739,
+          "residualSdMm": 23.0,
+          "percentileInSample": 86.5
+        },
+        "iliocristaleheight": {
+          "r2": 0.841,
+          "residualSdMm": 19.9,
+          "percentileInSample": 87.8
+        },
+        "tenthribheight": {
+          "r2": 0.884,
+          "residualSdMm": 17.2,
+          "percentileInSample": 88.4
+        },
+        "chestheight": {
+          "r2": 0.853,
+          "residualSdMm": 21.3,
+          "percentileInSample": 90.1
+        },
+        "axillaheight": {
+          "r2": 0.936,
+          "residualSdMm": 14.1,
+          "percentileInSample": 89.3
+        },
+        "suprasternaleheight": {
+          "r2": 0.965,
+          "residualSdMm": 10.7,
+          "percentileInSample": 88.9
+        },
+        "acromialheight": {
+          "r2": 0.947,
+          "residualSdMm": 13.4,
+          "percentileInSample": 89.0
+        },
+        "cervicaleheight": {
+          "r2": 0.969,
+          "residualSdMm": 10.6,
+          "percentileInSample": 88.7
+        },
+        "kneeheightmidpatella": {
+          "r2": 0.714,
+          "residualSdMm": 14.1,
+          "percentileInSample": 86.6
+        },
+        "lateralmalleolusheight": {
+          "r2": 0.197,
+          "residualSdMm": 4.6,
+          "percentileInSample": 70.7
+        },
+        "chestcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 39.7
+        },
+        "chestbreadth": {
+          "r2": 0.624,
+          "residualSdMm": 11.3,
+          "percentileInSample": 50.8
+        },
+        "chestdepth": {
+          "r2": 0.893,
+          "residualSdMm": 9.0,
+          "percentileInSample": 38.5
+        },
+        "waistcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 34.7
+        },
+        "waistbreadth": {
+          "r2": 0.914,
+          "residualSdMm": 9.8,
+          "percentileInSample": 38.0
+        },
+        "waistdepth": {
+          "r2": 0.87,
+          "residualSdMm": 11.5,
+          "percentileInSample": 33.3
+        },
+        "buttockcircumference": {
+          "r2": 1.0,
+          "residualSdMm": 0.0,
+          "percentileInSample": 44.8
+        },
+        "buttockdepth": {
+          "r2": 0.794,
+          "residualSdMm": 11.3,
+          "percentileInSample": 39.9
+        },
+        "hipbreadth": {
+          "r2": 0.888,
+          "residualSdMm": 8.9,
+          "percentileInSample": 48.1
+        },
+        "bicristalbreadth": {
+          "r2": 0.607,
+          "residualSdMm": 13.8,
+          "percentileInSample": 49.4
+        },
+        "thighcircumference": {
+          "r2": 0.885,
+          "residualSdMm": 19.1,
+          "percentileInSample": 44.2
+        },
+        "lowerthighcircumference": {
+          "r2": 0.661,
+          "residualSdMm": 20.8,
+          "percentileInSample": 50.1
+        },
+        "calfcircumference": {
+          "r2": 0.554,
+          "residualSdMm": 19.2,
+          "percentileInSample": 52.6
+        },
+        "anklecircumference": {
+          "r2": 0.327,
+          "residualSdMm": 12.1,
+          "percentileInSample": 62.0
+        },
+        "neckcircumferencebase": {
+          "r2": 0.517,
+          "residualSdMm": 13.8,
+          "percentileInSample": 55.3
+        },
+        "crotchlengthomphalion": {
+          "r2": 0.553,
+          "residualSdMm": 28.6,
+          "percentileInSample": 63.7
+        },
+        "crotchlengthposterioromphalion": {
+          "r2": 0.357,
+          "residualSdMm": 23.1,
+          "percentileInSample": 66.6
+        },
+        "biacromialbreadth": {
+          "r2": 0.339,
+          "residualSdMm": 14.9,
+          "percentileInSample": 74.2
+        },
+        "bideltoidbreadth": {
+          "r2": 0.741,
+          "residualSdMm": 14.7,
+          "percentileInSample": 44.4
+        },
+        "footlength": {
+          "r2": 0.536,
+          "residualSdMm": 8.5,
+          "percentileInSample": 81.7
+        },
+        "headcircumference": {
+          "r2": 0.127,
+          "residualSdMm": 18.0,
+          "percentileInSample": 64.9
+        },
+        "wristcircumference": {
+          "r2": 0.482,
+          "residualSdMm": 5.7,
+          "percentileInSample": 64.7
+        },
+        "bicepscircumferenceflexed": {
+          "r2": 0.685,
+          "residualSdMm": 17.5,
+          "percentileInSample": 40.5
+        },
+        "weightkg": {
+          "r2": 0.934,
+          "residualSdMm": 2.85,
+          "percentileInSample": 56.9
+        }
+      },
+      "breast": {
+        "sternalNotchToNippleMm": 208.6,
+        "internippleDistanceMm": 203.2,
+        "nippleToInframammaryFoldMm": 75.3,
+        "basis": "Al-Qattan et al. 2019 means, scaled from the ANSUR II median by stature, chest breadth and chest circumference respectively (scaling by this project, not the source)"
+      }
+    }
+  }
+}

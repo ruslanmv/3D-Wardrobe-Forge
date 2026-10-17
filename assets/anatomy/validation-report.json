@@ -1,0 +1,1383 @@
+{
+ "schema": "wardrobe.anatomy.validationReport.v1",
+ "subdivisionLevels": 2,
+ "unmodelled": {
+  "externalGenitalAnatomy": "Not modelled. Between the thighs the template's closed soft-tissue surface is kept as it is; labia and the structures they enclose are not built, and MakeHuman's helper-genital proxy geometry is not imported. Contact results there are reported under the region name external-genital-region.",
+  "nippleAreola": "Not modelled beyond the template's surface. The bust point is the apex of the breast (the template vertex there, checked against detection as a local apex).",
+  "softTissue": "The surface is rigid. Compression under a garment is not simulated yet (stage 7)."
+ },
+ "bodies": {
+  "ref-f-median": {
+   "dimensions": {
+    "calibrated": {
+     "stature": {
+      "measured": 1628.2,
+      "target": 1628.0,
+      "difference": 0.2,
+      "tolerance": 4.0,
+      "within": true,
+      "acceptanceBound": 8.0,
+      "accepted": true
+     },
+     "crotchheight": {
+      "measured": 776.2,
+      "target": 781.3,
+      "difference": -5.1,
+      "tolerance": 5.0,
+      "within": false,
+      "acceptanceBound": 46.2,
+      "accepted": true
+     },
+     "waistheightomphalion": {
+      "measured": 987.1,
+      "target": 979.7,
+      "difference": 7.4,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 37.0,
+      "accepted": true
+     },
+     "buttockheight": {
+      "measured": 846.5,
+      "target": 832.7,
+      "difference": 13.8,
+      "tolerance": 15.0,
+      "within": true,
+      "acceptanceBound": 49.0,
+      "accepted": true
+     },
+     "chestheight": {
+      "measured": 1168.7,
+      "target": 1169.8,
+      "difference": -1.1,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 42.6,
+      "accepted": true
+     },
+     "kneeheightmidpatella": {
+      "measured": 449.2,
+      "target": 448.6,
+      "difference": 0.6,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 28.2,
+      "accepted": true
+     },
+     "chestcircumference": {
+      "measured": 940.4,
+      "target": 946.0,
+      "difference": -5.6,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "chestdepth": {
+      "measured": 248.9,
+      "target": 247.0,
+      "difference": 1.9,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 18.0,
+      "accepted": true
+     },
+     "chestbreadth": {
+      "measured": 278.5,
+      "target": 269.0,
+      "difference": 9.5,
+      "tolerance": 8.0,
+      "within": false,
+      "acceptanceBound": 22.6,
+      "accepted": true
+     },
+     "internippleDistanceMm": {
+      "measured": 183.1,
+      "target": 203.0,
+      "difference": -19.9,
+      "tolerance": 25.0,
+      "within": true,
+      "acceptanceBound": 50.0,
+      "accepted": true
+     },
+     "waistcircumference": {
+      "measured": 851.5,
+      "target": 860.0,
+      "difference": -8.5,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "waistdepth": {
+      "measured": 217.7,
+      "target": 212.9,
+      "difference": 4.8,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 23.0,
+      "accepted": true
+     },
+     "waistbreadth": {
+      "measured": 304.4,
+      "target": 299.7,
+      "difference": 4.7,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 19.6,
+      "accepted": true
+     },
+     "buttockcircumference": {
+      "measured": 1010.5,
+      "target": 1024.5,
+      "difference": -14.0,
+      "tolerance": 10.0,
+      "within": false,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "buttockdepth": {
+      "measured": 241.1,
+      "target": 233.4,
+      "difference": 7.7,
+      "tolerance": 6.0,
+      "within": false,
+      "acceptanceBound": 22.6,
+      "accepted": true
+     },
+     "hipbreadth": {
+      "measured": 361.3,
+      "target": 355.0,
+      "difference": 6.3,
+      "tolerance": 6.0,
+      "within": false,
+      "acceptanceBound": 17.8,
+      "accepted": true
+     },
+     "thighcircumference": {
+      "measured": 622.2,
+      "target": 618.5,
+      "difference": 3.7,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 38.2,
+      "accepted": true
+     },
+     "lowerthighcircumference": {
+      "measured": 401.1,
+      "target": 401.3,
+      "difference": -0.2,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 41.6,
+      "accepted": true
+     },
+     "calfcircumference": {
+      "measured": 373.2,
+      "target": 373.4,
+      "difference": -0.2,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 38.4,
+      "accepted": true
+     },
+     "anklecircumference": {
+      "measured": 215.3,
+      "target": 215.2,
+      "difference": 0.1,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 24.2,
+      "accepted": true
+     },
+     "crotchlengthomphalion": {
+      "measured": 607.8,
+      "target": 621.7,
+      "difference": -13.9,
+      "tolerance": 12.0,
+      "within": false,
+      "acceptanceBound": 57.2,
+      "accepted": true
+     },
+     "weightkg": {
+      "measured": 62.9,
+      "target": 67.8,
+      "difference": -4.9,
+      "tolerance": 3.0,
+      "within": false,
+      "acceptanceBound": 6.0,
+      "accepted": true
+     }
+    },
+    "reported": {
+     "crotchlengthposterioromphalion": {
+      "measured": 310.7,
+      "reference": 342.9,
+      "difference": -32.2
+     },
+     "nippleToInframammaryFoldMm": {
+      "measured": 41.5,
+      "reference": 77.0,
+      "difference": -35.5
+     },
+     "underbustcircumference": {
+      "measured": 784.9,
+      "reference": null
+     }
+    },
+    "reproductionMaxDifference": 0.0064
+   },
+   "topology": {
+    "rest": {
+     "vertices": 214050,
+     "triangles": 428096,
+     "boundaryEdges": 0,
+     "nonManifoldEdges": 0,
+     "duplicateDirectedEdges": 0,
+     "components": 1,
+     "eulerCharacteristic": 2,
+     "volumeL": 61.082,
+     "selfIntersections": 0
+    },
+    "tPose": {
+     "vertices": 214050,
+     "triangles": 428096,
+     "boundaryEdges": 0,
+     "nonManifoldEdges": 0,
+     "duplicateDirectedEdges": 0,
+     "components": 1,
+     "eulerCharacteristic": 2,
+     "volumeL": 61.392,
+     "selfIntersections": 0
+    }
+   },
+   "landmarkAgreementMm": {
+    "crotch": 0.4,
+    "omphalion": 3.1,
+    "buttockPoint": 9.5,
+    "bustPointLeft": 3.0,
+    "bustPointRight": 3.0
+   },
+   "creases": {
+    "glutealFold": {
+     "depthMm": 25.5,
+     "atHeightMm": 737.2,
+     "sectionX": 0.0657,
+     "rangeMm": [
+      626.2,
+      846.5
+     ]
+    },
+    "inframammaryFold": {
+     "depthMm": 15.3,
+     "atHeightMm": 1135.7,
+     "sectionX": 0.0916,
+     "rangeMm": [
+      1018.7,
+      1168.7
+     ]
+    },
+    "inguinalCrease": {
+     "depthMm": 8.4,
+     "atHeightMm": 883.2,
+     "sectionX": 0.0866,
+     "rangeMm": [
+      696.2,
+      987.1
+     ]
+    }
+   },
+   "bustProjection": {
+    "bustZMm": 185.5,
+    "abdomenZMm": 188.6,
+    "projectionMm": -3.2
+   },
+   "contact": {
+    "buildSeconds": 9.2,
+    "querySecondsPer1000": 2.17,
+    "samples": 8000,
+    "exactness": {
+     "points": 60,
+     "maxDifferenceMm": 0.0
+    },
+    "windingAgreement": {
+     "points": 200,
+     "agree": 200
+    },
+    "sectionAgreement": {
+     "belowCrotch": {
+      "points": 602,
+      "agree": 602
+     },
+     "seat": {
+      "points": 411,
+      "agree": 411
+     },
+     "waist": {
+      "points": 739,
+      "agree": 739
+     },
+     "bust": {
+      "points": 780,
+      "agree": 780
+     }
+    },
+    "samplesByRegion": {
+     "external-genital-region": 26,
+     "breast": 165,
+     "gluteal": 67,
+     "inner-thigh": 92,
+     "body": 7526
+    }
+   },
+   "regionAreasCm2": {
+    "external-genital-region": 104.4,
+    "breast": 456.6,
+    "gluteal": 705.7,
+    "inner-thigh": 967.0,
+    "body": 14242.7
+   },
+   "seconds": 313.6
+  },
+  "ref-f-petite": {
+   "dimensions": {
+    "calibrated": {
+     "stature": {
+      "measured": 1549.2,
+      "target": 1549.0,
+      "difference": 0.2,
+      "tolerance": 4.0,
+      "within": true,
+      "acceptanceBound": 8.0,
+      "accepted": true
+     },
+     "crotchheight": {
+      "measured": 730.2,
+      "target": 734.8,
+      "difference": -4.6,
+      "tolerance": 5.0,
+      "within": true,
+      "acceptanceBound": 46.2,
+      "accepted": true
+     },
+     "waistheightomphalion": {
+      "measured": 932.9,
+      "target": 926.0,
+      "difference": 6.9,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 37.0,
+      "accepted": true
+     },
+     "buttockheight": {
+      "measured": 794.0,
+      "target": 783.7,
+      "difference": 10.3,
+      "tolerance": 15.0,
+      "within": true,
+      "acceptanceBound": 49.0,
+      "accepted": true
+     },
+     "chestheight": {
+      "measured": 1106.7,
+      "target": 1108.0,
+      "difference": -1.3,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 42.6,
+      "accepted": true
+     },
+     "kneeheightmidpatella": {
+      "measured": 420.6,
+      "target": 421.1,
+      "difference": -0.5,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 28.2,
+      "accepted": true
+     },
+     "chestcircumference": {
+      "measured": 897.2,
+      "target": 904.0,
+      "difference": -6.8,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "chestdepth": {
+      "measured": 236.2,
+      "target": 234.3,
+      "difference": 1.9,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 18.0,
+      "accepted": true
+     },
+     "chestbreadth": {
+      "measured": 269.6,
+      "target": 258.5,
+      "difference": 11.1,
+      "tolerance": 8.0,
+      "within": false,
+      "acceptanceBound": 22.6,
+      "accepted": true
+     },
+     "internippleDistanceMm": {
+      "measured": 181.1,
+      "target": 195.1,
+      "difference": -14.0,
+      "tolerance": 25.0,
+      "within": true,
+      "acceptanceBound": 50.0,
+      "accepted": true
+     },
+     "waistcircumference": {
+      "measured": 803.0,
+      "target": 810.0,
+      "difference": -7.0,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "waistdepth": {
+      "measured": 203.9,
+      "target": 200.4,
+      "difference": 3.5,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 23.0,
+      "accepted": true
+     },
+     "waistbreadth": {
+      "measured": 285.0,
+      "target": 281.9,
+      "difference": 3.1,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 19.6,
+      "accepted": true
+     },
+     "buttockcircumference": {
+      "measured": 969.2,
+      "target": 983.0,
+      "difference": -13.8,
+      "tolerance": 10.0,
+      "within": false,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "buttockdepth": {
+      "measured": 230.3,
+      "target": 223.3,
+      "difference": 7.0,
+      "tolerance": 6.0,
+      "within": false,
+      "acceptanceBound": 22.6,
+      "accepted": true
+     },
+     "hipbreadth": {
+      "measured": 345.8,
+      "target": 340.6,
+      "difference": 5.2,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 17.8,
+      "accepted": true
+     },
+     "thighcircumference": {
+      "measured": 593.2,
+      "target": 591.9,
+      "difference": 1.3,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 38.2,
+      "accepted": true
+     },
+     "lowerthighcircumference": {
+      "measured": 384.5,
+      "target": 384.8,
+      "difference": -0.3,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 41.6,
+      "accepted": true
+     },
+     "calfcircumference": {
+      "measured": 359.4,
+      "target": 359.6,
+      "difference": -0.2,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 38.4,
+      "accepted": true
+     },
+     "anklecircumference": {
+      "measured": 208.3,
+      "target": 207.9,
+      "difference": 0.4,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 24.2,
+      "accepted": true
+     },
+     "crotchlengthomphalion": {
+      "measured": 587.3,
+      "target": 599.1,
+      "difference": -11.8,
+      "tolerance": 12.0,
+      "within": true,
+      "acceptanceBound": 57.2,
+      "accepted": true
+     },
+     "weightkg": {
+      "measured": 55.1,
+      "target": 59.1,
+      "difference": -4.0,
+      "tolerance": 3.0,
+      "within": false,
+      "acceptanceBound": 6.0,
+      "accepted": true
+     }
+    },
+    "reported": {
+     "crotchlengthposterioromphalion": {
+      "measured": 301.7,
+      "reference": 331.8,
+      "difference": -30.1
+     },
+     "nippleToInframammaryFoldMm": {
+      "measured": 37.9,
+      "reference": 73.6,
+      "difference": -35.7
+     },
+     "underbustcircumference": {
+      "measured": 751.8,
+      "reference": null
+     }
+    },
+    "reproductionMaxDifference": 0.0068
+   },
+   "topology": {
+    "rest": {
+     "vertices": 214050,
+     "triangles": 428096,
+     "boundaryEdges": 0,
+     "nonManifoldEdges": 0,
+     "duplicateDirectedEdges": 0,
+     "components": 1,
+     "eulerCharacteristic": 2,
+     "volumeL": 53.479,
+     "selfIntersections": 0
+    },
+    "tPose": {
+     "vertices": 214050,
+     "triangles": 428096,
+     "boundaryEdges": 0,
+     "nonManifoldEdges": 0,
+     "duplicateDirectedEdges": 0,
+     "components": 1,
+     "eulerCharacteristic": 2,
+     "volumeL": 53.646,
+     "selfIntersections": 0
+    }
+   },
+   "landmarkAgreementMm": {
+    "crotch": 1.5,
+    "omphalion": 2.3,
+    "buttockPoint": 9.1,
+    "bustPointLeft": 2.2,
+    "bustPointRight": 2.2
+   },
+   "creases": {
+    "glutealFold": {
+     "depthMm": 18.3,
+     "atHeightMm": 693.2,
+     "sectionX": 0.0595,
+     "rangeMm": [
+      580.2,
+      794.0
+     ]
+    },
+    "inframammaryFold": {
+     "depthMm": 12.8,
+     "atHeightMm": 1075.7,
+     "sectionX": 0.0905,
+     "rangeMm": [
+      956.7,
+      1106.7
+     ]
+    },
+    "inguinalCrease": {
+     "depthMm": 4.2,
+     "atHeightMm": 891.2,
+     "sectionX": 0.0878,
+     "rangeMm": [
+      650.2,
+      932.9
+     ]
+    }
+   },
+   "bustProjection": {
+    "bustZMm": 173.8,
+    "abdomenZMm": 177.9,
+    "projectionMm": -4.1
+   },
+   "contact": {
+    "buildSeconds": 10.2,
+    "querySecondsPer1000": 2.38,
+    "samples": 8000,
+    "exactness": {
+     "points": 60,
+     "maxDifferenceMm": 0.0
+    },
+    "windingAgreement": {
+     "points": 200,
+     "agree": 200
+    },
+    "sectionAgreement": {
+     "belowCrotch": {
+      "points": 586,
+      "agree": 586
+     },
+     "seat": {
+      "points": 438,
+      "agree": 438
+     },
+     "waist": {
+      "points": 726,
+      "agree": 726
+     },
+     "bust": {
+      "points": 698,
+      "agree": 698
+     }
+    },
+    "samplesByRegion": {
+     "external-genital-region": 29,
+     "breast": 162,
+     "gluteal": 83,
+     "inner-thigh": 91,
+     "body": 7508
+    }
+   },
+   "regionAreasCm2": {
+    "external-genital-region": 106.9,
+    "breast": 463.8,
+    "gluteal": 676.4,
+    "inner-thigh": 899.2,
+    "body": 13206.4
+   },
+   "seconds": 332.8
+  },
+  "ref-f-full": {
+   "dimensions": {
+    "calibrated": {
+     "stature": {
+      "measured": 1628.7,
+      "target": 1628.0,
+      "difference": 0.7,
+      "tolerance": 4.0,
+      "within": true,
+      "acceptanceBound": 8.0,
+      "accepted": true
+     },
+     "crotchheight": {
+      "measured": 766.5,
+      "target": 774.1,
+      "difference": -7.6,
+      "tolerance": 5.0,
+      "within": false,
+      "acceptanceBound": 46.2,
+      "accepted": true
+     },
+     "waistheightomphalion": {
+      "measured": 986.0,
+      "target": 978.9,
+      "difference": 7.1,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 37.0,
+      "accepted": true
+     },
+     "buttockheight": {
+      "measured": 842.7,
+      "target": 829.8,
+      "difference": 12.9,
+      "tolerance": 15.0,
+      "within": true,
+      "acceptanceBound": 49.0,
+      "accepted": true
+     },
+     "chestheight": {
+      "measured": 1168.4,
+      "target": 1164.4,
+      "difference": 4.0,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 42.6,
+      "accepted": true
+     },
+     "kneeheightmidpatella": {
+      "measured": 443.1,
+      "target": 447.2,
+      "difference": -4.1,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 28.2,
+      "accepted": true
+     },
+     "chestcircumference": {
+      "measured": 1029.4,
+      "target": 1039.0,
+      "difference": -9.6,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "chestdepth": {
+      "measured": 278.3,
+      "target": 276.6,
+      "difference": 1.7,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 18.0,
+      "accepted": true
+     },
+     "chestbreadth": {
+      "measured": 302.8,
+      "target": 283.3,
+      "difference": 19.5,
+      "tolerance": 8.0,
+      "within": false,
+      "acceptanceBound": 22.6,
+      "accepted": true
+     },
+     "internippleDistanceMm": {
+      "measured": 179.8,
+      "target": 213.8,
+      "difference": -34.0,
+      "tolerance": 25.0,
+      "within": false,
+      "acceptanceBound": 50.0,
+      "accepted": true
+     },
+     "waistcircumference": {
+      "measured": 924.1,
+      "target": 934.2,
+      "difference": -10.1,
+      "tolerance": 10.0,
+      "within": false,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "waistdepth": {
+      "measured": 237.9,
+      "target": 235.4,
+      "difference": 2.5,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 23.0,
+      "accepted": true
+     },
+     "waistbreadth": {
+      "measured": 334.1,
+      "target": 324.5,
+      "difference": 9.6,
+      "tolerance": 6.0,
+      "within": false,
+      "acceptanceBound": 19.6,
+      "accepted": true
+     },
+     "buttockcircumference": {
+      "measured": 1110.5,
+      "target": 1127.3,
+      "difference": -16.8,
+      "tolerance": 10.0,
+      "within": false,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "buttockdepth": {
+      "measured": 272.8,
+      "target": 261.5,
+      "difference": 11.3,
+      "tolerance": 6.0,
+      "within": false,
+      "acceptanceBound": 22.6,
+      "accepted": true
+     },
+     "hipbreadth": {
+      "measured": 392.5,
+      "target": 388.5,
+      "difference": 4.0,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 17.8,
+      "accepted": true
+     },
+     "thighcircumference": {
+      "measured": 696.2,
+      "target": 690.0,
+      "difference": 6.2,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 38.2,
+      "accepted": true
+     },
+     "lowerthighcircumference": {
+      "measured": 437.4,
+      "target": 440.5,
+      "difference": -3.1,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 41.6,
+      "accepted": true
+     },
+     "calfcircumference": {
+      "measured": 402.6,
+      "target": 402.5,
+      "difference": 0.1,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 38.4,
+      "accepted": true
+     },
+     "anklecircumference": {
+      "measured": 224.8,
+      "target": 225.2,
+      "difference": -0.4,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 24.2,
+      "accepted": true
+     },
+     "crotchlengthomphalion": {
+      "measured": 646.1,
+      "target": 665.5,
+      "difference": -19.4,
+      "tolerance": 12.0,
+      "within": false,
+      "acceptanceBound": 57.2,
+      "accepted": true
+     },
+     "weightkg": {
+      "measured": 75.2,
+      "target": 79.9,
+      "difference": -4.7,
+      "tolerance": 3.0,
+      "within": false,
+      "acceptanceBound": 6.0,
+      "accepted": true
+     }
+    },
+    "reported": {
+     "crotchlengthposterioromphalion": {
+      "measured": 324.5,
+      "reference": 362.5,
+      "difference": -38.0
+     },
+     "nippleToInframammaryFoldMm": {
+      "measured": 62.3,
+      "reference": 84.6,
+      "difference": -22.3
+     },
+     "underbustcircumference": {
+      "measured": 833.9,
+      "reference": null
+     }
+    },
+    "reproductionMaxDifference": 0.0046
+   },
+   "topology": {
+    "rest": {
+     "vertices": 214050,
+     "triangles": 428096,
+     "boundaryEdges": 0,
+     "nonManifoldEdges": 0,
+     "duplicateDirectedEdges": 0,
+     "components": 1,
+     "eulerCharacteristic": 2,
+     "volumeL": 73.04,
+     "selfIntersections": 0
+    },
+    "tPose": {
+     "vertices": 214050,
+     "triangles": 428096,
+     "boundaryEdges": 0,
+     "nonManifoldEdges": 0,
+     "duplicateDirectedEdges": 0,
+     "components": 1,
+     "eulerCharacteristic": 2,
+     "volumeL": 73.387,
+     "selfIntersections": 0
+    }
+   },
+   "landmarkAgreementMm": {
+    "crotch": 0.6,
+    "omphalion": 3.0,
+    "buttockPoint": 10.4,
+    "bustPointLeft": 5.6,
+    "bustPointRight": 5.6
+   },
+   "creases": {
+    "glutealFold": {
+     "depthMm": 23.5,
+     "atHeightMm": 727.5,
+     "sectionX": 0.0726,
+     "rangeMm": [
+      616.5,
+      842.7
+     ]
+    },
+    "inframammaryFold": {
+     "depthMm": 21.7,
+     "atHeightMm": 1121.4,
+     "sectionX": 0.0899,
+     "rangeMm": [
+      1018.4,
+      1168.4
+     ]
+    },
+    "inguinalCrease": {
+     "depthMm": 10.0,
+     "atHeightMm": 873.5,
+     "sectionX": 0.092,
+     "rangeMm": [
+      686.5,
+      986.0
+     ]
+    }
+   },
+   "bustProjection": {
+    "bustZMm": 209.0,
+    "abdomenZMm": 194.8,
+    "projectionMm": 14.3
+   },
+   "contact": {
+    "buildSeconds": 9.7,
+    "querySecondsPer1000": 2.37,
+    "samples": 8000,
+    "exactness": {
+     "points": 60,
+     "maxDifferenceMm": 0.0
+    },
+    "windingAgreement": {
+     "points": 200,
+     "agree": 200
+    },
+    "sectionAgreement": {
+     "belowCrotch": {
+      "points": 613,
+      "agree": 613
+     },
+     "seat": {
+      "points": 445,
+      "agree": 445
+     },
+     "waist": {
+      "points": 778,
+      "agree": 778
+     },
+     "bust": {
+      "points": 767,
+      "agree": 767
+     }
+    },
+    "samplesByRegion": {
+     "external-genital-region": 22,
+     "breast": 139,
+     "gluteal": 64,
+     "inner-thigh": 105,
+     "body": 7529
+    }
+   },
+   "regionAreasCm2": {
+    "external-genital-region": 117.6,
+    "breast": 440.1,
+    "gluteal": 713.5,
+    "inner-thigh": 1134.5,
+    "body": 15439.2
+   },
+   "seconds": 326.7
+  },
+  "ref-f-tall": {
+   "dimensions": {
+    "calibrated": {
+     "stature": {
+      "measured": 1715.2,
+      "target": 1715.0,
+      "difference": 0.2,
+      "tolerance": 4.0,
+      "within": true,
+      "acceptanceBound": 8.0,
+      "accepted": true
+     },
+     "crotchheight": {
+      "measured": 830.5,
+      "target": 835.9,
+      "difference": -5.4,
+      "tolerance": 5.0,
+      "within": false,
+      "acceptanceBound": 46.2,
+      "accepted": true
+     },
+     "waistheightomphalion": {
+      "measured": 1054.1,
+      "target": 1047.0,
+      "difference": 7.1,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 37.0,
+      "accepted": true
+     },
+     "buttockheight": {
+      "measured": 904.7,
+      "target": 883.4,
+      "difference": 21.3,
+      "tolerance": 15.0,
+      "within": false,
+      "acceptanceBound": 49.0,
+      "accepted": true
+     },
+     "chestheight": {
+      "measured": 1239.7,
+      "target": 1242.7,
+      "difference": -3.0,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 42.6,
+      "accepted": true
+     },
+     "kneeheightmidpatella": {
+      "measured": 478.9,
+      "target": 478.2,
+      "difference": 0.7,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 28.2,
+      "accepted": true
+     },
+     "chestcircumference": {
+      "measured": 922.4,
+      "target": 925.0,
+      "difference": -2.6,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "chestdepth": {
+      "measured": 239.5,
+      "target": 239.5,
+      "difference": 0.0,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 18.0,
+      "accepted": true
+     },
+     "chestbreadth": {
+      "measured": 274.0,
+      "target": 269.2,
+      "difference": 4.8,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 22.6,
+      "accepted": true
+     },
+     "internippleDistanceMm": {
+      "measured": 183.7,
+      "target": 203.2,
+      "difference": -19.5,
+      "tolerance": 25.0,
+      "within": true,
+      "acceptanceBound": 50.0,
+      "accepted": true
+     },
+     "waistcircumference": {
+      "measured": 813.8,
+      "target": 822.0,
+      "difference": -8.2,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "waistdepth": {
+      "measured": 203.8,
+      "target": 198.7,
+      "difference": 5.1,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 23.0,
+      "accepted": true
+     },
+     "waistbreadth": {
+      "measured": 294.0,
+      "target": 290.4,
+      "difference": 3.6,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 19.6,
+      "accepted": true
+     },
+     "buttockcircumference": {
+      "measured": 1002.6,
+      "target": 1014.0,
+      "difference": -11.4,
+      "tolerance": 10.0,
+      "within": false,
+      "acceptanceBound": 20.0,
+      "accepted": true
+     },
+     "buttockdepth": {
+      "measured": 231.1,
+      "target": 225.8,
+      "difference": 5.3,
+      "tolerance": 6.0,
+      "within": true,
+      "acceptanceBound": 22.6,
+      "accepted": true
+     },
+     "hipbreadth": {
+      "measured": 359.2,
+      "target": 353.2,
+      "difference": 6.0,
+      "tolerance": 6.0,
+      "within": false,
+      "acceptanceBound": 17.8,
+      "accepted": true
+     },
+     "thighcircumference": {
+      "measured": 610.6,
+      "target": 608.3,
+      "difference": 2.3,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 38.2,
+      "accepted": true
+     },
+     "lowerthighcircumference": {
+      "measured": 398.6,
+      "target": 399.1,
+      "difference": -0.5,
+      "tolerance": 10.0,
+      "within": true,
+      "acceptanceBound": 41.6,
+      "accepted": true
+     },
+     "calfcircumference": {
+      "measured": 373.8,
+      "target": 373.9,
+      "difference": -0.1,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 38.4,
+      "accepted": true
+     },
+     "anklecircumference": {
+      "measured": 218.2,
+      "target": 218.2,
+      "difference": -0.0,
+      "tolerance": 8.0,
+      "within": true,
+      "acceptanceBound": 24.2,
+      "accepted": true
+     },
+     "crotchlengthomphalion": {
+      "measured": 623.2,
+      "target": 635.0,
+      "difference": -11.8,
+      "tolerance": 12.0,
+      "within": true,
+      "acceptanceBound": 57.2,
+      "accepted": true
+     },
+     "weightkg": {
+      "measured": 64.5,
+      "target": 69.3,
+      "difference": -4.8,
+      "tolerance": 3.0,
+      "within": false,
+      "acceptanceBound": 6.0,
+      "accepted": true
+     }
+    },
+    "reported": {
+     "crotchlengthposterioromphalion": {
+      "measured": 320.3,
+      "reference": 354.4,
+      "difference": -34.1
+     },
+     "nippleToInframammaryFoldMm": {
+      "measured": 29.9,
+      "reference": 75.3,
+      "difference": -45.4
+     },
+     "underbustcircumference": {
+      "measured": 768.2,
+      "reference": null
+     }
+    },
+    "reproductionMaxDifference": 0.0051
+   },
+   "topology": {
+    "rest": {
+     "vertices": 214050,
+     "triangles": 428096,
+     "boundaryEdges": 0,
+     "nonManifoldEdges": 0,
+     "duplicateDirectedEdges": 0,
+     "components": 1,
+     "eulerCharacteristic": 2,
+     "volumeL": 62.603,
+     "selfIntersections": 0
+    },
+    "tPose": {
+     "vertices": 214050,
+     "triangles": 428096,
+     "boundaryEdges": 0,
+     "nonManifoldEdges": 0,
+     "duplicateDirectedEdges": 0,
+     "components": 1,
+     "eulerCharacteristic": 2,
+     "volumeL": 63.024,
+     "selfIntersections": 0
+    }
+   },
+   "landmarkAgreementMm": {
+    "crotch": 0.5,
+    "omphalion": 5.5,
+    "buttockPoint": 9.8,
+    "bustPointLeft": 3.4,
+    "bustPointRight": 3.4
+   },
+   "creases": {
+    "glutealFold": {
+     "depthMm": 26.5,
+     "atHeightMm": 791.5,
+     "sectionX": 0.0696,
+     "rangeMm": [
+      680.5,
+      904.7
+     ]
+    },
+    "inframammaryFold": {
+     "depthMm": 11.1,
+     "atHeightMm": 1214.7,
+     "sectionX": 0.0918,
+     "rangeMm": [
+      1089.7,
+      1239.7
+     ]
+    },
+    "inguinalCrease": {
+     "depthMm": 5.9,
+     "atHeightMm": 947.5,
+     "sectionX": 0.0852,
+     "rangeMm": [
+      750.5,
+      1054.1
+     ]
+    }
+   },
+   "bustProjection": {
+    "bustZMm": 178.0,
+    "abdomenZMm": 186.2,
+    "projectionMm": -8.2
+   },
+   "contact": {
+    "buildSeconds": 10.0,
+    "querySecondsPer1000": 2.2,
+    "samples": 8000,
+    "exactness": {
+     "points": 60,
+     "maxDifferenceMm": 0.0
+    },
+    "windingAgreement": {
+     "points": 200,
+     "agree": 200
+    },
+    "sectionAgreement": {
+     "belowCrotch": {
+      "points": 582,
+      "agree": 582
+     },
+     "seat": {
+      "points": 407,
+      "agree": 407
+     },
+     "waist": {
+      "points": 718,
+      "agree": 718
+     },
+     "bust": {
+      "points": 764,
+      "agree": 764
+     }
+    },
+    "samplesByRegion": {
+     "external-genital-region": 26,
+     "breast": 174,
+     "gluteal": 71,
+     "inner-thigh": 87,
+     "body": 7492
+    }
+   },
+   "regionAreasCm2": {
+    "external-genital-region": 110.7,
+    "breast": 456.2,
+    "gluteal": 718.7,
+    "inner-thigh": 958.2,
+    "body": 14775.5
+   },
+   "seconds": 319.2
+  }
+ },
+ "oldFitForm": {
+  "name": "fit-form-a-misses",
+  "topology": {
+   "vertices": 13667,
+   "triangles": 26320,
+   "boundaryEdges": 998,
+   "nonManifoldEdges": 0,
+   "duplicateDirectedEdges": 0,
+   "components": 8,
+   "eulerCharacteristic": 8,
+   "volumeL": 43.885,
+   "selfIntersections": 679
+  },
+  "creases": {
+   "glutealFold": {
+    "depthMm": 58.0,
+    "atHeightMm": 813.4,
+    "sectionX": 0.0277,
+    "rangeMm": [
+     656.4,
+     890.4
+    ]
+   },
+   "inframammaryFold": {
+    "depthMm": 17.9,
+    "atHeightMm": 1151.4,
+    "sectionX": 0.0655,
+    "rangeMm": [
+     1064.4,
+     1214.4
+    ]
+   },
+   "inguinalCrease": {
+    "depthMm": 14.2,
+    "atHeightMm": 839.4,
+    "sectionX": 0.0734,
+    "rangeMm": [
+     726.4,
+     1048.3
+    ]
+   }
+  },
+  "creasesNote": "Not comparable with the reference bodies: the form's leg tube runs up through its trunk's flat floor, and the profile measure reads the step between the two pieces, not a fold."
+ }
+}

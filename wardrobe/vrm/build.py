@@ -220,18 +220,23 @@ def _normalize_to_height(positions: dict[str, np.ndarray], mesh: Mesh, target_he
     return scale
 
 
-def build_vrm(body: BodyProportions, *, spec: str = "VRM1", mesh_builder=None) -> bytes:
+def build_vrm(body: BodyProportions, *, spec: str = "VRM1", mesh_builder=None,
+              skeleton: dict[str, np.ndarray] | None = None) -> bytes:
     """Return a complete, self-contained VRM as GLB bytes.
 
     ``mesh_builder(body, positions) -> Mesh`` replaces the calibration body's
     surface and keeps everything else — skeleton, skinning, VRM blocks — as it
     is: the fashion-fit forms (``wardrobe.vrm.fashion_body``) are the same rig
     under a better-shaped skin. Absent, the calibration body, byte for byte.
+
+    ``skeleton`` (RB4) replaces the formula's joint positions: the anatomical reference bodies
+    take theirs from their template's joints, which move with the body as it is fitted to a size.
     """
     if spec not in {"VRM0", "VRM1"}:
         raise ValueError("spec must be 'VRM0' or 'VRM1'")
 
-    positions = skeleton_positions(body)
+    positions = ({k: np.asarray(v, dtype=np.float64).copy() for k, v in skeleton.items()} if skeleton
+                 else skeleton_positions(body))
     mesh = (mesh_builder or build_body_mesh)(body, positions)
     _normalize_to_height(positions, mesh, body.height)
     bone_names = list(SKELETON_TREE)
