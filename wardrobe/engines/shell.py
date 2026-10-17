@@ -41,8 +41,10 @@ from wardrobe.engines.geometry_checks import (
     upper_body_surface,
 )
 from wardrobe.errors import FittingError
-from wardrobe.geometry.mesh import Mesh
+from wardrobe.geometry.mesh import Mesh, section_ranges
 from wardrobe.geometry.procedural import (
+    GUSSET_INSET,
+    GUSSET_RINGS,
     PLEAT_SET_M,
     TROUSER_WAISTBAND_M,
     FitParameters,
@@ -50,6 +52,7 @@ from wardrobe.geometry.procedural import (
     flare_start_y,
     front_angle,
     full_hip_y,
+    scrunch_ruching,
     skirt_shape,
     skirt_top,
     trouser_top,
@@ -347,6 +350,11 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
             mesh, index.axis_x, index.axis_z, depth_m=TROUSER_WAISTBAND_M + 0.002, section="trousers-yoke",
             top_edge=lambda points: top + trouser_top_dip(front_angle(points, params), rise, params.height),
         )
+    elif kind == "seamless-leggings":
+        # SL1. The back scrunch, gathered into the fitted panel: built before fitting it would
+        # have been conformed flat like any other detail. Outward only, so the clearance just
+        # measured is a floor, not a guess.
+        mesh = scrunch_ruching(mesh, params)
     elif kind in LINGERIE_KINDS and artifact.metadata.get("collection"):
         # LC2. A collection piece's lace, binding, bows and metal, sewn onto the fabric as it
         # was fitted — after the clearance is measured, whose masks are the panels' own.
@@ -354,6 +362,7 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
 
         mesh = embellish(mesh, artifact.metadata["collection"], params)
 
+    _seat_gussets(mesh)
     _light_gusset(mesh, params.forward)
     if kind in SEAM_WELDED_KINDS:
         _weld_seam_normals(mesh)
@@ -433,6 +442,55 @@ def _weld_seam_normals(mesh: Mesh) -> None:
 
 #: T1. How far down a crotch gusset's shading normals tip from horizontal (about 20 degrees).
 GUSSET_NORMAL_DOWN = 0.35
+
+
+def _seat_gussets(mesh: Mesh) -> None:
+    """SL1. Draw each crotch gusset in to the rim it closes, as that rim was fitted.
+
+    A gusset is built from its yoke's bottom ring before fitting, a hair inside it, and is
+    marked placed so the radial passes leave it flat. But those passes take the ring itself in
+    to her body, by up to three centimetres at her front and back where the planning ellipse
+    is wider than she is, and the gusset stayed where the ellipse had been: a flat disc
+    standing out of every pair of leggings and trousers, plain from the side. Each of its
+    vertices is scaled about its centre, per angle round it, by the fitted rim's radius over
+    the gusset's own — so it is again just inside the ring, wherever the ring went. Nothing
+    else moves; a garment without a gusset is untouched.
+    """
+    rims = mesh.metadata.get("gussetRims")
+    if not rims:
+        return
+    tris = mesh.indices.reshape(-1, 3)
+    sections = {name: (first, count) for name, first, count in section_ranges(mesh)}
+    points = mesh.positions.astype(np.float64)
+    for gusset_name, rim_name in rims.items():
+        if gusset_name not in sections or rim_name not in sections:
+            continue
+        first, count = sections[gusset_name]
+        own = np.unique(tris[first:first + count].reshape(-1))
+        first, count = sections[rim_name]
+        ring = np.unique(tris[first:first + count].reshape(-1))
+        plane = float(points[own, 1].mean())
+        ring = ring[np.abs(points[ring, 1] - plane) < 2e-3]  # the ring it was cut from
+        if own.size < 6 or ring.size < 6:
+            continue
+        centre = points[own].mean(axis=0)
+
+        def polar(index: np.ndarray, centre: np.ndarray = centre) -> tuple[np.ndarray, np.ndarray]:
+            offset = points[index] - centre
+            return np.arctan2(offset[:, 2], offset[:, 0]), np.hypot(offset[:, 0], offset[:, 2])
+
+        # crotch_gusset lays its vertices out rim ring first, then the rings in, then the tip.
+        outer = own[: (own.size - 1) // GUSSET_RINGS]
+        own_angle, own_radius = polar(outer)
+        rim_angle, rim_radius = polar(ring)
+        angle, _ = polar(own)
+        a, b = np.argsort(own_angle), np.argsort(rim_angle)
+        was = np.interp(angle, own_angle[a], own_radius[a], period=2 * np.pi)
+        now = np.interp(angle, rim_angle[b], rim_radius[b], period=2 * np.pi)
+        scale = np.clip(GUSSET_INSET * now / np.maximum(was, 1e-6), 0.2, 2.0)
+        points[own, 0] = centre[0] + (points[own, 0] - centre[0]) * scale
+        points[own, 2] = centre[2] + (points[own, 2] - centre[2]) * scale
+    mesh.positions = points.astype(np.float32)
 
 
 def _light_gusset(mesh: Mesh, forward: float) -> None:

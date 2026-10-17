@@ -28,7 +28,7 @@ SKIRT_LINER_ADULT = "beige seamless briefs"
 SKIRTED = frozenset({"skirt", "dress"})
 #: Anything already on her hips under the skirt makes a liner redundant.
 HIP_COVERING = frozenset({"underwear", "swimwear", "shorts", "trousers"})
-HIP_COVERING_KINDS = frozenset({"tights", "leggings", "catsuit", "one-piece", "slip-shorts"})
+HIP_COVERING_KINDS = frozenset({"tights", "leggings", "seamless-leggings", "catsuit", "one-piece", "slip-shorts"})
 
 
 async def plan(context: PipelineContext) -> None:

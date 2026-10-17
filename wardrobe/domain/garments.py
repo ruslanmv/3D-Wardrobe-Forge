@@ -45,6 +45,8 @@ PROCEDURAL_KINDS = {
     "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
     "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
     "suspender-belt", "waspie", "guepiere", "slip-shorts", "corset",
+    # SL1: high-waist seamless gym leggings (wardrobe.geometry.procedural)
+    "seamless-leggings",
     # DC2: a boot built round the foot as she stands in it (wardrobe.geometry.boots)
     "boots",
 } | set(LINGERIE_KINDS)
