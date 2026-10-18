@@ -371,6 +371,11 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     if drape and kind in SKIRTED_KINDS:
         apply_drape(mesh, index, folds=drape, amplitude=float(artifact.metadata.get("hemDrape") or 0.0),
                     from_y=params.hip_y, mask=axis_mask, clearance_m=clearance)
+    sewn = mesh.metadata.get("sewnFrom")
+    if axis_mask is not None and sewn is not None and axis_mask.shape[0] < mesh.vertex_count:
+        # A brief's gusset was given its own seam vertices after the mask was taken (lingerie.fit).
+        extra = np.asarray(sewn)[: mesh.vertex_count - axis_mask.shape[0]]
+        axis_mask = np.concatenate([axis_mask, axis_mask[extra]])
     after = measure_clearance(mesh, index, clearance, axis_mask)
     after.resolved = pushed
     if kind == "skirt":

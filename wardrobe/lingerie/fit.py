@@ -78,8 +78,20 @@ def seat_gusset(positions: np.ndarray, grid: list[list[int]], points: np.ndarray
                     around.append(rows[r][i + 1])
                 relaxed[v] = positions[v] * 0.5 + positions[around].mean(axis=0) * 0.5
         positions[index] = relaxed[index]
-    # Last, pushes only, until nothing is inside: relaxing must never leave a vertex in her.
+    _keep_width(positions, rows)
+    # Last, pushes only, until nothing is inside: relaxing must never leave a vertex in her. Not
+    # sideways: where her thighs meet, each side's push out of one thigh is toward her midline,
+    # and the rows met there too (zero-width slivers, a row of dark teeth from below).
     for _ in range(ITERATIONS):
+        p = positions[index]
+        signed, normal = _depth(p, pts, nrm)
+        push = np.clip(clearance - signed, 0.0, None)
+        if push.max() < 1e-5:
+            break
+        along = normal * [0.0, 1.0, 1.0]
+        along /= np.maximum(np.linalg.norm(along, axis=1, keepdims=True), 1e-9)
+        positions[index] = p + along * push[:, None]
+    for _ in range(ITERATIONS):  # whatever that could not clear, out along her own normal
         p = positions[index]
         signed, normal = _depth(p, pts, nrm)
         push = np.clip(clearance - signed, 0.0, None)
@@ -87,6 +99,49 @@ def seat_gusset(positions: np.ndarray, grid: list[list[int]], points: np.ndarray
             break
         positions[index] = p + normal * push[:, None]
     return positions
+
+
+#: A gusset row narrower than this has collapsed: a reference body's narrows to about 10 mm between
+#: her thighs, as it should, and AvatarSample A's micro thong's rows went to nothing.
+COLLAPSED_M = 0.004
+
+
+def _keep_width(positions: np.ndarray, rows: list[list[int]]) -> None:
+    """No interior row collapsed below the straight taper between its seams, none crossed. In place.
+
+    Pushed out of two thighs that touch, a gusset's sides met at her midline: its rows went from
+    the front seam's 58 mm to nothing two thirds of the way back (AvatarSample A's micro thong).
+    A row is widened about its own centre, keeping its shape; one that collapsed to a point is
+    laid out evenly across.
+    """
+    def width(row):
+        return float(np.ptp(positions[row][:, 0]))
+
+    first, last = width(rows[0]), width(rows[-1])
+    count = len(rows) - 1
+    # The way the columns run across (+x or -x): a collapsed row is laid out the seams' way round,
+    # or the strip between would be twisted through itself.
+    seam = positions[rows[0]][:, 0]
+    across = 1.0 if seam[-1] >= seam[0] else -1.0
+    for r in range(1, count):
+        row = rows[r]
+        target = first + (last - first) * r / count
+        have = width(row)
+        xs = positions[row][:, 0]
+        crossed = (xs[-1] - xs[0]) * across < 0
+        # Only a collapsed or crossed row: a row that narrows as it follows her (over the pelvic
+        # outlet of a reference body) is right, and widened it went into her.
+        if have >= COLLAPSED_M and not crossed:
+            continue
+        target = max(target, have)
+        centre = float(xs.mean())
+        if have < 1e-4:
+            positions[row, 0] = centre + across * (np.arange(len(row)) / (len(row) - 1) - 0.5) * target
+        elif crossed:
+            # Squeezed past her midline, the row's sides crossed: unwind it, the seams' way round.
+            positions[row, 0] = centre + across * (np.arange(len(row)) / (len(row) - 1) - 0.5) * target
+        else:
+            positions[row, 0] = centre + (xs - centre) * (target / have)
 
 
 #: A vertex is judged against this many of its nearest surface samples.
@@ -146,6 +201,8 @@ def after_shell(context, mesh, clearance: float) -> None:
                                   extension["length"], extension["steps"], clearance)
                 for ids, ring in zip(leg["rings"], rings, strict=True):
                     positions[ids] = ring
+    if record:
+        _unfold(positions, mesh.indices.reshape(-1, 3))
     index = np.flatnonzero(placed)
     lo, hi = positions[index].min(axis=0) - 0.04, positions[index].max(axis=0) + 0.04
     points, normals = _surface(context, lo, hi)
@@ -158,6 +215,8 @@ def after_shell(context, mesh, clearance: float) -> None:
                 break
             positions[index] = p + normal * push[:, None]
     mesh.positions = positions.astype(np.float32)
+    if record:
+        _sew_gusset(mesh, record)
     mesh.compute_normals()
     if seam is not None:
         n = mesh.normals.astype(np.float64)
@@ -166,6 +225,115 @@ def after_shell(context, mesh, clearance: float) -> None:
         n[seam["a"]] = avg
         n[seam["b"]] = avg
         mesh.normals = n.astype(np.float32)
+
+
+def _sew_gusset(mesh, record: dict) -> None:
+    """Give the gusset its own copies of its two seams' vertices: a sewn seam is a hard edge.
+
+    The gusset shared its seams' vertices with the panels, so each seam vertex's normal was
+    the average of a panel facing forward (or back) and a gusset facing down. Across that crease
+    the two triangles of every quad shaded on opposite sides of the toon step, one with two
+    seam corners and one with one: a row of teeth along the front seam from below. The copies
+    stand exactly where the originals stand and are skinned as they are (weights are transferred
+    by position, after this), so the seam cannot open; each side shades as its own fabric.
+    ``record["gusset"]`` keeps naming the panels' vertices; ``record["gussetSeams"]`` the copies.
+    """
+    grid = record.get("gusset")
+    if not grid or len(grid) < 3:
+        return
+    inside = {v for row in grid for v in row}
+    seams = list(dict.fromkeys(list(grid[0]) + list(grid[-1])))
+    tris = mesh.indices.reshape(-1, 3).astype(np.int64)
+    own = np.array([set(t.tolist()) <= inside for t in tris])
+    _wind_like_panels(tris, own)
+    count = mesh.vertex_count
+    copy = {v: count + k for k, v in enumerate(seams)}
+    remap = np.arange(count + len(seams))
+    for v, c in copy.items():
+        remap[v] = c
+    tris[own] = remap[tris[own]]
+    source = np.array(seams, dtype=np.int64)
+    mesh.positions = np.vstack([mesh.positions, mesh.positions[source]])
+    for name in ("normals", "uvs", "joints", "weights"):
+        values = getattr(mesh, name)
+        if values is not None and len(values) == count:
+            setattr(mesh, name, np.concatenate([values, values[source]]))
+    for key, values in list(mesh.metadata.items()):
+        if isinstance(values, np.ndarray) and values.ndim >= 1 and values.shape[0] == count:
+            mesh.metadata[key] = np.concatenate([values, values[source]])
+    mesh.indices = tris.reshape(-1).astype(np.uint32)
+    record["gussetSeams"] = [[copy[v] for v in grid[0]], [copy[v] for v in grid[-1]]]
+    # What each copy was copied from, for anything the shell measured per vertex before this.
+    mesh.metadata["sewnFrom"] = np.concatenate([mesh.metadata.get("sewnFrom", np.empty(0, np.int64)), source])
+
+
+def _wind_like_panels(tris: np.ndarray, own: np.ndarray) -> None:
+    """Wind the gusset's triangles as the panels it is sewn to are wound. In place.
+
+    The gusset was wound before fitting, a triangle at a time, "down" under her crotch; seated, its
+    rows sag between her thighs and turn, and whole rows ended wound into her: with the panels
+    outward, a double-sided toon material shaded them as the fabric's inside. Orientation is
+    carried across shared edges from the panels (an edge runs one way in one triangle and the
+    other way in its neighbour), so the gusset is one surface with them, whatever its shape.
+    """
+    edges: dict[tuple[int, int], list[int]] = {}
+    for f, t in enumerate(tris):
+        for k in range(3):
+            a, b = int(t[k]), int(t[(k + 1) % 3])
+            edges.setdefault((min(a, b), max(a, b)), []).append(f)
+    done = ~own.copy()
+    queue = list(np.flatnonzero(done))
+    while queue:
+        g = queue.pop()
+        t = tris[g]
+        for k in range(3):
+            a, b = int(t[k]), int(t[(k + 1) % 3])
+            for f in edges[(min(a, b), max(a, b))]:
+                if done[f]:
+                    continue
+                u = tris[f]
+                runs_same = any(int(u[m]) == a and int(u[(m + 1) % 3]) == b for m in range(3))
+                if runs_same:
+                    tris[f] = u[[0, 2, 1]]
+                done[f] = True
+                queue.append(f)
+
+
+#: Passes of the unfolding relax, at most.
+UNFOLD_ITERATIONS = 30
+
+
+def _unfold(positions: np.ndarray, tris: np.ndarray) -> None:
+    """Relax the vertices of folded triangles until none is folded. In place.
+
+    Under her crotch a brief's panels meet the gusset where the shell's radial passes are
+    meaningless (her vertical axis runs through it), and a few triangles there ended turned
+    over against their neighbours: from below, a row of dark teeth across the micro thong's
+    front seam on AvatarSample A. A triangle is folded when its normal points against the
+    area-weighted normal of its corners; its corners (and only theirs) move half way to the
+    mean of their neighbours, a pass at a time. The push out of her follows.
+    """
+    neighbours = [set() for _ in range(positions.shape[0])]
+    for a, b, c in tris:
+        neighbours[a] |= {b, c}
+        neighbours[b] |= {a, c}
+        neighbours[c] |= {a, b}
+    rings = [np.fromiter(n, dtype=np.int64) for n in neighbours]
+    for _ in range(UNFOLD_ITERATIONS):
+        a, b, c = positions[tris[:, 0]], positions[tris[:, 1]], positions[tris[:, 2]]
+        face = np.cross(b - a, c - a)
+        corner = np.zeros_like(positions)
+        for k in range(3):
+            np.add.at(corner, tris[:, k], face)
+        folded = np.einsum("ij,ij->i", face, corner[tris].sum(axis=1)) < 0
+        if not folded.any():
+            return
+        moving = np.unique(tris[folded])
+        moved = positions.copy()
+        for v in moving:
+            if rings[v].size:
+                moved[v] = positions[v] * 0.5 + positions[rings[v]].mean(axis=0) * 0.5
+        positions[moving] = moved[moving]
 
 
 #: A string is drawn in only to this many clearances: it bridges the cleft of her seat,
