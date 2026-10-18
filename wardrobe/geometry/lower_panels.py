@@ -53,6 +53,9 @@ TOP_ABOVE_WAIST_M = 0.019
 BAND_AT_SIDE_M = 0.064
 V_DEPTH_M = 0.064
 V_HALF_WIDTH = 1.25
+#: The V's tip stays at least this share of her rise (band top to crotch) above her crotch: on a
+#: short rise (Model Girl's) the full V reached 3 cm from it and read as a dark shield there.
+V_FLOOR_SHARE = 0.5
 #: How far the band stands proud of the leggings, a row above its seam (it is folded double).
 BAND_PROUD_M = 0.0008
 #: The trunk grid stops this far above her crotch; the legs start this far below it.
@@ -150,7 +153,8 @@ def build_leggings_panel(params) -> list[Mesh] | None:
     theta = np.arange(columns) * (2.0 * math.pi / columns)  # 0 her front, π her back
 
     side = top - BAND_AT_SIDE_M * scale
-    vee = side - V_DEPTH_M * scale * np.maximum(_plateau(theta, 0.0, V_HALF_WIDTH),
+    depth = min(V_DEPTH_M * scale, max(side - (crotch + V_FLOOR_SHARE * (top - crotch)), 0.0))
+    vee = side - depth * np.maximum(_plateau(theta, 0.0, V_HALF_WIDTH),
                                                 _plateau(theta, math.pi, V_HALF_WIDTH))
     hip_rows = max(int(math.ceil((float(vee.max()) - bottom) / HIP_ROW_M)), 4)
     axis = np.array([sections.axis[0], 0.0, sections.axis[1]])
@@ -203,6 +207,22 @@ def build_leggings_panel(params) -> list[Mesh] | None:
     count = half - 1
     zs = zb + (zf - zb) * (np.arange(1, count + 1) / (count + 1))
     ys = np.interp(zs, hz, hy)
+    # The hull is convex, so a chord between two samples rides above it, and above the gusset
+    # under it (7 of Model Girl's briefs vertices showed through, up to 1.9 mm). Lower the two
+    # samples either side of each midline point the chords pass above until none does.
+    knots_z = np.concatenate([[zb], zs, [zf]])
+    knots_y = np.concatenate([[float(back[1])], ys, [float(front[1])]])
+    order = np.argsort(knots_z)
+    for _ in range(8):
+        over = np.interp(mid[:, 2], knots_z[order], knots_y[order]) - (mid[:, 1] - ease)
+        if over.size == 0 or over.max() <= 0.0:
+            break
+        for z, excess in zip(mid[over > 0, 2], over[over > 0], strict=True):
+            right = int(np.searchsorted(knots_z[order], z))
+            for k in (order[max(right - 1, 0)], order[min(right, order.size - 1)]):
+                if 0 < k < knots_y.size - 1:  # the crotch row's own points stay
+                    knots_y[k] = min(knots_y[k], knots_y[k] - excess)
+    ys = knots_y[1:-1]
     curve = []
     for z, y in zip(zs, ys, strict=True):
         p = np.array([centre_x, float(y), float(z)])
