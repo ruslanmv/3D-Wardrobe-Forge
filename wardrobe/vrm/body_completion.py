@@ -102,6 +102,7 @@ def complete_body(
     first, last = max(int(hole_rows.min()) - 1, 0), min(int(hole_rows.max()) + 2, rows)
     positions, faces = _tube(proxy[:, first:last], axis_x, axis_z, low + first * CELL_M)
     joints, weights = _nearest_weights(positions, cover_weights)
+    joints, weights = _body_joints(document, skin, joints, weights)
     _attach(document, skin, positions, faces, joints, weights, textures)
     return {"holeCells": int(hole.sum()), "rows": int(last - first), "vertices": int(len(positions)),
             "spanM": [round(low + first * CELL_M, 3), round(low + last * CELL_M, 3)]}
@@ -185,6 +186,50 @@ def _nearest_weights(positions: np.ndarray, cover_weights) -> tuple[np.ndarray, 
         chunk = positions[i : i + 512]
         nearest = np.argmin(((chunk[:, None, :] - points[None, :, :]) ** 2).sum(axis=2), axis=1)
         out_j[i : i + 512], out_w[i : i + 512] = joints[nearest], weights[nearest]
+    return out_j, out_w
+
+
+def _body_joints(document: GltfDocument, skin, joints: np.ndarray, weights: np.ndarray):
+    """Her bones only: a weight on a joint that is not a humanoid bone moves to the nearest
+    humanoid bone above it.
+
+    The garment the patch replaces is weighted to its own secondary bones as well (AvatarSample_O's
+    dress to its skirt's spring bones), and the patch took them with its nearest garment vertex:
+    seated, her thighs went forward and the patch stayed with her skirt, plates of skin through
+    black leggings from below. The patch is her body, so it moves as her body moves.
+    """
+    from wardrobe.vrm.inspect import inspect_document
+
+    mesh_index = _skin_mesh(document, skin)
+    node = next((n for n in document.nodes if n.get("mesh") == mesh_index and "skin" in n), None)
+    if node is None:
+        return joints, weights
+    skin_joints = list(document.gltf["skins"][node["skin"]]["joints"])
+    humanoid = set(inspect_document(document).humanoid_bones.values())
+    parent = {}
+    for index, n in enumerate(document.nodes):
+        for child in n.get("children", []):
+            parent[child] = index
+    slot_of = {joint: slot for slot, joint in enumerate(skin_joints)}
+
+    def body_slot(slot: int) -> int:
+        joint = skin_joints[slot] if slot < len(skin_joints) else None
+        while joint is not None and joint not in humanoid:
+            joint = parent.get(joint)
+        return slot_of.get(joint, slot) if joint is not None else slot
+
+    remap = {int(s): body_slot(int(s)) for s in np.unique(joints)}
+    out_j = np.zeros_like(joints)
+    out_w = np.zeros_like(weights)
+    for v in range(joints.shape[0]):
+        merged: dict[int, float] = {}
+        for slot, weight in zip(joints[v], weights[v], strict=True):
+            if weight > 0:
+                target = remap[int(slot)]
+                merged[target] = merged.get(target, 0.0) + float(weight)
+        strongest = sorted(merged.items(), key=lambda item: -item[1])[: joints.shape[1]]
+        for k, (slot, weight) in enumerate(strongest):
+            out_j[v, k], out_w[v, k] = slot, weight
     return out_j, out_w
 
 

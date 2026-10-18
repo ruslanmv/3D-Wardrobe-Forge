@@ -2037,6 +2037,13 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
             sections += build_garter(params, belt_y=params.waist_y, stocking_top_y=stocking_top)
         return sections
     if kind == "leggings":
+        # One piece on her measured outline when the fitter has measured her (SL2's builder, a
+        # plain band); the band, gusset and tubes otherwise (a direct build_garment call).
+        from wardrobe.geometry.lower_panels import build_leggings_panel  # it imports panels
+
+        panel = build_leggings_panel(params, plain=True)
+        if panel:
+            return panel
         waistband = build_band(params, y_bottom=crotch_y(params, params.hip_y - thigh * 0.12),
                                y_top=low_rise + rise * 0.3, rows=5, name="leggings-waist")
         gusset = crotch_gusset(waistband, name="leggings-gusset")

@@ -53,6 +53,8 @@ TOP_ABOVE_WAIST_M = 0.019
 BAND_AT_SIDE_M = 0.064
 V_DEPTH_M = 0.064
 V_HALF_WIDTH = 1.25
+#: A plain pair's band, level all round: how deep it is.
+PLAIN_BAND_M = 0.035
 #: The V's tip stays at least this share of her rise (band top to crotch) above her crotch: on a
 #: short rise (Model Girl's) the full V reached 3 cm from it and read as a dark shield there.
 V_FLOOR_SHARE = 0.5
@@ -134,8 +136,14 @@ class _Leg:
                          centre[1] + r * np.cos(phi)], axis=1)
 
 
-def build_leggings_panel(params) -> list[Mesh] | None:
-    """High-waist seamless leggings, one surface waist to ankle hems, on her measured outline."""
+def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
+    """High-waist seamless leggings, one surface waist to ankle hems, on her measured outline.
+
+    ``plain``: a plain pair (``leggings``): its top at her natural waist and a level band, no V
+    crossover. The plain pair was a band, a gusset and two tubes fitted one by one, and showed
+    what the seamless pair showed before SL2: a gusset patch at her crotch, a line across her
+    hips where band met tubes, and the slip shorts under them through both.
+    """
     cover = params.metadata.get("coverPoints")
     legs = params.metadata.get("legPoints")
     lower = params.metadata.get("lowerBody")
@@ -151,7 +159,7 @@ def build_leggings_panel(params) -> list[Mesh] | None:
     crotch = float(lower["crotchY"])
     centre_x = float(lower.get("centreX", np.median(cover[:, 0])))
 
-    top = float(params.waist_y) + TOP_ABOVE_WAIST_M * scale
+    top = float(params.waist_y) + (0.0 if plain else TOP_ABOVE_WAIST_M) * scale
     bottom = crotch + CROTCH_ROW_ABOVE_M
     sections = Sections.measure(cover, forward, bottom, top)
     if sections is None:
@@ -160,8 +168,9 @@ def build_leggings_panel(params) -> list[Mesh] | None:
     half = columns // 2
     theta = np.arange(columns) * (2.0 * math.pi / columns)  # 0 her front, π her back
 
-    side = top - BAND_AT_SIDE_M * scale
-    depth = min(V_DEPTH_M * scale, max(side - (crotch + V_FLOOR_SHARE * (top - crotch)), 0.0))
+    side = top - (PLAIN_BAND_M if plain else BAND_AT_SIDE_M) * scale
+    floor = crotch + V_FLOOR_SHARE * (top - crotch)
+    depth = 0.0 if plain else min(V_DEPTH_M * scale, max(side - floor, 0.0))
     vee = side - depth * np.maximum(_plateau(theta, 0.0, V_HALF_WIDTH),
                                                 _plateau(theta, math.pi, V_HALF_WIDTH))
     hip_rows = max(int(math.ceil((float(vee.max()) - bottom) / HIP_ROW_M)), 4)

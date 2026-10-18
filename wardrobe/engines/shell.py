@@ -147,7 +147,7 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
             cover = inner_now if cover is None else np.vstack([cover, inner_now])
         if cover is not None:
             metadata["coverPoints"] = cover
-        if kind == "seamless-leggings" and legs is not None:
+        if kind in LEGGINGS_PANEL_KINDS and legs is not None:
             # SL2. Each leg below the crotch, and whatever is already on her legs, for the leg
             # rings to be cut round (wardrobe.geometry.lower_panels).
             inner_legs = _skinned_to(context, context.collision_points, LEG_BONES) \
@@ -454,7 +454,8 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
 
 
 #: G6. Shapes cut as panels on her measured outline (wardrobe.geometry.panels).
-PANEL_KINDS = frozenset({"camisole", "open-cardigan", "tee", "seamless-leggings"})
+LEGGINGS_PANEL_KINDS = frozenset({"seamless-leggings", "leggings"})
+PANEL_KINDS = frozenset({"camisole", "open-cardigan", "tee"}) | LEGGINGS_PANEL_KINDS
 
 #: DC3. Garments built of a bodice and a skirt whose shading must run straight across the join.
 SEAM_WELDED_KINDS = frozenset({"dress", "slip-dress"})
