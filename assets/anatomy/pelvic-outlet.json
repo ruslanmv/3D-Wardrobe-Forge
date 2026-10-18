@@ -1,0 +1,144 @@
+{
+ "ref-f-full": {
+  "fit": {
+   "scale": [
+    0.9707,
+    1.0548,
+    1.1463
+   ],
+   "pitchDegrees": 11.0,
+   "ringAgreementMm": 6.63,
+   "weightedResidualMm": 0.036,
+   "maxMoveMm": 14.8,
+   "verticesMoved": 2993,
+   "verticesDrawn": 520
+  },
+  "topology": {
+   "vertices": 214050,
+   "triangles": 428096,
+   "boundaryEdges": 0,
+   "nonManifoldEdges": 0,
+   "duplicateDirectedEdges": 0,
+   "components": 1,
+   "eulerCharacteristic": 2,
+   "volumeL": 73.169,
+   "selfIntersections": 0
+  },
+  "measurementShiftMm": {
+   "thighcircumference": 7.6,
+   "crotchlengthomphalion": -8.2,
+   "crotchlengthposterioromphalion": -7.4,
+   "weightkg": 0.1
+  },
+  "seconds": 110.6
+ },
+ "ref-f-median": {
+  "fit": {
+   "scale": [
+    0.8914,
+    0.9537,
+    1.0202
+   ],
+   "pitchDegrees": 10.0,
+   "ringAgreementMm": 5.87,
+   "weightedResidualMm": 0.034,
+   "maxMoveMm": 14.5,
+   "verticesMoved": 3490,
+   "verticesDrawn": 468
+  },
+  "topology": {
+   "vertices": 214050,
+   "triangles": 428096,
+   "boundaryEdges": 0,
+   "nonManifoldEdges": 0,
+   "duplicateDirectedEdges": 0,
+   "components": 1,
+   "eulerCharacteristic": 2,
+   "volumeL": 61.198,
+   "selfIntersections": 0
+  },
+  "measurementShiftMm": {
+   "buttockdepth": -0.2,
+   "thighcircumference": 6.5,
+   "crotchlengthomphalion": -8.8,
+   "crotchlengthposterioromphalion": -8.6,
+   "weightkg": 0.1
+  },
+  "seconds": 129.5
+ },
+ "ref-f-petite": {
+  "fit": {
+   "scale": [
+    0.8513,
+    0.913,
+    0.9793
+   ],
+   "pitchDegrees": 9.0,
+   "ringAgreementMm": 6.16,
+   "weightedResidualMm": 0.038,
+   "maxMoveMm": 16.0,
+   "verticesMoved": 3752,
+   "verticesDrawn": 428
+  },
+  "topology": {
+   "vertices": 214050,
+   "triangles": 428096,
+   "boundaryEdges": 0,
+   "nonManifoldEdges": 0,
+   "duplicateDirectedEdges": 0,
+   "components": 1,
+   "eulerCharacteristic": 2,
+   "volumeL": 53.611,
+   "selfIntersections": 0
+  },
+  "measurementShiftMm": {
+   "buttockcircumference": -0.2,
+   "buttockdepth": -0.8,
+   "thighcircumference": 9.0,
+   "crotchlengthomphalion": -6.9,
+   "crotchlengthposterioromphalion": -5.8,
+   "weightkg": 0.1
+  },
+  "seconds": 123.8
+ },
+ "ref-f-tall": {
+  "fit": {
+   "scale": [
+    0.8858,
+    0.9289,
+    0.974
+   ],
+   "pitchDegrees": 8.0,
+   "ringAgreementMm": 5.73,
+   "weightedResidualMm": 0.035,
+   "maxMoveMm": 14.7,
+   "verticesMoved": 3480,
+   "verticesDrawn": 454
+  },
+  "topology": {
+   "vertices": 214050,
+   "triangles": 428096,
+   "boundaryEdges": 0,
+   "nonManifoldEdges": 0,
+   "duplicateDirectedEdges": 0,
+   "components": 1,
+   "eulerCharacteristic": 2,
+   "volumeL": 62.702,
+   "selfIntersections": 0
+  },
+  "measurementShiftMm": {
+   "buttockcircumference": -0.1,
+   "buttockdepth": -0.4,
+   "thighcircumference": 6.5,
+   "crotchlengthomphalion": -10.1,
+   "crotchlengthposterioromphalion": -8.9,
+   "weightkg": 0.1
+  },
+  "seconds": 127.6
+ },
+ "source": {
+  "patch": "assets/anatomy/hra-pelvis.npz",
+  "provenance": "assets/anatomy/hra-provenance.json",
+  "attribution": "Browne, Kristen, and Heidi Schlehlein. 2024. 3D Reference Organ for Skin, Female v1.5. Human Reference Atlas, HuBMAP. https://doi.org/10.48539/HBM453.MVPL.398. Licensed under CC BY 4.0. Cropped and registered by 3D-Wardrobe-Forge."
+ }
+}

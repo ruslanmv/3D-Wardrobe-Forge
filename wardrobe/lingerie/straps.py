@@ -73,10 +73,47 @@ def strap_x(params: FitParameters) -> float:
     return params.measurements.shoulder_width_m * 0.5 * 0.55
 
 
+#: AB2. A halter crosses this far outside her neck's edge, and meets its twin this far either
+#: side of her spine, a little below the base of her neck.
+HALTER_NECK_CLEARANCE_M = 0.012
+HALTER_NAPE_SPREAD_M = 0.012
+HALTER_NAPE_DROP_M = 0.015
+
+
+def halter_x(params: FitParameters) -> float:
+    """Where a halter crosses her shoulder: just outside her neck, not out on her shoulder."""
+    neck = _neck_half_width(params)
+    return (neck or params.measurements.shoulder_width_m * 0.18) + HALTER_NECK_CLEARANCE_M
+
+
+def nape_anchor(params: FitParameters, side: str, sign: float, centre_x: float, lift: float) -> Anchor | None:
+    """AB2. Where a halter is tied: the back of her neck, just off her spine on this side."""
+    neck = params.measurements.bone_positions.get("neck")
+    if neck is None:
+        return None
+    x = centre_x + sign * HALTER_NAPE_SPREAD_M
+    # Where her measured back runs out below her neck (a body whose surface map stops at her
+    # shoulders), the tie is lower down her back: the first point the map has, a centimetre a step.
+    for step in range(6):
+        y = float(neck[1]) - HALTER_NAPE_DROP_M - step * 0.01
+        p = _point(params, x, y, "back", lift)
+        n = surface_normal(params, x, y, "back")
+        if p is not None and n is not None:
+            break
+    else:
+        return None
+    return Anchor(name="halter-nape", side=side, position=p, normal=n, tangent=np.array([0.0, 1.0, 0.0]),
+                  source="neck")
+
+
 def route(params: FitParameters, front: np.ndarray, back: np.ndarray, side: float, lift: float,
-          *, over_her: bool = False) -> tuple[np.ndarray, np.ndarray] | None:
-    """Points and normals from ``front`` up her chest, over her shoulder, down to ``back``."""
-    x_top = side * strap_x(params)
+          *, over_her: bool = False, x_top: float | None = None) -> tuple[np.ndarray, np.ndarray] | None:
+    """Points and normals from ``front`` up her chest, over her shoulder, down to ``back``.
+
+    ``x_top`` (AB2) is where it crosses her shoulder, distance from her midline; absent, the
+    usual strap line (``strap_x``). A halter crosses next to her neck.
+    """
+    x_top = side * (strap_x(params) if x_top is None else x_top)
     peak = shoulder_top(params, x_top)
     if peak is None:
         return None
@@ -168,13 +205,14 @@ def _smooth(path: np.ndarray, passes: int = 2) -> np.ndarray:
 
 
 def build_ribbon_strap(params: FitParameters, front: Anchor, back: Anchor, *, spec: StrapSpec | None = None,
-                       name: str = "strap", over_her: bool = False) -> tuple[Mesh, FittedStrap] | None:
+                       name: str = "strap", over_her: bool = False,
+                       x_top: float | None = None) -> tuple[Mesh, FittedStrap] | None:
     """A flat strap from ``front`` over her shoulder to ``back``, and its fitted record."""
     spec = spec or StrapSpec()
     side = 1.0 if front.position[0] >= 0 else -1.0
     lift = spec.thickness_m / 2 + GAP_M
     routed = route(params, np.asarray(front.position, dtype=np.float64),
-                   np.asarray(back.position, dtype=np.float64), side, lift, over_her=over_her)
+                   np.asarray(back.position, dtype=np.float64), side, lift, over_her=over_her, x_top=x_top)
     if routed is None:
         return None
     path, normals = routed

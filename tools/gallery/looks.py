@@ -265,7 +265,7 @@ async def main(out: Path, avatar: Path | None, only: set[int], form: bool = Fals
             raise SystemExit("AvatarSample_A is not fetched: run tools/fetch_library.py")
         data = dress_form(entry.path.read_bytes())
         (out / "dress-form-a.vrm").write_bytes(data)
-        looks = [(n, t, p, {"dressed": True}) for n, t, p, _ in EVERYDAY_LOOKS]
+        looks = [(n, t, p, {**e, "dressed": True}) for n, t, p, e in EVERYDAY_LOOKS]
         sources = {"dressed": data}
         declared = {k: v for k, v in entry.avatar_input().items() if k not in ("storageKey", "sha256")}
         declared["avatarId"] = "dress-form-a"
@@ -273,7 +273,7 @@ async def main(out: Path, avatar: Path | None, only: set[int], form: bool = Fals
         looks, sources = LOOKS, {"plain": toon_mannequin().to_bytes(), "dressed": dressed_mannequin()}
         declared = {"depictsAdult": declared_adult(BODY.name)}  # assets/calibration/policy.json
     else:
-        looks = [(n, t, p, {"dressed": True}) for n, t, p, _ in EVERYDAY_LOOKS]
+        looks = [(n, t, p, {**e, "dressed": True}) for n, t, p, e in EVERYDAY_LOOKS]
         sources, declared = {"dressed": avatar.read_bytes()}, {"avatarId": avatar.stem}
         # A library avatar goes in as the Studio sends it: licence from the
         # provenance manifest, any declaration from policy.json — nothing added here.
@@ -291,9 +291,14 @@ async def main(out: Path, avatar: Path | None, only: set[int], form: bool = Fals
             continue
         key = "sources/dressed.vrm" if extra.get("dressed") else "sources/plain.vrm"
         request = CreateJobRequest.model_validate({
-            "avatar": {"storageKey": key, "avatarId": "mannequin", **declared},
+            # The operator's declaration, when the caller makes it for this look (garment_review.py
+            # --declare-adult, as the Space's admin session does); never assumed.
+            "avatar": {"storageKey": key, "avatarId": "mannequin", **declared,
+                       **({"depictsAdult": True} if extra.get("depictsAdult") else {})},
             "outfit": {"prompt": prompt, "mode": "template"},
-            "options": {"renderPreview": False, "engine": "native"},
+            # A look may carry job options of its own: garment_review.py --studio sends the
+            # Studio's simple path (replace-outer, a foundation ensured).
+            "options": {"renderPreview": False, "engine": "native", **extra.get("options", {})},
         })
         result = await orch.run_now(request)
         data = await store.get(f"looks/{result.look.id}/look.vrm") if result.look else None

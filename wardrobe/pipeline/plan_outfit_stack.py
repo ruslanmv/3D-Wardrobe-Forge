@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import re
 
-from wardrobe.domain.garments import GarmentTemplate, TemplateCatalog
+from wardrobe.domain.garments import JACKET_KINDS, GarmentTemplate, TemplateCatalog
 from wardrobe.domain.looks import OutfitPlan, OutfitRequest
 from wardrobe.hosiery import planning as hosiery_planning
 from wardrobe.hosiery import presets as hosiery_presets
@@ -69,15 +69,46 @@ def layer_of(template: GarmentTemplate | None, category: str) -> tuple[int, str]
     kind = template.procedural_kind if template is not None else category
     if kind == "slip-shorts":
         return LINER
-    if kind in {"jacket", "cropped-jacket"}:
+    if kind in JACKET_KINDS:
         return OUTER
     if KIND_REGIONS.get(kind) == frozenset({"upper", "lower"}):
         return ONE_PIECE
     return MAIN
 
 
+#: G1. Separators that only ever separate garments. "with" and "over" can join a detail to
+#: its garment ("a dress with pockets"); a "+" or a ";" is a list.
+_HARD = re.compile(r"\s*[+;]\s*")
+
+
+def unplanned_pieces(prompt: str) -> list[str]:
+    """G1. The "+"-separated pieces of a prompt that name no garment the planner knows.
+
+    Each would otherwise vanish: ``split_prompt`` gives up on a list with such a piece in it
+    and plans the whole sentence as one garment, so "red cropped camisole + black leggings"
+    (before "camisole" was a garment word) made red leggings and a report that said passed.
+    Empty when the prompt is not a list, or when no other piece names a garment either: then
+    there is nothing the piece could have been told apart from.
+    """
+    pieces = [_ARTICLE.sub("", piece.strip(" ,.")) for piece in _HARD.split(prompt)]
+    pieces = [piece for piece in pieces if piece]
+    if len(pieces) < 2:
+        return []
+    missing = [piece for piece in pieces if parse_prompt(piece).category is None]
+    return missing if len(missing) < len(pieces) else []
+
+
 def split_prompt(prompt: str) -> list[str]:
-    """The garments a prompt names, as separate prompts; one element when it names one."""
+    """The garments a prompt names, as separate prompts; one element when it names one.
+
+    G1. A "+" piece that names no garment is left out rather than allowed to turn the list
+    back into one garment, which gave its colour to the wrong one; ``unplanned_pieces``
+    reports what was left out, and the plan carries it.
+    """
+    missing = unplanned_pieces(prompt)
+    if missing:
+        kept = [piece for piece in _HARD.split(prompt) if _ARTICLE.sub("", piece.strip(" ,.")) not in missing]
+        prompt = " + ".join(piece.strip() for piece in kept)
     pieces = [_ARTICLE.sub("", piece.strip(" ,.")) for piece in _CONNECTORS.split(prompt)]
     pieces = [piece for piece in pieces if piece]
     merged: list[str] = []
@@ -135,11 +166,19 @@ def plan_outfit_stack(
     its garments and its overrides placed: passing them as extra ``layers``
     instead made "a tee + a skirt" one layer and lost the tee (S2).
     """
+    from wardrobe import collections as independent  # AB: imports the domain, as above
     from wardrobe.lingerie import collections  # it imports the domain this module is planned from
 
-    request = hosiery_presets.expand(look_presets.expand(request))
+    request = independent.expand(hosiery_presets.expand(look_presets.expand(request)))
     plan = hosiery_planning.apply(_plan_stack(request, catalog, list(beneath)), request, catalog)
-    return collections.apply(look_presets.apply(plan, request, catalog), request, catalog)
+    plan = collections.apply(look_presets.apply(plan, request, catalog), request, catalog)
+    plan = independent.apply(plan, request)
+    missing = [] if request.layers or request.template_id else unplanned_pieces(request.prompt)
+    if not missing:
+        return plan
+    said = (f"'{piece}' names no garment the planner knows; it was not made" for piece in missing)
+    notes = [*plan.notes, *said]
+    return plan.model_copy(update={"unplanned": missing, "notes": list(dict.fromkeys(notes))})
 
 
 def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog, beneath: list[OutfitRequest]) -> OutfitPlan:
@@ -147,6 +186,10 @@ def _plan_stack(request: OutfitRequest, catalog: TemplateCatalog, beneath: list[
         requests = [layer.model_copy(update={"layers": None}) for layer in request.layers]
     else:
         pieces = split_prompt(request.prompt)
+        if len(pieces) == 1 and pieces[0] != request.prompt and unplanned_pieces(request.prompt):
+            # G1. One garment left of a list: planned from its own words, not the sentence's,
+            # or the colour of the piece that was left out still lands on it.
+            request = request.model_copy(update={"prompt": pieces[0]})
         if len(pieces) == 1 and not beneath and set_parts(request, catalog) is None:
             return _placed(plan_outfit(request, catalog), catalog)
         if len(pieces) == 1:
@@ -273,4 +316,4 @@ def _stack(plans: list[OutfitPlan]) -> OutfitPlan:
     )
 
 
-__all__ = ["layer_of", "plan_outfit_stack", "split_prompt"]
+__all__ = ["layer_of", "plan_outfit_stack", "split_prompt", "unplanned_pieces"]

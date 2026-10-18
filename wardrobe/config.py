@@ -89,6 +89,11 @@ class Settings(BaseSettings):
     wardrobe_library_root: str = str(REPO_ROOT / "assets" / "library")
     #: BA1. The tattoo designs (body-art.json and their artwork).
     wardrobe_body_art_root: str = str(REPO_ROOT / "assets" / "body_art")
+    #: BS1. Body-surface profiles and templates (allowlisted, provenance-checked).
+    wardrobe_body_surface_root: str = str(REPO_ROOT / "assets" / "body_surface")
+    #: BS1. The operator's switch for adult body-surface profiles. Off: only collision-only
+    #: profiles run, whatever a caller sends. Never on by default.
+    wardrobe_adult_body_surface: bool = False
 
     # -- safety ----------------------------------------------------------
     max_avatar_bytes: int = 128 * 1024 * 1024
@@ -129,6 +134,10 @@ class Settings(BaseSettings):
     @property
     def body_art_root_path(self) -> Path:
         return Path(self.wardrobe_body_art_root)
+
+    @property
+    def body_surface_root_path(self) -> Path:
+        return Path(self.wardrobe_body_surface_root)
 
     def artifact_url(self, key: str) -> str:
         base = self.public_base_url.rstrip("/")

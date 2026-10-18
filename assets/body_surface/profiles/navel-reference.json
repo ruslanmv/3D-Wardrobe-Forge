@@ -1,0 +1,19 @@
+{
+  "schema": "wardrobe.bodySurface.v1",
+  "profileId": "navel-reference",
+  "title": "Navel (reference region)",
+  "capability": "body_surface",
+  "authorization": {"requiresAdultDeclaration": false, "allowPromptOverride": false},
+  "regions": {
+    "navel": {
+      "templateId": "navel/v1",
+      "strength": 1.0,
+      "collisionDetail": 0.1,
+      "smoothness": 1.0,
+      "defaultWeight": 1.0,
+      "preserveMeasurements": ["underbust", "full-hip", "thigh"]
+    }
+  },
+  "collision": {"representation": "mesh", "outwardMarginMm": 1.0, "detailCutoffMm": 3.0},
+  "provenance": {"assetSet": "navel/v1 (CC0-1.0, authored in this repository)", "license": "CC0-1.0"}
+}

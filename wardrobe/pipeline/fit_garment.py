@@ -42,13 +42,18 @@ async def run(context: PipelineContext, engine: FittingEngine) -> None:
     for garment, artifact in zip(garments, artifacts, strict=True):
         context.plan, context.artifact = garment, artifact
         await engine.fit_garment(context)
+        relaxation = _relax(context)
         entry = _entry(context, garment)
+        if relaxation is not None:
+            entry["relaxation"] = relaxation
         entries.append(entry)
         if context.mesh is not None:
             context.built.append(BuiltLayer(garment, artifact, context.mesh, list(context.segments), entry))
             context.collision_points = _with_surface(context.collision_points, context.mesh)
     context.plan = outfit
     context.engine_name = engine.name
+    if context.body_surface is not None and context.fit_report.body_surface is not None:
+        context.fit_report.body_surface["clearance"] = _clearance(context)
 
     report = context.fit_report
     report.layers = entries
@@ -88,6 +93,61 @@ async def run(context: PipelineContext, engine: FittingEngine) -> None:
         clippingCheck=str(report.clipping_check),
         verticesPushedOut=clearance.get("verticesPushedOut", 0),
     )
+
+
+#: BS5. Garments the relaxation leaves as fitted: rigid boots, and anything not built as a shell.
+RIGID_KINDS = frozenset({"boots"})
+
+
+def _relax(context: PipelineContext) -> dict | None:
+    """BS5. XPBD-relax the layer just fitted against the collision body, when the job asked for it."""
+    surface = context.body_surface
+    options = context.record.request.options
+    mesh = context.mesh
+    if surface is None or options.cloth_relaxation != "xpbd" or mesh is None:
+        return None
+    artifact = context.artifact
+    kind = (artifact.procedural_kind if artifact is not None else None) or context.plan.category
+    if kind in RIGID_KINDS or (context.artifact is not None
+                               and context.artifact.metadata.get("hosieryRole") == "connector"):
+        return {"solver": "xpbd", "skipped": f"{kind} is not relaxed"}
+    from wardrobe.body_surface.collision import signed_clearance
+    from wardrobe.body_surface.xpbd import relax
+
+    positions, report = relax(mesh.positions, mesh.indices, surface.collision_grid())
+    out = report.to_dict()
+    if not report.moved_vertices:
+        return out
+    # Kept only if it made her render body's clearance no worse. In a narrow hollow (the gap
+    # between her thighs below the crotch) the nearest surface can be either wall, and a contact
+    # push there can go the wrong way: a relaxation that cannot show it helped is not applied.
+    render = surface.render_grid()
+    before = signed_clearance(render, mesh.positions.astype("float64"), mesh.indices)
+    after = signed_clearance(render, positions, mesh.indices)
+    worse = (after.get("minimumSignedDistanceMm", 0.0) < before.get("minimumSignedDistanceMm", 0.0) - 1e-3
+             or after.get("samplesBelowMinus0_5Mm", 0) > before.get("samplesBelowMinus0_5Mm", 0))
+    out["renderClearanceBefore"] = before.get("minimumSignedDistanceMm")
+    out["renderClearanceAfter"] = after.get("minimumSignedDistanceMm")
+    if worse:
+        out["applied"] = False
+        out["reason"] = "would have made her clearance worse; the fitted garment is kept as fitted"
+        context.warn(f"cloth relaxation not applied to {context.plan.name}: it would not have improved "
+                     "clearance")
+        return out
+    mesh.positions = positions.astype(mesh.positions.dtype)
+    mesh.compute_normals()
+    out["applied"] = True
+    return out
+
+
+def _clearance(context: PipelineContext) -> list[dict]:
+    """BS2. Each layer's signed clearance from her render body (what would show)."""
+    from wardrobe.body_surface.collision import signed_clearance
+
+    grid = context.body_surface.render_grid()
+    return [{"layer": layer.plan.name, **signed_clearance(grid, layer.mesh.positions.astype("float64"),
+                                                          layer.mesh.indices)}
+            for layer in context.built]
 
 
 def _rank(check: ClippingCheck) -> int:

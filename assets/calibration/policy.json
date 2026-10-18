@@ -1,12 +1,16 @@
 {
   "schemaVersion": 1,
-  "about": "Operator declarations for the repository's generated bodies: the calibration bodies (wardrobe/vrm/build.py:CALIBRATION_BODIES) and the fashion-fit forms (wardrobe/vrm/fashion_body.py:FASHION_FIT_BODIES). They are generated, faceless mannequins built to adult proportions (1.48-1.83 m, adult shoulder and hip spans; the fit forms to a declared adult size chart, smooth and without anatomical detail) and depict no one. depictsAdult: true is what lets the verification gallery, the hosiery golden previews and the lingerie previews dress them in intimate wear through the ordinary gate. It is read by the tools, never by a request: a job still carries the declaration in its avatar block, exactly as an operator's upload would.",
+  "about": "Operator declarations for the repository's generated bodies: the calibration bodies (wardrobe/vrm/build.py:CALIBRATION_BODIES), the fashion-fit forms (wardrobe/vrm/fashion_body.py:FASHION_FIT_BODIES) and the anatomical reference bodies (wardrobe/anatomy/reference.py: ANSUR II women aged 21 and over, on MakeHuman's CC0 adult template). They are generated bodies built to adult proportions and depict no one: the calibration bodies and fit forms are faceless mannequins (1.48-1.83 m, adult shoulder and hip spans; the fit forms to a declared adult size chart, smooth and without anatomical detail); the reference bodies are MakeHuman's adult template calibrated to adult survey sizes, without eyes, hair or genital detail. depictsAdult: true is what lets the verification gallery, the hosiery golden previews and the lingerie previews dress them in intimate wear through the ordinary gate. It is read by the tools, never by a request: a job still carries the declaration in its avatar block, exactly as an operator's upload would.",
   "bodies": {
     "calibration-a-petite": {"depictsAdult": true},
     "calibration-b-medium": {"depictsAdult": true},
     "calibration-c-tall": {"depictsAdult": true},
     "calibration-d-broad": {"depictsAdult": true},
     "fit-form-a-misses": {"depictsAdult": true},
-    "fit-form-b-curvy": {"depictsAdult": true}
+    "fit-form-b-curvy": {"depictsAdult": true},
+    "ref-f-median": {"depictsAdult": true},
+    "ref-f-petite": {"depictsAdult": true},
+    "ref-f-full": {"depictsAdult": true},
+    "ref-f-tall": {"depictsAdult": true}
   }
 }

@@ -42,6 +42,61 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
+// SA3. Pose-space correctives. Linear blend skinning lets a lowered arm pass into the side of
+// her chest: real tissue is pressed flat there, and no skin weight can say so. A reference body
+// (wardrobe.anatomy.correctives) carries morph targets that do, each declared in the file's
+// extras.wardrobeAnatomy.correctives with the bone that drives it and two curves: its weight against
+// how far that bone's arm points below level (keys) and against how far it is swung forward or back
+// (swingKeys), [[degrees, weight], ...], linear between, held at the ends; the weight is the
+// product. Both angles are read in her upper chest's frame, so turning her figure changes neither.
+// Every frame the weight is read off the arm and written to the target. A VRM declaring none —
+// every other avatar — is untouched; a viewer that does not drive them shows plain skinning.
+const _axis = new THREE.Vector3();
+const _quat = new THREE.Quaternion();
+const _chest = new THREE.Quaternion();
+
+export function correctiveWeight(downDegrees, keys) {
+    if (!keys.length) return 0;
+    if (downDegrees <= keys[0][0]) return keys[0][1];
+    for (let k = 1; k < keys.length; k += 1) {
+        const [x0, y0] = keys[k - 1];
+        const [x1, y1] = keys[k];
+        if (downDegrees <= x1) return y0 + ((y1 - y0) * (downDegrees - x0)) / Math.max(x1 - x0, 1e-9);
+    }
+    return keys[keys.length - 1][1];
+}
+
+function correctiveBindings(vrm, gltf) {
+    const spec = gltf.parser?.json?.extras?.wardrobeAnatomy?.correctives;
+    if (!Array.isArray(spec) || !spec.length) return [];
+    const bindings = [];
+    vrm.scene.traverse((object) => {
+        const dictionary = object.morphTargetDictionary;
+        if (!dictionary) return;
+        for (const entry of spec) {
+            const index = dictionary[entry.target];
+            const node = vrm.humanoid?.getNormalizedBoneNode(entry.bone);
+            if (index === undefined || !node) continue;
+            const frame = vrm.humanoid?.getNormalizedBoneNode(entry.frame || 'upperChest');
+            bindings.push({ mesh: object, index, node, frame, axis: entry.axis, keys: entry.keys,
+                swingKeys: entry.swingKeys || null });
+        }
+    });
+    return bindings;
+}
+
+function driveCorrectives(bindings) {
+    for (const binding of bindings) {
+        binding.node.getWorldQuaternion(_quat);
+        _axis.fromArray(binding.axis).applyQuaternion(_quat);
+        if (binding.frame) _axis.applyQuaternion(binding.frame.getWorldQuaternion(_chest).invert());
+        const down = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(-_axis.y, -1, 1)));
+        const swing = THREE.MathUtils.radToDeg(Math.atan2(_axis.z, binding.axis[0] * _axis.x));
+        const across = binding.swingKeys ? correctiveWeight(swing, binding.swingKeys) : 1;
+        binding.mesh.morphTargetInfluences[binding.index] = correctiveWeight(down, binding.keys) * across;
+    }
+}
+
 // Normalized-bone rotations (radians), written for VRM 0.x. A VRM 0.x model faces
 // -Z, so its left arm lies along -X and lowering it is a positive roll about Z.
 // VRM 1.0 faces +Z, its left arm lies along +X, and the same roll raises it — so
@@ -157,7 +212,11 @@ export class Viewer {
 
     tick() {
         const delta = Math.min(this.clock.getDelta(), 0.1);
-        for (const slot of Object.values(this.slots)) if (slot) slot.vrm.update(delta);
+        for (const slot of Object.values(this.slots)) {
+            if (!slot) continue;
+            slot.vrm.update(delta);
+            driveCorrectives(slot.correctives);
+        }
         this.controls.update();
         this.keepTargetOnHer();
         if (!this.comparing()) {
@@ -297,7 +356,7 @@ export class Viewer {
         const group = new THREE.Group();
         group.add(vrm.scene, this.makeShadow());
         this.scene.add(group);
-        this.slots[slotName] = { vrm, group };
+        this.slots[slotName] = { vrm, group, correctives: correctiveBindings(vrm, gltf) };
         this.applyPose(vrm);
         this.layout();
         return true;

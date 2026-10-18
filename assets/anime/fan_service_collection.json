@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 1,
+  "id": "anime-fan-service",
+  "title": "Anime Fan Service",
+  "design": "original",
+  "note": "Original designs in the spirit of well-known adult anime heroines. Looks are named by the collection, never by a character; no character name, logo, emblem or artwork is used or shipped. `inspiredBy` is the design record only: it is not shown to anyone and grants nothing. Review franchise rights before any commercial use of these designs.",
+  "sections": [
+    {
+      "id": "beach",
+      "title": "Beach & pool",
+      "style": "anime-beach"
+    },
+    {
+      "id": "retro",
+      "title": "Retro & catsuits",
+      "style": "anime-retro"
+    },
+    {
+      "id": "glamour",
+      "title": "Glamour & fantasy",
+      "style": "anime-glamour"
+    },
+    {
+      "id": "action",
+      "title": "Action heroines",
+      "style": "anime-action"
+    }
+  ],
+  "looks": [
+    {
+      "id": "anime-ocean-navigator",
+      "title": "Ocean Navigator",
+      "section": "beach",
+      "inspiredBy": {
+        "franchise": "One Piece",
+        "character": "Nami",
+        "adultCharacter": true
+      },
+      "built": [
+        "green-and-white striped triangle bikini top",
+        "low-rise blue jeans",
+        "matching striped bikini bottoms (the set)"
+      ],
+      "deferred": [
+        "gold bangles and necklace",
+        "rolled jean cuffs",
+        "a rope belt"
+      ]
+    },
+    {
+      "id": "anime-island-archaeologist",
+      "title": "Island Archaeologist",
+      "section": "beach",
+      "inspiredBy": {
+        "franchise": "One Piece",
+        "character": "Nico Robin",
+        "adultCharacter": true
+      },
+      "built": [
+        "purple cropped cami",
+        "pink-and-white floral wrap sarong, slit up the left leg"
+      ],
+      "deferred": [
+        "sunglasses pushed up on the head",
+        "flat sandals"
+      ]
+    },
+    {
+      "id": "anime-retro-bounty",
+      "title": "Retro Bounty Hunter",
+      "section": "retro",
+      "inspiredBy": {
+        "franchise": "Cowboy Bebop",
+        "character": "Faye Valentine",
+        "adultCharacter": true
+      },
+      "built": [
+        "yellow halter crop top",
+        "yellow denim shorts",
+        "red cropped jacket worn open",
+        "white over-the-knee boots"
+      ],
+      "deferred": [
+        "braces (suspenders) from the shorts over the shoulders",
+        "a headband",
+        "the top's collar"
+      ]
+    },
+    {
+      "id": "anime-midnight-thief",
+      "title": "Midnight Thief",
+      "section": "retro",
+      "inspiredBy": {
+        "franchise": "Lupin III",
+        "character": "Fujiko Mine",
+        "adultCharacter": true
+      },
+      "built": [
+        "black latex catsuit, plunging to the sternum",
+        "black over-the-knee boots"
+      ],
+      "deferred": [
+        "a belt at the waist",
+        "a zip pull"
+      ]
+    },
+    {
+      "id": "anime-thorn-assassin",
+      "title": "Thorn Assassin",
+      "section": "glamour",
+      "inspiredBy": {
+        "franchise": "Spy × Family",
+        "character": "Yor Forger",
+        "adultCharacter": true
+      },
+      "built": [
+        "black satin halter gown, slit up the left thigh",
+        "black thigh-high stockings",
+        "black stiletto ankle boots"
+      ],
+      "deferred": [
+        "gold rose hair ornament",
+        "long front panels",
+        "gold accents",
+        "fingerless gloves"
+      ]
+    },
+    {
+      "id": "anime-serpent-empress",
+      "title": "Serpent Empress",
+      "section": "glamour",
+      "inspiredBy": {
+        "franchise": "One Piece",
+        "character": "Boa Hancock",
+        "adultCharacter": true
+      },
+      "built": [
+        "red satin halter gown in a pink floral print, slit up the left thigh",
+        "red stiletto ankle boots"
+      ],
+      "deferred": [
+        "a sash",
+        "snake earrings",
+        "a cape over the shoulders"
+      ]
+    },
+    {
+      "id": "anime-abyss-guardian",
+      "title": "Abyss Guardian",
+      "section": "glamour",
+      "inspiredBy": {
+        "franchise": "Overlord",
+        "character": "Albedo",
+        "adultCharacter": true
+      },
+      "built": [
+        "white satin halter gown, slit up the left thigh",
+        "black stiletto ankle boots"
+      ],
+      "deferred": [
+        "horns",
+        "black feathered wings",
+        "black gloves",
+        "the chest window"
+      ]
+    },
+    {
+      "id": "anime-reaper-lieutenant",
+      "title": "Reaper Lieutenant",
+      "section": "glamour",
+      "inspiredBy": {
+        "franchise": "Bleach",
+        "character": "Rangiku Matsumoto",
+        "adultCharacter": true
+      },
+      "built": [
+        "black long-sleeved wrap robe with a plunging neckline",
+        "black wide trousers"
+      ],
+      "deferred": [
+        "a white sash",
+        "a pink scarf",
+        "pleated hakama"
+      ]
+    },
+    {
+      "id": "anime-rose-commander",
+      "title": "Rose Commander",
+      "section": "action",
+      "inspiredBy": {
+        "franchise": "One Piece",
+        "character": "Vinsmoke Reiju",
+        "adultCharacter": true
+      },
+      "built": [
+        "pink latex catsuit, plunging to the sternum",
+        "pink over-the-knee boots"
+      ],
+      "deferred": [
+        "gloves",
+        "a cape",
+        "goggles"
+      ]
+    },
+    {
+      "id": "anime-moon-rabbit",
+      "title": "Moon Rabbit Hero",
+      "section": "action",
+      "inspiredBy": {
+        "franchise": "My Hero Academia",
+        "character": "Mirko",
+        "adultCharacter": true
+      },
+      "built": [
+        "white high-cut one-piece worn as a leotard",
+        "white over-the-knee boots"
+      ],
+      "deferred": [
+        "rabbit-ear headpiece",
+        "fur cuffs",
+        "gloves"
+      ]
+    },
+    {
+      "id": "anime-ice-general",
+      "title": "Ice General",
+      "section": "action",
+      "inspiredBy": {
+        "franchise": "Akame ga Kill!",
+        "character": "Esdeath",
+        "adultCharacter": true
+      },
+      "built": [
+        "white tailored blazer",
+        "white mini pencil skirt",
+        "black over-the-knee stiletto boots"
+      ],
+      "deferred": [
+        "a peaked cap",
+        "the military collar and chest chain",
+        "a belt"
+      ]
+    },
+    {
+      "id": "anime-ghost-operative",
+      "title": "Ghost Operative",
+      "section": "action",
+      "inspiredBy": {
+        "franchise": "Ghost in the Shell",
+        "character": "Motoko Kusanagi",
+        "adultCharacter": true
+      },
+      "built": [
+        "black high-cut bodysuit",
+        "black thigh-high stockings",
+        "black cropped jacket worn open",
+        "black combat boots"
+      ],
+      "deferred": [
+        "a holster harness",
+        "a thigh pocket"
+      ]
+    }
+  ]
+}

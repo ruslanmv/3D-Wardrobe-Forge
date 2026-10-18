@@ -230,6 +230,62 @@ fitted and gated as if typed.
 - Source: `wardrobe/pipeline/outfit_dictionary.py`. Every entry was also
   generated on the declared-adult fit form and passed its fit checks.
 
+## Independent collections (AB3)
+
+A collection is a folder under `assets/collections/` with its own ids, its own
+dictionary group and its own previews; nothing in it replaces a template, an
+entry or an occasion that existed. See [ANIME_BEACHWEAR](ANIME_BEACHWEAR.md).
+
+### `GET /v1/collections`
+
+```json
+{"collections": [{"id": "anime-beachwear", "title": "Anime Beachwear",
+                  "subtitle": "Japanese Anime-Inspired Swimsuits", "occasion": "Beach & Pool",
+                  "categories": ["Bikini", "One-Piece", "Sporty", "Kawaii", "Beach Glamour"],
+                  "designs": 12}]}
+```
+
+### `GET /v1/collections/{id}`
+
+The collection record with each design's `rating` (computed, as in the outfit
+dictionary) and `request` — the exact `outfit` body a job sends:
+
+```json
+{"prompt": "…", "design": {"collection": "anime-beachwear", "id": "beach-violet-halter"}}
+```
+
+A job may add `"color"` (one of the collection's `customize.colours` names) and
+`"finish"` (`matte`, `satin` or `gloss`) to the `design` block. An unknown
+collection or design is a `422` before any job exists. A design job is planned,
+fitted, gated and licensed like any other job: swimwear needs the adult
+declaration, and a model whose terms disallow sexual usage refuses it.
+
+### `GET /v1/collections/{id}/previews/{file}`
+
+The front, side and back pictures (`<design>-front.webp` …). File names are
+checked against `^[a-z0-9][a-z0-9-]{0,80}\.(webp|png)$`; anything else is `404`.
+
+## Body surface (BS1)
+
+### `GET /v1/body-surface/profiles`
+
+```json
+{"version": 1, "adultEnabled": false,
+ "profiles": [{"id": "collision-reference", "title": "Collision body (reference)",
+               "capability": "body_collision", "regions": []}, …]}
+```
+
+Ids, titles, capabilities and region names only. A job names one as
+`bodySurface: {"profileId": "…", "detailLevel": "garment-fitting" | "render"}`
+(a sibling of `outfit`), and may add `options.clothRelaxation: "xpbd"`. An
+unknown profile is `rejected` with `body_surface_profile_unavailable`; an adult
+profile refused by the model's terms, the operator's switch
+(`WARDROBE_ADULT_BODY_SURFACE`) or the missing declaration is `rejected` with
+`body_surface_not_permitted`. The fit report then carries `bodySurface`
+(profile, regions made or not and why, collision envelope, per-layer signed
+clearance) and, per layer, any `relaxation`. See
+[BODY_SURFACE](BODY_SURFACE.md).
+
 ## Wardrobes
 
 | Endpoint | Returns |

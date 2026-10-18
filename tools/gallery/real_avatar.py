@@ -1,7 +1,7 @@
 """RA1. The README's hosiery, lingerie and body-art sheets on a real VRoid avatar, not the mannequin.
 
     python tools/gallery/real_avatar.py OUT_DIR --declare-adult [--avatar fem_vroid]
-                                        [--sheets docs/images] [--only hosiery,lingerie,body-art]
+                                        [--sheets docs/images] [--only hosiery,lingerie,body-art,anime]
 
 Every look goes through the real pipeline exactly as the Studio sends it: the library's own
 avatar block (licence terms included), the look presets and the dictionary prompts, Base
@@ -77,6 +77,16 @@ BODY_ART = [
      {"design": "tribal-wings-01", "placement": "upper-back"}, "Jacket · Tribal Wings"),
 ]
 
+def anime_looks() -> list[tuple[str, str, str, str]]:
+    """AN3. (look id, title, section title, prompt), in the occasion's own order: the dictionary's words."""
+    from wardrobe.pipeline import occasions as oc
+    from wardrobe.pipeline.outfit_dictionary import OUTFITS
+
+    by_id = {o.id: o for o in OUTFITS}
+    return [(look, by_id[look].title, style.title, by_id[look].prompt)
+            for style in oc.occasions()["anime"].styles for look in style.looks]
+
+
 BG, PANEL, LINE = (18, 16, 20), (30, 27, 32), (70, 62, 72)
 INK, MUTED, ACCENT = (244, 237, 230), (170, 160, 156), (232, 185, 164)
 GOOD, WARN = (140, 196, 150), (226, 170, 120)
@@ -117,6 +127,10 @@ async def build(out: Path, avatar: str, adult: bool, only: set[str]) -> dict[str
             jobs += [(f"lingerie-{n}", {"outfit": o, "options": {"renderPreview": False, "engine": "native",
                                                                  "baseBody": "replace-outer"}})
                      for n, o in LINGERIE]
+        if "anime" in only:
+            native = {"renderPreview": False, "engine": "native"}
+            jobs += [(look, {"outfit": {"prompt": prompt}, "options": native})
+                     for look, _, _, prompt in anime_looks()]
         if "body-art" in only:
             jobs += [(f"art-{n}", {"outfit": {"prompt": p}, "bodyArt": [t],
                                    "options": {"renderPreview": False, "engine": "native"}})
@@ -312,6 +326,33 @@ def body_art_sheet(out: Path, rows: dict) -> Image.Image:
     return sheet
 
 
+def anime_sheet(out: Path, rows: dict) -> Image.Image:
+    """AN3. The Anime Fan Service collection: twelve looks, front three-quarter, by section."""
+    looks = anime_looks()
+    size, columns = (270, 500), 6
+    jobs = [{"name": look, "vrm": (out / f"{look}.vrm").read_bytes(), "yaw": 20, "focus": None,
+             "size": list(size)} for look, *_ in looks]
+    pictures = render_web(jobs)
+    cell_h = size[1] + 64
+    rows_n = -(-len(looks) // columns)
+    width = PAD + columns * (size[0] + PAD)
+    sheet = Image.new("RGB", (width, 98 + rows_n * cell_h + 10), BG)
+    avatar = rows[looks[0][0]]["avatar"]
+    top = _header(sheet, "Anime Fan Service",
+                  f"Twelve original looks in the spirit of anime heroines, on {avatar}: four sections, "
+                  "fitted by the Forge's real pipeline; every caption is the job's own verdict.")
+    draw = ImageDraw.Draw(sheet)
+    for i, (look, title, section, _) in enumerate(looks):
+        x = PAD + (i % columns) * (size[0] + PAD)
+        y = top + (i // columns) * cell_h
+        sheet.paste(_open(pictures[look]), (x, y))
+        verdict = rows[look]["verdict"]
+        _caption(draw, x, y + size[1] + 6, size[0],
+                 [(title, ACCENT, font(16, True)),
+                  (f"{section.lower()} · fit {verdict}", GOOD if verdict == "passed" else WARN, font(12))])
+    return sheet
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("out", type=Path)
@@ -319,21 +360,22 @@ def main() -> int:
     parser.add_argument("--declare-adult", action="store_true",
                         help="the operator declares, for this run only, that the avatar depicts an adult")
     parser.add_argument("--sheets", type=Path, default=None, help="write the .webp sheets here")
-    parser.add_argument("--only", default="hosiery,lingerie,body-art")
+    parser.add_argument("--only", default="hosiery,lingerie,body-art,anime")
     args = parser.parse_args()
     only = set(args.only.split(","))
     if args.avatar in NEVER_DECLARED or args.avatar.replace("_", "-") in NEVER_DECLARED:
         raise SystemExit(f"{args.avatar} is never used for gated looks")
-    if not args.declare_adult and only & {"hosiery", "lingerie"}:
-        raise SystemExit("hosiery and lingerie are gated: pass --declare-adult if you, the operator, "
-                         f"declare that {args.avatar} depicts an adult")
+    if not args.declare_adult and only & {"hosiery", "lingerie", "anime"}:
+        raise SystemExit("hosiery, lingerie and the anime collection are gated: pass --declare-adult if you, "
+                         f"the operator, declare that {args.avatar} depicts an adult")
     args.out.mkdir(parents=True, exist_ok=True)
     rows = asyncio.run(build(args.out, args.avatar, args.declare_adult, only))
     # Named apart from the mannequin sheets: docs/HOSIERY.md, LINGERIE_COLLECTION.md and
     # BODY_ART_PLAN.md describe those pictures, and keep them.
     sheets = {"hosiery": ("hosiery-avatar.webp", hosiery_sheet),
               "lingerie": ("lingerie-collection-avatar.webp", lingerie_sheet),
-              "body-art": ("body-art-avatar.webp", body_art_sheet)}
+              "body-art": ("body-art-avatar.webp", body_art_sheet),
+              "anime": ("anime-fan-service-avatar.webp", anime_sheet)}
     for key in only:
         filename, make = sheets[key]
         sheet = make(args.out, rows)
