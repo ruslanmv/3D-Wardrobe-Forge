@@ -37,14 +37,15 @@ Three layers, each built from the one below and none edited by hand:
 | ---------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------- |
 | **Anatomical surface** | the reference body: template + calibrated modifiers, Catmull-Clark level 2, standing on y=0 | `wardrobe.anatomy.template`, `.reference`      |
 | **Contact body**       | the same surface as a signed-distance model, optionally offset, with named regions         | `wardrobe.anatomy.contact`, `.regions`         |
-| **Rig**                | the surface T-posed and skinned as a VRM, skeleton from the template's own joint helpers   | `wardrobe.anatomy.vrm`                         |
+| **Rig**                | the surface skinned as a VRM with MakeHuman's weights, the T-pose solved so a viewer gives the sculpt back, armpit correctives as morph targets; skeleton from the template's own joint helpers | `wardrobe.anatomy.rig`, `.correctives`, `.vrm` |
 
 The anatomy and the collision surface are separate objects. A simulation can be
 given an offset or smoothed contact surface (`ContactBody(offset_m=…)`) without
 the anatomical surface changing, and a report always says which it measured.
 
 Supporting modules: `measure` (survey definitions on mesh sections), `topology`
-(closed/manifold/genus/self-intersection), `creases` (fold depths).
+(closed/manifold/genus/self-intersection, and where each crossing is),
+`creases` (fold depths), `posecheck` (the shoulders' numbers in a pose).
 
 ### The template
 
@@ -131,6 +132,7 @@ apex; the buttock point is taken on the right, as the survey measures.
 | Source | Used for | Licence |
 | --- | --- | --- |
 | MakeHuman hm08 base mesh and targets, [makehumancommunity/makehuman](https://github.com/makehumancommunity/makehuman) at the commit in `assets/anatomy/makehuman-provenance.json` | the anatomical template | **CC0 1.0** (MakeHuman `LICENSE.md` §C, `LICENSE.ASSETS.md`; each file's header states it, and the importer refuses one that does not). MakeHuman's program code is AGPL and none of it is used. |
+| MakeHuman default skeleton and skin weights (`rigs/default.mhskel`, `rigs/default_weights.mhw`) at the same commit, provenance in `assets/anatomy/makehuman-rig-provenance.json` | the reference VRMs' skin weights | **CC0** — both files' own header states `"license": "CC0"`; the importer refuses one that does not. Read as JSON by our own code. |
 | ANSUR II female public file, [OpenLab PSU](https://www.openlab.psu.edu/ansur2/) | the sizes | US Government work, "approved for public release; distribution is unlimited". File SHA-256 recorded in `reference-sizes.json`. The CSV is not committed; the derived sizes are. |
 | Al-Qattan et al. 2019, *Plast Reconstr Surg Glob Open* 7(8):e2326, doi 10.1097/GOX.0000000000002326 | inter-nipple distance and nipple-to-fold distance (ANSUR II has neither) | **CC BY 4.0**. A different population (53 nulliparous Saudi women aged 20–25); its means are scaled to each size by this project and held with a wide tolerance. |
 
@@ -158,21 +160,91 @@ VRM's `extras.wardrobeAnatomy`, so that no report implies more than was built:
 - **Posture.** MakeHuman's rest pose: arms about 45° down, feet about 45 cm
   apart, not the survey's standing posture. Heights are taken in it.
 
-## Known limitations of the rig
+## Shoulders: the rig, and what it took
 
-The VRM is bound with a yes/no trunk-or-arm split, as the fit forms were. In the
-T-pose it is bound in, the surface is clean (no self-intersection, checked); in
-a viewer that lowers the arms, the shoulder shows a ridge where trunk-bound and
-arm-bound vertices meet. The anatomical and contact surfaces are not posed and
-are unaffected. Smooth skin weights are a prerequisite of stage 5, not part of
-this one.
+**The defect.** The first reference VRMs were bound with a yes/no split, as the
+fit forms were: each vertex was arm or trunk. Lowered by a viewer, the arm side
+of each shoulder turned and the trunk side stayed where the T-pose had left it,
+so every shoulder showed a ridge, the upper arm read as a ball set into the
+torso, and the armpit folded through itself. It was the rig, not the mesh:
+posed back to the very angle MakeHuman's artists sculpted her at (arms 46.7°
+below level), the median body had **676 folds sharper than 60° and 458 crossing
+edges within 17 cm of the shoulders; the sculpt has none of either.**
+
+**The weights** (`wardrobe.anatomy.rig`). MakeHuman's own skin weights for this
+mesh (CC0, imported by `tools/anatomy/import_makehuman_rig.py`, provenance in
+`assets/anatomy/makehuman-rig-provenance.json`): clavicle, a deltoid bone,
+two upper-arm bones, spine and breast, graded across the shoulder, armpit and
+upper back. Each MakeHuman bone's weight goes to the VRM bone on its head's
+joint, or to its parent's (the deltoid bone to the clavicle, as MakeHuman's
+hierarchy has it; bound to the arm instead it measured no better). The weights
+are subdivided with the surface, so they stay smooth, and cut to glTF's four
+influences *continuously* — the fifth-largest weight is taken off the four kept.
+Keeping the four largest as they were made a bone's weight jump between
+neighbours at the base of her neck and kinked the T-pose there (88 folds).
+
+**The bind.** The VRM's T-pose is solved, not turned: each vertex is placed
+where the viewer's own skinning, lowering the arms back to 46.7°, carries it
+exactly onto the sculpt (to 10⁻¹² mm). Any VRM viewer then reproduces the
+sculpt at that angle, with nothing to drive.
+
+**Correctives** (`wardrobe.anatomy.correctives`). Below the sculpted angle the
+armpit closes, and skinning lets the inner arm pass into the side of her chest
+(250 crossings in the Studio's relaxed pose). Real tissue is pressed flat
+there. For four key poses — relaxed (67.6° down), swung back (55° down, 35°
+back), swung forward (66° down, 35° forward) and raised in front of her (10°
+down, 85° forward, where the front of the armpit closes) — the contact is resolved
+offline on MakeHuman's control mesh (winding-number inside test; each side
+gives way into itself; the correction subdivided, so it is as smooth as she is)
+and stored as a sparse morph target per side. The Studio viewer drives them
+from each arm's angle in her chest's frame (`extras.wardrobeAnatomy.correctives`
+declares the curves); a viewer that does not drive them shows plain skinning.
+
+**What remains.** With her arms at her sides (82° down) the contact is deeper
+than local compression can resolve — pressing harder folded the arm through
+itself — because a real shoulder girdle drops and draws back as the arm comes
+down, and nothing here models it. The relaxed corrective fades out by 82°
+(held on, it made two sizes worse there), and with her arms at her sides the
+armpit is plain skinning: a hidden crossing under the arm, reported in
+`metrics.json`. A corrective is never allowed to be worse than skinning at its
+own key: the solver keeps its best state, starting from none at all, and a key it
+cannot fully clear ships that best state and says so in the VRM's
+`extras.wardrobeAnatomy.correctivesResolved`. The elbow is MakeHuman's weights under skinning; bent past 60°
+its inner crease folds, outside the shoulders this work was about.
 
 ## Evidence
 
 ![The four reference sizes, front, three-quarter, side and back, as VRMs in the viewer](images/anatomy/reference-sizes.jpg)
 
-Petite, median, full and tall, top to bottom, rendered from their VRMs in the
-same three.js viewer the gallery uses (which lowers the arms from the T-pose).
+Median, petite, full and tall, top to bottom, rendered from their VRMs in the
+same three.js viewer the Studio and the gallery use, in its relaxed pose
+(`tools/anatomy/render_reference.py`).
+
+![The median body's shoulders before and after: front, back, each side, under each arm](images/anatomy/shoulders-before-after.jpg)
+
+The median body's shoulders before (the yes/no binding) and after (MakeHuman's
+weights, the solved bind, the correctives), at identical cameras.
+
+![The median body in the eight test poses, before and after](images/anatomy/poses-before-after.jpg)
+
+Within 17 cm of the shoulders, all four sizes (`metrics.json` from the tool;
+folds sharper than 60° / crossing edges):
+
+| pose | before | after, skinning | after, driven |
+| --- | --- | --- | --- |
+| sculpted (46.7° down) | 628–748 / 192–630 | 0 / 0, sculpt reproduced exactly | 0 / 0 |
+| relaxed (Studio, 67.6°) | 668–790 / 362–692 | 16–40 / 202–282 | 0–12 / 0 |
+| T-pose | 0–6 / 0 | 0 / 0 | 0 / 0 |
+| raised sideways | 402–478 / 0–26 | 0–2 / 0 | 0–2 / 0 |
+| raised forward | 484–596 / 0–490 | 0–28 / 0–112 | 0–4 / 0 |
+| lowered (82°) | 700–748 / 902–1210 | 14–28 / 462–572 | the same: no corrective |
+| rotated back | 666–752 / 548–682 | 12–18 / 194–264 | 0–20 / 0 (full: 56) |
+| elbow bent | 706–778 / 108–522 | 0 / 0 | 0 / 0 |
+
+Out to 30 cm the elbow-bent pose shows 372–382 crossings at the inner elbow
+(MakeHuman's elbow weights under skinning); the shoulders themselves have none.
+Raised forward, the back of each shoulder still bunches visibly — skinning at
+85° of flexion — though without crossings once driven.
 
 ![Contact regions on the median body](images/anatomy/contact-regions.png)
 
@@ -197,7 +269,9 @@ What a reference body must show, and the test that holds it
 | Contact consistency | sign agrees with the generalized winding number and with cross-section even-odd tests, point for point |
 | Contact refusal | a body without one inside (the old fit form) is refused, not measured |
 | Regions | labels partition her; the unmodelled region is labelled and reported by name |
-| Rig | VRM 1.0, arms level in the T-pose, trunk unmoved, every arm and hand vertex turned with its arm, `extras` states what was not modelled |
+| Rig | VRM 1.0 bound with MakeHuman's CC0 weights; four influences, cut continuously; posed to the sculpted angle the VRM gives back the sculpt (< 10⁻⁹ m); what carries no arm weight does not move; `extras` states what was not modelled |
+| Shoulders | in every test pose, folds sharper than 60° within 17 cm of the shoulders at most the limit per pose (`FOLD_LIMIT`; none in the sculpted pose, the T-pose or arms raised sideways); no crossings in any pose where the armpit is open |
+| Correctives | at each key the driven surface has no crossings out to 30 cm; no corrective acts in the sculpted pose, the T-pose or raised |
 
 A crease depth is the largest horizontal gap between her sagittal profile and a
 taut tape laid down it (the profile's convex hull), within the crease's height
@@ -222,6 +296,26 @@ range — what a garment pulled tight over that profile has to bridge.
 python tools/anatomy/import_makehuman.py              # template (downloads at the pinned commit)
 python tools/anatomy/derive_reference.py <ANSUR.csv>  # sizes
 python tools/anatomy/calibrate_reference.py           # modifiers (minutes per size)
+python tools/anatomy/import_makehuman_rig.py          # skin weights (downloads at the pinned commit)
 python tools/anatomy/validate_reference.py            # evidence
 pytest tests/unit/test_anatomy_reference.py
 ```
+
+### Pictures and numbers, before and after a change
+
+`tools/anatomy/render_reference.py` renders the reference VRMs with the
+Studio's own viewer and measures them: the sheet of sizes, shoulder close-ups
+(front, back, each side, under each arm), the test poses, and `metrics.json`
+(`wardrobe.anatomy.posecheck` per size and pose, plain skinning and driven by
+the correctives). It measures the files as a viewer reads them, so it can
+measure VRMs an older commit built:
+
+```bash
+python tools/anatomy/render_reference.py /tmp/before --from-commit main --metrics --label main
+python tools/anatomy/render_reference.py /tmp/after --metrics --compare /tmp/before --label this
+```
+
+The second writes `compare-*.png`, each sheet beside the same sheet from the
+first, at identical cameras and poses. It needs what the gallery needs — Node,
+Playwright, a Chromium, and cdn.jsdelivr.net (`GALLERY_CDN_ROUTE` in a proxied
+sandbox).

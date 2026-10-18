@@ -114,6 +114,7 @@ licence above, with its provenance recorded beside it:
 | File | From | Licence |
 | --- | --- | --- |
 | `makehuman-hm08.npz` | MakeHuman hm08 base mesh, joint helpers and 75 targets, at the commit in `makehuman-provenance.json` (per-file SHA-256 there) | CC0 1.0 — stated in each file's header; the importer refuses a file without it. MakeHuman's AGPL program code is not used. |
+| `makehuman-rig.npz` | MakeHuman's default skeleton and its skin weights for the hm08 body (`rigs/default.mhskel`, `rigs/default_weights.mhw`) at the same commit, provenance and SHA-256 in `makehuman-rig-provenance.json` | CC0 — each file's own header states `"license": "CC0"`; the importer refuses one that does not. Read as JSON by our own code. |
 | `reference-sizes.json` | derived from the ANSUR II female public file (SHA-256 recorded; the CSV itself is not committed) | US Government work, approved for public release, distribution unlimited |
 | `reference-sizes.json` (`breastSource`) | Al-Qattan et al. 2019, doi 10.1097/GOX.0000000000002326 — three published means | CC BY 4.0 — attributed there and in `docs/ANATOMY_REFERENCE.md` |
 

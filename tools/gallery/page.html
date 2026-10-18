@@ -8,6 +8,17 @@ const q = new URLSearchParams(location.search);
 v.frame = () => place();
 await v.load('original', q.get('a'));
 v.setPose('relaxed');
+// SA4. ?bones={"leftUpperArm":[x,y,z,w],...} poses normalized bones instead (the anatomy pose tests;
+// tools/anatomy/render_reference.py computes them); ?bones=rest is the bind pose. A bone it names
+// replaces the relaxed rotation. Absent: the relaxed pose, so every earlier render is unchanged.
+if (q.get('bones')) {
+  const rest = q.get('bones') === 'rest';
+  if (rest) v.setPose('rest');
+  for (const [bone, quat] of Object.entries(rest ? {} : JSON.parse(q.get('bones')))) {
+    const node = v.slots.original.vrm.humanoid.getNormalizedBoneNode(bone);
+    if (node) node.quaternion.set(quat[0], quat[1], quat[2], quat[3]);
+  }
+}
 function place() {
 // Frame by height: the rest-pose bounds include arms out in a T, not the A-pose drawn,
 // but their height is hers whatever her arms do. A VRoid girl is 1.5 m, the mannequin 1.83.
@@ -23,9 +34,11 @@ const focus = (q.get('focus') || '').split(',').map(Number).filter((n) => Number
 if (focus.length === 2) {
   const span = Math.max(focus[1] - focus[0], 0.05), mid = (focus[0] + focus[1]) / 2;
   const near = (span * 0.56) / Math.tan(fov / 2);
-  v.controls.target.set(0, mid, 0);
+  // ?fx= and ?fz= move the point looked at off her midline (a shoulder close-up). Absent, 0.
+  const fx = Number(q.get('fx') || 0), fz = Number(q.get('fz') || 0);
+  v.controls.target.set(fx, mid, fz);
   const flat = Math.cos(elev) * near;
-  v.camera.position.set(Math.sin(yaw) * flat, mid + Math.sin(elev) * near, Math.cos(yaw) * flat);
+  v.camera.position.set(fx + Math.sin(yaw) * flat, mid + Math.sin(elev) * near, fz + Math.cos(yaw) * flat);
   v.camera.near = 0.02; v.camera.far = near * 10; v.camera.updateProjectionMatrix();
   v.controls.update();
   return;

@@ -115,7 +115,14 @@ def _cells(lo: np.ndarray, hi: np.ndarray, cell: float) -> tuple[np.ndarray, np.
 def count_self_intersections(
     V: np.ndarray, tris: np.ndarray, edges: np.ndarray, cell: float | None = None, edge_chunk: int = 100_000
 ) -> int:
-    """Edges that pass through a triangle they are not part of (each such crossing counted once).
+    """How many edges pass through a triangle they are not part of (see :func:`self_intersections`)."""
+    return int(self_intersections(V, tris, edges, cell, edge_chunk)[0].size)
+
+
+def self_intersections(
+    V: np.ndarray, tris: np.ndarray, edges: np.ndarray, cell: float | None = None, edge_chunk: int = 100_000
+) -> tuple[np.ndarray, np.ndarray]:
+    """Edges that pass through a triangle they are not part of: (edge rows, triangle rows), one per crossing.
 
     The grid cell is 2.5 median edges, so each edge and triangle sits in one or two cells (a fixed
     1 cm cell put each in up to 27 and made 60 000 edges take 17 s). Edges are taken a chunk at a
@@ -128,9 +135,9 @@ def count_self_intersections(
     order = np.argsort(tkeys, kind="stable")
     tkeys, towner = tkeys[order], towner[order]
     ukeys, starts, counts = np.unique(tkeys, return_index=True, return_counts=True)
-    found = 0
+    found_e, found_t = [], []
     for s in range(0, edges.shape[0], edge_chunk):
-        found += _intersections(
+        e, t = _intersections(
             P,
             tris,
             edges,
@@ -141,10 +148,16 @@ def count_self_intersections(
             counts,
             towner,
         )
-    return found
+        found_e.append(e)
+        found_t.append(t)
+    # SA1. Which edge crosses which triangle, not only how many: the shoulder diagnosis needed to
+    # know whether a posed body's crossings were the arm folding at the joint or the arm pressed
+    # into the side of her chest, and a count cannot say.
+    empty = np.zeros(0, dtype=np.int64)
+    return (np.concatenate(found_e) if found_e else empty, np.concatenate(found_t) if found_t else empty)
 
 
-def _intersections(P, tris, edges, chosen, cell, ukeys, starts, counts, towner) -> int:
+def _intersections(P, tris, edges, chosen, cell, ukeys, starts, counts, towner):
     ekeys, eowner = _cells(P[edges[chosen]].min(axis=1), P[edges[chosen]].max(axis=1), cell)
     eowner = chosen[eowner]
     slot = np.searchsorted(ukeys, ekeys)
@@ -159,7 +172,7 @@ def _intersections(P, tris, edges, chosen, cell, ukeys, starts, counts, towner) 
     e_idx, t_idx = pairs // tris.shape[0], pairs % tris.shape[0]
     shared = (edges[e_idx][:, :, None] == tris[t_idx][:, None, :]).any(axis=(1, 2))
     e_idx, t_idx = e_idx[~shared], t_idx[~shared]
-    found = 0
+    hits_e, hits_t = [], []
     for s in range(0, e_idx.size, 1_000_000):
         e, t = e_idx[s : s + 1_000_000], t_idx[s : s + 1_000_000]
         o = P[edges[e, 0]]
@@ -176,8 +189,11 @@ def _intersections(P, tris, edges, chosen, cell, ukeys, starts, counts, towner) 
         v = np.einsum("ij,ij->i", d, q) * inv
         w = np.einsum("ij,ij->i", e2, q) * inv
         eps = 1e-9
-        found += int((ok & (u > eps) & (v > eps) & (u + v < 1 - eps) & (w > eps) & (w < 1 - eps)).sum())
-    return found
+        crossing = ok & (u > eps) & (v > eps) & (u + v < 1 - eps) & (w > eps) & (w < 1 - eps)
+        hits_e.append(e[crossing])
+        hits_t.append(t[crossing])
+    empty = np.zeros(0, dtype=np.int64)
+    return (np.concatenate(hits_e) if hits_e else empty, np.concatenate(hits_t) if hits_t else empty)
 
 
-__all__ = ["TopologyReport", "check", "count_self_intersections"]
+__all__ = ["TopologyReport", "check", "count_self_intersections", "self_intersections"]

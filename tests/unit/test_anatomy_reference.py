@@ -24,9 +24,11 @@ from functools import cache, lru_cache
 import numpy as np
 import pytest
 
+from wardrobe.anatomy import correctives as CR
 from wardrobe.anatomy import creases as C
 from wardrobe.anatomy import reference as R
 from wardrobe.anatomy import regions as G
+from wardrobe.anatomy import rig
 from wardrobe.anatomy import template as TM
 from wardrobe.anatomy import topology as TOP
 from wardrobe.anatomy.contact import EXTERNAL_GENITAL_REGION, ContactBody, clearance, closest_on_triangles
@@ -136,36 +138,91 @@ def test_median_body_has_no_self_intersection_at_rest_or_t_posed():
     assert TOP.check(P, T).self_intersections == 0
 
 
-def test_t_pose_moves_only_the_arms():
+def test_t_pose_is_the_bind_a_viewer_undoes_exactly():
+    # SA2. The viewer's skinning, lowering the arms to the angle she was sculpted at, must give the
+    # sculpt back. The old yes/no binding left a ridge over each shoulder there: 676 folds.
     V, T, J = body("ref-f-median", 1)
     P, PJ = t_pose(V, J)
-    moved = np.linalg.norm(P - V, axis=1) > 1e-9
-    assert moved.any()
+    back = rig.pose_surface(P, rig.bone_positions(PJ), rig.sculpted_pose(J))
+    assert np.abs(back - V).max() < 1e-9
     for side, sign in (("l", 1.0), ("r", -1.0)):
         assert PJ[f"joint-{side}-hand"][1] == pytest.approx(PJ[f"joint-{side}-shoulder"][1], abs=1e-6)
         assert sign * PJ[f"joint-{side}-hand"][0] > sign * J[f"joint-{side}-hand"][0]
-    # Her trunk stays put: nothing inside the arm's fade-in band moved.
-    from wardrobe.anatomy.vrm import ARM_INSET_FADE_M, ARM_INSET_M
+    # Only what the arms carry moves: the rest of her is bound in the pose she was measured in.
+    W = rig.dense_weights(V.shape[0])
+    still = W[:, [rig.VRM_BONES.index(b) for s in ("left", "right") for b in rig.ARM_CHAIN[s]]].sum(axis=1) == 0
+    assert still.sum() > V.shape[0] // 2 and np.abs(P[still] - V[still]).max() < 1e-9
 
-    inner = np.abs(V[:, 0]) < float(J["joint-l-shoulder"][0]) - ARM_INSET_M - ARM_INSET_FADE_M / 2
-    assert not moved[inner].any()
+
+def test_rig_is_makehumans_cc0_weights_on_the_vrm_bones():
+    prov = json.loads((ANATOMY / "makehuman-rig-provenance.json").read_text())
+    assert "CC0" in prov["licence"] and prov["codeUsed"].startswith("none")
+    assert len(prov["commit"]) == 40 and all(len(h) == 64 for h in prov["files"].values())
+    import hashlib
+
+    assert hashlib.sha256((ANATOMY / "makehuman-rig.npz").read_bytes()).hexdigest() == prov["npzSha256"]
+    # Each MakeHuman bone goes to the VRM bone on its head's joint, or to its parent's.
+    assert rig.vrm_bone_of("upperarm01.L") == rig.vrm_bone_of("upperarm02.L") == "leftUpperArm"
+    assert rig.vrm_bone_of("shoulder01.R") == rig.vrm_bone_of("clavicle.R") == "rightShoulder"
+    assert rig.vrm_bone_of("spine01") == "upperChest" and rig.vrm_bone_of("finger3-2.L") == "leftHand"
+    assert rig.vrm_bone_of("toe2-1.R") == "rightToes" and rig.vrm_bone_of("root") == "hips"
+    names = [str(n) for n in rig._rig()["bone_names"]]
+    for bone in names:
+        target = rig.vrm_bone_of(bone)
+        if bone.endswith(".L"):
+            assert not target.startswith("right"), bone
+        if bone.endswith(".R"):
+            assert not target.startswith("left"), bone
 
 
-@pytest.mark.parametrize("size_id", SIZES)
-def test_whole_arm_and_hand_turn_with_the_arm(size_id):
-    # Spread fingers once got part of the arm's turn and the rest stayed bound to her trunk: in a
-    # viewer that lowered the arms they drew strips out to the T-pose.
-    from wardrobe.anatomy.vrm import arm_weight
+@pytest.mark.parametrize("levels", [0, 1, 2])
+def test_skin_weights_are_four_continuous_and_whole(levels):
+    V, T, J = body("ref-f-median", levels)
+    joints, weights = rig.skin(V.shape[0])
+    assert joints.shape == weights.shape == (V.shape[0], 4)
+    assert np.allclose(weights.sum(axis=1), 1.0) and weights.min() >= 0.0
+    # Spread fingers once stayed bound to her trunk and drew strips out to the T-pose: her whole
+    # forearm and hand are arm, and nothing of her legs is.
+    W = rig.dense_weights(V.shape[0])
+    for side, sign in (("left", 1.0), ("right", -1.0)):
+        arm = W[:, [rig.VRM_BONES.index(b) for b in rig.ARM_CHAIN[side]]].sum(axis=1)
+        s = side[0]
+        beyond = (sign * V[:, 0] > sign * J[f"joint-{s}-elbow"][0]) & (V[:, 1] > 0.9)
+        assert beyond.sum() > 50 and arm[beyond].min() > 0.999
+        assert arm[V[:, 1] < 0.6].max() == 0.0
 
-    V, _, J = body(size_id, 1)
-    for side, sign in (("l", 1.0), ("r", -1.0)):
-        beyond = (sign * V[:, 0] > sign * J[f"joint-{side}-shoulder"][0] + 0.12) & (V[:, 1] > 0.9)
-        assert beyond.sum() > 1000
-        assert np.all(arm_weight(V, J, side)[beyond] == 1.0)
-    # ... and nothing of her legs is taken for an arm.
-    from wardrobe.anatomy.vrm import arm_mask
 
-    assert not arm_mask(V, J)[V[:, 1] < 0.6].any()
+def _jump_added_by_the_cut(levels: int) -> tuple[float, float]:
+    """The largest change across an edge that cutting to four influences adds to MakeHuman's weights,
+    for the cut the rig makes and for keeping the four largest as they are."""
+    V, T, _ = body("ref-f-median", levels)
+    raw = rig.base_weights()
+    for step in TM.subdivision(levels):
+        out = np.zeros((step.count, raw.shape[1]))
+        np.add.at(out, step.rows, raw[step.cols] * step.vals[:, None])
+        raw = out
+    top = np.argsort(-raw, axis=1)[:, :4]
+    kept = np.take_along_axis(raw, top, axis=1)
+    largest = np.zeros_like(raw)
+    np.put_along_axis(largest, top, kept / kept.sum(axis=1, keepdims=True), axis=1)
+    E = np.unique(np.sort(np.concatenate([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]), axis=1), axis=0)
+
+    def jump(W):
+        added = W - raw
+        return float(np.abs(added[E[:, 0]] - added[E[:, 1]]).max())
+
+    return jump(rig.dense_weights(V.shape[0])), jump(largest)
+
+
+def test_cut_to_four_influences_is_continuous():
+    # SA2. Keeping the four largest weights made a bone's weight jump from a few percent to nothing
+    # between neighbours where five bones meet (the base of her neck), and the solved T-pose
+    # kinked there: 88 folds. A continuous cut's jumps shrink as the mesh is refined; a
+    # discontinuous one's do not.
+    ours_1, largest_1 = _jump_added_by_the_cut(1)
+    ours_2, largest_2 = _jump_added_by_the_cut(2)
+    assert ours_2 < 0.7 * ours_1 and ours_2 < largest_2
+    assert largest_2 > 0.9 * largest_1  # the discontinuity the old cut had, for contrast
 
 
 # -- 5. landmarks --------------------------------------------------------------------------------
@@ -308,7 +365,7 @@ def test_reference_vrm_builds_and_states_what_it_is():
     from wardrobe.vrm.document import GltfDocument
     from wardrobe.vrm.inspect import inspect_document
 
-    doc = GltfDocument.from_bytes(build_reference_vrm("ref-f-median"))
+    doc = GltfDocument.from_bytes(build_reference_vrm("ref-f-median", correctives=False))
     from wardrobe.vrm.inspect import VrmSpec
 
     assert inspect_document(doc).spec == VrmSpec.VRM1
@@ -316,3 +373,123 @@ def test_reference_vrm_builds_and_states_what_it_is():
     assert extras["sizeId"] == "ref-f-median" and extras["unmodelled"] == R.UNMODELLED
     policy = json.loads((R.ROOT / "assets" / "calibration" / "policy.json").read_text())
     assert all(policy["bodies"][s]["depictsAdult"] for s in SIZES)
+
+
+def test_reference_vrm_is_bound_with_the_rig_and_carries_correctives_sparse():
+    from wardrobe.anatomy.posecheck import read_vrm
+    from wardrobe.anatomy.vrm import _add_correctives
+    from wardrobe.vrm.document import GltfDocument
+
+    V, _, J = body("ref-f-median")
+    doc = GltfDocument.from_bytes(build_reference_vrm("ref-f-median", correctives=False))
+    bound, (joints, weights), _ = read_vrm(doc.to_bytes())
+    P, _ = t_pose(V, J)
+    assert np.abs(bound - P).max() < 1e-5  # float32
+    ours_j, ours_w = rig.skin(V.shape[0])
+    assert np.array_equal(joints, ours_j) and np.allclose(weights, ours_w, atol=1e-6)
+    # A corrective moving a few vertices costs a few vertices: stored sparse, read back dense.
+    delta = np.zeros_like(V, dtype=np.float32)
+    delta[[10, 2000, 5000]] = [[0.001, 0.0, 0.0], [0.0, -0.002, 0.0], [0.0, 0.0, 0.003]]
+    fake = CR.Corrective("corrective.leftArm.test", "leftUpperArm", (1.0, 0.0, 0.0), [[47, 0], [67.6, 1]],
+                         [[0, 1]], delta)
+    _add_correctives(doc, [fake])
+    back = GltfDocument.from_bytes(doc.to_bytes())
+    mesh = back.meshes[next(n for n in back.nodes if n.get("name") == "BodyMesh")["mesh"]]
+    target = mesh["primitives"][0]["targets"][-1]["POSITION"]
+    assert back.gltf["accessors"][target]["sparse"]["count"] == 3
+    assert np.array_equal(back.read_accessor(target), delta)
+    assert mesh["extras"]["targetNames"][-1] == "corrective.leftArm.test"
+
+
+# -- 9. shoulders (SA1-SA3) ------------------------------------------------------------------------
+@cache
+def posed_setup(size_id: str):
+    V, T, J = body(size_id)
+    P, PJ = t_pose(V, J)
+    return V, T, J, P, rig.bone_positions(PJ)
+
+
+#: The most folds sharper than 60 degrees within 17 cm of the shoulders, per test pose, on any size,
+#: under skinning alone: the four sizes measured 0, 40, 0, 2, 28, 28, 18 and 0 (tools/anatomy/
+#: render_reference.py --metrics). The sculpt has none; the old yes/no binding had 600-790 in every
+#: pose but the T. Where the armpit closes (lowered, swung back, raised in front of her) the
+#: correctives take the contact; these limits are the skinning they start from.
+FOLD_LIMIT = {
+    "sculpted": 0, "t-pose": 0, "raised-sideways": 2, "elbow-bent": 2, "raised-forward": 30,
+    "relaxed": 45, "lowered": 30, "rotated-back": 20,
+}
+#: Poses where the armpit closes and skinning alone lets the arm pass into her (front or back).
+CLOSING = ("relaxed", "lowered", "rotated-back", "raised-forward")
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("size_id", SIZES)
+def test_shoulders_hold_their_shape_in_every_test_pose(size_id):
+    from wardrobe.anatomy.posecheck import ShoulderRegion
+
+    V, T, J, P, bind = posed_setup(size_id)
+    region = ShoulderRegion(V, T, J)
+    for name in rig.TEST_POSES:
+        closes = name in CLOSING
+        report = region.report(rig.pose_surface(P, bind, rig.named_pose(name, J)), crossings=not closes)
+        assert report["folds"] <= FOLD_LIMIT[name], (name, report["folds"])
+        if not closes:
+            assert report["crossings"]["total"] == 0, (name, report["crossings"])
+        if name == "sculpted":
+            assert report["deviationMm"]["max"] < 1e-6
+
+
+def test_corrective_driver_is_off_where_skinning_is_right():
+    # Driven at her sculpted angle, in the T-pose or raised sideways, no corrective may act: those
+    # are the poses skinning gets right (the sculpt exactly), and a corrective there would only move her.
+    V, _, J = body("ref-f-median", 0)
+    fake = [
+        CR.Corrective(f"corrective.{s}Arm.{k['name']}", f"{s}UpperArm", (sign, 0.0, 0.0),
+                      [[float(np.degrees(rig.arm_angles(J)["left"])) if x == "sculpted" else x, y]
+                       for x, y in k["keys"]], k["swingKeys"], np.zeros((1, 3), np.float32))
+        for k in CR.KEYS for s, _, sign in CR.SIDES
+    ]
+    for name in ("sculpted", "t-pose", "raised-sideways"):
+        pose = rig.named_pose(name, J)
+        assert all(CR.driven_weight(c, pose) == 0.0 for c in fake), name
+    # At each key exactly its own target is on, at full weight, on both sides.
+    for key in CR.KEYS:
+        pose = CR.key_pose(key["down"], key["swing"])
+        on = {c.name: CR.driven_weight(c, pose) for c in fake}
+        assert all(v == pytest.approx(1.0 if c.endswith("." + key["name"]) else 0.0, abs=1e-9)
+                   for c, v in on.items()), (key["name"], on)
+
+
+def test_studio_viewer_drives_what_the_vrm_declares():
+    js = (R.ROOT / "apps" / "studio" / "js" / "viewer.js").read_text()
+    for needle in ("extras?.wardrobeAnatomy?.correctives", "swingKeys", "'upperChest'", "morphTargetInfluences"):
+        assert needle in js, needle
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("key", ["relaxed", "back"])
+def test_corrective_resolves_the_armpit_at_its_key(key):
+    from wardrobe.anatomy.posecheck import ShoulderRegion
+
+    made, reports = CR.build("ref-f-median", names=(key,))
+    assert reports[key]["crossings"] == 0
+    assert reports[key]["maxControlDisplacementMm"] < CR.CAP_M * 1000
+    V, T, J, P, bind = posed_setup("ref-f-median")
+    spec = next(k for k in CR.KEYS if k["name"] == key)
+    pose = CR.key_pose(spec["down"], spec["swing"])
+    plain = ShoulderRegion(V, T, J, radius=CR.REGION_M).report(rig.pose_surface(P, bind, pose))
+    driven = ShoulderRegion(V, T, J, radius=CR.REGION_M).report(
+        rig.pose_surface(P, bind, pose, morph=CR.driven_morph(made, pose))
+    )
+    assert plain["crossings"]["armIntoTrunk"] > 50  # skinning alone lets the armpit pass through
+    assert driven["crossings"]["total"] == 0
+    assert driven["folds"] <= plain["folds"] + 10
+    if key == "relaxed":
+        # Between keys a corrective must never be worse than skinning. Held on past its key, the
+        # relaxed corrective made two sizes worse with the arms lower (full: 572 -> 650 crossings).
+        region = ShoulderRegion(V, T, J, radius=CR.REGION_M)
+        for down in (75.0, 82.0):
+            lower = CR.key_pose(down)
+            plain_x = region.report(rig.pose_surface(P, bind, lower))["crossings"]["total"]
+            driven_x = region.report(rig.pose_surface(P, bind, lower, morph=CR.driven_morph(made, lower)))
+            assert driven_x["crossings"]["total"] <= plain_x, (down, driven_x["crossings"], plain_x)

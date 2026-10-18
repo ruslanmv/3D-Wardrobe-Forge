@@ -289,7 +289,18 @@ def build_vrm(body: BodyProportions, *, spec: str = "VRM1", mesh_builder=None,
     # A builder may mark its torso: those vertices never take arm bones, so posing
     # the arms does not drag the side of her chest with them. The calibration body
     # marks none and is bound as it always was.
-    bind_mesh(mesh, segments, falloff=2.0, torso=mesh.metadata.get("bindTorso"))
+    # SA2. A builder may instead bring its own weights (``preskinned``), indexing
+    # SKELETON_TREE's bones: the anatomical reference bodies carry MakeHuman's painted
+    # weights, which no distance rule reproduces at the shoulder.
+    if mesh.metadata.get("preskinned"):
+        if mesh.joints is None or mesh.weights is None or mesh.joints.shape != (mesh.vertex_count, 4):
+            raise ValueError("a preskinned mesh needs (N, 4) joints and weights")
+        mesh.joints = np.asarray(mesh.joints, dtype=np.uint16)
+        mesh.weights = np.asarray(mesh.weights, dtype=np.float32)
+        mesh.weights[:, 0] += (1.0 - mesh.weights.sum(axis=1)).astype(np.float32)
+        mesh.metadata["boundBones"] = bone_names
+    else:
+        bind_mesh(mesh, segments, falloff=2.0, torso=mesh.metadata.get("bindTorso"))
 
     joint_nodes = [segment.node for segment in segments]
     ibm = np.zeros((len(joint_nodes), 16), dtype=np.float32)

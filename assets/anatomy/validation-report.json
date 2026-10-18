@@ -247,7 +247,7 @@
      "duplicateDirectedEdges": 0,
      "components": 1,
      "eulerCharacteristic": 2,
-     "volumeL": 61.392,
+     "volumeL": 61.487,
      "selfIntersections": 0
     }
    },
@@ -293,8 +293,8 @@
     "projectionMm": -3.2
    },
    "contact": {
-    "buildSeconds": 9.2,
-    "querySecondsPer1000": 2.17,
+    "buildSeconds": 6.5,
+    "querySecondsPer1000": 1.08,
     "samples": 8000,
     "exactness": {
      "points": 60,
@@ -337,7 +337,7 @@
     "inner-thigh": 967.0,
     "body": 14242.7
    },
-   "seconds": 313.6
+   "seconds": 234.4
   },
   "ref-f-petite": {
    "dimensions": {
@@ -579,7 +579,7 @@
      "duplicateDirectedEdges": 0,
      "components": 1,
      "eulerCharacteristic": 2,
-     "volumeL": 53.646,
+     "volumeL": 53.707,
      "selfIntersections": 0
     }
    },
@@ -625,8 +625,8 @@
     "projectionMm": -4.1
    },
    "contact": {
-    "buildSeconds": 10.2,
-    "querySecondsPer1000": 2.38,
+    "buildSeconds": 6.6,
+    "querySecondsPer1000": 1.35,
     "samples": 8000,
     "exactness": {
      "points": 60,
@@ -669,7 +669,7 @@
     "inner-thigh": 899.2,
     "body": 13206.4
    },
-   "seconds": 332.8
+   "seconds": 227.9
   },
   "ref-f-full": {
    "dimensions": {
@@ -911,7 +911,7 @@
      "duplicateDirectedEdges": 0,
      "components": 1,
      "eulerCharacteristic": 2,
-     "volumeL": 73.387,
+     "volumeL": 73.446,
      "selfIntersections": 0
     }
    },
@@ -957,8 +957,8 @@
     "projectionMm": 14.3
    },
    "contact": {
-    "buildSeconds": 9.7,
-    "querySecondsPer1000": 2.37,
+    "buildSeconds": 6.6,
+    "querySecondsPer1000": 1.27,
     "samples": 8000,
     "exactness": {
      "points": 60,
@@ -1001,7 +1001,7 @@
     "inner-thigh": 1134.5,
     "body": 15439.2
    },
-   "seconds": 326.7
+   "seconds": 232.4
   },
   "ref-f-tall": {
    "dimensions": {
@@ -1243,7 +1243,7 @@
      "duplicateDirectedEdges": 0,
      "components": 1,
      "eulerCharacteristic": 2,
-     "volumeL": 63.024,
+     "volumeL": 63.221,
      "selfIntersections": 0
     }
    },
@@ -1289,8 +1289,8 @@
     "projectionMm": -8.2
    },
    "contact": {
-    "buildSeconds": 10.0,
-    "querySecondsPer1000": 2.2,
+    "buildSeconds": 6.5,
+    "querySecondsPer1000": 1.31,
     "samples": 8000,
     "exactness": {
      "points": 60,
@@ -1333,7 +1333,7 @@
     "inner-thigh": 958.2,
     "body": 14775.5
    },
-   "seconds": 319.2
+   "seconds": 228.7
   }
  },
  "oldFitForm": {
