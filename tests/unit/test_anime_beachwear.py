@@ -70,6 +70,11 @@ def test_statuses_are_honest():
 
 
 # ---------------------------------------------------------------- 2. nothing that existed changed
+#: Garments a later batch re-cut on purpose, and the words in a look that ask for it: G6's Fitted
+#: Tee (panels, set-in sleeves) is what "fitted tee" plans now, where it planned the Basic Tee.
+REPLANNED_LATER = {("top-tee-v1", "top-fitted-tee-v1"): "fitted tee"}
+
+
 def test_every_existing_entry_is_exactly_as_it_was(entries):
     for before in PRESERVED["outfits"]:
         outfit_id = before["id"]
@@ -77,7 +82,22 @@ def test_every_existing_entry_is_exactly_as_it_was(entries):
         assert now["title"] == before["title"] and now["group"] == before["group"], outfit_id
         assert now["request"] == before["request"], outfit_id
         assert now["rating"] == before["rating"], outfit_id
-        assert [g["template"] for g in now["garments"]] == before["garments"], outfit_id
+        garments = [g["template"] for g in now["garments"]]
+        prompt = json.dumps(before["request"]).lower()
+        for (old, new), words in REPLANNED_LATER.items():
+            if words in prompt:
+                garments = [old if template == new else template for template in garments]
+        assert garments == before["garments"], outfit_id
+
+
+#: Templates later batches changed on purpose, after this collection was added, each with the
+#: batch that did it. The guarantee is that *this collection* changed nothing; a later fix to a
+#: shared template is not this collection's doing, but it must be named here, not slip by.
+CHANGED_LATER = {
+    "tops/top-cropped-cami-v1.json": "G1/G6: answers to 'cropped camisole'; cut as panels with flat straps",
+    "tops/top-camisole-v1.json": "G6: a camisole cut as panels with straps, not a strapless tube",
+    "jackets/jacket-long-cardigan-v1.json": "G6: open fronts to the knee, a yoke, set-in sleeves; bound to her hips",
+}
 
 
 def test_existing_groups_and_templates_are_untouched():
@@ -85,6 +105,9 @@ def test_existing_groups_and_templates_are_untouched():
     assert groups[: len(PRESERVED["groups"])] == PRESERVED["groups"]
     for relative, digest in PRESERVED["templates"]:
         path = ROOT / "assets" / "garment_templates" / relative
+        if relative in CHANGED_LATER:
+            assert json.loads(path.read_text(encoding="utf-8"))["id"] == Path(relative).stem, relative
+            continue
         assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, relative
 
 

@@ -3,7 +3,7 @@
   "id": "top-cropped-cami-v1",
   "name": "Cropped Cami",
   "category": "top",
-  "mesh": "procedural:crop-top",
+  "mesh": "procedural:camisole",
   "coverage": [
     "chest"
   ],
@@ -11,7 +11,7 @@
     "chest"
   ],
   "silhouette": "slim",
-  "hem": "mini",
+  "hem": "crop",
   "sleeve": "none",
   "fit": {
     "bodyClearanceMm": 4.0,
@@ -32,7 +32,9 @@
     "cotton cami",
     "crop tank",
     "cropped tank",
-    "cami tank"
+    "cami tank",
+    "cropped camisole",
+    "crop camisole"
   ],
   "description": "A plain cropped camisole on thin straps, ending above the navel.",
   "optIn": true

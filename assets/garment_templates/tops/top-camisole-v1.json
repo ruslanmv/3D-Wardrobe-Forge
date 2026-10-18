@@ -3,7 +3,7 @@
   "id": "top-camisole-v1",
   "name": "Camisole",
   "category": "top",
-  "mesh": "procedural:top",
+  "mesh": "procedural:camisole",
   "coverage": [
     "chest",
     "waist"

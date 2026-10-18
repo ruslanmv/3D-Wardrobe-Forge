@@ -28,7 +28,9 @@ SKIRT_LINER_ADULT = "beige seamless briefs"
 SKIRTED = frozenset({"skirt", "dress"})
 #: Anything already on her hips under the skirt makes a liner redundant.
 HIP_COVERING = frozenset({"underwear", "swimwear", "shorts", "trousers"})
-HIP_COVERING_KINDS = frozenset({"tights", "leggings", "seamless-leggings", "catsuit", "one-piece", "slip-shorts"})
+HIP_COVERING_KINDS = frozenset(
+    {"tights", "leggings", "seamless-leggings", "catsuit", "one-piece", "slip-shorts"}
+)
 
 
 async def plan(context: PipelineContext) -> None:
@@ -66,6 +68,8 @@ async def plan(context: PipelineContext) -> None:
     context.record.plan = outfit_plan
     for note in outfit_plan.notes:
         context.warn(note)
+    if outfit_plan.unplanned:
+        context.fit_report.unplanned = list(outfit_plan.unplanned)
 
     # Checked here, after planning, because only the plan knows what each garment
     # is — and before anything is taken off or built, so a refusal changes

@@ -132,6 +132,21 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         if surface is not None:
             metadata["upperBody"] = surface
     kind = artifact.procedural_kind or context.plan.category
+    if kind in PANEL_KINDS:
+        # G6. A panel garment is cut on her outline (wardrobe.geometry.panels): her torso and
+        # legs, and every layer already fitted on them, the tee under the cardigan included.
+        # Only an inner layer's body: its sleeves are as much arm as hers (see OC3 below).
+        cover = _torso(context, whole)
+        inner_now = context.collision_points
+        if inner_now is not None and inner_now.shape[0] and segments:
+            # All of it for the yoke to clear: where an inner sleeve meets its armhole it is
+            # under this garment's shoulder.
+            metadata["innerPoints"] = inner_now
+            outline = set(bones) - OUTLINE_EXCLUDED_BONES
+            inner_now = inner_now[select_region_points(inner_now, segments, outline)]
+            cover = inner_now if cover is None else np.vstack([cover, inner_now])
+        if cover is not None:
+            metadata["coverPoints"] = cover
     if kind == "boots":
         # DC2. Her feet and legs as she stands (wardrobe.vrm.stance), each side its own, and any
         # layer already fitted on them this job: the boot is cut round all of it.
@@ -252,7 +267,24 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     if placed is not None:
         axis_mask = axis_mask & ~placed
 
-    conform = float(artifact.metadata.get("conform") or 0.0)
+    panel = bool(mesh.metadata.get("panelBuilt"))
+    if panel:
+        # G6. Cut on her outline with its ease already in it, every vertex placed. The radial
+        # passes below are for lofted rings: they would push a hanging front back onto her
+        # waist and the sleeves out from her spine. Clearance is still measured, honestly,
+        # on the body panels (not the sleeves, which the axis index cannot speak for).
+        # Nor the yoke over her shoulders. Measured out from her vertical axis, a band at shoulder
+        # height reaches out to the tips of her shoulders, and everything at an angle to them reads
+        # as inside it: a tee's yoke 2 cm clear of her back read 3 cm "inside" on the calibration
+        # body, and the top of a shoulder, a surface that faces up, up to 9 cm. Not measured rather
+        # than measured wrong; it is laid on her measured surfaces and shoulder line with the
+        # garment's ease (wardrobe.geometry.panels), and the review renders are its check.
+        axis_mask = on_axis_mask(mesh, context.measurements)
+        for key in ("sleeve", "yoke"):
+            if mesh.metadata.get(key) is not None:
+                axis_mask = axis_mask & ~np.asarray(mesh.metadata[key], dtype=bool)
+
+    conform = 0.0 if panel else float(artifact.metadata.get("conform") or 0.0)
     leg_conform = conform
     below_hips = bool(artifact.metadata.get("conformBelowHips"))
     if kind in TROUSER_KINDS and conform == 0.0:
@@ -276,16 +308,19 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     leg_worn = ~axis_mask & (mesh.positions[:, 1] < params.hip_y + params.height * 0.03)
     if placed is not None:
         leg_worn &= ~placed
-    if leg_worn.any():
+    if leg_worn.any() and not panel:
         conform_limbs(mesh, leg_worn, legs if legs is not None and legs.shape[0] else whole,
                       context.measurements.bone_positions, clearance,
                       strength=leg_conform, forward=params.forward)
         _keep_legs_apart(mesh, leg_worn, context.measurements.bone_positions)
 
     before = measure_clearance(mesh, index, clearance, axis_mask)
-    pushed = resolve_clearance(mesh, index, clearance, axis_mask)
-    smooth_radial(mesh, index, clearance, axis_mask)
-    settle_faces(mesh, index, clearance, axis_mask)
+    if panel:
+        pushed = 0
+    else:
+        pushed = resolve_clearance(mesh, index, clearance, axis_mask)
+        smooth_radial(mesh, index, clearance, axis_mask)
+        settle_faces(mesh, index, clearance, axis_mask)
     if band_m and kind == "skirt" and artifact.metadata.get("conformTo") == "full-hip":
         # S6. Taut over the hip: no facet of her body printed through a skirt fitted this close.
         shape = skirt_shape(params, context.plan.silhouette, 1.0)
@@ -362,7 +397,11 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
 
         mesh = embellish(mesh, artifact.metadata["collection"], params)
 
-    _seat_gussets(mesh)
+    if kind == "seamless-leggings":
+        # SL1 (paused): seats the gusset onto the rim it closes. Only for the seamless leggings
+        # it was written with; on every other pair of trousers it changed geometry the gallery
+        # goldens pin, and that change has not been reviewed (task SL).
+        _seat_gussets(mesh)
     _light_gusset(mesh, params.forward)
     if kind in SEAM_WELDED_KINDS:
         _weld_seam_normals(mesh)
@@ -399,6 +438,9 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         verdict=verdict,
     )
 
+
+#: G6. Shapes cut as panels on her measured outline (wardrobe.geometry.panels).
+PANEL_KINDS = frozenset({"camisole", "open-cardigan", "tee"})
 
 #: DC3. Garments built of a bodice and a skirt whose shading must run straight across the join.
 SEAM_WELDED_KINDS = frozenset({"dress", "slip-dress"})

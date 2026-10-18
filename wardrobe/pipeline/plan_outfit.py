@@ -123,6 +123,10 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     "top": (
         "top", "shirt", "blouse", "tee", "t-shirt", "sweater", "hoodie", "jumper", "crop top", "tube top",
         "halter top", "cami", "crop cami", "cami top", "tank top",
+        # G1. The word itself. "camisole" was only a sleeve word, so "red cropped camisole +
+        # black leggings" had a piece that named no garment, the split gave up, and the whole
+        # prompt planned as one pair of leggings — coloured red, the first colour in it.
+        "camisole", "cropped camisole", "crop camisole",
         # P1: the boned top (top-corset-v1). The lingerie foundations keep their own words
         # (guêpière, waspie); a sheer or lace corset is still gated by its material.
         "corset", "corset top", "bustier", "bustier top",

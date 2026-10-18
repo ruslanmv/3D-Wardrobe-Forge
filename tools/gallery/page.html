@@ -23,6 +23,10 @@ function place() {
 // Frame by height: the rest-pose bounds include arms out in a T, not the A-pose drawn,
 // but their height is hers whatever her arms do. A VRoid girl is 1.5 m, the mannequin 1.83.
 const box = new THREE.Box3().setFromObject(v.slots.original.vrm.scene);
+// ?ortho=1 (G7, garment_review.py): a 1.5° lens from far away, near enough parallel that a box
+// reads as a box. Absent, every earlier render is unchanged.
+const ortho = Boolean(q.get('ortho'));
+if (ortho) { v.camera.fov = 1.5; v.camera.updateProjectionMatrix(); v.controls.maxDistance = 1e4; }
 const height = Math.max(box.max.y, 0.5), fov = THREE.MathUtils.degToRad(v.camera.fov);
 const distance = (height * 0.56) / Math.tan(fov / 2);
 const yaw = Number(q.get('yaw') || 0) * Math.PI / 180;
@@ -45,7 +49,7 @@ if (focus.length === 2) {
 }
 v.controls.target.set(0, height * 0.5, 0);
 v.camera.position.set(Math.sin(yaw) * distance, height * 0.55, Math.cos(yaw) * distance);
-v.camera.near = 0.05; v.camera.far = distance * 10; v.camera.updateProjectionMatrix();
+v.camera.near = ortho ? distance * 0.5 : 0.05; v.camera.far = distance * 10; v.camera.updateProjectionMatrix();
 v.controls.update();
 }
 place();

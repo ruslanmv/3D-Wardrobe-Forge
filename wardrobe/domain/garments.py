@@ -49,7 +49,12 @@ PROCEDURAL_KINDS = {
     "seamless-leggings",
     # DC2: a boot built round the foot as she stands in it (wardrobe.geometry.boots)
     "boots",
+    # G6: cut as panels on her measured body (wardrobe.geometry.panels)
+    "camisole", "open-cardigan", "tee",
 } | set(LINGERIE_KINDS)
+
+#: Shapes worn over everything else, always with long sleeves: layers, never a slot's garment.
+JACKET_KINDS = frozenset({"jacket", "cropped-jacket", "open-cardigan"})
 
 #: The template schema that carries a ``lingerie`` block (pattern blocks, wardrobe.lingerie).
 LINGERIE_SCHEMA_VERSION = 2
@@ -199,7 +204,7 @@ class GarmentTemplate(BaseModel):
         # Sleeves are skinned to the bones the anchors name. Anchor a sleeved garment
         # to the chest alone and its sleeves bind to the torso: the avatar lowers her
         # arms and the sleeves stay out in a T. Jacket shapes always have long sleeves.
-        sleeves = "long" if self.procedural_kind in {"jacket", "cropped-jacket"} else self.sleeve
+        sleeves = "long" if self.procedural_kind in JACKET_KINDS else self.sleeve
         needed = {"short": {"upperArms"}, "long": {"upperArms", "lowerArms"}}.get(sleeves, set())
         if needed - set(self.anchors):
             issues.append(f"{self.id}: {sleeves} sleeves need anchors {sorted(needed - set(self.anchors))}")

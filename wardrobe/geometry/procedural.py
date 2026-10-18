@@ -1474,6 +1474,8 @@ HAUL_KINDS = frozenset(
         "suspender-belt", "waspie", "guepiere",
         # the liner a skirt is worn over (S2, wardrobe.pipeline.generate_garment.with_skirt_liner)
         "slip-shorts",
+        # G6: cut as panels on her measured body (wardrobe.geometry.panels)
+        "camisole", "open-cardigan", "tee",
     }
 )
 
@@ -1916,6 +1918,16 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         return [body, *top_straps(params, top_y=bust_top, style=straps or top_straps_default,
                                   underbust_y=underbust)]
 
+    if kind == "camisole":
+        # G6. Front and back panels round her measured outline, a neckline, underarms and flat
+        # straps (wardrobe.geometry.panels). Unmeasured, the cropped cami's band and straps.
+        from wardrobe.geometry.panels import build_camisole  # it builds on this module
+
+        built = build_camisole(params, cropped=str(meta.get("hem") or "") == "crop")
+        if built is not None:
+            return built
+        kind = "crop-top"
+        straps = straps or "shoulder"
     if kind == "crop-top":
         top_y = params.top_edge(0.6)
         bottom_y = params.waist_y + torso * (0.38 + (1.0 - min(scale, 1.0)) * 0.6)
@@ -2142,6 +2154,32 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
             )
         ]
         sections += build_sleeves(params, length=params.sleeve_length or "short")
+
+    elif category == "open-cardigan":
+        # G6. Two open fronts and a back hanging from her bust and shoulder blades to the
+        # template's length, a yoke over her shoulders, set-in sleeves. Unmeasured (a direct
+        # call without the fitter's points), the jacket shell below.
+        from wardrobe.geometry.panels import build_open_cardigan  # it builds on this module
+
+        built = build_open_cardigan(params, hem_y=hem_y)
+        sections = [built] if built is not None else [
+            build_bodice(params, y_top=params.chest_y + (params.shoulder_y - params.chest_y) * 0.68,
+                         y_bottom=hem_y, looseness=1.06 + (flare - 1.0) * 0.3, name="jacket"),
+            *build_sleeves(params, length="long", thickness=1.45),
+        ]
+
+    elif category == "tee":
+        # G6. A fitted tee: a closed body to her hip, a crew neck, short set-in sleeves
+        # (wardrobe.geometry.panels). Unmeasured, the original top shell.
+        from wardrobe.geometry.panels import build_fitted_tee  # it builds on this module
+
+        bottom_y = params.hip_y - (params.hip_y - params.knee_y) * 0.12
+        built = build_fitted_tee(params, hem_y=bottom_y)
+        sections = [built] if built is not None else [
+            _cut_bodice(build_bodice(params, y_top=params.top_edge(0.6), y_bottom=bottom_y, name="top"),
+                        params, bottom_y, params.top_edge(0.6)),
+            *build_sleeves(params, length="short"),
+        ]
 
     elif category == "jacket":
         sections = [

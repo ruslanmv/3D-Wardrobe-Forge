@@ -33,6 +33,7 @@ from wardrobe.materials.fabrics import gusset_material
 from wardrobe.materials.textures import boning_shading, pleat_shading
 from wardrobe.pipeline.context import BuiltLayer, PipelineContext
 from wardrobe.vrm.garments import garment_material_name, garment_slot
+from wardrobe.vrm.inspect import VrmSpec
 from wardrobe.vrm.merge import GarmentMaterial, attach_garment, set_title, tag_derived
 from wardrobe.vrm.skinning import bind_mesh, bones_for_coverage, build_bone_segments, weight_report
 
@@ -85,7 +86,23 @@ class NativeEngine(FittingEngine):
             )
         # The garment's body binds to the torso; only pieces off the body's axis
         # (sleeves, stocking legs) may follow the limbs.
-        bind_mesh(mesh, segments, torso=on_axis_mask(mesh, context.measurements))
+        torso = on_axis_mask(mesh, context.measurements)
+        sleeve = mesh.metadata.get("sleeve")
+        if sleeve is not None and np.asarray(sleeve).shape[0] == mesh.vertex_count:
+            # G6. A panel garment is one piece, sleeves sewn into its armholes, so connected
+            # components cannot tell sleeve from body: the builder says which is which.
+            torso = ~np.asarray(sleeve, dtype=bool)
+        bind_mesh(mesh, segments, torso=torso)
+        if mesh.metadata.get("panelBuilt"):
+            # G5. A garment cut on her (wardrobe.geometry.panels) takes her own skin weights
+            # above her hips, so its set-in sleeves bend at her shoulder as she does.
+            from wardrobe.vrm.weight_transfer import transfer_weights
+
+            hip = context.measurements.bone_positions.get("hips")
+            transfer_weights(mesh, segments, context.document, context.info.humanoid_bones,
+                             hip_y=float(hip[1]) if hip is not None else float(mesh.positions[:, 1].min()),
+                             forward=-1.0 if context.info.spec is VrmSpec.VRM0 else 1.0,
+                             axis_z=float(hip[2]) if hip is not None else 0.0)
         hosiery_fit.after_bind(context, mesh, segments)
 
         issues = mesh.validate()

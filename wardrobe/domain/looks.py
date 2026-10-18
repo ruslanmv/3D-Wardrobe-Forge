@@ -252,6 +252,10 @@ class OutfitPlan(BaseModel):
     #: 0..1 — how much of the prompt the planner could actually account for.
     confidence: float = 0.0
     notes: list[str] = Field(default_factory=list)
+    #: G1. Pieces of the prompt that asked for a garment the planner could not plan. Each is
+    #: also a note, and makes the fit report's ``requestedGarments`` check fail: the look made
+    #: is not the look asked for. Absent when every piece was planned.
+    unplanned: list[str] = Field(default_factory=list, exclude_if=lambda v: not v)
 
     @property
     def garments(self) -> list[OutfitPlan]:
@@ -403,6 +407,9 @@ class FitReport(BaseModel):
     #: BS2. The body surface: profile, regions made or not and why, collision envelope, the
     #: per-layer signed clearance, and any XPBD relaxation. Absent from a job without one.
     body_surface: dict | None = Field(default=None, alias="bodySurface", exclude_if=lambda v: v is None)
+    #: G1. What the prompt asked for that the plan does not contain. Absent when nothing is
+    #: missing, so a report for a fully planned job is what it always was.
+    unplanned: list[str] | None = Field(default=None, exclude_if=lambda v: not v)
 
     @property
     def passed(self) -> bool:
@@ -415,6 +422,7 @@ class FitReport(BaseModel):
             and self.clipping_check
             in {ClippingCheck.PASSED, ClippingCheck.CLEARANCE_ONLY, ClippingCheck.WARNINGS}
             and not self.errors
+            and not self.unplanned
         )
 
     @computed_field  # type: ignore[prop-decorator]
@@ -441,6 +449,8 @@ class FitReport(BaseModel):
                 out["skin"] = "restored"  # SR1: bare because her skin was restored under the underwear
         out["clearance"] = str(self.clipping_check.value if hasattr(self.clipping_check, "value")
                                else self.clipping_check)
+        if self.unplanned:
+            out["requestedGarments"] = "missing"
         return out
 
     @computed_field  # type: ignore[prop-decorator]
