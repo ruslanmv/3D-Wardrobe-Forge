@@ -50,7 +50,7 @@ PROCEDURAL_KINDS = {
     # DC2: a boot built round the foot as she stands in it (wardrobe.geometry.boots)
     "boots",
     # G6: cut as panels on her measured body (wardrobe.geometry.panels)
-    "camisole", "open-cardigan", "tee",
+    "camisole", "open-cardigan", "tee", "sports-bra",
 } | set(LINGERIE_KINDS)
 
 #: Shapes worn over everything else, always with long sleeves: layers, never a slot's garment.

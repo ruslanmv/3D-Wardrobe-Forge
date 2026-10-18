@@ -157,6 +157,8 @@ def complete_foundation(outfit_plan, request, catalog, worn):
 #: MG3. The foundation ``ensure_foundation`` puts on an avatar not declared adult: clothes, not
 #: underwear, and compact — a seamless bandeau under any top, slip shorts under any bottom.
 GENERAL_FOUNDATION = {"upper": "beige seamless tube top", "lower": "beige slip shorts"}
+#: Tops worn next to her skin: they are her upper foundation.
+NEXT_TO_SKIN_UPPER = frozenset({"sports-bra"})
 #: The regions a foundation is made of.
 FOUNDATION_REGIONS = ("upper", "lower")
 
@@ -196,6 +198,12 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
             reach |= garment.regions & set(FOUNDATION_REGIONS)
     kept = set().union(*(g.regions for g in worn if g.role in FOUNDATION_ROLES))
     needed = reach - regions(outfit_plan.garments, FOUNDATION_ROLES) - kept
+    # A sports bra is worn next to her skin, as a bikini top is: nothing goes under it (the
+    # full-cup bra the foundation added under one showed as a ledge at its hem).
+    kinds = {catalog.get(g.template_id).procedural_kind for g in outfit_plan.garments
+             if g.template_id and catalog.get(g.template_id) is not None}
+    if kinds & NEXT_TO_SKIN_UPPER:
+        needed -= {"upper"}
     halves = dict(NEUTRAL_HALF if depicts_adult else GENERAL_FOUNDATION)
     # CR1. Never higher than the outfit's own waistband: under a low-rise skirt or low-rise jeans
     # slip shorts at their usual rise showed as a beige band across the bare waist the look is for.

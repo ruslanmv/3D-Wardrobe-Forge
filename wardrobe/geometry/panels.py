@@ -89,6 +89,15 @@ CAMI_EASE_M = 0.001
 CAMI_TAPER = 0.45
 #: Flat strap: width and thickness for a 1.6 m figure.
 STRAP_WIDTH_M = 0.009
+#: A sports bra (build_camisole(sports=True)): its underband's depth below the fold under her
+#: bust, its straps' width and where they leave the front (a share of her chest's half-width),
+#: and the scoop's centre as a share of the way from her bust point up to her armpit.
+SPORTS_BAND_M = 0.035
+SPORTS_STRAP_WIDTH_M = 0.02
+SPORTS_STRAP_AT = 0.5
+SPORTS_SCOOP = 0.25
+#: At most this far from her bust point down to the top of the underband.
+SPORTS_UNDERBUST_M = 0.045
 STRAP_THICKNESS_M = 0.0016
 
 
@@ -792,8 +801,15 @@ def _sleeve(builder: _Builder, chain: np.ndarray, loop: list[int], measured, sta
 # ----------------------------------------------------------------------
 # the camisole
 # ----------------------------------------------------------------------
-def build_camisole(params, *, cropped: bool) -> list[Mesh] | None:
-    """A stretch camisole: front and back panels round her, a neckline, underarms, flat straps."""
+def build_camisole(params, *, cropped: bool, sports: bool = False) -> list[Mesh] | None:
+    """A stretch camisole: front and back panels round her, a neckline, underarms, flat straps.
+
+    ``sports``: a sports bra on the same panels (a top, not underwear): the hem a supportive
+    underband below the fold under her bust, a moderate scoop neckline, a higher back and
+    wide straps. One front across both breasts, spanning between them as a compression bra
+    does, never cups: asked for "sports bra" the planner chose the full-cup bra, whose cups
+    were narrow strips in a deep V beside a low, wide bust (Model Girl).
+    """
     cover = params.metadata.get("coverPoints")
     armpit = params.metadata.get("armpitY")
     if cover is None or armpit is None:
@@ -804,6 +820,13 @@ def build_camisole(params, *, cropped: bool) -> list[Mesh] | None:
     y_arm = float(armpit)
     torso = params.chest_y - params.waist_y
     hem = params.waist_y + torso * 0.22 if cropped else params.hip_y - 0.01 * s
+    marks_meta = params.metadata.get("lingerieLandmarks") if sports else None
+    if sports:
+        fold, apex = _bust_heights(params, marks_meta, torso)
+        # The band sits under her bust, never far below it: on a low, wide bust the measured
+        # fold was 7.5 cm under her bust point and the bra hung to her waist.
+        fold = max(fold, apex - SPORTS_UNDERBUST_M * s)
+        hem = fold - SPORTS_BAND_M * s
     sections = Sections.measure(cover, f, hem - 0.03, y_arm + 0.04)
     shoulders = Shoulders.measure(cover, f, y_arm - 0.08, params.neck_y + 0.08)
     if sections is None or shoulders is None:
@@ -811,7 +834,7 @@ def build_camisole(params, *, cropped: bool) -> list[Mesh] | None:
     ax, az = sections.axis
     ease = params.clearance_m + CAMI_EASE_M
     chest_half = float(np.median(sections.radius(np.array([math.pi / 2, 3 * math.pi / 2]), params.chest_y)))
-    strap_x = chest_half * 0.6
+    strap_x = chest_half * (SPORTS_STRAP_AT if sports else 0.6)
 
     # The top edge round her: a straight neckline across the front, up to the strap points,
     # down under each arm, a straight back a little lower.
@@ -819,6 +842,12 @@ def build_camisole(params, *, cropped: bool) -> list[Mesh] | None:
     y_strap = y_arm - 0.012 * s
     y_under = y_arm - 0.03 * s
     y_back = y_arm - 0.045 * s
+    if sports:
+        # A scoop, not a plunge: its centre a quarter of the way from her bust point up to
+        # her armpit; the back cut high and straight between the straps.
+        y_front = apex + (y_arm - apex) * SPORTS_SCOOP
+        y_under = y_arm - 0.02 * s
+        y_back = y_arm - 0.02 * s
     th_sf = abs(sections.theta_at_x(ax + strap_x, y_strap, back=False, lift=ease))
     th_sb = abs(sections.theta_at_x(ax + strap_x, y_back, back=True, lift=ease))
     marks = np.array([0.0, th_sf, math.pi / 2, th_sb, math.pi])
@@ -842,8 +871,12 @@ def build_camisole(params, *, cropped: bool) -> list[Mesh] | None:
     ys = hem + (tops[None, :] - hem) * t_rows[:, None]
     grid_thetas = np.broadcast_to(thetas, ys.shape)
     radius = sections.radius(grid_thetas, ys) + ease
+    if sports:
+        # The underband holds her: no ease under the fold, only the clearance.
+        band = ys < hem + SPORTS_BAND_M * s
+        radius = np.where(band, radius - CAMI_EASE_M, radius)
     for c in range(columns):
-        radius[:, c] = _hang(radius[:, c], ys[:, c], CAMI_TAPER)
+        radius[:, c] = _hang(radius[:, c], ys[:, c], 0.0 if sports else CAMI_TAPER)
     points = sections.point(grid_thetas, ys, radius)
     builder = _Builder()
     ids = []
@@ -858,6 +891,9 @@ def build_camisole(params, *, cropped: bool) -> list[Mesh] | None:
     builder.grid(ids[::-1])
     body = builder.mesh("camisole")
     body.metadata.update({"placed": np.ones(body.vertex_count, dtype=bool), "panelBuilt": True})
+    pieces = [body]
+    if sports:
+        pieces = _split_band(body, hem + SPORTS_BAND_M * s)
 
     straps = []
     joint = params.measurements.bone_positions.get("leftUpperArm")
@@ -865,20 +901,54 @@ def build_camisole(params, *, cropped: bool) -> list[Mesh] | None:
     shoulder_x = neck + ((abs(float(joint[0]) - ax) if joint is not None else neck + 0.08) - neck) * 0.55
     for sign in (1.0, -1.0):
         strap = _flat_strap(sections, shoulders, ax + sign * strap_x, ax + sign * shoulder_x,
-                            y_strap, y_back + 0.008 * s, ease, f, s)
+                            y_strap, y_back + 0.008 * s, ease, f, s,
+                            width_m=SPORTS_STRAP_WIDTH_M if sports else STRAP_WIDTH_M)
         if strap is not None:
             straps.append(strap)
-    return [body, *straps]
+    return [*pieces, *straps]
+
+
+def _bust_heights(params, marks: dict | None, torso: float) -> tuple[float, float]:
+    """(the fold under her bust, her bust point's height): measured when the fitter measured
+    her (``lingerieLandmarks``), from her chest and waist otherwise."""
+    if isinstance(marks, dict) and marks.get("underbust_y") and marks.get("bust_points"):
+        fold = min(float(v) for v in marks["underbust_y"].values())
+        apex = float(np.mean([p[1] for p in marks["bust_points"].values()]))
+        if apex > fold:
+            return fold, apex
+    fold = params.chest_y - torso * 0.32
+    return fold, params.chest_y
+
+
+def _split_band(body: Mesh, top: float) -> list[Mesh]:
+    """The sports bra's underband as its own section (drawn as a band), the body above it."""
+    faces = body.indices.reshape(-1, 3)
+    in_band = (body.positions[faces][:, :, 1] <= top + 1e-4).all(axis=1)
+    pieces = []
+    for name, chosen in (("sports-bra-band", in_band), ("camisole", ~in_band)):
+        if not chosen.any():
+            continue
+        used = np.unique(faces[chosen])
+        remap = np.full(body.vertex_count, -1, dtype=np.int64)
+        remap[used] = np.arange(used.size)
+        piece = Mesh(positions=body.positions[used],
+                     indices=remap[faces[chosen]].astype(np.uint32).reshape(-1),
+                     uvs=None if body.uvs is None else body.uvs[used], metadata={"section": name})
+        piece.compute_normals()
+        piece.metadata.update({"placed": np.ones(used.size, dtype=bool), "panelBuilt": True})
+        pieces.append(piece)
+    return pieces
 
 
 def _flat_strap(sections: Sections, shoulders: Shoulders, x_body: float, x_top: float,
-                y_front: float, y_back: float, ease: float, f: float, s: float) -> Mesh | None:
+                y_front: float, y_back: float, ease: float, f: float, s: float,
+                width_m: float = STRAP_WIDTH_M) -> Mesh | None:
     """A flat ribbon strap: from the front edge up her chest, over her shoulder, down to the back edge."""
     ax, az = sections.axis
     xs, line = shoulders.shoulder_line(ax, abs(x_top - ax) + 0.02, y_front + 0.08)
     peak = float(np.interp(abs(x_top - ax), xs, line))
     thickness = STRAP_THICKNESS_M * s
-    width = STRAP_WIDTH_M * s
+    width = width_m * s
     lift = ease + thickness * 0.5 + 0.0005
     front, back = [], []
     for k in range(9):

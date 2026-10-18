@@ -159,7 +159,9 @@ def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
     crotch = float(lower["crotchY"])
     centre_x = float(lower.get("centreX", np.median(cover[:, 0])))
 
-    top = float(params.waist_y) + (0.0 if plain else TOP_ABOVE_WAIST_M) * scale
+    # A plain pair sits at her natural waist unless it was asked for high ("high-waist").
+    high = not plain or str(params.metadata.get("rise") or "") == "high"
+    top = float(params.waist_y) + (TOP_ABOVE_WAIST_M if high else 0.0) * scale
     bottom = crotch + CROTCH_ROW_ABOVE_M
     sections = Sections.measure(cover, forward, bottom, top)
     if sections is None:

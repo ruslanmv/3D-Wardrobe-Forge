@@ -187,7 +187,7 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         profile = torso_profile(_torso(context, whole), top, knee)
         if profile is not None:
             metadata["torsoProfile"] = profile
-    if kind in LINGERIE_KINDS:
+    if kind in LINGERIE_KINDS or kind == "sports-bra":
         from wardrobe.lingerie.landmarks import measure_landmarks  # it imports this package
 
         # A pattern block is placed on her landmarks (wardrobe.lingerie.landmarks):
@@ -455,7 +455,7 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
 
 #: G6. Shapes cut as panels on her measured outline (wardrobe.geometry.panels).
 LEGGINGS_PANEL_KINDS = frozenset({"seamless-leggings", "leggings"})
-PANEL_KINDS = frozenset({"camisole", "open-cardigan", "tee"}) | LEGGINGS_PANEL_KINDS
+PANEL_KINDS = frozenset({"camisole", "open-cardigan", "tee", "sports-bra"}) | LEGGINGS_PANEL_KINDS
 
 #: DC3. Garments built of a bodice and a skirt whose shading must run straight across the join.
 SEAM_WELDED_KINDS = frozenset({"dress", "slip-dress"})

@@ -1475,7 +1475,7 @@ HAUL_KINDS = frozenset(
         # the liner a skirt is worn over (S2, wardrobe.pipeline.generate_garment.with_skirt_liner)
         "slip-shorts",
         # G6: cut as panels on her measured body (wardrobe.geometry.panels)
-        "camisole", "open-cardigan", "tee",
+        "camisole", "open-cardigan", "tee", "sports-bra",
     }
 )
 
@@ -1918,6 +1918,16 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         return [body, *top_straps(params, top_y=bust_top, style=straps or top_straps_default,
                                   underbust_y=underbust)]
 
+    if kind == "sports-bra":
+        # A sports bra, a top: the camisole's panels with an underband, a scoop and wide straps
+        # (wardrobe.geometry.panels.build_camisole(sports=True)). Unmeasured, a cropped cami.
+        from wardrobe.geometry.panels import build_camisole  # it builds on this module
+
+        built = build_camisole(params, cropped=True, sports=True)
+        if built is not None:
+            return built
+        kind = "crop-top"
+        straps = straps or "shoulder"
     if kind == "camisole":
         # G6. Front and back panels round her measured outline, a neckline, underarms and flat
         # straps (wardrobe.geometry.panels). Unmeasured, the cropped cami's band and straps.
