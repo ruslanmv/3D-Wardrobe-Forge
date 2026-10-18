@@ -49,6 +49,11 @@ GORE_COLUMNS = 4
 #: How far above her bust point a neckline passes, at least, by style.
 COVER_MIN_M = 0.016
 COVER = {"full": 0.03}
+#: How far a cup above the bust point rises out of the straight line from there to its top, as
+#: a share of that line's length, at its middle: the dome of a moulded cup.
+MOULD = 0.1
+#: How far a moulded cup stands out of her at its middle, beyond the clearance, edges sewn flat.
+CUP_DOME_M = 0.004
 #: A triangle cup's top is not a single point, which would make slivers: it is this wide.
 PEAK_WIDTH_M = 0.008
 
@@ -178,7 +183,6 @@ def build_bra(frame: BodyFrame, spec: BraSpec, straps: StrapBlock, *, name: str 
         rows = [bottom]
         start = np.array([positions[v] for v in bottom])
         # The bust point's own row: the cup bridges straight from here to its top.
-        apex_row = None
         for r in range(1, CUP_ROWS + 1):
             t = r / CUP_ROWS
             row = []
@@ -194,20 +198,37 @@ def build_bra(frame: BodyFrame, spec: BraSpec, straps: StrapBlock, *, name: str 
                     p = np.array([x, y, positions[bottom[i]][2]])
                 row.append(p)
             row = np.array(row)
-            if apex_row is None and float(np.mean(row[:, 1])) >= cup["apex"][1]:
-                apex_row = (r, row.copy())
             rows.append(row)
-        # Bridge above the bust point: straight from the bust-point row to the top, never inside her.
-        if apex_row is not None:
-            r0, base = apex_row
-            top = rows[-1]
-            for r in range(r0 + 1, CUP_ROWS):
-                t = (r - r0) / (CUP_ROWS - r0)
+        # Bridge above the bust point, column by column, from where the column passes her bust
+        # point's height to the cup's top edge, never inside her: not a straight line (each cup
+        # read as a flat triangle), but moulded, a cup's dome that rises out from the line by
+        # MOULD of its length at the middle and meets it at both ends. By column, not by row: a
+        # plunge's top edge runs from the low gore up to its strap, so no whole row was ever
+        # above her bust point and the cups lay flat on her.
+        grid = np.array(rows[1:])  # [row, column, xyz]
+        forward = frame.forward
+        for i in range(CUP_COLUMNS + 1):
+            above = np.flatnonzero(grid[:, i, 1] >= cup["apex"][1])
+            if above.size < 2:
+                continue
+            r0 = int(above[0])
+            base, top = grid[r0, i].copy(), grid[-1, i].copy()
+            span = float(np.linalg.norm(top - base))
+            for r in range(r0 + 1, grid.shape[0] - 1):
+                t = (r - r0) / (grid.shape[0] - 1 - r0)
                 line = base + (top - base) * t
-                surface = rows[r]
-                forward = frame.forward
-                proud = line[:, 2] * forward > surface[:, 2] * forward
-                rows[r][:, 2] = np.where(proud, line[:, 2], surface[:, 2])
+                line[2] += forward * MOULD * span * 4.0 * t * (1.0 - t)
+                if line[2] * forward > grid[r, i, 2] * forward:
+                    grid[r, i, 2] = line[2]
+        # The moulded cup's own depth: out of her by up to CUP_DOME_M in its middle, nothing at
+        # its edges (band, gore, neckline and side stay where they are sewn). Lying at one lift
+        # over her, a cup on a small bust read as a flat plate.
+        count = grid.shape[0]
+        for r in range(count - 1):
+            for i in range(1, CUP_COLUMNS):
+                bump = math.sin(math.pi * i / CUP_COLUMNS) * math.sin(math.pi * (r + 1) / count)
+                grid[r, i, 2] += forward * CUP_DOME_M * bump
+        rows = [rows[0]] + [grid[r] for r in range(grid.shape[0])]
         indexed = [bottom]
         for row in rows[1:]:
             ids = []
