@@ -147,6 +147,12 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
             cover = inner_now if cover is None else np.vstack([cover, inner_now])
         if cover is not None:
             metadata["coverPoints"] = cover
+        if kind == "seamless-leggings" and legs is not None:
+            # SL2. Each leg below the crotch, and whatever is already on her legs, for the leg
+            # rings to be cut round (wardrobe.geometry.lower_panels).
+            inner_legs = _skinned_to(context, context.collision_points, LEG_BONES) \
+                if context.collision_points is not None and context.collision_points.shape[0] else None
+            metadata["legPoints"] = legs if inner_legs is None else np.vstack([legs, inner_legs])
     if kind == "boots":
         # DC2. Her feet and legs as she stands (wardrobe.vrm.stance), each side its own, and any
         # layer already fitted on them this job: the boot is cut round all of it.
@@ -280,7 +286,10 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # than measured wrong; it is laid on her measured surfaces and shoulder line with the
         # garment's ease (wardrobe.geometry.panels), and the review renders are its check.
         axis_mask = on_axis_mask(mesh, context.measurements)
-        for key in ("sleeve", "yoke"):
+        # SL2. Nor a one-piece legging's legs: measured out from her vertical axis, the inner side
+        # of each leg ring read as inside the other leg (55 % of Model Girl's leggings "intersected"
+        # her). They are each leg's own hull carried out by the clearance (lower_panels).
+        for key in ("sleeve", "yoke", "legPiece"):
             if mesh.metadata.get(key) is not None:
                 axis_mask = axis_mask & ~np.asarray(mesh.metadata[key], dtype=bool)
 
@@ -440,7 +449,7 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
 
 
 #: G6. Shapes cut as panels on her measured outline (wardrobe.geometry.panels).
-PANEL_KINDS = frozenset({"camisole", "open-cardigan", "tee"})
+PANEL_KINDS = frozenset({"camisole", "open-cardigan", "tee", "seamless-leggings"})
 
 #: DC3. Garments built of a bodice and a skirt whose shading must run straight across the join.
 SEAM_WELDED_KINDS = frozenset({"dress", "slip-dress"})

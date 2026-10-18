@@ -76,7 +76,16 @@ def skin_bone_weights(document: GltfDocument, humanoid: dict[str, int]):
     return skin.positions[keep], dense[keep] / total[keep, None], names
 
 
+#: Above this many skin vertices the nearest are found cell by cell. The reference bodies have
+#: 214 050; all at once, one block of 512 garment vertices against them was 2.6 GB of distances.
+GRID_ABOVE = 50_000
+#: The search cell, and the margin round it a cell's candidates are first taken from.
+GRID_CELL_M = 0.02
+
+
 def _nearest(points: np.ndarray, cloud: np.ndarray, count: int) -> tuple[np.ndarray, np.ndarray]:
+    if cloud.shape[0] > GRID_ABOVE:
+        return _nearest_by_cell(points, cloud, count)
     index = np.zeros((points.shape[0], count), dtype=np.int64)
     distance = np.zeros((points.shape[0], count))
     for start in range(0, points.shape[0], 512):
@@ -85,6 +94,34 @@ def _nearest(points: np.ndarray, cloud: np.ndarray, count: int) -> tuple[np.ndar
         nearest = np.argpartition(d2, count, axis=1)[:, :count]
         index[start:start + 512] = nearest
         distance[start:start + 512] = np.sqrt(np.take_along_axis(d2, nearest, axis=1))
+    return index, distance
+
+
+def _nearest_by_cell(points: np.ndarray, cloud: np.ndarray, count: int) -> tuple[np.ndarray, np.ndarray]:
+    """The same answer as the brute force, a grid cell of garment vertices at a time.
+
+    Each cell's candidates are the skin vertices within a margin of it; the answer is exact once
+    every vertex's ``count``-th nearest is within that margin, and the margin doubles until it is.
+    """
+    index = np.zeros((points.shape[0], count), dtype=np.int64)
+    distance = np.zeros((points.shape[0], count))
+    keys = np.floor(points / GRID_CELL_M).astype(np.int64)
+    cells, owner = np.unique(keys, axis=0, return_inverse=True)
+    owner = owner.reshape(-1)
+    for c in range(cells.shape[0]):
+        rows = np.flatnonzero(owner == c)
+        lo, hi = cells[c] * GRID_CELL_M, (cells[c] + 1) * GRID_CELL_M
+        margin = GRID_CELL_M
+        while True:
+            near = np.flatnonzero(np.all((cloud > lo - margin) & (cloud < hi + margin), axis=1))
+            if near.size >= count:
+                d2 = ((points[rows][:, None, :] - cloud[near][None, :, :]) ** 2).sum(axis=2)
+                pick = np.argpartition(d2, count - 1, axis=1)[:, :count]
+                found = np.sqrt(np.take_along_axis(d2, pick, axis=1))
+                if found.max() <= margin or near.size == cloud.shape[0]:
+                    index[rows], distance[rows] = near[pick], found
+                    break
+            margin *= 2.0
     return index, distance
 
 
@@ -104,12 +141,15 @@ def _segment_of(bone: str, segments: list[BoneSegment], humanoid: dict[str, int]
 
 def transfer_weights(mesh: Mesh, segments: list[BoneSegment], document: GltfDocument,
                      humanoid: dict[str, int], *, hip_y: float, forward: float = 1.0,
-                     axis_z: float = 0.0) -> bool:
+                     axis_z: float = 0.0, whole: bool = False) -> bool:
     """Rebind ``mesh`` (already bound by ``bind_mesh``) from her skin above her hips; True when done.
 
     Below her hips, behind her, a hanging panel is held by her hips alone: a coat's back hangs
     from her seat when she sits, it does not swing forward with her thighs. Bound to the thighs
     front and back alike, the long cardigan's skirt became a tube round her lap.
+
+    ``whole`` (AN-A5) takes her skin's weights everywhere, below her hips too: for a garment on
+    her skin — briefs, a swimsuit, leggings — which has no hem to hang and must move as she does.
     """
     if mesh.joints is None or mesh.weights is None or not segments:
         return False
@@ -142,7 +182,7 @@ def transfer_weights(mesh: Mesh, segments: list[BoneSegment], document: GltfDocu
     rows = np.arange(points.shape[0])[:, None]
     np.add.at(bound, (np.broadcast_to(rows, mesh.joints.shape), mesh.joints.astype(np.int64)), mesh.weights)
     t = np.clip((points[:, 1] - (hip_y - HIP_BAND_M)) / (2 * HIP_BAND_M), 0.0, 1.0)
-    hip_share = t * t * (3 - 2 * t)
+    hip_share = np.ones(points.shape[0]) if whole else t * t * (3 - 2 * t)
     share = hip_share
     along = mesh.metadata.get("sleeveAlong")
     if along is not None and np.asarray(along).shape[0] == points.shape[0]:

@@ -46,10 +46,13 @@ def main(argv: list[str]) -> int:
             "subdivisionLevels": R.LEVELS,
             "tolerances": R.TOLERANCE,
             "unmodelled": R.UNMODELLED,
+            "anatomy": R.ANATOMY,
             "shapePriors": R.SHAPE_PRIORS,
         }
     )
     R.BODIES_PATH.write_text(json.dumps(existing, indent=1) + "\n")
+    # The records are of the template surface; the pelvic outlet is fitted to it and must follow.
+    print("now run tools/anatomy/fit_pelvis.py: a stored outlet fitted to the old surface is refused")
     return 0
 
 

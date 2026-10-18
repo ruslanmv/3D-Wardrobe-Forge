@@ -41,8 +41,10 @@ from wardrobe.vrm.document import GltfDocument  # noqa: E402
 AVATAR = ROOT / "assets" / "library" / "AvatarSample_A.vrm"
 FULL = ["front", "three-quarter", "left-side", "back", "ortho-front", "ortho-side", "low-angle",
         "arms-raised", "arms-lowered", "seated"]
+#: The Studio's simple path (apps/studio/js/app.js simpleBody): what a person tapping a look gets.
+STUDIO_OPTIONS = {"baseBody": "replace-outer", "ensureFoundation": True}
 CLOSE = ["close-shoulders", "close-neckline", "close-waist", "close-crotch", "close-hem-upper",
-         "close-hem-lower"]
+         "close-hem-lower", "close-below", "close-below-seated"]
 
 
 def _bones(pose: dict, vrm0: bool) -> str:
@@ -85,6 +87,10 @@ def views_for(name: str, vrm: Path) -> list[dict]:
                                    ("waist", [0.78, 1.08], 30, 0), ("crotch", [0.55, 0.85], 15, -25),
                                    ("hem-upper", [0.55, 0.95], 60, 0), ("hem-lower", [0.0, 0.35], 30, 0)):
         view("close-" + label, yaw=yaw, elev=elev, focus=band, size=[700, 560])
+    # Between her thighs from underneath, the Studio camera that showed the guêpière's jagged strip
+    # (task GQ), standing and seated.
+    view("close-below", yaw=0, elev=-70, focus=[0.6, 0.95], size=[700, 560])
+    view("close-below-seated", yaw=0, elev=-60, focus=[0.45, 0.95], size=[700, 560], bones=seated)
     return views
 
 
@@ -93,7 +99,8 @@ def sheet(out: Path, name: str, title: str, before: Path | None = None) -> Path:
 
     W, H, CW, CH = 300, 450, 500, 240
     columns = 2 if before else 1
-    canvas = Image.new("RGB", (W * 5 * columns, 40 + 2 * (H + 24) + 2 * (CH + 24)), (36, 34, 42))
+    close_rows = -(-len(CLOSE) // 3)
+    canvas = Image.new("RGB", (W * 5 * columns, 40 + 2 * (H + 24) + close_rows * (CH + 24)), (36, 34, 42))
     draw = ImageDraw.Draw(canvas)
     draw.text((10, 12), title, fill=(240, 240, 240))
     for c, folder in enumerate([out] + ([before] if before else [])):
@@ -125,13 +132,21 @@ def main() -> None:
     parser.add_argument("--avatar", type=Path, default=AVATAR)
     parser.add_argument("--compare", type=Path, help="an earlier OUT_DIR, set beside this one view by view")
     parser.add_argument("--no-generate", action="store_true", help="render the VRMs already in OUT_DIR")
+    parser.add_argument("--declare-adult", action="store_true",
+                        help="declare the avatar as depicting an adult for these jobs, as an operator does in "
+                        "the Space's admin session; required for gated looks on an undeclared avatar")
+    parser.add_argument("--studio", action="store_true",
+                        help="dress as the Studio's simple path does: replace-outer, a foundation ensured")
     args = parser.parse_args()
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
     if not args.no_generate:
         import looks
 
-        looks.EVERYDAY_LOOKS = [(k + 1, name, prompt, {}) for k, (name, prompt) in enumerate(args.look)]
+        extra = {"options": STUDIO_OPTIONS} if args.studio else {}
+        if args.declare_adult:
+            extra["depictsAdult"] = True
+        looks.EVERYDAY_LOOKS = [(k + 1, name, prompt, extra) for k, (name, prompt) in enumerate(args.look)]
         asyncio.run(looks.main(out, args.avatar.resolve(), set()))
         for k, (name, _) in enumerate(args.look):
             (out / f"{name}.vrm").write_bytes((out / f"g-{k + 1:02d}.vrm").read_bytes())

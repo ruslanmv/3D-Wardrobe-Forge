@@ -410,9 +410,23 @@
   "weightkg": 3.0
  },
  "unmodelled": {
-  "externalGenitalAnatomy": "Not modelled. Between the thighs the template's closed soft-tissue surface is kept as it is; labia and the structures they enclose are not built, and MakeHuman's helper-genital proxy geometry is not imported. Contact results there are reported under the region name external-genital-region.",
+  "externalGenitalDetail": "The labia minora, the clitoral hood, the vestibule and anything finer than the scan's edges are not built; the mound is closed, as the scan's is. MakeHuman's helper-genital proxy geometry is not imported.",
   "nippleAreola": "Not modelled beyond the template's surface. The bust point is the apex of the breast (the template vertex there, checked against detection as a local apex).",
   "softTissue": "The surface is rigid. Compression under a garment is not simulated yet (stage 7)."
+ },
+ "anatomy": {
+  "modelled": {
+   "pelvicOutlet": "The mons pubis, the vulval outer contour as one closed mound, the genitocrural folds beside it and the start of the perineum, from the Human Reference Atlas female skin (CC BY 4.0; assets/anatomy/hra-provenance.json), fitted to her by wardrobe.anatomy.pelvis. Contact results there are reported under the region external-genital-region.",
+   "creases": "Gluteal folds, inguinal creases and inframammary folds, from the template, measured (wardrobe.anatomy.creases)."
+  },
+  "approximated": {
+   "pelvicOutlet": "One woman's surface (the Visible Human Female, frozen lying on her back) at its own resolution, about 5 mm edges: scaled to each size by trunk breadth and depth, pitched to her standing pelvis, mirrored to symmetry, and blended into the template over 14 cm. Not a population shape."
+  },
+  "unsupported": {
+   "externalGenitalDetail": "The labia minora, the clitoral hood, the vestibule and anything finer than the scan's edges are not built; the mound is closed, as the scan's is. MakeHuman's helper-genital proxy geometry is not imported.",
+   "nippleAreola": "Not modelled beyond the template's surface. The bust point is the apex of the breast (the template vertex there, checked against detection as a local apex).",
+   "softTissue": "The surface is rigid. Compression under a garment is not simulated yet (stage 7)."
+  }
  },
  "shapePriors": {
   "template": "MakeHuman hm08 female young adult, average muscle (CC0); its modifiers are the only shape parameters, and each is solved against a measured dimension or held near its neutral value",

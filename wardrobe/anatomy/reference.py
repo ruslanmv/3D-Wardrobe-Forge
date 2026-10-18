@@ -41,16 +41,35 @@ LANDMARK_SHAPE = {"cup": 0.85}
 #: Average body density used to turn her volume into a weight to check against ANSUR's scale reading.
 BODY_DENSITY_KG_PER_L = 1.03
 
-#: What these bodies do not model, by decision. Every body's metadata carries this; reports quote it.
-UNMODELLED = {
-    "externalGenitalAnatomy": "Not modelled. Between the thighs the template's closed soft-tissue surface is "
-    "kept as it is; labia and the structures they enclose are not built, and MakeHuman's "
-    "helper-genital proxy geometry is not imported. Contact results there are reported "
-    "under the region name external-genital-region.",
-    "nippleAreola": "Not modelled beyond the template's surface. The bust point is the apex of the breast "
-    "(the template vertex there, checked against detection as a local apex).",
-    "softTissue": "The surface is rigid. Compression under a garment is not simulated yet (stage 7).",
+#: What these bodies model, what they approximate and what they do not support (AN-A6), region by
+#: region. Every body's metadata, every reference VRM's extras and the validation report carry it, so
+#: that no fit result implies more than was built.
+ANATOMY = {
+    "modelled": {
+        "pelvicOutlet": "The mons pubis, the vulval outer contour as one closed mound, the genitocrural folds "
+        "beside it and the start of the perineum, from the Human Reference Atlas female skin (CC BY 4.0; "
+        "assets/anatomy/hra-provenance.json), fitted to her by wardrobe.anatomy.pelvis. Contact results "
+        "there are reported under the region external-genital-region.",
+        "creases": "Gluteal folds, inguinal creases and inframammary folds, from the template, measured "
+        "(wardrobe.anatomy.creases).",
+    },
+    "approximated": {
+        "pelvicOutlet": "One woman's surface (the Visible Human Female, frozen lying on her back) at its own "
+        "resolution, about 5 mm edges: scaled to each size by trunk breadth and depth, pitched to her "
+        "standing pelvis, mirrored to symmetry, and blended into the template over 14 cm. Not a "
+        "population shape.",
+    },
+    "unsupported": {
+        "externalGenitalDetail": "The labia minora, the clitoral hood, the vestibule and anything finer than "
+        "the scan's edges are not built; the mound is closed, as the scan's is. MakeHuman's "
+        "helper-genital proxy geometry is not imported.",
+        "nippleAreola": "Not modelled beyond the template's surface. The bust point is the apex of the breast "
+        "(the template vertex there, checked against detection as a local apex).",
+        "softTissue": "The surface is rigid. Compression under a garment is not simulated yet (stage 7).",
+    },
 }
+#: The older name: what is not supported. Reports and VRMs made before AN-A read it.
+UNMODELLED = ANATOMY["unsupported"]
 
 #: Parameters with no measurement of their own, and why they have the value they have.
 SHAPE_PRIORS = {
@@ -547,10 +566,21 @@ def reference_bodies() -> dict:
     return json.loads(BODIES_PATH.read_text())
 
 
-def reference_body(size_id: str):
-    """(vertices, triangles, joints, measured) for a size, from its recorded modifiers."""
+def reference_body(size_id: str, *, pelvic_outlet: bool = True):
+    """(vertices, triangles, joints, measured) for a size, from its recorded modifiers.
+
+    With ``pelvic_outlet`` (AN-A2) her surface between her thighs is the atlas's, as fitted to her
+    by ``tools/anatomy/fit_pelvis.py``; ``build`` alone gives the template surface the calibration
+    record was measured on. Only vertices move, never the topology, so the rig's weights, the
+    landmarks' vertex indices and the subdivision all still hold. A stored fit that is missing or
+    was made on another surface is left out with a warning (``pelvis.apply``).
+    """
     record = reference_bodies()["bodies"][size_id]
     V, T, J = build(record["modifiers"], LEVELS)
+    if pelvic_outlet:
+        from wardrobe.anatomy import pelvis  # it imports contact, which imports measure only
+
+        V, _ = pelvis.apply(size_id, V)
     return V, T, J, measure_body(V, T, J)
 
 

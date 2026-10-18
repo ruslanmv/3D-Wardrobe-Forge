@@ -46,7 +46,9 @@ SUMMARY = ROOT / "docs" / "ANATOMY_VALIDATION.md"
 SEED = 20261017
 
 
-def dimensions(size_id: str, measured: dict) -> dict:
+def dimensions(size_id: str, measured: dict, template: dict) -> dict:
+    """Her dimensions as built (with her pelvic outlet) against the survey; reproduction is of the
+    template surface the record was measured on (``template``), since the outlet is fitted after it."""
     record = R.reference_bodies()["bodies"][size_id]
     rows = {}
     bound = R.acceptance(size_id)
@@ -72,7 +74,7 @@ def dimensions(size_id: str, measured: dict) -> dict:
         "measured": round(measured["underbustcircumference"], 1),
         "reference": None,
     }
-    drift = max(abs(measured[k] - record["measured"][k]) for k in record["measured"])
+    drift = max(abs(template[k] - record["measured"][k]) for k in record["measured"])
     return {"calibrated": rows, "reported": reported, "reproductionMaxDifference": round(drift, 4)}
 
 
@@ -194,15 +196,22 @@ def main(argv: list[str]) -> int:
         "schema": "wardrobe.anatomy.validationReport.v1",
         "subdivisionLevels": R.LEVELS,
         "unmodelled": R.UNMODELLED,
+        "anatomy": R.ANATOMY,
         "bodies": {},
     }
+    outlet = json.loads((ROOT / "assets" / "anatomy" / "pelvic-outlet.json").read_text())
     for size_id in R.reference_bodies()["bodies"]:
         started = time.time()
         V, T, J, m = R.reference_body(size_id)
+        template = R.reference_body(size_id, pelvic_outlet=False)[3]
         labels = G.region_labels(V, m.landmarks, J)
         P, _ = t_pose(V, J)
         report["bodies"][size_id] = {
-            "dimensions": dimensions(size_id, m.values),
+            "dimensions": dimensions(size_id, m.values, template.values),
+            "pelvicOutlet": {
+                "fit": outlet[size_id]["fit"],
+                "measurementShiftMm": outlet[size_id]["measurementShiftMm"],
+            },
             "topology": {
                 "rest": TOP.check(V, T).to_dict(),
                 "tPose": TOP.check(P, T, self_intersection=not quick).to_dict(),
@@ -335,7 +344,26 @@ def summary(r: dict) -> str:
         out.append(
             f"| {k} | " + " | ".join(f"{r['bodies'][s]['regionAreasCm2'][k]:.0f}" for s in sizes) + " |"
         )
-    out += ["", "## Not modelled", ""] + [f"- **{k}** — {v}" for k, v in r["unmodelled"].items()] + [""]
+    out += [
+        "",
+        "## Pelvic outlet (AN-A2: HRA female skin, CC BY 4.0, fitted to each size)",
+        "",
+        "| size | scale x/y/z | pitch ° | ring agreement mm | residual mm | vertices moved | max move mm | "
+        "measurements moved (mm) |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for s in sizes:
+        o = r["bodies"][s]["pelvicOutlet"]
+        f = o["fit"]
+        shift = ", ".join(f"{k} {v:+.1f}" for k, v in o["measurementShiftMm"].items() if abs(v) >= 0.5)
+        out.append(
+            f"| {s} | {'/'.join(f'{x:.3f}' for x in f['scale'])} | {f['pitchDegrees']:g} | "
+            f"{f['ringAgreementMm']:.1f} | {f['weightedResidualMm']:.3f} | {f['verticesMoved']} | "
+            f"{f['maxMoveMm']:.1f} | {shift} |"
+        )
+    for title, key in (("Modelled", "modelled"), ("Approximated", "approximated"), ("Not supported", "unsupported")):
+        out += ["", f"## {title}", ""] + [f"- **{k}** — {v}" for k, v in r["anatomy"][key].items()]
+    out.append("")
     return "\n".join(out)
 
 

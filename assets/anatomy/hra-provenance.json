@@ -1,0 +1,43 @@
+{
+ "source": "Human Reference Atlas (HuBMAP), 3D Reference Organ: skin of body, female",
+ "version": "v1.5",
+ "landingPage": "https://lod.humanatlas.io/ref-organ/skin-female/v1.5",
+ "file": "https://cdn.humanatlas.io/digital-objects/ref-organ/skin-female/v1.5/assets/3d-vh-f-skin.glb",
+ "doi": "https://doi.org/10.48539/HBM453.MVPL.398",
+ "creators": [
+  "Kristen Browne",
+  "Heidi Schlehlein"
+ ],
+ "funder": "National Institutes of Health (Common Fund, HuBMAP)",
+ "underlyingData": "National Library of Medicine Visible Human Project, female (Spitzer et al. 1998, Anat Rec 253(2):49-57)",
+ "licence": "CC BY 4.0",
+ "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+ "attribution": "Browne, Kristen, and Heidi Schlehlein. 2024. 3D Reference Organ for Skin, Female v1.5. Human Reference Atlas, HuBMAP. https://doi.org/10.48539/HBM453.MVPL.398. Licensed under CC BY 4.0. Cropped and registered by 3D-Wardrobe-Forge.",
+ "changes": [
+  "split vertices welded by position",
+  "cropped to the pelvic region: faces within 0.17 m of the midline, 0.17 m below and 0.21 m above the crotch",
+  "translated so the crotch point is the origin and the midline is x = 0",
+  "fitted onto each reference body by wardrobe.anatomy.pelvis (scaled, pitched, mirrored and averaged, blended), which changes its shape"
+ ],
+ "glbSha256": "b7dc8b3e5bae070f22f2619b10194b012a6f3cf930836d251828d5893e69594c",
+ "welded": {
+  "vertices": 133350,
+  "triangles": 266696,
+  "closedManifold": true
+ },
+ "crop": {
+  "vertices": 18365,
+  "triangles": 35889,
+  "medianEdgeMm": 4.88,
+  "crotchInAtlasFrame": [
+   -0.00634,
+   -0.06073,
+   -0.07698
+  ],
+  "midlineX": -0.00634,
+  "trunkBreadthM": 0.4054,
+  "trunkDepthM": 0.2363,
+  "scaleHeightM": 0.07
+ },
+ "npzSha256": "f3b587e91b28a21ec57b8c728c195d5b13f090507c208d2efc8c9285c2c0dbd8"
+}

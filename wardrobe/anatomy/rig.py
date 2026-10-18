@@ -283,6 +283,36 @@ TEST_POSES: dict[str, dict[str, tuple[tuple[str, float], ...]]] = {
 }
 _AXES = {"x": (1.0, 0.0, 0.0), "y": (0.0, 1.0, 0.0), "z": (0.0, 0.0, 1.0)}
 
+#: AN-A3. The leg poses her pelvic region is tested in (``wardrobe.anatomy.posecheck.PelvicRegion``),
+#: arms in the sculpted pose. Same convention as ``TEST_POSES``; a part named without a side
+#: applies to both legs mirrored, one named with a side to that leg only. Flexion is a negative
+#: turn about x (her knee comes forward).
+LEG_POSES: dict[str, dict[str, tuple[tuple[str, float], ...]]] = {
+    "standing": {},
+    "stride": {"leftUpperLeg": (("x", -30.0),), "rightUpperLeg": (("x", 20.0),)},
+    "wide": {"UpperLeg": (("z", 30.0),)},
+    "seated": {"UpperLeg": (("x", -85.0),), "LowerLeg": (("x", 85.0),)},
+    "knee-up": {"leftUpperLeg": (("x", -90.0),), "leftLowerLeg": (("x", 90.0),)},
+    "squat": {"UpperLeg": (("x", -110.0), ("z", 15.0)), "LowerLeg": (("x", 120.0),)},
+}
+
+
+def leg_pose(name: str, J: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    """A named leg pose, with her arms where she was sculpted (so only her legs differ)."""
+    out = dict(sculpted_pose(J))
+    for part, turns in LEG_POSES[name].items():
+        if part.startswith(("left", "right")):
+            sides = [(part, 1.0)]
+        else:
+            sides = [("left" + part, 1.0), ("right" + part, -1.0)]
+        for bone, mirror in sides:
+            R = np.eye(3)
+            for axis, degrees in turns:
+                sign = mirror if axis in ("y", "z") else 1.0
+                R = rotation(_AXES[axis], np.radians(sign * degrees)) @ R
+            out[bone] = R
+    return out
+
 
 def named_pose(name: str, J: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     """A named test pose as normalized-bone rotations for both sides (applied in the listed order)."""
@@ -309,6 +339,8 @@ __all__ = [
     "base_weights",
     "bone_positions",
     "dense_weights",
+    "LEG_POSES",
+    "leg_pose",
     "named_pose",
     "pose_surface",
     "rotation",

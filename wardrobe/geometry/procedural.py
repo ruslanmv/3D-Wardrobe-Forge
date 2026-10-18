@@ -2046,7 +2046,11 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
             *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="leggings", ankle=True),
         ]
     if kind == "seamless-leggings":
-        return build_seamless_leggings(params)
+        # SL2. One piece on her measured outline when the fitter has measured her; the SL1
+        # pieces otherwise (a direct build_garment call).
+        from wardrobe.geometry.lower_panels import build_leggings_panel  # it imports panels
+
+        return build_leggings_panel(params) or build_seamless_leggings(params)
     if kind == "tights":
         # Leggings' shape, down over the feet, and a layer rather than a garment
         # of its own: KIND_REGIONS leaves tights out, so they go under her skirt

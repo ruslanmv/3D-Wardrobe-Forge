@@ -34,8 +34,8 @@ import numpy as np
 from wardrobe.anatomy import measure as M
 from wardrobe.anatomy.topology import check as check_topology
 
-#: Region label for contact results between her thighs near the crotch, where external anatomy is
-#: not modelled (wardrobe.anatomy.reference.UNMODELLED).
+#: Region label for contact results between her thighs near the crotch, where her surface is the
+#: atlas's pelvic outlet at its resolution (wardrobe.anatomy.reference.ANATOMY, AN-A2).
 EXTERNAL_GENITAL_REGION = "external-genital-region"
 #: The search grid's smallest cell: two edges of her body, but never finer than this.
 CELL_FLOOR_M = 0.002

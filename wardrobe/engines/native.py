@@ -93,16 +93,23 @@ class NativeEngine(FittingEngine):
             # components cannot tell sleeve from body: the builder says which is which.
             torso = ~np.asarray(sleeve, dtype=bool)
         bind_mesh(mesh, segments, torso=torso)
-        if mesh.metadata.get("panelBuilt"):
+        second_skin = bool(artifact.metadata.get("secondSkin"))
+        if mesh.metadata.get("panelBuilt") or second_skin:
             # G5. A garment cut on her (wardrobe.geometry.panels) takes her own skin weights
             # above her hips, so its set-in sleeves bend at her shoulder as she does.
+            # AN-A5. A second-skin garment takes them everywhere. Bound to her pelvis by the
+            # torso mask, briefs and swimsuits stayed where they were when she strode, sat or
+            # stood wide while her thighs moved through them: 18-40 mm inside her at the leg
+            # openings on every reference body. With her skin's weights they stay 1 mm clear
+            # striding and standing wide. Where she has no skin to read, the binding above stays.
             from wardrobe.vrm.weight_transfer import transfer_weights
 
             hip = context.measurements.bone_positions.get("hips")
             transfer_weights(mesh, segments, context.document, context.info.humanoid_bones,
                              hip_y=float(hip[1]) if hip is not None else float(mesh.positions[:, 1].min()),
                              forward=-1.0 if context.info.spec is VrmSpec.VRM0 else 1.0,
-                             axis_z=float(hip[2]) if hip is not None else 0.0)
+                             axis_z=float(hip[2]) if hip is not None else 0.0,
+                             whole=second_skin)
         hosiery_fit.after_bind(context, mesh, segments)
 
         issues = mesh.validate()

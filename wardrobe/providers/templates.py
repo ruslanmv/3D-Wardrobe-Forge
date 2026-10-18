@@ -17,6 +17,9 @@ from wardrobe.errors import PlanningError
 from wardrobe.hosiery.options import BELT_TEMPLATES
 from wardrobe.providers.base import GarmentProvider
 
+#: How closely a garment must conform to her to be bound as her skin is (AN-A5).
+SECOND_SKIN_CONFORM = 0.95
+
 
 class TemplateGarmentProvider(GarmentProvider):
     name = "template"
@@ -89,6 +92,16 @@ class TemplateGarmentProvider(GarmentProvider):
                 "rise": style.rise,
             },
         )
+        # AN-A5. A garment that follows her skin all the way down — underwear, swimwear, bodysuits,
+        # leggings, tights — moves as her skin does, so it is bound with her skin's weights
+        # (wardrobe.engines.native). Dresses and skirts are not: a hem that crosses both legs
+        # must not be split between them, however closely the bodice fits.
+        if (
+            template.fit.conform_below_hips
+            and template.fit.conform >= SECOND_SKIN_CONFORM
+            and template.category not in ("dress", "skirt")
+        ):
+            artifact.metadata["secondSkin"] = True
         # AN1. Only when asked for: every other garment's metadata is exactly what it was.
         if style.slit:
             artifact.metadata["slit"] = style.slit

@@ -6,10 +6,11 @@ these are those labels, one per vertex, found from her own landmarks so they mov
 
 The regions are deliberately coarse and are defined geometrically, not painted:
 
-* ``external-genital-region`` — the soft tissue between her thighs from the crotch point forward
-  and up to the pubic area. The anatomy there is **not modelled** (``reference.UNMODELLED``): the
-  template's closed surface is kept as it is. The label exists so a garment's contact there is
-  reported as contact with an unmodelled region, never presented as fit against real anatomy;
+* ``external-genital-region`` — between her thighs from the crotch point forward and up to the
+  pubic area: the mound, the folds beside it and the mons of her pelvic outlet (AN-A2), from a
+  reviewed atlas at its resolution (``reference.ANATOMY``). The label keeps a garment's contact
+  there reported by name, so a report says it was taken on that approximation — one woman's
+  surface at about 5 mm, closed — and never on finer anatomy than was built;
 * ``breast`` — each breast, from the bust point out to the inframammary fold and the upper pole;
 * ``gluteal`` — each buttock, around the buttock point down to the gluteal fold;
 * ``inner-thigh`` — the medial thighs below the crotch, where leg openings and gussets sit;
@@ -34,8 +35,10 @@ REGIONS = (EXTERNAL_GENITAL_REGION, BREAST, GLUTEAL, INNER_THIGH, BODY)
 #: Half-width of the genital region either side of her midline. About the width of the pubic arch
 #: at the surface on the median body; wide enough that a gusset seam beside it is not in it.
 GENITAL_HALF_WIDTH_M = 0.03
-#: ... from this far behind the crotch point (the perineum is not part of it) ...
-GENITAL_BACK_M = 0.015
+#: ... from this far behind the crotch point (the perineum is not part of it). The pelvic outlet's
+#: mound (AN-A2) reaches 33 mm behind the crotch point on every size, the vulva's posterior end;
+#: at the 15 mm this was before, its back third was reported as thigh and plain body.
+GENITAL_BACK_M = 0.035
 #: ... up to this fraction of the way from the crotch point to the navel (the pubic area's top).
 GENITAL_TOP_FRACTION = 0.45
 #: Breast: within this distance of the bust point, and in front of her chest wall.

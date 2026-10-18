@@ -8,7 +8,10 @@ fitting and sheer garments, under a licence this repository can carry (MIT code;
 MIT-compatible — CC0, CC BY, public domain; not share-alike, not non-commercial, not
 no-derivatives), and kept behind the adult-only gates that already exist.
 
-Nothing here is integrated yet. This page is the decision the next stage needs.
+The decision was made: **a simple, open, reviewed mesh under CC0 or CC BY**. The candidate that
+meets it is the Human Reference Atlas female skin, below; it is integrated as the reference
+bodies' pelvic outlet ([ANATOMY_PELVIS](ANATOMY_PELVIS.md)). The rest of this page is the search
+that led there.
 
 ## What the current bodies contain
 
@@ -40,13 +43,30 @@ already requires of every file it imports.
   her own mesh: geometry, not a normal map, so they reach the silhouette and the contact surface.
 * **Pelvic soft tissue** (mons, groin volume) already has a CC0 variation axis, `pelvisTone`. The
   inguinal folds and the perineal transition are in the hm08 body surface, at its resolution.
-* **External female genital anatomy has no qualifying asset in reach.** Nothing available here is
+* **External female genital anatomy has no qualifying asset in MakeHuman.** Nothing there is
   both anatomically reviewed and under a licence this repository can carry. It is not to be
-  sculpted from guesses.
+  sculpted from guesses — which is why the source below is a published atlas.
 
-## The decision needed
+## The source chosen: the Human Reference Atlas female skin (CC BY 4.0)
 
-One of these, for the external anatomy:
+| | |
+| --- | --- |
+| What | *3D Reference Organ: skin of body, female*, v1.5, of the Human Reference Atlas (HuBMAP, NIH Common Fund): the outer surface of the National Library of Medicine's Visible Human Female, segmented by the atlas's anatomists |
+| Where | [lod.humanatlas.io/ref-organ/skin-female/v1.5](https://lod.humanatlas.io/ref-organ/skin-female/v1.5), file `3d-vh-f-skin.glb`, SHA-256 `b7dc8b3e…69594c` |
+| Who | Kristen Browne and Heidi Schlehlein, 2024, doi [10.48539/HBM453.MVPL.398](https://doi.org/10.48539/HBM453.MVPL.398) |
+| Licence | **CC BY 4.0**: compatible, with attribution and a statement of changes (`assets/anatomy/hra-provenance.json`, `docs/LICENSING.md`) |
+| Review | Published as part of a versioned reference atlas with a DOI and its own release history (v1.0–v1.5). The atlas documents review at the level of the programme, not per object; this page claims no more than that |
+| Measured | One closed manifold after welding: 133 350 vertices. Between her thighs, about 5 mm edges (4.9 mm median in the imported region) |
+| What it resolves there | The mons, the vulval outer contour as one closed mound (the labia majora, apposed as they are in the scan), the genitocrural folds either side of it and the start of the perineum. At the crotch a coronal section is a mound about 9 mm wide at the top, where the template's is a plateau about 30 mm wide |
+| What it does not | Nothing finer than its edges: no labia minora, clitoral hood or vestibule. High-pass relief of the region against its own 3 cm smoothing is under 3 mm: there is no detail there to take beyond the contour |
+| Caveats | One woman, not a population; a cadaver frozen lying on her back, so her pelvis is tilted about 10° against a standing body and her thighs are closer together; the scan is not symmetric |
+
+How it is used — scaled, pitched, mirrored and fitted onto each reference body only where it is
+the anatomy — is in [ANATOMY_PELVIS](ANATOMY_PELVIS.md).
+
+## The decision that was needed
+
+One of these, for the external anatomy (the second was chosen, with the atlas above):
 
 1. **A licensed commercial anatomical model**, bought for this purpose. Such licences usually
    forbid redistribution: the asset would stay out of the repository, installed by the operator

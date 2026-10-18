@@ -1,15 +1,16 @@
 """RB4. A reference body as a VRM the pipeline can dress: skinned, with a skeleton from her joints.
 
-The surface is the reference body's own (``wardrobe.anatomy.reference``), unchanged; this only
-binds it. Joints come from the template's joint helpers, which the calibration moved with her,
+The surface is the reference body's own (``wardrobe.anatomy.reference``, with her pelvic outlet,
+AN-A2), unchanged; this only binds it. Joints come from the template's joint helpers, which the calibration moved with her,
 so her hips are where her hips are rather than where a height formula puts them. The skin
 weights are MakeHuman's own for this mesh and the T-pose is solved so that a viewer lowering her
 arms to the sculpted angle gets the sculpt back exactly (``wardrobe.anatomy.rig``, SA2). She is
 measured in that sculpted pose.
 
 The VRM records what the body is and what it is not in ``extras.wardrobeAnatomy``: the size, the
-survey it is calibrated to, the template's provenance and ``UNMODELLED`` — a report that dresses
-her can quote that instead of implying more than was built.
+survey it is calibrated to, the template's provenance and ``ANATOMY`` (what is modelled,
+approximated and unsupported) — a report that dresses her can quote that instead of implying more
+than was built — and the attribution its CC BY 4.0 source requires.
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ import json
 import numpy as np
 
 from wardrobe.anatomy import correctives as CR
+from wardrobe.anatomy import pelvis
 from wardrobe.anatomy import reference as R
 from wardrobe.anatomy import rig
 from wardrobe.anatomy.rig import BONES, t_pose
@@ -74,6 +76,10 @@ def build_reference_vrm(size_id: str, *, spec: str = "VRM1", correctives: bool =
         "landmarks": measured.landmarks,
         "modifiers": record["modifiers"],
         "unmodelled": R.UNMODELLED,
+        # AN-A6. What is modelled, approximated and unsupported, and the attribution the pelvic
+        # outlet's CC BY 4.0 source requires wherever this file goes.
+        "anatomy": R.ANATOMY,
+        "attribution": [pelvis.provenance()["attribution"]],
         "rig": "MakeHuman default skin weights (assets/anatomy/makehuman-rig-provenance.json), bind solved "
         "to reproduce the sculpt at her sculpted arm angle (wardrobe.anatomy.rig)",
     }

@@ -135,25 +135,29 @@ apex; the buttock point is taken on the right, as the survey measures.
 | MakeHuman default skeleton and skin weights (`rigs/default.mhskel`, `rigs/default_weights.mhw`) at the same commit, provenance in `assets/anatomy/makehuman-rig-provenance.json` | the reference VRMs' skin weights | **CC0** — both files' own header states `"license": "CC0"`; the importer refuses one that does not. Read as JSON by our own code. |
 | ANSUR II female public file, [OpenLab PSU](https://www.openlab.psu.edu/ansur2/) | the sizes | US Government work, "approved for public release; distribution is unlimited". File SHA-256 recorded in `reference-sizes.json`. The CSV is not committed; the derived sizes are. |
 | Al-Qattan et al. 2019, *Plast Reconstr Surg Glob Open* 7(8):e2326, doi 10.1097/GOX.0000000000002326 | inter-nipple distance and nipple-to-fold distance (ANSUR II has neither) | **CC BY 4.0**. A different population (53 nulliparous Saudi women aged 20–25); its means are scaled to each size by this project and held with a wide tolerance. |
+| Human Reference Atlas, *skin of body, female* v1.5 (HuBMAP; Browne & Schlehlein 2024, doi [10.48539/HBM453.MVPL.398](https://doi.org/10.48539/HBM453.MVPL.398)), provenance in `assets/anatomy/hra-provenance.json` | the pelvic outlet: mons, the vulval outer contour, the genitocrural folds (AN-A2, [ANATOMY_PELVIS](ANATOMY_PELVIS.md)) | **CC BY 4.0**. The GLB's SHA-256 is pinned and the importer refuses any other; attribution and changes recorded, and carried in every reference VRM's extras. |
 
 All are compatible with this repository's licence. Each file's SHA-256 is
 recorded, so an asset that changes upstream is detected rather than absorbed.
 
-## What is not modelled, and why
+## What is modelled, approximated and not supported
 
-Stated here, in `reference.UNMODELLED`, in every body's record and in every
-VRM's `extras.wardrobeAnatomy`, so that no report implies more than was built:
+Stated here, in `reference.ANATOMY` (`modelled`, `approximated`, `unsupported`;
+`reference.UNMODELLED` is the last), in every body's record, in the validation
+report and in every VRM's `extras.wardrobeAnatomy`, so that no report implies
+more than was built:
 
-- **External genital anatomy.** Not modelled. Between the thighs the template's
-  closed soft-tissue surface is kept as it is; the labia and the structures they
-  enclose are not built, and MakeHuman's `helper-genital` proxy is not imported.
-  This is a decision about what this project will author, not a technical
-  limitation of the method, and it is not hidden behind a smoothed substitute:
-  the surface there is the template's own, unaltered, and contact results there
-  are reported under the region `external-genital-region`, so a garment's
-  contact in that region is never presented as fit against modelled anatomy.
-  The mons pubis and the inguinal creases are part of the template's surface
-  and are present.
+- **The pelvic outlet** (AN-A2) is modelled: the mons, the vulval outer contour
+  as one closed mound, the genitocrural folds beside it and the start of the
+  perineum, from the Human Reference Atlas female skin (CC BY 4.0), fitted to
+  each size ([ANATOMY_PELVIS](ANATOMY_PELVIS.md)). It is **approximated**: one
+  woman's surface at its own resolution (about 5 mm), scaled, pitched to a
+  standing pelvis, mirrored to symmetry and blended into the template — not a
+  population shape. Contact there is reported under `external-genital-region`.
+- **Finer external genital anatomy** is not supported: the labia minora, the
+  clitoral hood and the vestibule are not in the source at its resolution and
+  are not built; the mound is closed, as the scan's is. MakeHuman's
+  `helper-genital` proxy is not imported. Nothing is sculpted from guesses.
 - **Nipple and areola.** Not modelled beyond the template's surface. The bust
   point is the breast's most anterior point.
 - **Soft tissue.** The surface is rigid. Compression under a garment is stage 7.
@@ -281,8 +285,9 @@ range — what a garment pulled tight over that profile has to bridge.
 
 1. **Reference bodies** — sizes, template, calibration, measurement. *Done.*
 2. **Pelvis, groin and breast anatomy** — from the template, measured (creases,
-   regions); external genital anatomy not modelled, as stated above. *Done to
-   that extent.*
+   regions); the pelvic outlet from the HRA atlas, fitted, rigged, posed and
+   dressed ([ANATOMY_PELVIS](ANATOMY_PELVIS.md)). *Done to the extent stated
+   above; nipple and areola not yet.*
 3. **Watertight meshes** — topology checks at rest and posed. *Done.*
 4. **One contact model** — `ContactBody`, regions, consistency checks. *Done.*
 5. Surface-based fitter on the contact body. *Not started; waits for review.*
@@ -297,7 +302,10 @@ python tools/anatomy/import_makehuman.py              # template (downloads at t
 python tools/anatomy/derive_reference.py <ANSUR.csv>  # sizes
 python tools/anatomy/calibrate_reference.py           # modifiers (minutes per size)
 python tools/anatomy/import_makehuman_rig.py          # skin weights (downloads at the pinned commit)
+python tools/anatomy/import_hra.py                    # the atlas's pelvic region (downloads the pinned GLB)
+python tools/anatomy/fit_pelvis.py                    # the pelvic outlet on every size (a minute or two each)
 python tools/anatomy/validate_reference.py            # evidence
+python tools/anatomy/pelvic_evidence.py OUT --publish # outlet, poses and garments: pictures and numbers
 pytest tests/unit/test_anatomy_reference.py
 ```
 

@@ -105,6 +105,55 @@ class ShoulderRegion:
         return out
 
 
+#: AN-A3. The pelvic region: within this distance of her crotch point.
+PELVIC_RADIUS_M = 0.16
+#: A vertex is thigh or pelvis for classifying a crossing when its leg weight is past these.
+THIGH_ABOVE, PELVIS_BELOW = 0.5, 0.3
+#: Crossings allowed round her crotch per leg pose; a pose not listed allows none. Standing, striding
+#: and standing wide nothing crosses, template or outlet. Bent 85 degrees or more at the hip the
+#: template's own groin creases close through themselves under skinning (124-160 crossings on the
+#: four sizes) and the outlet's folds beside the mound close too (188-260 in all); no corrective
+#: resolves that yet (docs/ANATOMY_PELVIS.md). The limits hold those numbers, with a margin.
+PELVIC_CROSSING_LIMIT = {"seated": 300, "knee-up": 140, "squat": 240}
+
+
+class PelvicRegion:
+    """Her pelvic region, posed by her legs: the same numbers as ``ShoulderRegion``, round the crotch.
+
+    Crossings are split by what meets what: ``thighIntoPelvis`` when one side moves with a thigh
+    and the other with her pelvis (a fold closing as she bends at the hip: skin pressed on skin,
+    which skinning lets pass), and ``folded`` for the rest. The pelvic outlet (AN-A2) adds folds
+    beside the mound that close in deep flexion; these numbers say how much, against the template.
+    """
+
+    def __init__(self, rest: np.ndarray, T: np.ndarray, crotch: np.ndarray, radius: float = PELVIC_RADIUS_M):
+        self.rest = np.asarray(rest, dtype=np.float64)
+        self.T = np.asarray(T, dtype=np.int64).reshape(-1, 3)
+        self.vertices = np.linalg.norm(self.rest - np.asarray(crotch, dtype=np.float64), axis=1) < radius
+        self.triangles = self.T[self.vertices[self.T].all(axis=1)]
+        self.edges = _edges(self.triangles)
+        ek, f0, f1 = _edge_faces(self.T)
+        inside = self.vertices[ek].all(axis=1)
+        self.f0, self.f1 = f0[inside], f1[inside]
+        W = rig.dense_weights(self.rest.shape[0])
+        legs = [i for i, b in enumerate(rig.VRM_BONES) if b.endswith(("UpperLeg", "LowerLeg"))]
+        self.thigh_weight = W[:, legs].sum(axis=1)
+
+    def report(self, V: np.ndarray) -> dict:
+        V = np.asarray(V, dtype=np.float64)
+        N = _face_normals(V, self.T)
+        dihedral = np.degrees(np.arccos(np.clip((N[self.f0] * N[self.f1]).sum(axis=1), -1.0, 1.0)))
+        e, t = self_intersections(V, self.triangles, self.edges)
+        we = self.thigh_weight[self.edges[e]].mean(axis=1)
+        wt = self.thigh_weight[self.triangles[t]].mean(axis=1)
+        into = ((we > THIGH_ABOVE) & (wt < PELVIS_BELOW)) | ((we < PELVIS_BELOW) & (wt > THIGH_ABOVE))
+        return {
+            "folds": int((dihedral > FOLD_DEG).sum()),
+            "dihedralP999Deg": round(float(np.percentile(dihedral, 99.9)), 1),
+            "crossings": {"total": int(e.size), "thighIntoPelvis": int(into.sum()), "folded": int((~into).sum())},
+        }
+
+
 def read_vrm(data: bytes) -> tuple[np.ndarray, tuple[np.ndarray, np.ndarray], dict[str, np.ndarray]]:
     """A reference VRM's bound body as a viewer gets it: (positions, (joints, weights), bind positions).
 
@@ -162,4 +211,13 @@ def read_correctives(data: bytes) -> list:
     return out
 
 
-__all__ = ["FOLD_DEG", "RADIUS_M", "ShoulderRegion", "read_correctives", "read_vrm"]
+__all__ = [
+    "FOLD_DEG",
+    "PELVIC_CROSSING_LIMIT",
+    "PELVIC_RADIUS_M",
+    "PelvicRegion",
+    "RADIUS_M",
+    "ShoulderRegion",
+    "read_correctives",
+    "read_vrm",
+]
