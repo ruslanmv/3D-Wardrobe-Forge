@@ -1,0 +1,33 @@
+name: Deploy to Hugging Face Space
+
+# The Space (https://huggingface.co/spaces/ruslanmv/3D-Wardrobe-Forge) follows main: every push
+# to main is uploaded by deploy/huggingface/deploy.sh, as `make space` does. Needs the repository
+# secret HF_TOKEN, a Hugging Face token with write access to the Space.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-space
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install "huggingface_hub[cli]>=0.34"
+      - name: Upload to the Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::warning::HF_TOKEN secret is not set; the Space was not updated."
+            exit 0
+          fi
+          sh deploy/huggingface/deploy.sh
