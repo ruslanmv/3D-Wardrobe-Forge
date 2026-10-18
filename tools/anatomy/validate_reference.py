@@ -361,7 +361,8 @@ def summary(r: dict) -> str:
             f"{f['ringAgreementMm']:.1f} | {f['weightedResidualMm']:.3f} | {f['verticesMoved']} | "
             f"{f['maxMoveMm']:.1f} | {shift} |"
         )
-    for title, key in (("Modelled", "modelled"), ("Approximated", "approximated"), ("Not supported", "unsupported")):
+    for title, key in (("Modelled", "modelled"), ("Approximated", "approximated"),
+                       ("Not supported", "unsupported")):
         out += ["", f"## {title}", ""] + [f"- **{k}** — {v}" for k, v in r["anatomy"][key].items()]
     out.append("")
     return "\n".join(out)

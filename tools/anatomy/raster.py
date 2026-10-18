@@ -40,7 +40,8 @@ def render(
     F = np.asarray(F, dtype=np.int64).reshape(-1, 3)
     colours = np.asarray(colours, dtype=np.float64).reshape(-1, 3)
     (x0, x1), (y0, y1), (z0, z1) = box
-    inside = (V[:, 0] > x0) & (V[:, 0] < x1) & (V[:, 1] > y0) & (V[:, 1] < y1) & (V[:, 2] > z0) & (V[:, 2] < z1)
+    inside = ((V[:, 0] > x0) & (V[:, 0] < x1) & (V[:, 1] > y0) & (V[:, 1] < y1)
+              & (V[:, 2] > z0) & (V[:, 2] < z1))
     keep = inside[F].any(axis=1)
     F, colours = F[keep], colours[keep]
     r, u, w = (np.asarray(a, dtype=np.float64) / np.linalg.norm(a) for a in VIEWS[view])

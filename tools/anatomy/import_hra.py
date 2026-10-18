@@ -127,7 +127,8 @@ def crop(V: np.ndarray, F: np.ndarray, crotch: np.ndarray) -> tuple[np.ndarray, 
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--glb", type=Path, help="a local copy of 3d-vh-f-skin.glb (else downloaded)")
     args = parser.parse_args(argv)
     if args.glb:
@@ -170,9 +171,11 @@ def main(argv: list[str]) -> int:
         "changes": [
             "split vertices welded by position",
             "cropped to the pelvic region: faces within "
-            f"{CROP_M['x']} m of the midline, {CROP_M['below']} m below and {CROP_M['above']} m above the crotch",
+            f"{CROP_M['x']} m of the midline, {CROP_M['below']} m below and {CROP_M['above']} m above "
+            "the crotch",
             "translated so the crotch point is the origin and the midline is x = 0",
-            "fitted onto each reference body by wardrobe.anatomy.pelvis (scaled, pitched, mirrored and averaged, "
+            "fitted onto each reference body by wardrobe.anatomy.pelvis (scaled, pitched, mirrored and "
+            "averaged, "
             "blended), which changes its shape",
         ],
         "glbSha256": digest,

@@ -240,7 +240,7 @@ def build_leggings_panel(params) -> list[Mesh] | None:
             break
         # The top loop: half the crotch row round this side, front to back, then the crotch
         # curve, which runs back to front, closing it. Both legs share the curve.
-        side_cols = [j for j in range(half + 1)] if np.sin(theta[1]) * sign > 0 else \
+        side_cols = list(range(half + 1)) if np.sin(theta[1]) * sign > 0 else \
             [(columns - j) % columns for j in range(half + 1)]
         loop = [crotch_row[j] for j in side_cols] + list(curve)
         loop_points = np.array([builder.points[i] for i in loop])
@@ -280,7 +280,8 @@ def build_leggings_panel(params) -> list[Mesh] | None:
         used = np.unique(faces[chosen])
         remap = np.full(len(builder.points), -1, dtype=np.int64)
         remap[used] = np.arange(used.size)
-        mesh = Mesh(positions=whole.positions[used], indices=remap[faces[chosen]].astype(np.uint32).reshape(-1),
+        mesh = Mesh(positions=whole.positions[used],
+                    indices=remap[faces[chosen]].astype(np.uint32).reshape(-1),
                     uvs=whole.uvs[used], metadata={"section": name})
         mesh.compute_normals()
         mesh.metadata["panelBuilt"] = True

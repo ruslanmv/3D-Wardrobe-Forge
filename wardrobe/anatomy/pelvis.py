@@ -182,7 +182,8 @@ def fit(V: np.ndarray, T: np.ndarray, crotch: np.ndarray) -> OutletFit:
     where = np.full(V.shape[0], -1, dtype=np.int64)
     where[local] = np.arange(local.size)
     faces = where[T[(where[T] >= 0).all(axis=1)]]
-    edges = np.unique(np.sort(np.concatenate([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]]), 1), axis=0)
+    pairs = np.concatenate([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]])
+    edges = np.unique(np.sort(pairs, 1), axis=0)
     ii = np.concatenate([edges[:, 0], edges[:, 1]])
     jj = np.concatenate([edges[:, 1], edges[:, 0]])
     deg = np.bincount(ii, minlength=local.size).astype(np.float64)

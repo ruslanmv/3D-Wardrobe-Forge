@@ -46,8 +46,9 @@ BODY_DENSITY_KG_PER_L = 1.03
 #: that no fit result implies more than was built.
 ANATOMY = {
     "modelled": {
-        "pelvicOutlet": "The mons pubis, the vulval outer contour as one closed mound, the genitocrural folds "
-        "beside it and the start of the perineum, from the Human Reference Atlas female skin (CC BY 4.0; "
+        "pelvicOutlet": "The mons pubis, the vulval outer contour as one closed mound, the genitocrural "
+        "folds beside it and the start of the perineum, from the Human Reference Atlas female skin "
+        "(CC BY 4.0; "
         "assets/anatomy/hra-provenance.json), fitted to her by wardrobe.anatomy.pelvis. Contact results "
         "there are reported under the region external-genital-region.",
         "creases": "Gluteal folds, inguinal creases and inframammary folds, from the template, measured "
@@ -63,8 +64,8 @@ ANATOMY = {
         "externalGenitalDetail": "The labia minora, the clitoral hood, the vestibule and anything finer than "
         "the scan's edges are not built; the mound is closed, as the scan's is. MakeHuman's "
         "helper-genital proxy geometry is not imported.",
-        "nippleAreola": "Not modelled beyond the template's surface. The bust point is the apex of the breast "
-        "(the template vertex there, checked against detection as a local apex).",
+        "nippleAreola": "Not modelled beyond the template's surface. The bust point is the apex of the "
+        "breast (the template vertex there, checked against detection as a local apex).",
         "softTissue": "The surface is rigid. Compression under a garment is not simulated yet (stage 7).",
     },
 }

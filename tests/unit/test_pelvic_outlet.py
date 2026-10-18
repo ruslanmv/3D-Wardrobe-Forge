@@ -178,7 +178,7 @@ def test_anatomy_is_stated_modelled_approximated_and_unsupported():
     assert "pelvicOutlet" in R.ANATOMY["modelled"] and "CC BY 4.0" in R.ANATOMY["modelled"]["pelvicOutlet"]
     assert "pelvicOutlet" in R.ANATOMY["approximated"]
     assert {"externalGenitalDetail", "nippleAreola", "softTissue"} <= set(R.ANATOMY["unsupported"])
-    assert R.UNMODELLED == R.ANATOMY["unsupported"]
+    assert R.ANATOMY["unsupported"] == R.UNMODELLED
     assert R.reference_bodies()["anatomy"] == R.ANATOMY
 
 

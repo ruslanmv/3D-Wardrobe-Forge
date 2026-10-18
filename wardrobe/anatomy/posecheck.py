@@ -150,7 +150,8 @@ class PelvicRegion:
         return {
             "folds": int((dihedral > FOLD_DEG).sum()),
             "dihedralP999Deg": round(float(np.percentile(dihedral, 99.9)), 1),
-            "crossings": {"total": int(e.size), "thighIntoPelvis": int(into.sum()), "folded": int((~into).sum())},
+            "crossings": {"total": int(e.size), "thighIntoPelvis": int(into.sum()),
+                          "folded": int((~into).sum())},
         }
 
 

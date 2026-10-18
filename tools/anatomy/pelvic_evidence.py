@@ -207,7 +207,8 @@ def shape_sheet(size_id: str) -> tuple:
             report = region.report(rig.pose_surface(Vb, bind, rig.leg_pose(pose, J)))
             numbers.setdefault(pose, {})["outlet" if outlet else "template"] = report
     rows = pictures
-    return raster.sheet(rows, f"{size_id}: pelvic outlet (HRA female skin, CC BY 4.0) against the template"), numbers
+    title = f"{size_id}: pelvic outlet (HRA female skin, CC BY 4.0) against the template"
+    return raster.sheet(rows, title), numbers
 
 
 def garment_numbers_and_pictures(size_id: str, looks: dict[str, bytes]) -> tuple:
@@ -224,7 +225,9 @@ def garment_numbers_and_pictures(size_id: str, looks: dict[str, bytes]) -> tuple
         bind = bind_of(data)
         garment = {
             "V": np.vstack([g["V"] for g in meshes.values()]),
-            "T": np.vstack([g["T"] + off for g, off in zip(meshes.values(), np.cumsum([0] + [g["V"].shape[0] for g in meshes.values()])[:-1], strict=True)]),
+            "T": np.vstack([g["T"] + off for g, off in zip(
+                meshes.values(), np.cumsum([0] + [g["V"].shape[0] for g in meshes.values()])[:-1],
+                strict=True)]),
             "joints": np.vstack([g["joints"] for g in meshes.values()]),
             "weights": np.vstack([g["weights"] for g in meshes.values()]),
         }
@@ -239,7 +242,8 @@ def garment_numbers_and_pictures(size_id: str, looks: dict[str, bytes]) -> tuple
                 PB = rig.pose_surface(body["V"], bind, pose, weights_of=(body["joints"], body["weights"]))
                 bodies[pose_name] = (PB, ContactBody(PB, T, labels=labels, reach=0.04))
             PB, posed = bodies[pose_name]
-            PG = rig.pose_surface(garment["V"], bind, pose, weights_of=(garment["joints"], garment["weights"]))
+            PG = rig.pose_surface(garment["V"], bind, pose,
+                                  weights_of=(garment["joints"], garment["weights"]))
             near = np.linalg.norm(PG - PB[crotch_index], axis=1) < NEAR_M
             tris = garment["T"][near[garment["T"]].all(axis=1)]
             if tris.size == 0:
@@ -261,17 +265,23 @@ def garment_numbers_and_pictures(size_id: str, looks: dict[str, bytes]) -> tuple
         )
         rows.append([
             raster.label(raster.render(both_V, both_T, colours, "front", box), caption),
-            raster.label(raster.render(both_V, both_T, colours, "below-front", box), f"{name} · below, in front"),
-            raster.label(raster.render(body["V"], T, mapped, "below-front", box), "contact map · below, in front"),
+            raster.label(raster.render(both_V, both_T, colours, "below-front", box),
+                         f"{name} · below, in front"),
+            raster.label(raster.render(body["V"], T, mapped, "below-front", box),
+                         "contact map · below, in front"),
             raster.label(raster.render(body["V"], T, mapped, "below", box), "contact map · below"),
-            raster.label(raster.render(body["V"], T, mapped, "below-back", box), "contact map · below, behind"),
+            raster.label(raster.render(body["V"], T, mapped, "below-back", box),
+                         "contact map · below, behind"),
         ])
-    legend = "  ".join(f"{label} ≤{upper:g} mm" if np.isfinite(upper) else f"{label}" for upper, label, _ in CONTACT_SCALE)
-    return raster.sheet(rows, f"{size_id}: garments on the pelvic outlet. Contact map: {legend}; grey uncovered"), numbers
+    legend = "  ".join(f"{label} ≤{upper:g} mm" if np.isfinite(upper) else f"{label}"
+                       for upper, label, _ in CONTACT_SCALE)
+    title = f"{size_id}: garments on the pelvic outlet. Contact map: {legend}; grey uncovered"
+    return raster.sheet(rows, title), numbers
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("out", type=Path)
     parser.add_argument("--sizes", nargs="*", default=list(R.reference_bodies()["bodies"]))
     parser.add_argument("--garments", nargs="*", default=list(GARMENTS))
@@ -304,11 +314,13 @@ def main(argv: list[str]) -> int:
             "schema": "wardrobe.anatomy.pelvicEvidence.v1",
             "generatedBy": "tools/anatomy/pelvic_evidence.py",
             "garments": GARMENTS,
-            "contactScaleMm": {label: (upper if np.isfinite(upper) else None) for upper, label, _ in CONTACT_SCALE},
+            "contactScaleMm": {label: (upper if np.isfinite(upper) else None)
+                               for upper, label, _ in CONTACT_SCALE},
             "anatomy": R.ANATOMY,
             "bodies": {k: evidence[k] for k in sorted(evidence)},
         }
-        (ROOT / "assets" / "anatomy" / "pelvic-evidence.json").write_text(json.dumps(published, indent=1) + "\n")
+        out = ROOT / "assets" / "anatomy" / "pelvic-evidence.json"
+        out.write_text(json.dumps(published, indent=1) + "\n")
     return 0
 
 

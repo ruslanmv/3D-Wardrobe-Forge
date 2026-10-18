@@ -133,7 +133,8 @@ def main() -> None:
     parser.add_argument("--compare", type=Path, help="an earlier OUT_DIR, set beside this one view by view")
     parser.add_argument("--no-generate", action="store_true", help="render the VRMs already in OUT_DIR")
     parser.add_argument("--declare-adult", action="store_true",
-                        help="declare the avatar as depicting an adult for these jobs, as an operator does in "
+                        help="declare the avatar as depicting an adult for these jobs, as an operator "
+                        "does in "
                         "the Space's admin session; required for gated looks on an undeclared avatar")
     parser.add_argument("--studio", action="store_true",
                         help="dress as the Studio's simple path does: replace-outer, a foundation ensured")

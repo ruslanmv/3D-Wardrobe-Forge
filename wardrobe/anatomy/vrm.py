@@ -1,8 +1,9 @@
 """RB4. A reference body as a VRM the pipeline can dress: skinned, with a skeleton from her joints.
 
 The surface is the reference body's own (``wardrobe.anatomy.reference``, with her pelvic outlet,
-AN-A2), unchanged; this only binds it. Joints come from the template's joint helpers, which the calibration moved with her,
-so her hips are where her hips are rather than where a height formula puts them. The skin
+AN-A2), unchanged; this only binds it. Joints come from the template's joint helpers, which the
+calibration moved with her, so her hips are where her hips are rather than where a height formula
+puts them. The skin
 weights are MakeHuman's own for this mesh and the T-pose is solved so that a viewer lowering her
 arms to the sculpted angle gets the sculpt back exactly (``wardrobe.anatomy.rig``, SA2). She is
 measured in that sculpted pose.
@@ -20,9 +21,8 @@ import json
 import numpy as np
 
 from wardrobe.anatomy import correctives as CR
-from wardrobe.anatomy import pelvis
+from wardrobe.anatomy import pelvis, rig
 from wardrobe.anatomy import reference as R
-from wardrobe.anatomy import rig
 from wardrobe.anatomy.rig import BONES, t_pose
 from wardrobe.geometry.mesh import Mesh
 from wardrobe.vrm.build import BodyProportions, build_vrm
