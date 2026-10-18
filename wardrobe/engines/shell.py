@@ -376,6 +376,12 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # A brief's gusset was given its own seam vertices after the mask was taken (lingerie.fit).
         extra = np.asarray(sewn)[: mesh.vertex_count - axis_mask.shape[0]]
         axis_mask = np.concatenate([axis_mask, axis_mask[extra]])
+    hugged = (mesh.metadata.get("lingerieBrief") or {}).get("hugged")
+    if axis_mask is not None and hugged:
+        # Drawn into the crease at her groin (lingerie.fit._hug_front): measured out from her
+        # vertical axis, a crease reads as inside her, as a gusset or a yoke does.
+        axis_mask = axis_mask.copy()
+        axis_mask[np.asarray(hugged)] = False
     after = measure_clearance(mesh, index, clearance, axis_mask)
     after.resolved = pushed
     if kind == "skirt":

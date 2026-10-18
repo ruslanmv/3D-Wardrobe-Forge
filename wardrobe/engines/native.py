@@ -42,6 +42,12 @@ logger = logging.getLogger(__name__)
 GENERATOR = "3D-Wardrobe-Forge (native engine)"
 
 
+
+#: Stretch knits (leggings, a sports bra) shade softly under the toon shader: a matte knit's
+#: shading toony (MToon), where the avatar's own cloth is near 1.0, a hard step.
+STRETCH_KNIT_KINDS = frozenset({"leggings", "seamless-leggings", "sports-bra"})
+KNIT_TOONY = 0.5
+
 class NativeEngine(FittingEngine):
     name = "native"
     supports_raw_mesh = False
@@ -188,6 +194,8 @@ class NativeEngine(FittingEngine):
                 )
             else:
                 fabric = GarmentMaterial.from_plan(garment_material_name(layer.plan.name, kind), material)
+                if kind in STRETCH_KNIT_KINDS and material.finish == "matte":
+                    fabric.toony = KNIT_TOONY
                 if layer.mesh.metadata.get("pleatShading") and material.pattern == "none":
                     # Knife pleats read by their shadows (wardrobe.materials.textures.pleat_shading).
                     fabric.texture = pleat_shading()
@@ -203,6 +211,8 @@ class NativeEngine(FittingEngine):
                 band = waistband_mask(layer.mesh)
                 extra = [(band, shade_material(garment_material_name(f"{layer.plan.name} Waistband", kind),
                                                material, WAISTBAND_SHADE))] if band.any() else None
+                if extra and fabric.toony is not None:
+                    extra[0][1].toony = fabric.toony
                 gusset = (_gusset_triangles(layer.mesh) if kind in LINGERIE_KINDS and material.exposes_body
                           else None)
                 if gusset is not None and gusset.any():

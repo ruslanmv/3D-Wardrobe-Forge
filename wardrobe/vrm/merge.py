@@ -48,6 +48,10 @@ class GarmentMaterial:
     rim_lift: float = 0.0
     #: Shade colour as a fraction of the lit colour (see ``Finish.shade``).
     shade: float = 0.72
+    #: How hard the toon step between lit and shade is (MToon's shading toony, 0 soft to 1 hard);
+    #: None keeps the avatar's own. A stretch knit sets it soft: at her own 0.95 the turn of a
+    #: pair of leggings under her crotch was a dark shield with a hard edge.
+    toony: float | None = None
     #: Filled by :meth:`add_to`: texture indices by slot ("baseColor", "matcap").
     texture_indices: dict[str, int] = field(default_factory=dict)
 
@@ -409,6 +413,8 @@ def apply_toon_finish(
         if mtoon is None:
             return
         mtoon["shadeColorFactor"] = [float(c) * material.shade for c in material.base_color[:3]]
+        if material.toony is not None:
+            mtoon["shadingToonyFactor"] = float(material.toony)
         if any(material.rim_color):
             mtoon["parametricRimColorFactor"] = [float(c) for c in material.rim_color]
             mtoon["parametricRimFresnelPowerFactor"] = float(material.rim_power)
@@ -443,6 +449,8 @@ def apply_toon_finish(
     colour = list(vectors.get("_Color", [1.0, 1.0, 1.0, 1.0]))
     vectors["_Color"] = [*colour[:3], float(material.base_color[3])]
     vectors["_ShadeColor"] = [c * material.shade for c in colour[:3]] + [1.0]
+    if material.toony is not None:
+        floats["_ShadeToony"] = float(material.toony)
     floats["_CullMode"] = 0  # a garment is a single shell: both sides show
     if any(material.rim_color):
         vectors["_RimColor"] = [*(float(c) for c in material.rim_color), 1.0]

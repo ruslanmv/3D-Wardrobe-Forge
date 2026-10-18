@@ -189,6 +189,7 @@ def after_shell(context, mesh, clearance: float) -> None:
         if float((record.get("measures") or {}).get("backCoverage", 1.0)) < THONG_BACK_BELOW:
             _hug_back(context, positions, record, clearance)
         _seat_brief_gusset(context, mesh, positions, record, clearance)
+        _hug_front(context, positions, record, clearance)
         extension = record.get("legExtension")
         if extension:
             # A boyshort's legs hang from the openings as fitted, gusset edge included.
@@ -334,6 +335,83 @@ def _unfold(positions: np.ndarray, tris: np.ndarray) -> None:
             if rings[v].size:
                 moved[v] = positions[v] * 0.5 + positions[rings[v]].mean(axis=0) * 0.5
         positions[moving] = moved[moving]
+
+
+#: A brief's front over her groin is drawn in to this many clearances, this far above its gusset
+#: seam and this far either side of her midline.
+HUG_FRONT = 2.0
+HUG_FRONT_ABOVE_M = 0.05
+HUG_FRONT_ACROSS_M = 0.08
+#: Her front at a point is the outermost of her surface within this of it, across and up.
+COLUMN_M = 0.006
+
+
+def _hug_front(context, positions: np.ndarray, record: dict, clearance: float) -> None:
+    """Seat a brief's front on her groin, as ``_hug_back`` seats a thong's string. In place.
+
+    Drawn on her outline at each height and only pushed out by the radial passes, the front
+    panel spanned the crease between her thigh and her mons a centimetre off her (Model Girl):
+    leggings over it followed it out, then stepped in below its leg opening, and that step faced
+    down: a dark shield at the front of every pair of leggings. The rows near her groin are
+    pushed out of her, drawn in where they stand off more than ``HUG_FRONT`` clearances and
+    relaxed along the panel; the waist row and the rows the gusset shares stay where they are.
+    """
+    rows, count = int(record["rows"]), int(record["columns"])
+    heights = record.get("heights") or {}
+    seam = float(heights.get("seam", positions[:, 1].min()))
+    forward = _forward(context)
+    side = positions[record["sideSeam"]["a"]][:, 2].mean()
+    centre_x = float(positions[record["centreFront"]][0])
+    fixed = {v for row in record["gusset"] for v in row}
+    grid = [[k * count + j for j in range(count)] for k in range(rows + 1)]
+    moving = [v for row in grid[1:-1] for v in row
+              if v not in fixed
+              and (positions[v, 2] - side) * forward > 0
+              and positions[v, 1] < seam + HUG_FRONT_ABOVE_M
+              and abs(positions[v, 0] - centre_x) < HUG_FRONT_ACROSS_M]
+    if not moving:
+        return
+    moving = np.array(moving)
+    lo, hi = positions[moving].min(axis=0) - 0.04, positions[moving].max(axis=0) + 0.04
+    pts, nrm = _surface(context, lo, hi)
+    if pts.shape[0] == 0:
+        return
+    # Her front at each vertex's (x, y), the outermost of her surface in a narrow column: in a
+    # crease at her groin that is her own surface, never her thigh beside it. Judged against
+    # the nearest few samples (``_depth``) the thigh won, every point of the crease lay behind
+    # its tangent plane, and the panel was held a centimetre and a half off her.
+    def front_depth(p: np.ndarray) -> np.ndarray:
+        out = np.full(p.shape[0], np.nan)
+        for i, (x, y, _z) in enumerate(p):
+            column = pts[(np.abs(pts[:, 0] - x) < COLUMN_M) & (np.abs(pts[:, 1] - y) < COLUMN_M)]
+            if column.shape[0]:
+                out[i] = float((column[:, 2] * forward).max())
+        return out
+
+    for _ in range(ITERATIONS // 2):
+        p = positions[moving]
+        depth = front_depth(p)
+        known = np.isfinite(depth)
+        z = p[:, 2] * forward
+        floor = depth + clearance
+        target = depth + HUG_FRONT * clearance
+        z = np.where(known & (z > target), target, z)
+        z = np.where(known & (z < floor), floor, z)
+        positions[moving, 2] = z * forward
+        relaxed = positions.copy()
+        for v in moving:
+            k, j = divmod(int(v), count)
+            around = [grid[k - 1][j], grid[k + 1][j]]
+            around += [grid[k][j - 1]] if j > 0 else []
+            around += [grid[k][j + 1]] if j + 1 < count else []
+            relaxed[v] = positions[v] * 0.7 + positions[around].mean(axis=0) * 0.3
+        positions[moving] = relaxed[moving]
+    p = positions[moving]
+    depth = front_depth(p)
+    known = np.isfinite(depth)
+    z = p[:, 2] * forward
+    positions[moving, 2] = np.where(known, np.maximum(z, depth + clearance), z) * forward
+    record["hugged"] = moving.tolist()
 
 
 #: A string is drawn in only to this many clearances: it bridges the cleft of her seat,
