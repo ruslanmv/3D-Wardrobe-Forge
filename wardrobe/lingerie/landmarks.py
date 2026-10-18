@@ -42,10 +42,12 @@ MIN_BUST_PROJECTION_M = 0.008
 MIN_APEX_OFFSET_M = 0.025
 #: How far forward of the sternum between them the bust points must stand.
 MIN_CLEAVAGE_M = 0.003
-#: A bust this proud of her ribcage, its points off her midline, is one even with no dip between
-#: them: a VRoid bust meets at the midline (Model Girl's stands 15 mm out with 0 mm of cleavage),
-#: and placing her points by formula put a bralette's cups under her bust, not on it.
-MIN_BUST_PROJECTION_NO_CLEAVAGE_M = 0.012
+#: A bust this proud of her ribcage (10 mm), its points off her midline, is one even with no dip
+#: between them, when its apex is this far below her armpit: a VRoid bust meets at the midline
+#: (Model Girl's stands 11 mm out with no cleavage), and placing her points by formula put a
+#: bralette's cups under her bust, not on it.
+MIN_BUST_PROJECTION_NO_CLEAVAGE_M = 0.010
+MOUND_BELOW_ARMPIT_M = 0.02
 #: Front-depth samples are taken in slabs this tall.
 SLAB_M = 0.005
 
@@ -177,7 +179,10 @@ def measure_landmarks(torso: np.ndarray, bones: dict, *, forward: float = 1.0, l
         apex_z = float(np.mean([p[2] * forward for p in bust_points.values()]))
         spread = min(abs(p[0] - centre_x) for p in bust_points.values())
         dip = apex_z - between_z if between_z is not None and spread >= MIN_APEX_OFFSET_M else 0.0
-    cleft = dip >= MIN_CLEAVAGE_M or (spread >= MIN_APEX_OFFSET_M
+    # Without a dip, the apex must also be a mound, not the top of the band: a blocky
+    # calibration torso's "apex" is where its chest ring meets its shoulders, at the armpit.
+    mound = len(bust_points) == 2 and max(p[1] for p in bust_points.values()) <= armpit - MOUND_BELOW_ARMPIT_M
+    cleft = dip >= MIN_CLEAVAGE_M or (spread >= MIN_APEX_OFFSET_M and mound
                                       and projection >= MIN_BUST_PROJECTION_NO_CLEAVAGE_M)
     if len(bust_points) == 2 and projection >= MIN_BUST_PROJECTION_M and cleft:
         sources["bustPoints"] = sources["underbust"] = "measured"
