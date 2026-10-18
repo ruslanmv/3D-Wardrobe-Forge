@@ -10,6 +10,7 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wardrobe.body_art.contract import BodyArtRequest, check_items
+from wardrobe.body_surface.contract import BodySurfaceRequest
 from wardrobe.domain.avatars import AvatarAnalysis, AvatarInput
 from wardrobe.domain.looks import FitReport, LookResult, OutfitPlan, OutfitRequest
 
@@ -76,6 +77,10 @@ class FailureReason(StrEnum):
     BODY_ART_NEEDS_LOOK = "body_art_needs_a_finished_look"
     #: BA6. A tattoo-only job that changed nothing: every tattoo it asked for was refused.
     BODY_ART_NOT_APPLIED = "body_art_not_applied"
+    #: BS1. A body-surface profile the server does not have (or could not verify).
+    BODY_SURFACE_UNAVAILABLE = "body_surface_profile_unavailable"
+    #: BS1. An adult body-surface profile refused: model terms, operator switch or declaration.
+    BODY_SURFACE_NOT_PERMITTED = "body_surface_not_permitted"
     INTERNAL = "internal_error"
 
 
@@ -111,6 +116,10 @@ class JobOptions(BaseModel):
     #: tube top and slip shorts on any other: no avatar needs a declaration to get dressed.
     #: Off by default, so a job that never asked is planned exactly as before.
     ensure_foundation: bool = Field(default=False, alias="ensureFoundation")
+    #: BS5. Relax each fitted garment with XPBD against the collision body (stretch, bending,
+    #: contact). Runs only when the job also has a ``bodySurface``; "none" — the default — fits
+    #: exactly as before.
+    cloth_relaxation: Literal["none", "xpbd"] = Field(default="none", alias="clothRelaxation")
     #: OC1. What the look was made for — ``{"occasion": "night-out", "style": "discoteca"}`` —
     #: kept on the wardrobe entry so a shelf can group by occasion. A label only: it plans and
     #: gates nothing, and one naming no occasion in wardrobe.pipeline.occasions is dropped.
@@ -142,6 +151,9 @@ class CreateJobRequest(BaseModel):
     body_art: list[BodyArtRequest] = Field(default_factory=list, alias="bodyArt", max_length=4)
     #: Placements whose Forge tattoo to take off.
     body_art_remove: list[str] = Field(default_factory=list, alias="bodyArtRemove", max_length=8)
+    #: BS1. A body surface for this job (docs/BODY_SURFACE.md): an allowlisted server profile by
+    #: id, never a template or a path. Absent — the default — the body is read exactly as before.
+    body_surface: BodySurfaceRequest | None = Field(default=None, alias="bodySurface")
 
     @model_validator(mode="after")
     def _body_art_list(self) -> CreateJobRequest:
@@ -236,6 +248,8 @@ class JobRecord(BaseModel):
 #: Failures that are the caller's to fix, reported as 'rejected' not 'failed'.
 _REJECTION_REASONS = frozenset(
     {
+        FailureReason.BODY_SURFACE_UNAVAILABLE,
+        FailureReason.BODY_SURFACE_NOT_PERMITTED,
         FailureReason.MODIFICATION_NOT_PERMITTED,
         FailureReason.LICENSE_ATTESTATION_REQUIRED,
         FailureReason.SOURCE_NOT_A_VRM,

@@ -50,7 +50,16 @@ try {
         page.on('pageerror', (error) => console.error('page error:', error.message));
         const focus = view.focus ? `&focus=${view.focus.map((n) => n.toFixed(4)).join(',')}` : '';
         const elev = view.elev ? `&elev=${Number(view.elev)}` : '';
-        await page.goto(`${base}/page.html?a=${encodeURIComponent(view.file)}&yaw=${view.yaw || 0}${focus}${elev}`);
+        // SA4. Optional pose and off-centre focus for the anatomy renders (see page.html).
+        const bones = view.bones
+            ? `&bones=${encodeURIComponent(typeof view.bones === 'string' ? view.bones : JSON.stringify(view.bones))}`
+            : '';
+        // G7: an orthographic view (garment_review.py) — a 1.5° lens from far away.
+        const ortho = view.ortho ? '&ortho=1' : '';
+        const centre = (view.fx ? `&fx=${Number(view.fx)}` : '') + (view.fz ? `&fz=${Number(view.fz)}` : '');
+        await page.goto(
+            `${base}/page.html?a=${encodeURIComponent(view.file)}&yaw=${view.yaw || 0}${focus}${elev}${bones}${centre}${ortho}`,
+        );
         await page.waitForFunction(() => window.ready, null, { timeout: 90000 });
         await page.waitForTimeout(700);
         await page.screenshot({ path: path.join(work, view.out) });

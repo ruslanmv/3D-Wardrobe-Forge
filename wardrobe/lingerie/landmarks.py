@@ -42,6 +42,10 @@ MIN_BUST_PROJECTION_M = 0.008
 MIN_APEX_OFFSET_M = 0.025
 #: How far forward of the sternum between them the bust points must stand.
 MIN_CLEAVAGE_M = 0.003
+#: A bust this proud of her ribcage, its points off her midline, is one even with no dip between
+#: them: a VRoid bust meets at the midline (Model Girl's stands 15 mm out with 0 mm of cleavage),
+#: and placing her points by formula put a bralette's cups under her bust, not on it.
+MIN_BUST_PROJECTION_NO_CLEAVAGE_M = 0.012
 #: Front-depth samples are taken in slabs this tall.
 SLAB_M = 0.005
 
@@ -166,15 +170,28 @@ def measure_landmarks(torso: np.ndarray, bones: dict, *, forward: float = 1.0, l
     # A bust is there when it stands forward of the ribcage below it *and* of the
     # sternum between: a blocky torso's chest ring is forward of its waist too,
     # but its most forward point is its midline.
-    dip = 0.0
+    dip, spread = 0.0, 0.0
     if len(bust_points) == 2:
         apex_y = float(np.mean([p[1] for p in bust_points.values()]))
         between_z = _front_depth(torso, centre_x, apex_y, forward, half=0.008)
         apex_z = float(np.mean([p[2] * forward for p in bust_points.values()]))
         spread = min(abs(p[0] - centre_x) for p in bust_points.values())
         dip = apex_z - between_z if between_z is not None and spread >= MIN_APEX_OFFSET_M else 0.0
-    if len(bust_points) == 2 and projection >= MIN_BUST_PROJECTION_M and dip >= MIN_CLEAVAGE_M:
+    cleft = dip >= MIN_CLEAVAGE_M or (spread >= MIN_APEX_OFFSET_M
+                                      and projection >= MIN_BUST_PROJECTION_NO_CLEAVAGE_M)
+    if len(bust_points) == 2 and projection >= MIN_BUST_PROJECTION_M and cleft:
         sources["bustPoints"] = sources["underbust"] = "measured"
+        if dip < MIN_CLEAVAGE_M:
+            # Where her breasts meet, the front is a plateau and its most forward point anywhere
+            # on it (Model Girl's was 2 cm off her midline: cups were strips beside her sternum).
+            # Her bust's height is measured; across her, no nearer than the formula's.
+            for side, sign in (("left", 1.0), ("right", -1.0)):
+                x, y, _ = bust_points[side]
+                half = float(np.interp(y, table[::-1, 0], table[::-1, 1]))
+                x = centre_x + sign * max(abs(x - centre_x), half * 0.45)
+                z = _front_depth(torso, x, y, forward)
+                if z is not None:
+                    bust_points[side] = [round(x, 5), round(y, 5), round(z * forward, 5)]
     else:
         sources["underbust"] = "formula"
         warnings.append(f"no bust to measure (projection {projection * 1000:.0f} mm, "

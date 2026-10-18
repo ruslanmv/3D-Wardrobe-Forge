@@ -89,6 +89,8 @@ const state = {
         seam: false,
         // L6. Knitted on over her heel and toes; off by default, as in the API.
         foot: false,
+        // H2. Briefs on over the suspender straps; off by default, as in the API.
+        briefsOver: false,
         belt: 'classic',
         strapCount: 4,
         hardware: 'silver',
@@ -133,6 +135,9 @@ const state = {
         opacity: 0.9,
         mirror: false,
         thumbs: {},
+        // BA10. The operator's own uploads, listed only in an admin session; their looks are private.
+        custom: [],
+        uploadError: '',
     },
 };
 
@@ -703,7 +708,24 @@ function setSession(session) {
         const left = new Date(session.expiresAt).getTime() - Date.now();
         account.timer = setTimeout(() => endSession('Your admin session ended.'), Math.max(left, 0));
     }
+    loadCustomBodyArt(signedIn);
     if ($('settings-dialog').open) renderSettings();
+}
+
+/** BA10. The custom designs, for an admin session; a guest's list is always empty. */
+async function loadCustomBodyArt(signedIn) {
+    const art = state.bodyArt;
+    if (!signedIn) {
+        art.custom = [];
+    } else {
+        try {
+            art.custom = (await api.customBodyArt()).designs || [];
+        } catch (error) {
+            console.warn('custom tattoos unavailable', error);
+            art.custom = [];
+        }
+    }
+    if (art.exposure) drawBodyArt();
 }
 
 function endsAt(session) {
@@ -1475,6 +1497,8 @@ function renderHosiery(adult) {
     $('back-seam').onchange = () => (h.seam = $('back-seam').checked);
     $('stocking-foot').checked = h.foot;
     $('stocking-foot').onchange = () => (h.foot = $('stocking-foot').checked);
+    $('briefs-over').checked = h.briefsOver;
+    $('briefs-over').onchange = () => (h.briefsOver = $('briefs-over').checked);
 }
 
 function hosieryRequest() {
@@ -1494,6 +1518,7 @@ function hosieryRequest() {
             style: h.belt,
             strapCount: h.strapCount,
             hardware: { color: h.hardware },
+            ...(h.briefsOver ? { briefsOver: true } : {}),
         },
         reveal: { level: h.reveal },
     };
@@ -1783,6 +1808,9 @@ function renderFlow() {
         );
     }
 
+    // AB4. A style that is an independent collection opens its gallery instead of tiles.
+    if (style.gallery) return renderGallery(body, occasion, style);
+
     body.replaceChildren(
         el('h2', { class: 'flow-title', text: `${style.icon} ${style.title}` }),
         el('p', { class: 'flow-sub', text: `${occasion.title} · ${style.blurb}` }),
@@ -1819,6 +1847,188 @@ function renderFlow() {
                 },
             })
         )
+    );
+}
+
+// ---------------------------------------------------------------------------------------------
+// AB4. An independent collection's gallery (wardrobe.collections): Anime Beachwear.
+//
+// Its own screen inside the occasion flow, opened by a style that names a gallery; every other
+// style keeps its tiles. A card per design with its front picture, its name, and two statuses
+// that are not the same thing: whether its construction is built and its fit passes, and
+// whether its pictures have been reviewed. A chosen design shows its front, side and back, the
+// colours and fabrics the collection offers, what it is made of and what is not built yet, and
+// Generate / Wear / Save. Generate is an ordinary job with a ``design`` block, gated as every
+// job is; the 360° view is the stage's own viewer once the look is on her.
+// ---------------------------------------------------------------------------------------------
+const gallery = { id: null, data: null, category: 'All', design: null, colour: null, finish: null, thumbs: {}, reveal: false };
+const STATUS_TEXT = {
+    'existing-template-proxy': 'template proxy',
+    implemented: 'built · not yet reviewed',
+    'visually-validated': 'visually validated',
+};
+
+function galleryPicture(file, alt) {
+    const img = el('img', { class: 'gallery-pic', alt, loading: 'lazy' });
+    const path = `/v1/collections/${encodeURIComponent(gallery.id)}/previews/${encodeURIComponent(file)}`;
+    if (gallery.thumbs[path]) img.src = gallery.thumbs[path];
+    else
+        api.blobUrl(path)
+            .then((url) => {
+                gallery.thumbs[path] = url; // kept for the session: a few small pictures
+                img.src = url;
+            })
+            .catch(() => img.classList.add('missing'));
+    return img;
+}
+
+/** The job's outfit for a design as customised: the entry's request, with colour and fabric. */
+function designOutfit(design) {
+    const outfit = JSON.parse(JSON.stringify(design.request || {}));
+    const custom = [gallery.colour, gallery.finish].filter(Boolean);
+    if (!custom.length) return outfit;
+    outfit.design = { ...outfit.design, ...(gallery.colour ? { color: gallery.colour } : {}),
+        ...(gallery.finish ? { finish: gallery.finish } : {}) };
+    // The prompt names the variant by the design, not by its pieces' as-designed colours ("purple
+    // … · turquoise" said two colours), and makes a recoloured look a look of its own in her
+    // wardrobe. The design block, not the prompt, decides what is built.
+    outfit.prompt = `${design.title} · ${custom.join(' ')}`;
+    return outfit;
+}
+
+function renderGallery(body, occasion, style) {
+    if (gallery.id !== style.gallery) {
+        Object.assign(gallery, { id: style.gallery, data: null, category: 'All', design: null });
+        api.collection(style.gallery)
+            .then((data) => (gallery.data = data))
+            .catch((error) => {
+                console.warn('collection unavailable', error);
+                gallery.data = false;
+            })
+            .then(() => renderFlow());
+    }
+    const head = [
+        el('h2', { class: 'flow-title', text: `${style.icon} ${style.title}` }),
+        el('p', { class: 'flow-sub', text: `${occasion.title} · ${style.blurb}` }),
+    ];
+    if (gallery.data === null) return body.replaceChildren(...head, el('p', { class: 'hint', text: 'Loading the collection…' }));
+    if (gallery.data === false)
+        return body.replaceChildren(...head, el('p', { class: 'hint', text: 'This collection is unavailable on this server.' }));
+    const data = gallery.data;
+    const offered = new Set(style.looks.map((look) => look.id)); // what private mode allows here
+    const designs = data.designs.filter((d) => offered.has(d.id));
+    const shown = designs.filter((d) => gallery.category === 'All' || d.category === gallery.category);
+    const busy = !state.avatar || Boolean(state.jobId);
+    const parts = [
+        ...head,
+        el('p', { class: 'gallery-subtitle', text: data.subtitle || '' }),
+        el(
+            'div',
+            { class: 'chips small', role: 'radiogroup', 'aria-label': 'Category' },
+            ...['All', ...data.categories].map((c) =>
+                el('button', {
+                    class: 'chip',
+                    type: 'button',
+                    role: 'radio',
+                    'aria-checked': String(c === gallery.category),
+                    text: c,
+                    onclick: () => {
+                        gallery.category = c;
+                        renderFlow();
+                    },
+                })
+            )
+        ),
+        el(
+            'div',
+            { class: 'gallery-grid' },
+            ...shown.map((d) => {
+                const made = madeFrom(designOutfit(d).prompt);
+                return el(
+                    'button',
+                    {
+                        class: 'gallery-card',
+                        type: 'button',
+                        'aria-current': String(d.id === gallery.design),
+                        onclick: () => {
+                            gallery.design = d.id === gallery.design ? null : d.id;
+                            gallery.reveal = Boolean(gallery.design);
+                            renderFlow();
+                        },
+                    },
+                    galleryPicture(`${d.id}-front.webp`, d.title),
+                    el('b', { text: d.title }),
+                    el('small', { text: `${d.subtitle} · ${d.category}` }),
+                    el(
+                        'span',
+                        { class: 'tile-badges' },
+                        el('span', { class: `status ${d.fit && d.fit.verdict === 'passed' ? 'good' : ''}`,
+                            text: `fit ${(d.fit && d.fit.verdict) || 'not run'}` }),
+                        el('span', { class: `status ${d.status === 'visually-validated' ? 'good' : 'warn'}`,
+                            text: STATUS_TEXT[d.status] || d.status }),
+                        made ? el('span', { text: 'in her wardrobe' }) : null
+                    )
+                );
+            })
+        ),
+    ];
+    const chosen = designs.find((d) => d.id === gallery.design);
+    const detail = chosen ? galleryDetail(chosen, data, busy) : null;
+    if (detail) parts.push(detail);
+    body.replaceChildren(...parts);
+    // The detail opens under twelve cards: bring it into view when a card is chosen, and only
+    // then — a re-render for a colour or a finished job must not move the page under her hand.
+    if (detail && gallery.reveal) {
+        gallery.reveal = false;
+        requestAnimationFrame(() => detail.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+    }
+}
+
+function galleryDetail(d, data, busy) {
+    const outfit = designOutfit(d);
+    const made = madeFrom(outfit.prompt);
+    const saved = made && state.avatar ? favourites.read(state.avatar.slug).has(made.id) : false;
+    const turn = (facing) => el('button', { class: 'chip', type: 'button', text: facing[0].toUpperCase() + facing.slice(1),
+        onclick: () => viewer.turnTo(facing) });
+    return el(
+        'section',
+        { class: 'gallery-detail', 'aria-label': d.title },
+        el('h3', { text: `${d.title} · ${d.subtitle}` }),
+        el('p', { class: 'flow-sub', text: d.target }),
+        el('div', { class: 'gallery-views' },
+            ...['front', 'side', 'back'].map((v) => el('figure', {}, galleryPicture(`${d.id}-${v}.webp`, `${d.title}, ${v}`),
+                el('figcaption', { text: v })))),
+        el('p', { class: 'flow-label', text: 'On her · 360°' }),
+        el('div', { class: 'chips small' }, turn('front'), turn('left'), turn('back'),
+            el('button', { class: 'chip', type: 'button', text: '360°', onclick: () => viewer.setTurntable(true) })),
+        el('p', { class: 'flow-label', text: 'Colour' }),
+        el('div', { class: 'swatches' },
+            el('button', { class: 'swatch default', type: 'button', title: 'As designed', 'aria-label': 'As designed',
+                'aria-pressed': String(!gallery.colour), text: '✦', onclick: () => { gallery.colour = null; renderFlow(); } }),
+            ...(data.customize.colours || []).map((c) =>
+                el('button', { class: 'swatch', type: 'button', title: c.name, 'aria-label': c.name,
+                    'aria-pressed': String(gallery.colour === c.name), style: `--swatch:${c.hex}`,
+                    onclick: () => { gallery.colour = c.name; renderFlow(); } }))),
+        el('p', { class: 'flow-label', text: 'Fabric' }),
+        el('div', { class: 'chips small', role: 'radiogroup', 'aria-label': 'Fabric' },
+            ...[null, ...(data.customize.finishes || [])].map((f) =>
+                el('button', { class: 'chip', type: 'button', role: 'radio', 'aria-checked': String(gallery.finish === f),
+                    text: f || 'as designed', onclick: () => { gallery.finish = f; renderFlow(); } }))),
+        el('p', { class: 'flow-label', text: 'Construction' }),
+        el('ul', { class: 'gallery-list' }, ...d.geometry.map((g) => el('li', { text: g.replace(/^(new|existing):/, '') }))),
+        ...(d.missing.length
+            ? [el('p', { class: 'flow-label', text: 'Not built yet' }),
+                el('ul', { class: 'gallery-list muted' }, ...d.missing.map((m) => el('li', { text: m })))]
+            : []),
+        el('p', { class: 'report-line', text: `Fit: ${(d.fit && d.fit.verdict) || 'not run'}${d.fit && d.fit.avatar ? ` on ${d.fit.avatar}` : ''} · Visual: ${STATUS_TEXT[d.status] || d.status}` }),
+        el('div', { class: 'gallery-actions' },
+            el('button', { class: 'primary', type: 'button', text: made ? 'Generate again' : 'Generate', disabled: busy,
+                onclick: () => runJob(state.avatar.slug, simpleBody(outfit, { occasion: state.flow.occasion, style: state.flow.style }), d.title) }),
+            el('button', { type: 'button', text: 'Wear', disabled: busy || !made,
+                title: made ? 'Put the made look on her' : 'Generate it first',
+                onclick: async () => { await wearLook(made.id, { mode: 'look' }); renderFlow(); } }),
+            el('button', { type: 'button', text: saved ? '♥ Saved' : '♡ Save', 'aria-pressed': String(saved), disabled: !made,
+                onclick: () => { favourites.toggle(state.avatar.slug, made.id); renderFlow(); renderWardrobe(); } }))
     );
 }
 
@@ -2527,7 +2737,15 @@ function placementInfo(id) {
 }
 
 function designInfo(id) {
-    return state.bodyArt.catalog.designs.find((d) => d.id === id) || { id, name: id };
+    const art = state.bodyArt;
+    return art.catalog.designs.find((d) => d.id === id) || art.custom.find((d) => d.id === id) || { id, name: id };
+}
+
+/** BA10. Where a design's picture is: a custom one only through the admin route. */
+function designImagePath(designId) {
+    return state.bodyArt.custom.some((d) => d.id === designId)
+        ? `/v1/admin/body-art/${encodeURIComponent(designId)}.png`
+        : `/v1/body-art/designs/${encodeURIComponent(designId)}.png`;
 }
 
 /** A design's picture, inked: its PNG is white with the ink as alpha, so it masks a colour. */
@@ -2540,7 +2758,7 @@ function inkSwatch(designId) {
     };
     if (art.thumbs[designId]) paint(art.thumbs[designId]);
     else
-        api.blobUrl(`/v1/body-art/designs/${encodeURIComponent(designId)}.png`)
+        api.blobUrl(designImagePath(designId))
             .then((url) => {
                 art.thumbs[designId] = url; // kept for the session: ten small PNGs
                 paint(url);
@@ -2630,7 +2848,9 @@ function drawBodyArt() {
         )
     );
 
-    const designs = art.catalog.designs.filter((d) => d.placements.includes(art.placement));
+    // A custom design is drawn at any placement; the placement's own rating and gate still apply.
+    const custom = account.session ? art.custom.map((d) => ({ ...d, placements: [art.placement] })) : [];
+    const designs = [...art.catalog.designs.filter((d) => d.placements.includes(art.placement)), ...custom];
     if (!designs.some((d) => d.id === art.design)) art.design = designs.length ? designs[0].id : null;
     parts.push(
         el(
@@ -2651,11 +2871,12 @@ function drawBodyArt() {
                         },
                     },
                     inkSwatch(d.id),
-                    el('span', { class: 'tattoo-name', text: d.name })
+                    el('span', { class: 'tattoo-name', text: d.private ? `${d.name} · private` : d.name })
                 )
             )
         )
     );
+    if (account.session) parts.push(customArtUpload());
 
     const ink = el('input', { type: 'color', value: art.ink });
     ink.addEventListener('change', () => {
@@ -2716,6 +2937,64 @@ function drawBodyArt() {
     );
     box.replaceChildren(...parts);
     syncExtras();
+}
+
+/**
+ * BA10. Upload your own artwork: a PNG or WebP whose transparency is the ink. The server
+ * checks and re-encodes it; a look that wears it is private to admin sessions.
+ */
+function customArtUpload() {
+    const art = state.bodyArt;
+    const input = el('input', { type: 'file', accept: 'image/png,image/webp' });
+    input.hidden = true;
+    input.addEventListener('change', async () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        art.uploadError = '';
+        try {
+            const design = await api.uploadBodyArt(file, file.name.replace(/\.[a-z0-9]+$/i, ''));
+            if (!art.custom.some((d) => d.id === design.id)) art.custom.push(design);
+            art.design = design.id;
+        } catch (error) {
+            art.uploadError = error.message || 'That picture could not be used.';
+        }
+        drawBodyArt();
+    });
+    const pick = el('button', {
+        class: 'link',
+        type: 'button',
+        text: 'Upload your own artwork',
+        title: 'PNG or WebP with transparency, up to 2048 px and 4 MB. Private to admin sessions.',
+        onclick: () => input.click(),
+    });
+    const children = [pick, input];
+    const chosen = art.custom.find((d) => d.id === art.design);
+    if (chosen)
+        children.push(
+            el('button', {
+                class: 'link',
+                type: 'button',
+                text: 'Delete this one',
+                onclick: async () => {
+                    try {
+                        await api.deleteBodyArt(chosen.id);
+                        art.custom = art.custom.filter((d) => d.id !== chosen.id);
+                        art.design = null;
+                    } catch (error) {
+                        art.uploadError = error.message;
+                    }
+                    drawBodyArt();
+                },
+            })
+        );
+    if (art.uploadError) children.push(el('p', { class: 'report-line warn', text: art.uploadError }));
+    children.push(
+        el('p', {
+            class: 'export-hint',
+            text: 'Its transparency is the ink. A look wearing it is private: never in the public wardrobe or a public export.',
+        })
+    );
+    return el('div', { class: 'body-art-custom' }, ...children);
 }
 
 function syncBodyArtButton() {

@@ -32,7 +32,7 @@ def test_ids_are_unique_and_every_look_is_in_the_dictionary(entries):
 def test_the_first_screen_is_the_occasions_asked_for():
     titles = [o.title for o in oc.OCCASIONS]
     assert titles == ["Night out", "Try-on haul", "Work", "Gym", "Sleep", "Shopping", "Vacation", "Campus",
-                      "Private"]
+                      "Anime fan service", "Private"]
 
 
 def test_without_private_mode_no_style_is_left_empty(entries):
@@ -58,7 +58,7 @@ def test_without_private_mode_no_style_is_left_empty(entries):
 
 def test_private_is_hidden_as_a_whole_and_holds_the_private_looks(entries):
     private = oc.occasions()["private"]
-    assert private.private and [o.id for o in oc.OCCASIONS if o.private] == ["private"]
+    assert private.private and [o.id for o in oc.OCCASIONS if o.private] == ["anime", "private"]
     # Lingerie and stockings are there, rated private by the planner, not by this module.
     looks = {look for style in private.styles for look in style.looks}
     assert {"lace-lingerie-set", "italian-lace-thong", "stockings-pencil"} <= looks

@@ -95,6 +95,9 @@ class PipelineContext:
     #: BA6. A tattoo-only job: the look it builds on, whose clothes it carries unchanged.
     base_look_id: str | None = None
     preview_bytes: bytes | None = None
+    #: BS2. The body surface this job built (wardrobe.body_surface.collision.BodySurfaceState),
+    #: or None: a job that asked for none reads her body exactly as before.
+    body_surface: object | None = None
     #: A hosiery look's other views, by file name ("detail.webp", "preview-sit.webp", ...).
     extra_previews: dict[str, bytes] = field(default_factory=dict)
     look: LookResult | None = None

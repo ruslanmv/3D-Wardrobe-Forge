@@ -101,7 +101,7 @@ These are the components specified in the two parent documents, in build order:
 | Phase | Component | Spec |
 | --- | --- | --- |
 | H1 | `StockingTop` contract: clips on the fitted band | STYLING §4.1 |
-| H2 | `suspender-belt` kind, connector layer, `briefsOver`, strap rest length and tension | STYLING §4.2 |
+| H2 | `suspender-belt` kind, connector layer, `briefsOver` (built later, as a planning order), strap rest length and tension | STYLING §4.2 |
 | P2 | `ribbon` primitive, `strapProfile: flat` | PREVIEW §2.1 |
 | P3 | Hardware kit and the `hardware` finish | PREVIEW §2.2 |
 | H3 + P4 | `seam`, `stockingTop` (plain, wide, lace, silicone), `denier`, falloff, tinted veil | STYLING §4.4, PREVIEW §2.3–2.5 |

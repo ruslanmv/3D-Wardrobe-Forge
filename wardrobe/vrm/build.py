@@ -220,18 +220,23 @@ def _normalize_to_height(positions: dict[str, np.ndarray], mesh: Mesh, target_he
     return scale
 
 
-def build_vrm(body: BodyProportions, *, spec: str = "VRM1", mesh_builder=None) -> bytes:
+def build_vrm(body: BodyProportions, *, spec: str = "VRM1", mesh_builder=None,
+              skeleton: dict[str, np.ndarray] | None = None) -> bytes:
     """Return a complete, self-contained VRM as GLB bytes.
 
     ``mesh_builder(body, positions) -> Mesh`` replaces the calibration body's
     surface and keeps everything else — skeleton, skinning, VRM blocks — as it
     is: the fashion-fit forms (``wardrobe.vrm.fashion_body``) are the same rig
     under a better-shaped skin. Absent, the calibration body, byte for byte.
+
+    ``skeleton`` (RB4) replaces the formula's joint positions: the anatomical reference bodies
+    take theirs from their template's joints, which move with the body as it is fitted to a size.
     """
     if spec not in {"VRM0", "VRM1"}:
         raise ValueError("spec must be 'VRM0' or 'VRM1'")
 
-    positions = skeleton_positions(body)
+    positions = ({k: np.asarray(v, dtype=np.float64).copy() for k, v in skeleton.items()} if skeleton
+                 else skeleton_positions(body))
     mesh = (mesh_builder or build_body_mesh)(body, positions)
     _normalize_to_height(positions, mesh, body.height)
     bone_names = list(SKELETON_TREE)
@@ -284,7 +289,18 @@ def build_vrm(body: BodyProportions, *, spec: str = "VRM1", mesh_builder=None) -
     # A builder may mark its torso: those vertices never take arm bones, so posing
     # the arms does not drag the side of her chest with them. The calibration body
     # marks none and is bound as it always was.
-    bind_mesh(mesh, segments, falloff=2.0, torso=mesh.metadata.get("bindTorso"))
+    # SA2. A builder may instead bring its own weights (``preskinned``), indexing
+    # SKELETON_TREE's bones: the anatomical reference bodies carry MakeHuman's painted
+    # weights, which no distance rule reproduces at the shoulder.
+    if mesh.metadata.get("preskinned"):
+        if mesh.joints is None or mesh.weights is None or mesh.joints.shape != (mesh.vertex_count, 4):
+            raise ValueError("a preskinned mesh needs (N, 4) joints and weights")
+        mesh.joints = np.asarray(mesh.joints, dtype=np.uint16)
+        mesh.weights = np.asarray(mesh.weights, dtype=np.float32)
+        mesh.weights[:, 0] += (1.0 - mesh.weights.sum(axis=1)).astype(np.float32)
+        mesh.metadata["boundBones"] = bone_names
+    else:
+        bind_mesh(mesh, segments, falloff=2.0, torso=mesh.metadata.get("bindTorso"))
 
     joint_nodes = [segment.node for segment in segments]
     ibm = np.zeros((len(joint_nodes), 16), dtype=np.float32)

@@ -296,6 +296,9 @@ async def create_library_job(
         )
         private = private or base_private
 
+    # BA10. A custom tattoo is the operator's own: the look that wears one is private.
+    if body.body_art and check_designs(orchestrator.body_art, body.body_art, admin=admin, private_ok=True):
+        private = True
     options = body.options.model_copy(update={"wardrobe_id": avatar.slug, "private": private})
     job = CreateJobRequest.model_validate(
         {
@@ -306,8 +309,6 @@ async def create_library_job(
             "bodyArtRemove": body.body_art_remove,
         }
     )
-    if job.body_art:  # a job without tattoos never touches body-art code (I1)
-        check_designs(orchestrator.body_art, job.body_art)
     return await orchestrator.submit(job)
 
 

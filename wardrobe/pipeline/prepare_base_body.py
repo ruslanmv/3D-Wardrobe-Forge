@@ -51,6 +51,32 @@ from wardrobe.vrm.garments import KIND_REGIONS
 from wardrobe.vrm.measure import MeasurementError, measure_body
 from wardrobe.vrm.skin_restore import restore_skin
 
+#: AN1. Cuts that bare skin her own clothes hid: her texture there may be clothing painted
+#: on, or nothing at all (a VRoid export cuts away skin under its outfit).
+REVEALING_NECKLINES = frozenset({"v", "plunge", "sweetheart"})
+
+
+#: G6. Shapes that are cut to leave her shoulders, back and (cropped) midriff bare. A
+#: camisole replaces her own top, and on most VRoid bodies the top is also painted on her
+#: skin: the cropped camisole of the GC0 review showed AvatarSample A's grey knit below its
+#: hem and her lace above its neckline.
+BARING_KINDS = frozenset({"camisole"})
+
+
+def reveals_hidden_skin(plan, kinds: list[tuple[str, str]] = ()) -> bool:
+    """Whether an outer garment is cut to show skin under her clothes: a plunge, an open back, a slit.
+
+    Underwear and swimwear already restore her skin (``requested_foundation``). An ordinary
+    outfit does not, and must not: what it covers it covers, and her texture is left
+    exactly as it was. These cuts are the exception — a plunging catsuit on VRoid Female
+    opened onto the black top painted on her chest — and so are the shapes in
+    ``BARING_KINDS`` (``kinds`` is ``layer_kinds``).
+    """
+    return any(
+        g.style.neckline in REVEALING_NECKLINES or g.style.back == "low" or g.style.slit
+        for g in plan.garments
+    ) or any(kind in BARING_KINDS for kind, _ in kinds)
+
 
 def layer_kinds(context: PipelineContext) -> list[tuple[str, str]]:
     """(shape kind, role) for every garment of the planned outfit."""
@@ -111,15 +137,22 @@ async def run(context: PipelineContext) -> None:
     conflicts = foundation_conflicts(plan.retain, layers)
     if conflicts:
         _refuse_foundation_over(conflicts, layers)
-    if context.requested_foundation:
+    revealing = not context.requested_foundation and reveals_hidden_skin(context.plan, layers)
+    if context.requested_foundation or revealing:
         # SR1. Underwear goes on her skin, so her skin is made skin first: clothing painted on
         # it, and skin her texture cuts away, restored from the skin round it. Before the body
-        # check, so a cut-away chest (AvatarSample_O) is counted as the body it is.
+        # check, so a cut-away chest (AvatarSample_O) is counted as the body it is. AN1: and
+        # so is an outer garment cut to show her skin (a plunge, an open back, a slit).
+        # A baring top alone (BARING_KINDS) bares her upper body: from her hips up.
+        cut_only = revealing and not reveals_hidden_skin(context.plan)
+        hips = context.measurements.bone_positions.get("hips")
         restored = restore_skin(context.document, context.measurements,
-                                {(g.mesh, g.primitive) for g in inventory})
+                                {(g.mesh, g.primitive) for g in inventory},
+                                above=float(hips[1]) if cut_only and hips is not None else None)
         if restored is not None:
             report.base_body["skinRestored"] = restored.to_dict()
-            context.warn(f"restored her skin under the underwear: {restored.restored_texels} texels of "
+            under = "the outfit's open cut" if revealing else "the underwear"
+            context.warn(f"restored her skin under {under}: {restored.restored_texels} texels of "
                          "painted clothing or cut-away skin filled from the skin round them")
     if not plan.remove:
         if inventory:

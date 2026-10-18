@@ -62,10 +62,28 @@ BACK_LINE = {"scoop": 0.9, "low": 0.15}
 #: this fraction of the front strap points' distance from her midline.
 BACK_STRAP_HEIGHT = 1.3
 BACK_STRAP_SPREAD = 0.9
+#: AB2. A racerback's straps are sewn to the back panel this far either side of her spine,
+#: where they meet between her shoulder blades.
+RACER_SPREAD_M = 0.018
+#: AB2. A waist cut-out: an oval window centred this far round from her front centre
+#: (radians, toward each side), at her waist, this tall and this wide (half-sizes, the
+#: height graded by her height over 1.68 m).
+#: AB2. A racerback's back: cut away from her armholes, rising only over this span either side
+#: of her spine (radians round her) to the point between her shoulder blades where the straps
+#: meet; elsewhere this far below the armhole. Cut level, the high back hid the straps.
+RACER_RISE_SPAN = 0.9
+RACER_DROP_M = 0.02
+CUTOUT_ANGLE = 1.05
+CUTOUT_HALF_ANGLE = 0.42
+CUTOUT_HALF_HEIGHT_M = 0.05
 
 
-def neckline(frame: BodyFrame, spec: BodysuitSpec):
-    """The top edge round her, as a function of angle ``phi`` (0 at her centre front), and its key heights."""
+def neckline(frame: BodyFrame, spec: BodysuitSpec, *, racer: bool = False):
+    """The top edge round her, as a function of angle ``phi`` (0 at her centre front), and its key heights.
+
+    ``racer`` (AB2): the back is a racerback's, a narrow tongue up her spine to where the
+    straps meet; every other bodysuit's top edge is exactly as it was.
+    """
     marks, c = frame.marks, frame.clearance
     cx = marks.centre_x
     fold = min(marks.underbust_y.values())
@@ -115,6 +133,10 @@ def neckline(frame: BodyFrame, spec: BodysuitSpec):
         back_shape = (1 - r) if spec.back == "low" else 1.0 - np.sqrt(np.clip(1.0 - (1 - r) ** 2, 0.0, 1.0))
         back = back_y + (back_strap_y - back_y) * back_shape
         behind = np.where(w <= math.pi - phi_b, rising, back)
+        if racer:
+            s = np.clip((w - (math.pi - RACER_RISE_SPAN)) / RACER_RISE_SPAN, 0.0, 1.0)
+            low = arm_y - RACER_DROP_M
+            behind = low + (back_strap_y - low) * s ** 2.2
         return np.where(w <= phi_s, front, np.where(w <= side, armhole, behind))
 
     heights = {"front": front_y, "strap": strap_y, "armhole": arm_y, "backStrap": back_strap_y,
@@ -125,7 +147,7 @@ def neckline(frame: BodyFrame, spec: BodysuitSpec):
 
 def build_bodysuit(frame: BodyFrame, brief: BriefSpec, spec: BodysuitSpec, straps: StrapBlock, *,
                    name: str = "bodysuit") -> Mesh:
-    top, heights = neckline(frame, spec)
+    top, heights = neckline(frame, spec, racer=straps.style == "racerback")
     body = build_brief(frame, brief, name=name, top_line=top, top_section="elastic-bodysuit-neck",
                        symmetric=True)
     record = body.metadata["lingerieBrief"]
@@ -138,10 +160,13 @@ def build_bodysuit(frame: BodyFrame, brief: BriefSpec, spec: BodysuitSpec, strap
     panel[: (rows + 1) * count] = True
     upper = panel & (positions[:, 1] > fold)
     _drape_front(positions, upper, rows, count, frame)
+    if spec.side_ease_mm > 0:
+        _ease_sides(positions, upper, frame, spec.side_ease_mm / 1000.0)
     body.positions = positions.astype(np.float32)
     body.compute_normals()
     placed = np.asarray(body.metadata["placed"], dtype=bool) | upper
     body.metadata["placed"] = placed
+    cut = _cut_windows(body, frame, spec) if spec.cutouts != "none" else 0
 
     # ---- straps: front strap point to back strap point, each side.
     pieces = [body]
@@ -156,8 +181,13 @@ def build_bodysuit(frame: BodyFrame, brief: BriefSpec, spec: BodysuitSpec, strap
             lift = straps.strap_spec().thickness_m / 2 + STRAP_ON_CUP_M
             front = _strap_point(positions, top_row[on_side & facing_front], count, rows, "front", frame,
                                  lift)
-            back = _strap_point(positions, top_row[on_side & ~facing_front], count, rows, "back", frame,
-                                lift)
+            if straps.style == "racerback":
+                # AB2. Both straps come in to the back panel's top beside her spine.
+                beside = top_row[~facing_front & ((positions[top_row, 0] - cx) * sign > 0)]
+                back = _racer_point(positions, beside, count, rows, frame, lift, cx + sign * RACER_SPREAD_M)
+            else:
+                back = _strap_point(positions, top_row[on_side & ~facing_front], count, rows, "back", frame,
+                                    lift)
             if front is None or back is None:
                 continue
             anchors[side] = {"front": front.to_dict(), "back": back.to_dict()}
@@ -171,7 +201,8 @@ def build_bodysuit(frame: BodyFrame, brief: BriefSpec, spec: BodysuitSpec, strap
             fitted[side] = strap.to_dict()
     out = _join(pieces)
     out.metadata["lingerieBodysuit"] = {
-        "neckline": spec.neckline, "back": spec.back,
+        "neckline": spec.neckline, "back": spec.back, "cutouts": spec.cutouts, "cutTriangles": cut,
+        "strapStyle": straps.style,
         "heights": {k: float(v) for k, v in heights.items()},
         "anchors": anchors, "straps": fitted,
     }
@@ -266,6 +297,122 @@ def _drape_front(positions: np.ndarray, upper: np.ndarray, rows: int, count: int
     # The side seam's two copies of each vertex are one point: the last column is not
     # draped above, and where the seam faced forward (a curvy form) it opened into holes.
     positions[count - 1:(rows + 1) * count:count] = positions[0:(rows + 1) * count:count]
+
+
+#: AB2. Where round her the side ease applies (radians from her front centre): rising from the
+#: first to full at the second, falling to nothing by the third, behind her arm.
+SIDE_EASE_FROM, SIDE_EASE_FULL, SIDE_EASE_TO = 0.55, 1.1, 2.1
+
+
+def _ease_sides(positions: np.ndarray, upper: np.ndarray, frame: BodyFrame, ease: float) -> None:
+    """AB2. Move the upper panel out from her axis round the side of her bust. In place.
+
+    On VRoid Female a full bust bulges sideways past the panel between its vertices at the
+    armhole: the vertices were outside her and the faces between them were not, so skin
+    showed through in streaks. Tapered in from the fold (the fitted panels below keep their
+    clearance) and round her, never at her front centre or her back.
+    """
+    marks, forward = frame.marks, frame.forward
+    fold = min(marks.underbust_y.values())
+    for v in np.flatnonzero(upper):
+        x, y, z = positions[v]
+        _, _, cx, cz = frame.outline(float(y))
+        w = abs(math.atan2(x - cx, forward * (z - cz)))
+        rise = np.clip((w - SIDE_EASE_FROM) / (SIDE_EASE_FULL - SIDE_EASE_FROM), 0.0, 1.0)
+        fall = np.clip((SIDE_EASE_TO - w) / (SIDE_EASE_TO - SIDE_EASE_FULL), 0.0, 1.0)
+        taper = float(np.clip((y - fold) / EASE_TAPER_M, 0.0, 1.0))
+        amount = ease * float(min(rise, fall)) * taper
+        if amount <= 0:
+            continue
+        radial = np.array([x - cx, 0.0, z - cz])
+        positions[v] += radial / max(float(np.linalg.norm(radial)), 1e-9) * amount
+
+
+def _cut_windows(body: Mesh, frame: BodyFrame, spec: BodysuitSpec) -> int:
+    """AB2. Open an oval window at each side of her waist, with a clean edge. Answers the triangles cut.
+
+    Every panel triangle that touches a window goes, and the ring of vertices left round it
+    is moved onto the oval itself (round her, at its own height): the edge is the oval, not
+    the staircase of grid cells it crossed, and nothing is left floating inside it.
+    Triangles, not vertices, are removed: every per-vertex record the later steps read (the
+    panel rows and columns, ``placed``, the elastic edges) indexes vertices, and keeps its
+    meaning. Only the panels are cut — never the gusset or an elastic edge — and the section
+    ranges are rebuilt so each material keeps its own triangles.
+    """
+    marks, forward = frame.marks, frame.forward
+    positions = body.positions.astype(np.float64)
+    tris = body.indices.reshape(-1, 3)
+    half_h = CUTOUT_HALF_HEIGHT_M * frame.params.height / 1.68
+    yc = marks.waist_y
+    sections = list(body.metadata.get("sections") or [])
+    panel = np.zeros(len(tris), dtype=bool)
+    for name, first, n in sections:
+        if "gusset" not in name and not name.startswith("elastic"):
+            panel[first:first + n] = True
+    if not sections:
+        panel[:] = True
+    # Each vertex's place in each window: (round her, up her) over the window's half-sizes.
+    centres = np.zeros((len(positions), 3))
+    for i, (x, y, z) in enumerate(positions):
+        _, _, cx, cz = frame.outline(float(y))
+        centres[i] = (cx, cz, math.atan2(x - cx, forward * (z - cz)))
+    for centre in (CUTOUT_ANGLE, -CUTOUT_ANGLE):
+        e = np.stack([(centres[:, 2] - centre) / CUTOUT_HALF_ANGLE, (positions[:, 1] - yc) / half_h], axis=1)
+        inside = np.linalg.norm(e, axis=1) < 1.0
+        touched = panel & inside[tris].any(axis=1)
+        if not touched.any():
+            continue
+        kept = ~touched
+        ring = np.zeros(len(positions), dtype=bool)
+        ring[np.unique(tris[touched])] = True
+        used = np.zeros(len(positions), dtype=bool)
+        used[np.unique(tris[kept])] = True
+        ring &= used & ~inside
+        for v in np.flatnonzero(ring):
+            unit = e[v] / max(float(np.linalg.norm(e[v])), 1e-9)
+            phi = centre + unit[0] * CUTOUT_HALF_ANGLE
+            cx, cz, _ = centres[v]
+            r = math.hypot(positions[v, 0] - cx, positions[v, 2] - cz)
+            positions[v] = (cx + r * math.sin(phi), yc + unit[1] * half_h, cz + forward * r * math.cos(phi))
+        panel_keep = np.ones(len(tris), dtype=bool)
+        panel_keep[touched] = False
+        tris, panel = tris[panel_keep], panel[panel_keep]
+        if sections:
+            rebuilt, start = [], 0
+            for name, first, n in sections:
+                count = int(panel_keep[first:first + n].sum())
+                rebuilt.append((name, start, count))
+                start += count
+            sections = rebuilt
+    removed = body.indices.size // 3 - len(tris)
+    if removed:
+        if sections:
+            body.metadata["sections"] = sections
+        body.positions = positions.astype(np.float32)
+        body.indices = tris.reshape(-1).astype(body.indices.dtype)
+        body.compute_normals()
+    return int(removed)
+
+
+def _racer_point(positions: np.ndarray, candidates: np.ndarray, count: int, rows: int, frame: BodyFrame,
+                 lift: float, x: float) -> Anchor | None:
+    """AB2. A racerback strap's back end: the back panel's top-edge vertex nearest ``x``."""
+    if candidates.size == 0:
+        return None
+    column = int(candidates[np.argmin(np.abs(positions[candidates, 0] - x))])
+    at = positions[column]
+    for k in range(1, rows + 1):  # sewn a little down the panel, as the other straps are
+        below = positions[k * count + column]
+        if np.linalg.norm(below - positions[column]) >= STRAP_OVERLAP_M:
+            at = below
+            break
+    n = surface_normal(frame.params, float(at[0]), float(at[1]), "back")
+    if n is None:
+        n = np.array([0.0, 0.0, -frame.forward])
+    up = np.array([0.0, 1.0, 0.0])
+    tangent = up - n * float(np.dot(up, n))
+    return Anchor(name="bodysuit-racer-strap", side="", position=at + n * lift, normal=n,
+                  tangent=tangent / max(np.linalg.norm(tangent), 1e-9), source="bodysuit", vertex=column)
 
 
 def _strap_point(positions: np.ndarray, candidates: np.ndarray, count: int, rows: int, face: str,

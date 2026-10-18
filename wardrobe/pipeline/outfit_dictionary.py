@@ -75,6 +75,11 @@ GROUPS: tuple[Group, ...] = (
     Group("lingerie", "Lingerie", private=True),
     Group("legwear", "Stockings & legwear", private=True),
     Group("sheer", "Sheer", private=True),
+    # AB. An independent collection's own group (wardrobe.collections): swimwear, so private.
+    Group("anime-beachwear", "Anime Beachwear", private=True),
+    # AN2. One collection, two groups: a group's private flag must match what Forge computes.
+    Group("anime", "Anime fan service"),
+    Group("anime-private", "Anime fan service · swim & bodysuits", private=True),
 )
 
 
@@ -87,11 +92,15 @@ class Outfit:
     #: A look or hosiery preset whose blocks (visible thong, suspenders) the prompt needs.
     preset: str | None = None
     tags: tuple[str, ...] = field(default_factory=tuple)
+    #: AB. (collection, design id): a design of an independent collection (wardrobe.collections).
+    design: tuple[str, str] | None = None
 
     def request(self) -> OutfitRequest:
         fields: dict = {"prompt": self.prompt}
         if self.preset:
             fields["preset"] = self.preset
+        if self.design:
+            fields["design"] = {"collection": self.design[0], "id": self.design[1]}
         return OutfitRequest.model_validate(fields)
 
 
@@ -393,6 +402,50 @@ OUTFITS: tuple[Outfit, ...] = (
     Outfit("bandeau-bikini", "Bandeau bikini", "swim", "white bandeau bikini", tags=("beach",)),
     Outfit("one-piece", "One-piece swimsuit", "swim", "black one-piece swimsuit", tags=("beach",)),
     Outfit("skirted-swimsuit", "Skirted swimsuit", "swim", "navy skirted swimsuit", tags=("beach",)),
+    # --- AN2. Anime fan service ------------------------------------------
+    # Original designs in the spirit of well-known anime heroines (docs/ANIME_FAN_SERVICE.md):
+    # silhouettes and palettes from the planner's own words, no character's name, logo or
+    # artwork. Grouped by the rating Forge computes, as every entry here is: the bikini, the
+    # swimsuit worn as a leotard and the bodysuit need an adult declaration; the rest do not.
+    Outfit("anime-island-archaeologist", "Island Archaeologist", "anime",
+           "purple cropped cami + pink and white floral long wrap skirt with slit",
+           tags=("anime-inspired", "fan-service", "beach")),
+    Outfit("anime-retro-bounty", "Retro Bounty Hunter", "anime",
+           "yellow halter crop top + yellow denim shorts + red cropped jacket worn open"
+           " + white over-the-knee boots",
+           tags=("anime-inspired", "fan-service", "retro")),
+    Outfit("anime-midnight-thief", "Midnight Thief", "anime",
+           "black latex catsuit with plunging neckline + black over-the-knee boots",
+           tags=("anime-inspired", "fan-service", "catsuit")),
+    Outfit("anime-thorn-assassin", "Thorn Assassin", "anime",
+           "black satin halter evening gown with thigh slit + black thigh-high stockings"
+           " + black stiletto ankle boots",
+           tags=("anime-inspired", "fan-service", "glamour")),
+    Outfit("anime-serpent-empress", "Serpent Empress", "anime",
+           "red and pink floral satin halter evening gown with thigh slit + red stiletto ankle boots",
+           tags=("anime-inspired", "fan-service", "glamour")),
+    Outfit("anime-abyss-guardian", "Abyss Guardian", "anime",
+           "white satin halter evening gown with thigh slit + black stiletto ankle boots",
+           tags=("anime-inspired", "fan-service", "fantasy")),
+    Outfit("anime-reaper-lieutenant", "Reaper Lieutenant", "anime",
+           "black long-sleeve wrap dress with plunging neckline + black wide trousers",
+           tags=("anime-inspired", "fan-service", "fantasy")),
+    Outfit("anime-rose-commander", "Rose Commander", "anime",
+           "pink latex catsuit with plunging neckline + pink over-the-knee boots",
+           tags=("anime-inspired", "fan-service", "action")),
+    Outfit("anime-ice-general", "Ice General", "anime",
+           "white blazer + white mini pencil skirt + black over-the-knee stiletto boots",
+           tags=("anime-inspired", "fan-service", "action")),
+    Outfit("anime-ocean-navigator", "Ocean Navigator", "anime-private",
+           "green and white striped triangle bikini top + low-rise blue jeans",
+           tags=("anime-inspired", "fan-service", "beach")),
+    Outfit("anime-moon-rabbit", "Moon Rabbit Hero", "anime-private",
+           "white high-cut one-piece swimsuit + white over-the-knee boots",
+           tags=("anime-inspired", "fan-service", "action")),
+    Outfit("anime-ghost-operative", "Ghost Operative", "anime-private",
+           "black high-cut bodysuit + black thigh-high stockings + black cropped jacket worn open"
+           " + black combat boots",
+           tags=("anime-inspired", "fan-service", "action")),
     # --- lingerie (private) ---------------------------------------------
     Outfit("lace-lingerie-set", "Lace lingerie set", "lingerie", "black lace lingerie set"),
     Outfit("balconette-set", "Balconette bra & briefs", "lingerie", "red balconette bra + red briefs"),
@@ -480,6 +533,31 @@ OUTFITS: tuple[Outfit, ...] = (
         "black lace bralette + sheer white blouse + black mini skirt",
     ),
 )
+
+
+def _collection_outfits() -> tuple[Outfit, ...]:
+    """AB. Every design of every independent collection (wardrobe.collections), as entries.
+
+    Generated from the collection's own record, so a design is described once. Each entry's
+    request names the design, so a job for it builds the design's construction; its prompt is
+    the pieces' own words, which plan on their own too. In a group of its own per collection:
+    nothing here is added to, or changes, an entry above.
+    """
+    from wardrobe.collections import collections
+
+    out = []
+    for collection in collections().values():
+        for d in collection["designs"]:
+            out.append(Outfit(
+                d["id"], f"{d['title']} · {d['subtitle']}", collection["id"],
+                " + ".join(p["prompt"] for p in d["pieces"]),
+                tags=(collection["id"], d["category"].lower().replace(" ", "-"), "beach"),
+                design=(collection["id"], d["id"]),
+            ))
+    return tuple(out)
+
+
+OUTFITS = OUTFITS + _collection_outfits()
 
 
 #: CR2. Stockings as an add-on to a look she wears: the request blocks merged into the look's

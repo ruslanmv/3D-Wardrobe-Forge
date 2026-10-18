@@ -148,6 +148,9 @@ against them. Strap tension is measured over her posed body, standing, walking
 and seated, and reported per strap. Denier maps onto the transparency scale and
 the sides are baked darker. Tops come plain, wide, lace or silicone, with a
 rolled edge; seams stay down the back of the leg; fishnet uses the same contract.
+Stockings can be knitted on over her heel and toes (`hosiery.foot: "full"`), and
+briefs can go on over the straps the traditional way, so they come off without
+unclipping (`suspenderBelt.briefsOver`).
 
 Every caption on the sheet above is the job's own report, rendered in the
 Studio's viewer. Seated, the stockings ride on her skin rather than on their own
@@ -228,6 +231,67 @@ cut round her foot as she stands. In the Studio, make the dress once, then try
 each pair on it: only the boots are re-fitted. See
 [docs/DISCOTECA.md](docs/DISCOTECA.md).
 
+### Anime Beachwear: twelve swimsuits, an independent collection
+
+![Anime Beachwear on VRoid Female: twelve original anime-inspired swimsuits, each captioned with its job's own fit verdict](docs/images/anime-beachwear-avatar.webp)
+
+Twelve original, anime-inspired swimsuits for adult anime-style avatars —
+bikinis, bandeaus, one-pieces, a cut-out monokini, a ruffled swimdress and a
+racerback — under **Private → Anime Beachwear** in the Studio, with its own
+gallery (front, side and back pictures, colour and fabric, Generate / Wear /
+Save). It is **added, not swapped in**: its own ids, its own dictionary group,
+its own folder (`assets/collections/anime_beachwear/`) and its own API
+(`/v1/collections`); Vacation → Beach and every existing template, entry and
+look are unchanged, and a test compares them with `main`. The halter, the
+racerback, the waist cut-outs and the fluted hem it needed are new construction
+that a garment gets only when a design asks. Each design says honestly what it
+is — `implemented` or `visually-validated` — and what is not built yet. See
+[docs/ANIME_BEACHWEAR.md](docs/ANIME_BEACHWEAR.md).
+
+### Body surface: a collision body, regions as morph targets, XPBD
+
+An opt-in stage between Base Body Prep and fitting builds a **collision body**
+from her skin — smoothed, never inside her, a millimetre proud — that the fitter
+fits to in place of her stored skin, and reports every layer's **signed
+clearance** from her (minimum, and the share of samples below −0.5 and −1 mm,
+face interiors included). Profiles may add **regions** — local displacements
+registered to her measured landmarks by an RBF warp, blended in with a
+Laplacian solve, refused where her mesh is too coarse to hold them, never
+allowed to change her measurements — exported as ordinary glTF morph targets
+only on request. An optional **XPBD** pass relaxes a garment against the
+collision body and is kept only if it makes her clearance no worse. Profiles
+are server-side and allowlisted, templates provenance-checked; intimate regions
+need the model's terms, the operator's switch and the adult declaration, and
+none ship. A job without it is unchanged — all 81 gallery looks are
+byte-identical. See [docs/BODY_SURFACE.md](docs/BODY_SURFACE.md).
+
+### Anime Fan Service: twelve heroines, four sections
+
+![The Anime Fan Service collection on VRoid Female: Ocean Navigator, Island Archaeologist, Retro Bounty Hunter, Midnight Thief, Thorn Assassin, Serpent Empress, Abyss Guardian, Reaper Lieutenant, Rose Commander, Moon Rabbit Hero, Ice General and Ghost Operative](docs/images/anime-fan-service-avatar.webp)
+
+Twelve original costumes in the spirit of well-known adult anime heroines,
+grouped in four sections:
+
+| Section | Looks |
+| --- | --- |
+| **Beach & pool** | Ocean Navigator: striped bikini under low-rise jeans. Island Archaeologist: purple crop cami and a floral sarong slit to the thigh. |
+| **Retro & catsuits** | Retro Bounty Hunter: yellow halter and shorts, red jacket worn open, white over-the-knee boots. Midnight Thief: plunging black latex catsuit. |
+| **Glamour & fantasy** | Thorn Assassin, Serpent Empress and Abyss Guardian: satin halter gowns slit to the thigh, in black, red floral and white. Reaper Lieutenant: a plunging black wrap robe. |
+| **Action heroines** | Rose Commander: pink latex catsuit. Moon Rabbit Hero: white high-cut leotard. Ice General: white blazer and mini pencil skirt. Ghost Operative: black bodysuit and an open jacket. |
+
+It is its own occasion, hidden without private mode. Each look is an
+outfit-dictionary entry, rated by Forge's planner, not by the collection: the
+bikini, the leotard and the bodysuit need the avatar's adult declaration, and the
+server's gate checks that on every job. The looks are named by the collection,
+never by a character, and use no character's emblem, logo or artwork.
+
+Building it added three general words to the planner. *Thigh slit* cuts a gown or
+skirt up one leg. *Worn open* cuts a jacket's front away. *Floral* is a new
+two-colour print. Two general fixes came with it: her skin is restored under a
+plunge or a slit, as it is under underwear, and boots go under a gown or skirt
+instead of being cut round its hem. Headpieces, wings, gloves and sashes are
+designed and come next. See [docs/ANIME_FAN_SERVICE.md](docs/ANIME_FAN_SERVICE.md).
+
 ### Body art, clothes first
 
 ![Body art on VRoid Female, each tattoo requested together with its outfit: Waist Filigree above the waistband of a club corset and low-rise mini, a Lace Ornament on an open-back dress, a Tribal Butterfly over Y2K low-rise jeans, and Tribal Wings under a jacket, refused because the jacket covers her upper back](docs/images/body-art-avatar.webp)
@@ -253,7 +317,10 @@ Each tattoo becomes a new look built on that one. A tattoo travels with her: a
 later outfit that covers it drops the decal but keeps the recipe, and the next
 outfit that bares the spot puts it back. Thirty designs ship as vector art
 authored in this repository; raster art comes in only through
-`tools/body_art/install_design.py`. The plan and what was built are in
+`tools/body_art/install_design.py`. An operator signed in to the Studio can also
+upload their own PNG or WebP. It is checked and re-encoded, and any look that
+wears it is private: it never appears in the public wardrobe, the public
+catalogue or a public export. The plan and what was built are in
 [docs/BODY_ART_PLAN.md](docs/BODY_ART_PLAN.md).
 
 #### The neo-tribal lower-back set
@@ -633,11 +700,12 @@ Rinna is never used for gated looks, whatever is passed.
 ### Status
 
 Built and in CI: the core service (milestones M0–M4, M6, M7), Base Body Prep
-and layered outfits, styling and materials, hosiery and suspenders (stockings with feet), the
+and layered outfits, styling and materials, hosiery and suspenders (stockings with feet, briefs over the straps), the
 lingerie blocks and collections (L1–L5, LC), fabrics, elastic tension and
 garment rules (L7–L9), skin restoration and body completion under underwear,
-body art (BA1–BA9, BA11) and the neo-tribal set, the Discoteca
-collection, occasions and the Try-on haul, and the Studio.
+body art (BA1–BA11, custom import included) and the neo-tribal set, the Discoteca
+collection, the Anime Fan Service collection (AN0–AN2), occasions and the Try-on
+haul, and the Studio.
 
 Still open, gathered from every plan and checked against the code in
 [What is left](docs/IMPLEMENTATION_PLAN.md#what-is-left):
@@ -646,7 +714,9 @@ Still open, gathered from every plan and checked against the code in
   verified against the live provider APIs.
 - **Lingerie**: tights with feet, a dart-shaped or shelf-bra bodysuit, and
   promoting the L9 rules from warnings to errors once tuned.
-- **Body art**: hip placements, custom import (BA10).
+- **Body art**: hip placements.
+- **Anime Fan Service**: the accessories (AN4): headpieces, wings, gloves,
+  sashes and braces, capes, jewellery.
 - **Platform**: spring bones for generated garments, PostgreSQL repositories.
 
 ---
@@ -655,10 +725,11 @@ Still open, gathered from every plan and checked against the code in
 
 Stated plainly, because the gallery shows them:
 
-- **Painted clothing is restored only under underwear.** For underwear or
-  swimwear the person asked for, her skin texture is restored under it (SR1).
-  Every other outfit leaves her texture exactly as it is, so a low-cut outfit
-  shows whatever the texture paints under it.
+- **Painted clothing is restored only where something is meant to show skin.**
+  For underwear or swimwear the person asked for, and for an outer garment cut to
+  show skin (a V or plunging neckline, an open back, a slit), her skin texture is
+  restored under it (SR1, AN1). Every other outfit leaves her texture exactly as
+  it is, so a crop top's midriff shows whatever the texture paints there.
 - **Tights stop above the foot.** Stockings can be knitted on over her heel and
   toes (`hosiery.foot: "full"`); plain tights cannot yet.
 - **Jackets and coats are boxy at the shoulder.** Their sleeves are measured
@@ -682,11 +753,16 @@ Stated plainly, because the gallery shows them:
 | [HOSIERY_UPGRADE](docs/HOSIERY_UPGRADE.md) | the design (built): the complete hosiery plan, the `garter_belt.py` analysis, the renderer contract |
 | [HOSIERY_STYLING](docs/HOSIERY_STYLING.md) | the design: suspender belts, stockings and the reveal control |
 | [HOSIERY_PREVIEW](docs/HOSIERY_PREVIEW.md) | the design: flat straps, clip hardware, denier falloff and the web preview backend |
-| [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section, the lower-back set (BA1–BA7 and BA11 built; BA8–BA10 open) |
+| [BODY_ART_PLAN](docs/BODY_ART_PLAN.md) | tattoos as an accessory to exposed skin: the invariants, exposure, projection, the lifecycle, the Studio section, the lower-back set, neo-tribal designs, custom import (BA1–BA11 and NT1 built; the hips open) |
 | [DISCOTECA](docs/DISCOTECA.md) | Sexy Discoteca — All Black: the bodycon dress, four boots built round her posed foot, heels as a stance baked into the rest pose, the Studio's Collection panel |
+| [BODY_SURFACE](docs/BODY_SURFACE.md) | the body surface: collision body, signed clearance, regions as morph targets, XPBD relaxation, material-aware masking, the allowlist and the adult gate — and what is not built |
+| [GARMENT_CONSTRUCTION](docs/GARMENT_CONSTRUCTION.md) | garments cut as panels on her body (cardigan, fitted tee, camisole): her outline, hang, a yoke, set-in sleeves, her skin weights; the planner that reports a garment it could not plan; the matched-camera review tool — and what is not done |
+| [ANATOMY_REFERENCE](docs/ANATOMY_REFERENCE.md) | the anatomical reference bodies (MakeHuman CC0 template calibrated to ANSUR II women) and the one contact body every fit check is to use: sources, licences, what is not modelled, validation criteria; results in [ANATOMY_VALIDATION](docs/ANATOMY_VALIDATION.md) |
+| [ANIME_BEACHWEAR](docs/ANIME_BEACHWEAR.md) | Anime Beachwear: an independent collection of twelve swimsuits — the registry, the `design` request block, the opt-in halter / racerback / cut-out / ruffle construction, honest statuses, the Studio gallery, previews and rights |
+| [ANIME_FAN_SERVICE](docs/ANIME_FAN_SERVICE.md) | Anime Fan Service: twelve original looks in four sections, who sees them, the slit, open-front and floral vocabulary it added, and the accessories designed next (AN4) |
 | [OCCASIONS](docs/OCCASIONS.md) | Occasion → style → look: the Studio's first screen, who sees which look, the `occasion` label on a look, quick changes, and Compare as two viewports |
 | [LINGERIE_COLLECTION](docs/LINGERIE_COLLECTION.md) | collections: the Italian lace bralette with a thong or Brazilian bottom, finishing built on the fitted garment, named components, the product sheet |
-| [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the lingerie design record: fashion-fit forms, ribbon straps, brief, bra and bodysuit blocks (L1–L5 built); feet, fabrics, elastic tension and validation still open |
+| [LINGERIE_UPGRADE_PLAN](docs/LINGERIE_UPGRADE_PLAN.md) | the lingerie design record: fashion-fit forms, ribbon straps, brief, bra and bodysuit blocks, stocking feet, fabrics, elastic tension and garment rules (L1–L9 built) |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | components, layers, extension points |
 | [PIPELINE](docs/PIPELINE.md) | the ten stages and the failure model |
 | [API](docs/API.md) | HTTP reference |

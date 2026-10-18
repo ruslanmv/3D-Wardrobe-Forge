@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "top-fitted-tee-v1",
+  "name": "Fitted Tee",
+  "category": "top",
+  "mesh": "procedural:tee",
+  "coverage": [
+    "chest",
+    "waist",
+    "upperArms"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "shoulders",
+    "upperArms"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "short",
+  "fit": {
+    "bodyClearanceMm": 4.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "fitted tee",
+    "fitted t-shirt",
+    "slim tee",
+    "slim-fit tee"
+  ],
+  "description": "A close tee cut as panels on her: crew neck, short set-in sleeves, to her hip.",
+  "optIn": true
+}

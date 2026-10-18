@@ -224,6 +224,11 @@ class BraSpec:
 
 NECKLINE_STYLES = ("scoop", "plunge", "high", "square")
 BACK_STYLES = ("high", "scoop", "low")
+#: AB2. Openings cut in a one-piece's panels: none, or a window at each side of her waist.
+CUTOUT_STYLES = ("none", "waist-sides")
+#: The straps a block can build. ``halter`` (AB2) meets behind her neck, ``racerback`` between
+#: her shoulder blades.
+STRAP_STYLES = ("shoulder", "halter", "racerback", "none")
 
 
 @dataclass(frozen=True)
@@ -246,8 +251,18 @@ class BodysuitSpec:
     strap_offset: float = 0.85
     armhole: float = 0.75
     back: str = "scoop"
+    #: AB2. ``waist-sides``: an oval window at each side of her waist (a cut-out monokini).
+    cutouts: str = "none"
+    #: AB2. Extra room, millimetres, round the side of her bust above the fold, where a full
+    #: bust bulges past the upper panel between its vertices. 0 (the default) is the panel
+    #: exactly as it was drafted before the field existed.
+    side_ease_mm: float = 0.0
 
     def __post_init__(self):
+        if not 0.0 <= self.side_ease_mm <= 15.0:
+            raise ValueError(f"sideEaseMm {self.side_ease_mm} outside 0-15")
+        if self.cutouts not in CUTOUT_STYLES:
+            raise ValueError(f"cutouts {self.cutouts!r} not one of {CUTOUT_STYLES}")
         if self.neckline not in NECKLINE_STYLES:
             raise ValueError(f"neckline {self.neckline!r} not one of {NECKLINE_STYLES}")
         if self.back not in BACK_STYLES:
@@ -276,8 +291,8 @@ class StrapBlock:
             raise ValueError(f"strap profile {self.profile!r}: only 'ribbon' is built")
         if not 3.0 <= self.width_mm <= 25.0 or not 0.4 <= self.thickness_mm <= 2.5:
             raise ValueError("strap width 3-25 mm and thickness 0.4-2.5 mm")
-        if self.style not in ("shoulder", "halter", "none"):
-            raise ValueError(f"strap style {self.style!r}")
+        if self.style not in STRAP_STYLES:
+            raise ValueError(f"strap style {self.style!r} not one of {STRAP_STYLES}")
 
     def strap_spec(self, elastic=None) -> StrapSpec:
         return StrapSpec(width_m=self.width_mm / 1000.0, thickness_m=self.thickness_mm / 1000.0,
@@ -327,6 +342,6 @@ def validate_block(kind: str, data: dict) -> list[str]:
 
 __all__ = [
     "BACK_COVERAGES", "BACK_COVERAGE_WORDS", "BACK_STYLES", "BLOCK_OF_KIND", "BOTTOM_PRESETS", "BRA_STYLES",
-    "BodysuitSpec", "BraSpec", "NECKLINE_STYLES",
+    "CUTOUT_STYLES", "STRAP_STYLES", "BodysuitSpec", "BraSpec", "NECKLINE_STYLES",
     "BriefSpec", "LingerieBlock", "RISES", "SIDE_TYPES", "StrapBlock", "parse_block", "validate_block",
 ]

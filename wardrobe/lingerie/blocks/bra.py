@@ -36,7 +36,7 @@ from wardrobe.geometry.mesh import Mesh, concatenate
 from wardrobe.lingerie.blocks.frame import BodyFrame
 from wardrobe.lingerie.contract import Anchor
 from wardrobe.lingerie.specs import BraSpec, StrapBlock
-from wardrobe.lingerie.straps import build_ribbon_strap, surface_normal
+from wardrobe.lingerie.straps import build_ribbon_strap, halter_x, nape_anchor, surface_normal
 
 #: Columns across each cup, rows up it, and band rows.
 CUP_COLUMNS = 10
@@ -293,6 +293,22 @@ def build_bra(frame: BodyFrame, spec: BraSpec, straps: StrapBlock, *, name: str 
             back = Anchor(name="wing-strap", side=side, position=back_p, normal=back_n,
                           tangent=np.array([0.0, 1.0, 0.0]), source="band")
             built = build_ribbon_strap(frame.params, front, back, spec=straps.strap_spec(), name="strap")
+            if built is None:
+                continue
+            mesh, strap = built
+            mesh.metadata["placed"] = np.ones(mesh.vertex_count, dtype=bool)
+            pieces.append(mesh)
+            fitted[side] = strap.to_dict()
+    elif straps.style == "halter":
+        # AB2. Each cup's strap runs up beside her neck and round to the back of it, where the
+        # two are tied. The template's ``halter`` style used to build no straps at all.
+        lift = straps.strap_spec().thickness_m / 2
+        for side, cup in cups.items():
+            back = nape_anchor(frame.params, side, cup["sign"], cx, lift)
+            if back is None:
+                continue
+            built = build_ribbon_strap(frame.params, anchors[side], back, spec=straps.strap_spec(),
+                                       name="strap", x_top=halter_x(frame.params))
             if built is None:
                 continue
             mesh, strap = built

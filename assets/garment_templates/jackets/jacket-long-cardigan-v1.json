@@ -3,7 +3,7 @@
   "id": "jacket-long-cardigan-v1",
   "name": "Oversized Cardigan",
   "category": "jacket",
-  "mesh": "procedural:jacket",
+  "mesh": "procedural:open-cardigan",
   "coverage": [
     "chest",
     "waist",
@@ -13,6 +13,8 @@
   ],
   "anchors": [
     "chest",
+    "waist",
+    "hips",
     "shoulders",
     "upperArms",
     "lowerArms"

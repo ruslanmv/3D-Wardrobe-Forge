@@ -192,8 +192,38 @@ class GltfDocument:
             raise UnsupportedAsset(f"accessor {index} is out of range")
         accessor = accessors[index]
         if "sparse" in accessor:
-            raise UnsupportedAsset("sparse accessors are not supported by the native engine")
+            return self._read_sparse(index, accessor)
+        return self._read_dense(index, accessor)
 
+    def _read_sparse(self, index: int, accessor: dict) -> np.ndarray:
+        """SA3. A sparse accessor, densified: its base (or zeros) with the named rows replaced.
+
+        glTF lets a morph target name only the vertices it moves; the anatomical reference bodies'
+        armpit correctives move a few thousand of 214 000, and dense they cost 2.6 MB each.
+        """
+        base = self._read_dense(index, {k: v for k, v in accessor.items() if k != "sparse"}).copy()
+        sparse = accessor["sparse"]
+        count = int(sparse["count"])
+        components = TYPE_SIZES[accessor["type"]]
+        idx_spec, val_spec = sparse["indices"], sparse["values"]
+        rows = self._read_view(idx_spec, np.dtype(COMPONENT_DTYPES[int(idx_spec["componentType"])]), count, 1)
+        values = self._read_view(val_spec, base.dtype, count, components)
+        rows = rows.reshape(-1).astype(np.int64)
+        if rows.size and (rows.min() < 0 or rows.max() >= base.shape[0]):
+            raise UnsupportedAsset(f"accessor {index} has sparse indices out of range")
+        base[rows] = values
+        return base
+
+    def _read_view(self, spec: dict, dtype: np.dtype, count: int, components: int) -> np.ndarray:
+        dtype = np.dtype(dtype).newbyteorder("<")
+        view = (self.gltf.get("bufferViews") or [])[spec["bufferView"]]
+        start = view.get("byteOffset", 0) + spec.get("byteOffset", 0)
+        if start + count * components * dtype.itemsize > len(self.binary):
+            raise UnsupportedAsset("a sparse accessor reads past the end of the buffer")
+        flat = np.frombuffer(self.binary, dtype=dtype, count=count * components, offset=start)
+        return flat.reshape(count, components).copy()
+
+    def _read_dense(self, index: int, accessor: dict) -> np.ndarray:
         count = int(accessor["count"])
         components = TYPE_SIZES[accessor["type"]]
         dtype = np.dtype(COMPONENT_DTYPES[int(accessor["componentType"])]).newbyteorder("<")
@@ -250,6 +280,37 @@ class GltfDocument:
             accessor["min"] = [float(v) for v in array.min(axis=0)]
             accessor["max"] = [float(v) for v in array.max(axis=0)]
 
+        accessors = self.list("accessors")
+        accessors.append(accessor)
+        return len(accessors) - 1
+
+    def add_sparse_accessor(self, values: np.ndarray, *, include_bounds: bool = False) -> int:
+        """SA3. ``values`` stored sparse: no base (zeros), only the rows that are not all zero.
+
+        For a morph target that moves a small part of a large mesh. A target that moves nothing still
+        names one row, as glTF wants a sparse count of at least one.
+        """
+        array = np.ascontiguousarray(values, dtype=np.float32)
+        if array.ndim == 1:
+            array = array.reshape(-1, 1)
+        rows = np.flatnonzero(np.any(array != 0.0, axis=1)).astype(np.uint32)
+        if rows.size == 0:
+            rows = np.zeros(1, dtype=np.uint32)
+        indices = self.add_buffer_view(rows.tobytes())
+        moved = self.add_buffer_view(array[rows].tobytes())
+        accessor: dict[str, Any] = {
+            "componentType": DTYPE_COMPONENTS[np.dtype(np.float32)],
+            "count": int(array.shape[0]),
+            "type": SIZE_TYPES[array.shape[1]],
+            "sparse": {
+                "count": int(rows.size),
+                "indices": {"bufferView": indices, "componentType": DTYPE_COMPONENTS[np.dtype(np.uint32)]},
+                "values": {"bufferView": moved},
+            },
+        }
+        if include_bounds and array.shape[0]:
+            accessor["min"] = [float(v) for v in array.min(axis=0)]
+            accessor["max"] = [float(v) for v in array.max(axis=0)]
         accessors = self.list("accessors")
         accessors.append(accessor)
         return len(accessors) - 1

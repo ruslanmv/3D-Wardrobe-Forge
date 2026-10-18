@@ -17,6 +17,9 @@ from wardrobe.errors import PlanningError
 from wardrobe.hosiery.options import BELT_TEMPLATES
 from wardrobe.providers.base import GarmentProvider
 
+#: How closely a garment must conform to her to be bound as her skin is (AN-A5).
+SECOND_SKIN_CONFORM = 0.95
+
 
 class TemplateGarmentProvider(GarmentProvider):
     name = "template"
@@ -51,6 +54,12 @@ class TemplateGarmentProvider(GarmentProvider):
             key += f"|briefRise={style.brief_rise}"
         if style.whale_tail is not None:  # likewise (P2)
             key += "|whaleTail=" + ",".join(f"{k}={style.whale_tail[k]}" for k in sorted(style.whale_tail))
+        if style.design is not None:  # likewise (AB): a collection design's own construction
+            key += "|design=" + json.dumps(style.design, sort_keys=True)
+        if style.slit:  # likewise (AN1)
+            key += f"|slit={style.slit}"
+        if style.front:  # likewise (AN1)
+            key += f"|front={style.front}"
         if style.collection is not None:  # likewise (LC1): a thong set and a Brazilian set differ
             key += "|collection=" + json.dumps(style.collection, sort_keys=True)
         digest = sha1(key.encode()).hexdigest()[:12]
@@ -83,6 +92,21 @@ class TemplateGarmentProvider(GarmentProvider):
                 "rise": style.rise,
             },
         )
+        # AN-A5. A garment that follows her skin all the way down — underwear, swimwear, bodysuits,
+        # leggings, tights — moves as her skin does, so it is bound with her skin's weights
+        # (wardrobe.engines.native). Dresses and skirts are not: a hem that crosses both legs
+        # must not be split between them, however closely the bodice fits.
+        if (
+            template.fit.conform_below_hips
+            and template.fit.conform >= SECOND_SKIN_CONFORM
+            and template.category not in ("dress", "skirt")
+        ):
+            artifact.metadata["secondSkin"] = True
+        # AN1. Only when asked for: every other garment's metadata is exactly what it was.
+        if style.slit:
+            artifact.metadata["slit"] = style.slit
+        if style.front:
+            artifact.metadata["front"] = style.front
         # Hosiery: the outfit's design, and the belt's style, for the builders that read them.
         # Absent for every other garment, so their metadata is exactly what it was.
         if plan.hosiery is not None:
@@ -125,6 +149,15 @@ class TemplateGarmentProvider(GarmentProvider):
                 artifact.metadata["lingerie"] = merge_lingerie(template.lingerie,
                                                                style.collection.get("lingerie"))
                 artifact.metadata["collection"] = dict(style.collection)
+        if style.design is not None:
+            # AB. A collection design: its construction for the builders, and its pattern-block
+            # fields over the template's. Absent for every other garment.
+            artifact.metadata["design"] = dict(style.design)
+            if template.lingerie is not None and style.design.get("lingerie"):
+                from wardrobe.lingerie.collections import merge_lingerie
+
+                artifact.metadata["lingerie"] = merge_lingerie(artifact.metadata.get("lingerie"),
+                                                               style.design["lingerie"])
         if template.id in BELT_STYLE_OF_TEMPLATE:
             artifact.metadata["beltStyle"] = BELT_STYLE_OF_TEMPLATE[template.id]
         return artifact

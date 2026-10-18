@@ -1,0 +1,10 @@
+{
+  "schema": "wardrobe.bodySurface.v1",
+  "profileId": "collision-reference",
+  "title": "Collision body (reference)",
+  "capability": "body_collision",
+  "authorization": {"requiresAdultDeclaration": false, "allowPromptOverride": false},
+  "regions": {},
+  "collision": {"representation": "mesh", "outwardMarginMm": 1.0, "detailCutoffMm": 3.0},
+  "provenance": {"assetSet": "none: derived from the avatar's own skin", "license": "n/a"}
+}

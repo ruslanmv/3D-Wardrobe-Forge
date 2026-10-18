@@ -837,6 +837,9 @@ def crotch_gusset(piece: Mesh, *, name: str) -> Mesh | None:
     gusset.compute_normals()
     gusset.metadata["placed"] = np.ones(gusset.vertex_count, dtype=bool)
     gusset.metadata["gusset"] = np.ones(gusset.vertex_count, dtype=bool)
+    # SL1. Which section's rim it closes, so the shell can seat it on that rim once fitted
+    # (wardrobe.engines.shell._seat_gussets).
+    gusset.metadata["gussetRims"] = {name: section_ranges(piece)[0][0]}
     return gusset
 
 
@@ -1143,10 +1146,12 @@ def _measured_halter(params: FitParameters, side: float, half_w: float, top_y: f
 
 
 def build_legwear(params: FitParameters, *, top_y: float, name: str = "legwear",
-                  ankle: bool = False) -> list[Mesh]:
+                  ankle: bool = False, ankle_lift: float | None = None) -> list[Mesh]:
     """Thigh-high stockings: a close tube per leg, ankle to ``top_y``.
 
     ``ankle`` stops at the ankle rather than over the foot — leggings, a catsuit.
+    ``ankle_lift`` (SL1), a share of her height, stops it that far above the ankle joint
+    instead: a 7/8 legging ends on her lower calf.
 
     No tube starts above her crotch. Leggings and a catsuit asked for one at
     the hip joint, where a leg is still pelvis: the top ring went round her
@@ -1164,7 +1169,8 @@ def build_legwear(params: FitParameters, *, top_y: float, name: str = "legwear",
         t = (hip_p[1] - top_y) / max(hip_p[1] - knee_p[1], 1e-6)
         top = hip_p + (knee_p - hip_p) * float(np.clip(t, 0.0, 1.0))
         thigh = max(params.measurements.hip_width_m * 0.2, 0.04) + params.clearance_m
-        end = foot_p + np.array([0.0, params.height * (0.045 if ankle else 0.02), 0.0])
+        lift = ankle_lift if ankle_lift is not None else (0.045 if ankle else 0.02)
+        end = foot_p + np.array([0.0, params.height * lift, 0.0])
         # A point 3.5 cm down the thigh, so the first ring of the tube is the
         # stocking's top band: elastic, and opaque on a fishnet or sheer stocking.
         down = (knee_p - top) / max(float(np.linalg.norm(knee_p - top)), 1e-6)
@@ -1181,6 +1187,230 @@ def build_legwear(params: FitParameters, *, top_y: float, name: str = "legwear",
         ]
         meshes.append(tube)
     return meshes
+
+
+#: SL1. Seamless gym leggings, as the high-waist "scrunch" sets are cut: a band to her natural
+#: waist whose lower edge dips into a V at centre front and centre back (the crossover seam),
+#: a hip panel meeting it on the same curve, and a 7/8 leg. Shares of her height.
+SEAMLESS_TOP_ABOVE_WAIST = 0.012
+SEAMLESS_BAND_AT_SIDE = 0.04
+SEAMLESS_V_DEPTH = 0.04
+SEAMLESS_V_HALF_WIDTH = 1.25  # radians either side of the centre the V reaches across
+SEAMLESS_ANKLE_LIFT = 0.075
+SEAMLESS_BAND_SECTION = "skirt-waistband"  # the shaded band route (wardrobe.geometry.waistband)
+SEAMLESS_PANEL_SECTION = "seamless-panel"
+
+
+def build_seamless_leggings(params: FitParameters) -> list[Mesh]:
+    """SL1. High-waist seamless leggings: V-crossover band, hip panel, gusset, 7/8 legs.
+
+    The band and the panel are separate pieces cut on one curve — the band's lower edge and
+    the panel's upper edge are the same function of the angle round her — so after fitting,
+    which places both by the same radial index, they meet exactly. The band is the waistband
+    section, which assembly draws a shade darker: the crossover reads as a seam, not a tube.
+    """
+    thigh = max(params.hip_y - params.knee_y, 0.05)
+    h = params.height
+    top = params.waist_y + h * SEAMLESS_TOP_ABOVE_WAIST
+    side = top - h * SEAMLESS_BAND_AT_SIDE
+    depth = h * SEAMLESS_V_DEPTH
+    bottom_y = crotch_y(params, params.hip_y - thigh * 0.12)
+
+    def vee(phi):
+        front = _plateau(phi, 0.0, SEAMLESS_V_HALF_WIDTH)
+        back = _plateau(_wrap(phi - np.pi), 0.0, SEAMLESS_V_HALF_WIDTH)
+        return -depth * np.maximum(front, back)
+
+    band = trim(build_band(params, y_bottom=side - depth, y_top=top, rows=7, name=SEAMLESS_BAND_SECTION),
+                params, y_bottom=side - depth, y_top=top, bottom=lambda phi: depth + vee(phi))
+    # Lofted at the usual 3 cm rows and 32 columns. A panel lofted at 6 mm and 160 columns, so
+    # the gathers would have vertices to stand on, came out of conform terraced in horizontal
+    # ridges front and back; the gathers get their vertices after fitting instead.
+    panel = trim(build_band(params, y_bottom=bottom_y, y_top=side, rows=9, name=SEAMLESS_PANEL_SECTION),
+                 params, y_bottom=bottom_y, y_top=side, top=vee)
+    gusset = crotch_gusset(panel, name="leggings-gusset")
+    legs = build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="leggings", ankle=True,
+                         ankle_lift=SEAMLESS_ANKLE_LIFT)
+    return [band, panel, *([gusset] if gusset is not None else []), *legs]
+
+
+#: SL1. The back scrunch: gathers along her centre-back seam over the seat, standing out of
+#: the fitted fabric (never into her). Height, wavelength and reach, metres.
+SCRUNCH_AMPLITUDE_M = 0.0022
+SCRUNCH_WAVELENGTH_M = 0.018
+SCRUNCH_REACH_M = 0.035
+SCRUNCH_SLANT = 0.9  # the gathers rise toward her hips, as the seam pulls them
+#: Gathers fade to nothing this far from the panel's edges: the band and the legs meet the
+#: panel on its fitted edge, and a gather that moved that edge would open a gap there.
+SCRUNCH_EDGE_M = 0.025
+#: Triangles within this many reaches of the seam are split, three times over (3 cm to under
+#: 4 mm): enough vertices for an 18 mm gather, and none where no gather is.
+SCRUNCH_ZONE_REACHES = 3.0
+SCRUNCH_LEVELS = 3
+#: Positions closer than this are one point: the loft's duplicated UV seam is at her back,
+#: on the very line the scrunch follows, and each twin must move exactly as the other.
+WELD_M = 1e-6
+
+
+def _weld_keys(points: np.ndarray) -> np.ndarray:
+    """One id per distinct position, so seam twins answer as one vertex."""
+    _, keys = np.unique(np.round(points / WELD_M).astype(np.int64), axis=0, return_inverse=True)
+    return keys.reshape(-1)
+
+
+def _welded(values: np.ndarray, keys: np.ndarray) -> np.ndarray:
+    """Average a per-vertex vector over seam twins, then normalise it."""
+    total = np.zeros((int(keys.max()) + 1, 3))
+    np.add.at(total, keys, values)
+    out = total[keys]
+    return out / np.maximum(np.linalg.norm(out, axis=1, keepdims=True), 1e-12)
+
+
+def _face_normals(points: np.ndarray, tris: np.ndarray, keys: np.ndarray) -> np.ndarray:
+    """Area-weighted vertex normals over welded positions (twins agree)."""
+    face = np.cross(points[tris[:, 1]] - points[tris[:, 0]], points[tris[:, 2]] - points[tris[:, 0]])
+    acc = np.zeros_like(points)
+    for corner in range(3):
+        np.add.at(acc, tris[:, corner], face)
+    return _welded(acc, keys)
+
+
+def _refine(mesh: Mesh, first: int, count: int, chosen: np.ndarray,
+            levels: int) -> tuple[Mesh, np.ndarray, int]:
+    """Split the ``chosen`` triangles of one section into four, ``levels`` times over.
+
+    Each new vertex is an edge midpoint, so the refined surface is exactly the fitted one —
+    nothing moves until a pass moves it, and clearance stays what it was measured as. After
+    the first level every child is split again, never only some, so the only T-junctions are
+    on the outer edge of the chosen zone, where the caller moves nothing. New vertices are
+    appended; the section's triangles are replaced in place and every later section shifted.
+    Returns the mesh, a mask of its triangles that came from splitting, and the section's
+    new triangle count.
+    """
+    tris = mesh.indices.reshape(-1, 3).astype(np.int64)
+    head, body, tail = tris[:first], tris[first:first + count], tris[first + count:]
+    keep, split = body[~chosen], body[chosen]
+    points = mesh.positions.astype(np.float64)
+    uvs = None if mesh.uvs is None else mesh.uvs.astype(np.float64)
+    normals = None if mesh.normals is None else mesh.normals.astype(np.float64)
+    for _ in range(levels):
+        edges = np.sort(np.concatenate([split[:, [0, 1]], split[:, [1, 2]], split[:, [2, 0]]]), axis=1)
+        unique, inverse = np.unique(edges, axis=0, return_inverse=True)
+        inverse = inverse.reshape(-1)
+        mid = points.shape[0] + np.arange(unique.shape[0])
+        points = np.vstack([points, 0.5 * (points[unique[:, 0]] + points[unique[:, 1]])])
+        if uvs is not None:
+            uvs = np.vstack([uvs, 0.5 * (uvs[unique[:, 0]] + uvs[unique[:, 1]])])
+        if normals is not None:
+            n = normals[unique[:, 0]] + normals[unique[:, 1]]
+            normals = np.vstack([normals, n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)])
+        k = split.shape[0]
+        ab, bc, ca = mid[inverse[:k]], mid[inverse[k:2 * k]], mid[inverse[2 * k:]]
+        a, b, c = split[:, 0], split[:, 1], split[:, 2]
+        split = np.concatenate([np.stack([a, ab, ca], 1), np.stack([ab, b, bc], 1),
+                                np.stack([ca, bc, c], 1), np.stack([ab, bc, ca], 1)])
+    added = points.shape[0] - mesh.vertex_count
+    new_count = keep.shape[0] + split.shape[0]
+    sections = []
+    for name, f, c in section_ranges(mesh):
+        if f == first and c == count:
+            sections.append((name, f, new_count))
+        else:
+            sections.append((name, f + (new_count - count if f > first else 0), c))
+    metadata = dict(mesh.metadata)
+    metadata["sections"] = sections
+    for key in ("placed", "gusset", "rigidFoot"):  # wardrobe.geometry.mesh.VERTEX_MASKS
+        if metadata.get(key) is not None:
+            metadata[key] = np.concatenate([np.asarray(metadata[key], dtype=bool),
+                                            np.zeros(added, dtype=bool)])
+    out = Mesh(
+        positions=points.astype(np.float32),
+        indices=np.concatenate([head, keep, split, tail]).reshape(-1).astype(np.uint32),
+        normals=None if normals is None else normals.astype(np.float32),
+        uvs=None if uvs is None else uvs.astype(np.float32),
+        joints=None if mesh.joints is None else np.vstack(
+            [mesh.joints, np.repeat(mesh.joints[:1], added, axis=0)]),
+        weights=None if mesh.weights is None else np.vstack(
+            [mesh.weights, np.repeat(mesh.weights[:1], added, axis=0)]),
+        metadata=metadata,
+    )
+    mask = np.zeros(out.triangle_count, dtype=bool)
+    mask[first + keep.shape[0]:first + new_count] = True
+    return out, mask, new_count
+
+
+def scrunch_ruching(mesh: Mesh, params: FitParameters) -> Mesh:
+    """Gather the fitted hip panel along her centre back, after fitting (SL1).
+
+    Built before fitting, gathers would be pressed flat by conform and the radial smoothing
+    (the same reason a skirt's waistband is added afterwards), and a panel lofted fine enough
+    to carry them terraces under conform. So the fitted panel is split finer round the seam
+    only (``_refine``, which moves nothing), and each vertex there moves out along her
+    surface normal by a ripple whose crests run diagonally up and out from the seam — a V
+    pointing down it — fading with distance from the seam and from the panel's edges.
+    Outward only, so the clearance it was fitted with only grows.
+
+    Shading: the refined zone keeps the fitted surface's smooth normals, interpolated, and
+    only the gathers' own slope is added to them. Normals recomputed from the split facets
+    would show the 3 cm facets the coarse panel is smoothed over everywhere else.
+    """
+    ranges = [(f, c) for n, f, c in section_ranges(mesh) if n == SEAMLESS_PANEL_SECTION]
+    if not ranges or mesh.positions.shape[0] == 0:
+        return mesh
+    first, count = ranges[0]
+    if mesh.normals is None:
+        mesh.compute_normals()
+    hips = params.measurements.bone_positions.get("hips")
+    cx, cz = (float(hips[0]), float(hips[2])) if hips is not None else (0.0, 0.0)
+
+    def seam_distance(p: np.ndarray) -> np.ndarray:
+        """Metres round her from the centre-back line."""
+        phi = _wrap(front_angle(p, params) - np.pi)
+        return np.abs(phi) * np.hypot(p[:, 0] - cx, p[:, 2] - cz)
+
+    tris = mesh.indices.reshape(-1, 3)
+    panel = tris[first:first + count]
+    centroids = mesh.positions[panel].astype(np.float64).mean(axis=1)
+    chosen = seam_distance(centroids) < SCRUNCH_ZONE_REACHES * SCRUNCH_REACH_M
+    if not chosen.any():
+        return mesh
+    # The panel's open edges, twins welded, before any splitting: where gathers must fade out.
+    keys = _weld_keys(mesh.positions.astype(np.float64))
+    welded = keys[panel]
+    edges = np.sort(np.concatenate([welded[:, [0, 1]], welded[:, [1, 2]], welded[:, [2, 0]]]), axis=1)
+    unique, uses = np.unique(edges, axis=0, return_counts=True)
+    rim_keys = np.unique(unique[uses == 1].reshape(-1))
+    rim = mesh.positions[np.isin(keys, rim_keys)].astype(np.float64)
+
+    mesh, split_tris, _ = _refine(mesh, first, count, chosen, SCRUNCH_LEVELS)
+    tris = mesh.indices.reshape(-1, 3)
+    points = mesh.positions.astype(np.float64)
+    keys = _weld_keys(points)
+    smooth = _welded(mesh.normals.astype(np.float64), keys)
+    # Moved: vertices of split triangles only, never a vertex an unsplit triangle also uses
+    # (the zone's outer T-junctions stay closed).
+    inside = np.zeros(points.shape[0], dtype=bool)
+    inside[tris[split_tris].reshape(-1)] = True
+    outside = np.zeros(points.shape[0], dtype=bool)
+    outside[tris[~split_tris].reshape(-1)] = True
+    moved = np.flatnonzero(inside & ~outside)
+    p = points[moved]
+    across = seam_distance(p)
+    edge = np.min(np.linalg.norm(p[:, None, :] - rim[None, :, :], axis=2), axis=1) \
+        if rim.shape[0] else np.full(p.shape[0], SCRUNCH_EDGE_M)
+    t = np.clip(edge / SCRUNCH_EDGE_M, 0.0, 1.0)
+    fade = np.exp(-(across / SCRUNCH_REACH_M) ** 2) * t * t * (3.0 - 2.0 * t)
+    wave = 0.5 + 0.5 * np.cos(2 * np.pi * (p[:, 1] - SCRUNCH_SLANT * across) / SCRUNCH_WAVELENGTH_M)
+    flat = _face_normals(points, tris, keys)
+    points[moved] += smooth[moved] * (SCRUNCH_AMPLITUDE_M * fade * wave)[:, None]
+    gathered = _face_normals(points, tris, keys)
+    normals = mesh.normals.astype(np.float64)
+    zone = np.flatnonzero(inside)
+    shaded = smooth[zone] + (gathered[zone] - flat[zone])
+    normals[zone] = shaded / np.maximum(np.linalg.norm(shaded, axis=1, keepdims=True), 1e-12)
+    mesh.positions = points.astype(np.float32)
+    mesh.normals = normals.astype(np.float32)
+    return mesh
 
 
 def build_shoes(params: FitParameters, *, name: str = "shoes") -> list[Mesh]:
@@ -1236,12 +1466,16 @@ HAUL_KINDS = frozenset(
     {
         "crop-top", "tube-top", "bra", "briefs", "bikini", "one-piece", "swim-dress",
         "slip-dress", "shorts", "cropped-jacket", "legwear", "leggings", "catsuit", "tights",
+        # SL1: high-waist seamless gym leggings, V waistband and back scrunch
+        "seamless-leggings",
         # P1: a boned top to her waist
         "corset",
         # hosiery foundations (wardrobe.hosiery.garter_belt)
         "suspender-belt", "waspie", "guepiere",
         # the liner a skirt is worn over (S2, wardrobe.pipeline.generate_garment.with_skirt_liner)
         "slip-shorts",
+        # G6: cut as panels on her measured body (wardrobe.geometry.panels)
+        "camisole", "open-cardigan", "tee",
     }
 )
 
@@ -1324,6 +1558,75 @@ def neckline_profile(style: str, params: FitParameters, span: float):
         dip, side = min(0.03 * h, span * 0.4), min(0.035 * h, span * 0.5)
         return lambda phi: -dip * _plateau(phi, 0.0, 0.32) - side * (1.0 - _plateau(phi, 0.9, 0.7))
     return None
+
+
+#: AB2. A ruffled hem: this many flutes round her, standing out this far at the hem (graded by
+#: her height over 1.68 m) and scalloped this much up and down; the flare grows from nothing at
+#: the skirt's top as the square of the way down, so the yoke stays smooth on her hips.
+RUFFLE_FLUTES = 12
+RUFFLE_OUT_M = 0.03
+RUFFLE_SCALLOP_M = 0.004
+
+
+def ruffle_hem(mesh: Mesh, params: FitParameters, *, y_top: float, y_bottom: float) -> Mesh:
+    """Flute a skirt toward its hem: a ruffle, as a swimdress's flounce is cut (AB2).
+
+    Opt-in by a design (``design.hem == "ruffle"``); every other skirt is built as it was.
+    Each vertex moves out from her axis by a wave round her that grows toward the hem, and
+    the hem itself rises and falls with the same wave, so the flutes read in silhouette and
+    at the edge. Outward only: the clearance passes that follow never meet a fold inside her.
+    """
+    points = mesh.positions.astype(np.float64)
+    hips = params.measurements.bone_positions.get("hips")
+    cx, cz = (float(hips[0]), float(hips[2])) if hips is not None else (0.0, 0.0)
+    grade = params.height / 1.68
+    t = np.clip((y_top - points[:, 1]) / max(y_top - y_bottom, 1e-6), 0.0, 1.0)
+    phi = np.arctan2(points[:, 0] - cx, params.forward * (points[:, 2] - cz))
+    wave = 0.5 + 0.5 * np.cos(RUFFLE_FLUTES * phi)
+    radial = np.stack([points[:, 0] - cx, np.zeros(len(points)), points[:, 2] - cz], axis=1)
+    radial /= np.maximum(np.linalg.norm(radial, axis=1, keepdims=True), 1e-9)
+    points += radial * (RUFFLE_OUT_M * grade * t * t * wave)[:, None]
+    points[:, 1] += RUFFLE_SCALLOP_M * grade * t ** 3 * np.cos(RUFFLE_FLUTES * phi)
+    mesh.positions = points.astype(np.float32)
+    return mesh.compute_normals()
+#: AN1. A slit rises to this share of the way from her knee to her hip, over the front of her
+#: left thigh, and is this wide at the hem (half-width, radians round her body).
+SLIT_TOP_FRACTION = 0.7
+SLIT_ANGLE = 0.5
+SLIT_HALF_WIDTH = 0.42
+SLIT_MIN_RISE_M = 0.1
+#: AN1. An open front: the V's half-width at the top edge, and the closed strip at the centre.
+OPEN_FRONT_RAMP = 0.62
+OPEN_FRONT_FLAT = 0.06
+
+
+def slit_profile(style: str, params: FitParameters, hem_y: float):
+    """Bottom-edge offset for a slit up one leg, or None (AN1).
+
+    The skirt is lofted from horizontal rings, so a slit is cut the way a neckline is
+    (``trim``): the hem is raised in a narrow notch over the front of her left thigh,
+    to high on it. Not a seam that parts — a notch, widest at the hem and closing to a
+    point at the top, which is how a slit stands open on a gown in a still pose. A hem
+    within ``SLIT_MIN_RISE_M`` of the slit's top (a mini) would get a vent, not a slit,
+    and gets nothing.
+    """
+    if style != "high":
+        return None
+    top = params.knee_y + (params.hip_y - params.knee_y) * SLIT_TOP_FRACTION
+    rise = top - hem_y
+    if rise < SLIT_MIN_RISE_M:
+        return None
+    # Her left: +x when she faces +z, -x when she faces -z (front_angle is in x, not her).
+    angle = SLIT_ANGLE * (1.0 if params.forward >= 0 else -1.0)
+    return lambda phi: rise * _plateau(_wrap(phi - angle), 0.0, SLIT_HALF_WIDTH)
+
+
+def open_front_profile(style: str, span: float):
+    """Top-edge offset for a jacket worn open: a V from her collar to the hem (AN1)."""
+    if style != "open":
+        return None
+    depth = span - MIN_SPAN_M * 1.5
+    return lambda phi: -depth * _plateau(phi, OPEN_FRONT_FLAT, OPEN_FRONT_RAMP)
 
 
 def back_profile(style: str, span: float):
@@ -1615,6 +1918,16 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         return [body, *top_straps(params, top_y=bust_top, style=straps or top_straps_default,
                                   underbust_y=underbust)]
 
+    if kind == "camisole":
+        # G6. Front and back panels round her measured outline, a neckline, underarms and flat
+        # straps (wardrobe.geometry.panels). Unmeasured, the cropped cami's band and straps.
+        from wardrobe.geometry.panels import build_camisole  # it builds on this module
+
+        built = build_camisole(params, cropped=str(meta.get("hem") or "") == "crop")
+        if built is not None:
+            return built
+        kind = "crop-top"
+        straps = straps or "shoulder"
     if kind == "crop-top":
         top_y = params.top_edge(0.6)
         bottom_y = params.waist_y + torso * (0.38 + (1.0 - min(scale, 1.0)) * 0.6)
@@ -1675,7 +1988,10 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         return one_piece()
     if kind == "swim-dress":
         hem = params.hip_y - thigh * 0.4 * scale
-        return [*one_piece(), build_skirt(params, y_top=params.hip_y, y_bottom=hem, flare=max(flare, 1.3))]
+        skirt = build_skirt(params, y_top=params.hip_y, y_bottom=hem, flare=max(flare, 1.3))
+        if (meta.get("design") or {}).get("hem") == "ruffle":
+            skirt = ruffle_hem(skirt, params, y_top=params.hip_y, y_bottom=hem)
+        return [*one_piece(), skirt]
     if kind == "slip-dress":
         bodice = build_band(params, y_bottom=params.hip_y, y_top=bust_top, rows=6, name="slip-bodice")
         bodice = cut_top(bodice, params.hip_y, bust_top)
@@ -1701,9 +2017,13 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         inseam = min(0.55 * scale, 0.55) if scale < 1.0 else 0.55
         return build_trousers(params, hem_y=max(hem_y, params.hip_y - thigh * max(inseam, 0.2)), flare=flare)
     if kind == "cropped-jacket":
-        jacket = build_band(params, y_bottom=params.waist_y - rise * 0.1,
-                            y_top=params.chest_y + (params.shoulder_y - params.chest_y) * 0.68,
+        bottom_y = params.waist_y - rise * 0.1
+        top_y = params.chest_y + (params.shoulder_y - params.chest_y) * 0.68
+        jacket = build_band(params, y_bottom=bottom_y, y_top=top_y,
                             looseness=1.06 + (flare - 1.0) * 0.3, name="cropped-jacket")
+        opening = open_front_profile(str(meta.get("front") or ""), top_y - bottom_y)
+        if opening is not None:
+            jacket = trim(jacket, params, y_bottom=bottom_y, y_top=top_y, top=opening)
         return [jacket, *build_sleeves(params, length="long", thickness=1.4)]
     if kind in BELT_KINDS:
         return build_belt(params, kind=kind)
@@ -1725,6 +2045,12 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
             *([gusset] if gusset is not None else []),
             *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="leggings", ankle=True),
         ]
+    if kind == "seamless-leggings":
+        # SL2. One piece on her measured outline when the fitter has measured her; the SL1
+        # pieces otherwise (a direct build_garment call).
+        from wardrobe.geometry.lower_panels import build_leggings_panel  # it imports panels
+
+        return build_leggings_panel(params) or build_seamless_leggings(params)
     if kind == "tights":
         # Leggings' shape, down over the feet, and a layer rather than a garment
         # of its own: KIND_REGIONS leaves tights out, so they go under her skirt
@@ -1793,11 +2119,16 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
 
     if category == "dress":
         top_y = params.top_edge(0.6)
+        skirt = build_skirt(params, y_top=params.hip_y + 1e-3, y_bottom=hem_y, flare=flare,
+                            name="dress-skirt", shape=skirt_shape(params, silhouette, flare),
+                            join=params.hip_half)
+        slit = slit_profile(str(params.metadata.get("slit") or ""), params, hem_y)
+        if slit is not None:
+            skirt = trim(skirt, params, y_bottom=hem_y, y_top=params.hip_y + 1e-3, bottom=slit)
         sections = [
             _cut_bodice(build_bodice(params, y_top=top_y, y_bottom=params.hip_y, name="dress-bodice"),
                         params, params.hip_y, top_y),
-            build_skirt(params, y_top=params.hip_y + 1e-3, y_bottom=hem_y, flare=flare, name="dress-skirt",
-                        shape=skirt_shape(params, silhouette, flare), join=params.hip_half),
+            skirt,
         ]
         sections += build_sleeves(params, length=params.sleeve_length)
         straps = str(params.metadata.get("straps") or "")
@@ -1807,10 +2138,14 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
             sections += top_straps(params, top_y=top_y, style=straps, underbust_y=params.chest_y)
 
     elif category == "skirt":
-        sections = [build_skirt(params, y_top=skirt_top(params), y_bottom=hem_y, flare=flare,
-                                shape=skirt_shape(params, silhouette, flare),
-                                band_m=float(params.metadata.get("waistbandMm") or 0.0) / 1000.0,
-                                even=bool(params.metadata.get("pleats")))]
+        skirt = build_skirt(params, y_top=skirt_top(params), y_bottom=hem_y, flare=flare,
+                            shape=skirt_shape(params, silhouette, flare),
+                            band_m=float(params.metadata.get("waistbandMm") or 0.0) / 1000.0,
+                            even=bool(params.metadata.get("pleats")))
+        slit = slit_profile(str(params.metadata.get("slit") or ""), params, hem_y)
+        if slit is not None:
+            skirt = trim(skirt, params, y_bottom=hem_y, y_top=skirt_top(params), bottom=slit)
+        sections = [skirt]
 
     elif category in {"top", "shirt", "blouse"}:
         top_y = params.top_edge(0.6)
@@ -1823,6 +2158,32 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
             )
         ]
         sections += build_sleeves(params, length=params.sleeve_length or "short")
+
+    elif category == "open-cardigan":
+        # G6. Two open fronts and a back hanging from her bust and shoulder blades to the
+        # template's length, a yoke over her shoulders, set-in sleeves. Unmeasured (a direct
+        # call without the fitter's points), the jacket shell below.
+        from wardrobe.geometry.panels import build_open_cardigan  # it builds on this module
+
+        built = build_open_cardigan(params, hem_y=hem_y)
+        sections = [built] if built is not None else [
+            build_bodice(params, y_top=params.chest_y + (params.shoulder_y - params.chest_y) * 0.68,
+                         y_bottom=hem_y, looseness=1.06 + (flare - 1.0) * 0.3, name="jacket"),
+            *build_sleeves(params, length="long", thickness=1.45),
+        ]
+
+    elif category == "tee":
+        # G6. A fitted tee: a closed body to her hip, a crew neck, short set-in sleeves
+        # (wardrobe.geometry.panels). Unmeasured, the original top shell.
+        from wardrobe.geometry.panels import build_fitted_tee  # it builds on this module
+
+        bottom_y = params.hip_y - (params.hip_y - params.knee_y) * 0.12
+        built = build_fitted_tee(params, hem_y=bottom_y)
+        sections = [built] if built is not None else [
+            _cut_bodice(build_bodice(params, y_top=params.top_edge(0.6), y_bottom=bottom_y, name="top"),
+                        params, bottom_y, params.top_edge(0.6)),
+            *build_sleeves(params, length="short"),
+        ]
 
     elif category == "jacket":
         sections = [

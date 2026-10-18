@@ -135,11 +135,12 @@ async def test_the_proposal_crop_top_and_jeans_then_only_the_top_changes(orchest
     assert set(before) == {"top-tube-v1", "shorts-slip-v1"}  # clothes, not underwear: no declaration needed
 
     second, changed = await dress(orchestrator, store, look, "pink fitted tee", ensureFoundation=True)
-    assert [g.template_id for g in second.plan.garments] == ["top-tee-v1"]  # nothing added: she has one
+    # G6: "fitted tee" is the Fitted Tee, cut as panels on her; nothing added: she has a foundation.
+    assert [g.template_id for g in second.plan.garments] == ["top-fitted-tee-v1"]
     assert second.fit_report.replaced_garments == ["tops"]
     assert foundation(changed) == before  # the same foundation, carried
     names = [name for _slot, _role, name in worn(changed)]
-    assert "Blue Straight Jeans" in names and "Pink Basic Tee" in names
+    assert "Blue Straight Jeans" in names and "Pink Fitted Tee" in names
     assert not any("Crop" in name for name in names)
 
 
