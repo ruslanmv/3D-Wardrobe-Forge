@@ -91,11 +91,23 @@ def seat_gusset(positions: np.ndarray, grid: list[list[int]], points: np.ndarray
         along = normal * [0.0, 1.0, 1.0]
         along /= np.maximum(np.linalg.norm(along, axis=1, keepdims=True), 1e-9)
         positions[index] = p + along * push[:, None]
+    for _ in range(ITERATIONS):  # whatever that could not clear, out along her own normal
+        p = positions[index]
+        signed, normal = _depth(p, pts, nrm)
+        push = np.clip(clearance - signed, 0.0, None)
+        if push.max() < 1e-5:
+            break
+        positions[index] = p + normal * push[:, None]
     return positions
 
 
+#: A gusset row narrower than this has collapsed: a reference body's narrows to about 10 mm between
+#: her thighs, as it should, and AvatarSample A's micro thong's rows went to nothing.
+COLLAPSED_M = 0.004
+
+
 def _keep_width(positions: np.ndarray, rows: list[list[int]]) -> None:
-    """No interior row narrower than the straight taper between its seams. In place.
+    """No interior row collapsed below the straight taper between its seams, none crossed. In place.
 
     Pushed out of two thighs that touch, a gusset's sides met at her midline: its rows went from
     the front seam's 58 mm to nothing two thirds of the way back (AvatarSample A's micro thong).
@@ -117,7 +129,9 @@ def _keep_width(positions: np.ndarray, rows: list[list[int]]) -> None:
         have = width(row)
         xs = positions[row][:, 0]
         crossed = (xs[-1] - xs[0]) * across < 0
-        if have >= target and not crossed:
+        # Only a collapsed or crossed row: a row that narrows as it follows her (over the pelvic
+        # outlet of a reference body) is right, and widened it went into her.
+        if have >= COLLAPSED_M and not crossed:
             continue
         target = max(target, have)
         centre = float(xs.mean())
