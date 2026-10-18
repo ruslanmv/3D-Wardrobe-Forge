@@ -144,7 +144,7 @@ async def test_the_proposal_crop_top_and_jeans_then_only_the_top_changes(orchest
     assert not any("Crop" in name for name in names)
 
 
-async def test_an_avatar_declared_adult_gets_bralette_and_briefs(orchestrator, store, body):
+async def test_an_avatar_declared_adult_gets_a_full_cup_bra_and_briefs(orchestrator, store, body):
     record, look = await dress(
         orchestrator,
         store,
@@ -153,12 +153,13 @@ async def test_an_avatar_declared_adult_gets_bralette_and_briefs(orchestrator, s
         adult=True,
         ensureFoundation=True,
     )
+    # A full-cup bra, not the triangle bralette: on a low, wide bust its cups were strips.
     assert [g.template_id for g in record.plan.garments] == [
-        "under-bralette-v2",
+        "under-bra-full-v2",
         "under-briefs-v2",
         "dress-mini-bodycon-v1",
     ]
-    assert set(foundation(look)) == {"under-bralette-v2", "under-briefs-v2"}
+    assert set(foundation(look)) == {"under-bra-full-v2", "under-briefs-v2"}
 
 
 async def test_a_bikini_replaces_the_foundation_rather_than_going_over_it(orchestrator, store, body):
@@ -174,7 +175,7 @@ async def test_a_bikini_replaces_the_foundation_rather_than_going_over_it(orches
         orchestrator, store, look, "red triangle bikini", adult=True, ensureFoundation=True
     )
     assert all(g.category == "swimwear" for g in record.plan.garments)  # no neutral half under it
-    assert not {"under-bralette-v2", "under-briefs-v2"} & set(foundation(swim))
+    assert not {"under-bra-full-v2", "under-briefs-v2"} & set(foundation(swim))
 
 
 async def test_a_dress_length_top_comes_off_under_a_skirt(orchestrator, store, body):

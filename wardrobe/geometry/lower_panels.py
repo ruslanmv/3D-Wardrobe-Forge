@@ -22,7 +22,7 @@ the panel tops are (``wardrobe.geometry.panels``):
   line a gusset rests on. Each leg's top loop is half the trunk's bottom row and that curve,
   shared, so the legs and the trunk meet in rows of vertices, not edges that touch.
 * **Leg rings** below, each round that leg's own centre at its height, at the same angles as
-  its top loop, down to a 7/8 hem above the ankle.
+  its top loop, down to a hem at her ankle.
 * **The V crossover band** is the same grid above a curve that dips to a V front and back. Its
   lower edge is a row of the grid, so band and leggings meet exactly; it is its own piece only
   so assembly draws it a shade darker, and it stands a hair proud a row above its seam.
@@ -58,11 +58,19 @@ V_HALF_WIDTH = 1.25
 V_FLOOR_SHARE = 0.5
 #: How far the band stands proud of the leggings, a row above its seam (it is folded double).
 BAND_PROUD_M = 0.0008
+#: Her groin, at the front of the lower trunk: how high above the crotch row the knit follows it
+#: rather than the slab's hull, round how much of her front (radians either side of centre), the
+#: width of each column's ray, and the grooves (in columns, ~1 cm each) a knit spans.
+GROIN_M = 0.06
+GROIN_HALF_ANGLE = 1.2
+RAY_WIDTH_M = 0.006
+BRIDGE_COLUMNS = 1
 #: The trunk grid stops this far above her crotch; the legs start this far below it.
 CROTCH_ROW_ABOVE_M = 0.006
 LEG_TOP_BELOW_M = 0.014
-#: 7/8 length: the hem this far above her ankle joint, a 1.6 m figure.
-HEM_ABOVE_ANKLE_M = 0.12
+#: Full length, as the template's ``"hem": "ankle"`` says: the hem this far above her ankle joint,
+#: at her ankle bone (a 1.6 m figure). It was 12 cm, a 7/8 crop nobody asked for.
+HEM_ABOVE_ANKLE_M = 0.035
 #: Her midline, for the crotch curve: points this close to her centre plane, and no lower than
 #: this below her crotch point (what is lower is thigh).
 MIDLINE_HALF_WIDTH_M = 0.012
@@ -127,7 +135,7 @@ class _Leg:
 
 
 def build_leggings_panel(params) -> list[Mesh] | None:
-    """High-waist seamless leggings, one surface waist to 7/8 hems, on her measured outline."""
+    """High-waist seamless leggings, one surface waist to ankle hems, on her measured outline."""
     cover = params.metadata.get("coverPoints")
     legs = params.metadata.get("legPoints")
     lower = params.metadata.get("lowerBody")
@@ -160,9 +168,46 @@ def build_leggings_panel(params) -> list[Mesh] | None:
     axis = np.array([sections.axis[0], 0.0, sections.axis[1]])
     builder = _Builder()
 
+    pool = np.vstack([cover, legs])
+    groin_top = bottom + GROIN_M * scale
+
+    def own_radii(y: float) -> np.ndarray:
+        """The front of her lower trunk at height ``y`` as a knit takes it, per column. The slab's
+        hull bridged straight across from thigh to thigh and turned under her in a flat pouch (a
+        dark shield in every front view); a knit follows her groin, spanning only the grooves
+        narrower than ``BRIDGE_COLUMNS`` either side, as its tension spans them."""
+        slab = pool[np.abs(pool[:, 1] - y) < SLAB_M]
+        hull = np.array([float(sections.radius(theta[j], y)) for j in range(columns)])
+        own = hull.copy()
+        for j in range(columns):
+            if math.cos(theta[j]) <= math.cos(GROIN_HALF_ANGLE):
+                continue
+            o = sections.point(theta[j], y, 0.0)
+            d = sections.point(theta[j], y, 1.0) - o
+            d[1] = 0.0
+            d /= max(float(np.linalg.norm(d)), 1e-9)
+            rel = slab - o
+            rel[:, 1] = 0.0
+            along = rel @ d
+            across = np.linalg.norm(rel - along[:, None] * d, axis=1)
+            near = along[(across < RAY_WIDTH_M) & (along > 0)]
+            if near.size:
+                own[j] = min(float(near.max()), hull[j])
+        spanned = own.copy()
+        for k in range(1, BRIDGE_COLUMNS + 1):
+            spanned = np.maximum(spanned, (np.roll(own, k) + np.roll(own, -k)) / 2)
+        # From nothing at groin_top to all of it at the crotch row, smoothly.
+        t = float(np.clip((groin_top - y) / max(groin_top - bottom, 1e-6), 0.0, 1.0))
+        return hull - t * t * (3 - 2 * t) * (hull - np.minimum(spanned, hull))
+
+    groin_ys = np.arange(bottom, groin_top + SLAB_M, SLAB_M)
+    groin = np.array([own_radii(float(y)) for y in groin_ys])  # [height, column]
+
     def trunk_point(j: int, y: float, extra: float = 0.0) -> np.ndarray:
-        r = float(sections.radius(theta[j], y)) + ease + extra
-        return sections.point(theta[j], y, r)
+        r = float(sections.radius(theta[j], y))
+        if y < groin_top:
+            r = min(r, float(np.interp(y, groin_ys, groin[:, j])))
+        return sections.point(theta[j], y, r + ease + extra)
 
     def inside_of(p: np.ndarray) -> np.ndarray:
         return np.array([axis[0], p[1], axis[2]])
@@ -194,7 +239,6 @@ def build_leggings_panel(params) -> list[Mesh] | None:
     # profile (her, and any layer on her), a clearance below it, between the crotch row's own
     # centre-back and centre-front points.
     front, back = builder.points[crotch_row[0]], builder.points[crotch_row[half]]
-    pool = np.vstack([cover, legs])
     # Only the underside of her crotch, not her thighs: where her thighs touch below it (Model
     # Girl's do) the midline is thigh for centimetres down, and the curve dived 7 cm between them.
     mid = pool[(np.abs(pool[:, 0] - centre_x) < MIDLINE_HALF_WIDTH_M) & (pool[:, 1] < bottom + 0.01)

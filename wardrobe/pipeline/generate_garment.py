@@ -13,8 +13,10 @@ from wardrobe.providers import provider_for_mode
 from wardrobe.vrm.garment_inventory import FOUNDATION_ROLES, garment_inventory
 
 #: What underwear-base puts on when the outfit names no underwear: plain and
-#: neutral, a foundation for the outer layers rather than a look of its own.
-NEUTRAL_FOUNDATION = ("beige seamless bralette", "beige seamless briefs")
+#: neutral, a foundation for the outer layers rather than a look of its own. A full-cup bra, not
+#: a bralette: "seamless bralette" planned the triangle bralette, whose cups on a low, wide bust
+#: (Model Girl's) were strips up to her collarbone with her bust bare beside them.
+NEUTRAL_FOUNDATION = ("beige seamless full-cup bra", "beige seamless briefs")
 
 #: S2. What goes under a skirt that takes the place of her own bottoms. A VRoid body
 #: under its shorts is not bare: the tights and undershorts of her original outfit

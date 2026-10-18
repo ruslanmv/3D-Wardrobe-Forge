@@ -354,8 +354,10 @@ def test_regions_partition_her_and_name_the_unmodelled_one():
 
 
 def test_unmodelled_anatomy_is_stated():
-    assert set(R.UNMODELLED) == {"externalGenitalAnatomy", "nippleAreola", "softTissue"}
-    assert "Not modelled" in R.UNMODELLED["externalGenitalAnatomy"]
+    # AN-A2: the outer contour is now modelled (the pelvic outlet); finer detail is stated as not.
+    assert set(R.UNMODELLED) == {"externalGenitalDetail", "nippleAreola", "softTissue"}
+    assert "not built" in R.UNMODELLED["externalGenitalDetail"]
+    assert "pelvicOutlet" in R.ANATOMY["modelled"] and "pelvicOutlet" in R.ANATOMY["approximated"]
     assert R.reference_bodies()["unmodelled"] == R.UNMODELLED
 
 
@@ -380,7 +382,7 @@ def test_reference_vrm_is_bound_with_the_rig_and_carries_correctives_sparse():
     from wardrobe.anatomy.vrm import _add_correctives
     from wardrobe.vrm.document import GltfDocument
 
-    V, _, J = body("ref-f-median")
+    V, _, J, _ = R.reference_body("ref-f-median")  # with her pelvic outlet (AN-A2), as the VRM is
     doc = GltfDocument.from_bytes(build_reference_vrm("ref-f-median", correctives=False))
     bound, (joints, weights), _ = read_vrm(doc.to_bytes())
     P, _ = t_pose(V, J)
