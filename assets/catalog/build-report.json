@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-23T21:45:59+00:00",
+  "generatedAt": "2026-10-23T23:35:38+00:00",
   "sampleAvatar": "avatar-sample-a",
   "profile": "public",
   "previewFormat": "image/webp",
@@ -147,7 +147,7 @@
     },
     {
       "id": "jacket-glam-cropped-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "black",
       "framing": [
         0.38,
@@ -170,14 +170,11 @@
       "warnings": [
         "the new outfit layers over the worn bottoms, shoes, tops",
         "clothing painted on her skin shows at a top across her chest and shorts or briefs at her hips (12% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "jacket-long-cardigan-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "olive",
       "framing": [
         0.38,
@@ -200,14 +197,11 @@
       "warnings": [
         "the new outfit layers over the worn bottoms, shoes, tops",
         "clothing painted on her skin shows at a top across her chest and shorts or briefs at her hips (12% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "jacket-oversized-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "pink",
       "framing": [
         0.38,
@@ -230,9 +224,6 @@
       "warnings": [
         "the new outfit layers over the worn bottoms, shoes, tops",
         "clothing painted on her skin shows at a top across her chest and shorts or briefs at her hips (12% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
@@ -453,7 +444,7 @@
     },
     {
       "id": "skirt-glam-pencil-mini-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "white",
       "framing": [
         0.15,
@@ -475,14 +466,11 @@
       "clippingCheck": "passed",
       "warnings": [
         "clothing painted on her skin shows at a top across her chest (9% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "skirt-maxi-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "black",
       "framing": [
         0.15,
@@ -504,14 +492,11 @@
       "clippingCheck": "passed",
       "warnings": [
         "clothing painted on her skin shows at a top across her chest (9% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "skirt-pencil-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "olive",
       "framing": [
         0.15,
@@ -533,14 +518,11 @@
       "clippingCheck": "passed",
       "warnings": [
         "clothing painted on her skin shows at a top across her chest (9% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "skirt-pleated-mini-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "pink",
       "framing": [
         0.15,
@@ -562,14 +544,11 @@
       "clippingCheck": "passed",
       "warnings": [
         "clothing painted on her skin shows at a top across her chest (9% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "skirt-skater-mini-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "camel",
       "framing": [
         0.15,
@@ -591,14 +570,11 @@
       "clippingCheck": "passed",
       "warnings": [
         "clothing painted on her skin shows at a top across her chest (9% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "skirt-slip-midi-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "burgundy",
       "framing": [
         0.15,
@@ -620,14 +596,11 @@
       "clippingCheck": "passed",
       "warnings": [
         "clothing painted on her skin shows at a top across her chest (9% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "skirt-tiered-maxi-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "grey",
       "framing": [
         0.15,
@@ -649,14 +622,11 @@
       "clippingCheck": "passed",
       "warnings": [
         "clothing painted on her skin shows at a top across her chest (9% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "skirt-wrap-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "emerald",
       "framing": [
         0.15,
@@ -678,9 +648,6 @@
       "clippingCheck": "passed",
       "warnings": [
         "clothing painted on her skin shows at a top across her chest (9% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
@@ -813,7 +780,7 @@
     },
     {
       "id": "top-glam-blouse-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "emerald",
       "framing": [
         0.5,
@@ -835,14 +802,11 @@
       "clippingCheck": "passed",
       "warnings": [
         "restored her skin under the outfit's open cut: 1907082 texels of painted clothing or cut-away skin filled from the skin round them"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "top-halter-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "navy",
       "framing": [
         0.5,
@@ -864,14 +828,11 @@
       "clippingCheck": "passed",
       "warnings": [
         "clothing painted on her skin shows at a top across her chest and shorts or briefs at her hips (9% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "top-sports-bra-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "red",
       "framing": [
         0.5,
@@ -894,14 +855,11 @@
       "warnings": [
         "restored her skin under the outfit's open cut: 766326 texels of painted clothing or cut-away skin filled from the skin round them",
         "4 garment vertices remain within the clearance margin (0.60% of the shell)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
       "id": "top-tee-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "white",
       "framing": [
         0.5,
@@ -921,14 +879,11 @@
         }
       ],
       "clippingCheck": "passed",
-      "warnings": [],
-      "views": [
-        "front"
-      ]
+      "warnings": []
     },
     {
       "id": "top-tube-v1",
-      "status": "generated",
+      "status": "cached",
       "color": "black",
       "framing": [
         0.5,
@@ -950,9 +905,6 @@
       "clippingCheck": "passed",
       "warnings": [
         "clothing painted on her skin shows at a top across her chest and shorts or briefs at her hips (12% of her torso)"
-      ],
-      "views": [
-        "front"
       ]
     },
     {
