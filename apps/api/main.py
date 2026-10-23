@@ -16,6 +16,7 @@ from apps.api.routes.admin import router as admin_router
 from apps.api.routes.avatars import router as avatars_router
 from apps.api.routes.body_art import router as body_art_router
 from apps.api.routes.body_surface import router as body_surface_router
+from apps.api.routes.catalog import router as catalog_router
 from apps.api.routes.collections import router as collections_router
 from apps.api.routes.generate import router as generate_router
 from apps.api.routes.jobs import router as jobs_router
@@ -99,6 +100,7 @@ app.include_router(body_art_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(body_surface_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(outfits_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(collections_router, prefix="/v1", dependencies=api_dependencies)
+app.include_router(catalog_router, prefix="/v1", dependencies=api_dependencies)
 
 # The Studio is a static, build-free editor. It is served unauthenticated because
 # it is only markup and scripts; every call it makes goes through /v1, which is not.
