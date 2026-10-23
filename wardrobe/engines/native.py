@@ -300,6 +300,10 @@ class NativeEngine(FittingEngine):
             garment.name: tuple(float(c) for c in garment.material.base_color[:3])
             for garment in (context.plan.garments if context.plan else [])
         }
+        # PV1. Her arms at her sides, as the shelf's other previews show her: drawn in the
+        # bind pose (a T-pose) a look read as a grey cross next to the built-in looks.
+        info = getattr(context, "info", None)
+        arms = _arms_down(document, info.humanoid_bones if info is not None else {})
 
         for node_index in document.mesh_nodes():
             node = document.nodes[node_index]
@@ -326,11 +330,80 @@ class NativeEngine(FittingEngine):
                     homogeneous = np.hstack([points, np.ones((points.shape[0], 1))])
                     points = (homogeneous @ matrix.T)[:, :3]
                 indices = document.read_accessor(index_accessor).reshape(-1).astype(np.int64)
+                if skinned and arms:
+                    points = _posed(document, node, attributes, points, arms)
 
                 colour = colour_of_garment or (0.76, 0.70, 0.66)
                 layers.append(RenderLayer(positions=points, indices=indices, color=colour))
 
         return layers
+
+
+#: PV1. Where the preview lowers her upper arms to: this far below horizontal.
+PREVIEW_ARM_DROP = np.radians(65.0)
+
+
+def _arms_down(document, bones: dict[str, int]) -> dict[int, np.ndarray]:
+    """Per node, the world transform that lowers her arms for the preview: each upper arm and
+    everything below it turned about the shoulder joint, in her frontal plane, to
+    ``PREVIEW_ARM_DROP`` below horizontal (from the angle it is bound at, so an A-posed model is
+    lowered by less). Empty when the rig names no arms; the preview is then drawn as bound."""
+    world = document.world_matrices()
+    out: dict[int, np.ndarray] = {}
+    for upper, lower in (("leftUpperArm", "leftLowerArm"), ("rightUpperArm", "rightLowerArm")):
+        if upper not in bones or lower not in bones:
+            continue
+        shoulder = world[bones[upper]][:3, 3]
+        elbow = world[bones[lower]][:3, 3]
+        arm = elbow - shoulder
+        if abs(arm[0]) < 1e-6:
+            continue
+        side = np.sign(arm[0])
+        now = np.arctan2(arm[1], abs(arm[0]))
+        # About +z: negative turns the +x arm down, positive the -x arm (mirrored).
+        angle = side * (-PREVIEW_ARM_DROP - now)
+        c, s = np.cos(angle), np.sin(angle)
+        turn = np.eye(4)
+        turn[:2, :2] = [[c, -s], [s, c]]
+        about = np.eye(4)
+        about[:3, 3] = shoulder
+        back = np.eye(4)
+        back[:3, 3] = -shoulder
+        delta = about @ turn @ back
+        stack = [bones[upper]]
+        while stack:
+            index = stack.pop()
+            out[index] = delta
+            stack.extend(document.nodes[index].get("children") or [])
+    return out
+
+
+def _posed(document, node: dict, attributes: dict, points: np.ndarray,
+           arms: dict[int, np.ndarray]) -> np.ndarray:
+    """``points`` skinned to ``arms`` (node -> world transform) by their own joints and weights."""
+    skins = document.gltf.get("skins") or []
+    if node.get("skin") is None or node["skin"] >= len(skins):
+        return points
+    joint_nodes = skins[node["skin"]].get("joints") or []
+    if "JOINTS_0" not in attributes or "WEIGHTS_0" not in attributes:
+        return points
+    joints = document.read_accessor(attributes["JOINTS_0"]).astype(np.int64)
+    weights = document.read_accessor(attributes["WEIGHTS_0"]).astype(np.float64)
+    if joints.shape[0] != points.shape[0]:
+        return points
+    transforms = np.stack([arms.get(n, np.eye(4)) for n in joint_nodes] or [np.eye(4)])
+    homogeneous = np.hstack([points, np.ones((points.shape[0], 1))])
+    posed = np.zeros_like(points)
+    total = np.zeros(points.shape[0])
+    for slot in range(joints.shape[1]):
+        joint = np.clip(joints[:, slot], 0, transforms.shape[0] - 1)
+        weight = weights[:, slot]
+        posed += np.einsum("nij,nj->ni", transforms[joint], homogeneous)[:, :3] * weight[:, None]
+        total += weight
+    unweighted = total < 1e-6
+    posed[unweighted] = points[unweighted]
+    posed[~unweighted] /= total[~unweighted, None]
+    return posed
 
 
 def _material_colour(document, mesh: dict) -> tuple[float, float, float] | None:
