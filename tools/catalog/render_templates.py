@@ -45,6 +45,7 @@ from wardrobe.domain.garments import INTIMATE_CATEGORIES, TemplateCatalog  # noq
 from wardrobe.domain.jobs import CreateJobRequest  # noqa: E402
 from wardrobe.library import AvatarLibrary  # noqa: E402
 from wardrobe.pipeline.orchestrator import Orchestrator  # noqa: E402
+from wardrobe.pipeline.plan_outfit_stack import SET_PARTS  # noqa: E402
 from wardrobe.queue.jobs import AsyncioJobQueue  # noqa: E402
 from wardrobe.storage.database import InMemoryJobRepository, InMemoryWardrobeRepository  # noqa: E402
 from wardrobe.storage.object_store import LocalObjectStore  # noqa: E402
@@ -77,6 +78,7 @@ def profile_for(template, style: dict, default_avatar: str, active: str | None =
     else:
         matches = (f for pattern, f in framing.get("match", {}).items() if re.search(pattern, template.id))
         frame = next(matches, framing["default"])
+    finish = own.get("finish")
     layer = own.get("layer", {})
     mode = layer["baseBody"] if layer and re.search(layer["match"], template.id) else own.get(
         "baseBody", "replace-outer")
@@ -88,6 +90,9 @@ def profile_for(template, style: dict, default_avatar: str, active: str | None =
         "frame": frame,
         "colors": own.get("colors", style["colors"]),
         "ratings": own.get("ratings", ["general"]),
+        "fabric": next((r["fabric"] for r in own.get("styling", {}).get("rules", [])
+                        if re.search(r["match"], template.id)), None),
+        "finish": finish if finish and re.search(finish["match"], template.id) else None,
     }
 
 
@@ -123,6 +128,10 @@ def cache_key(template, profile: dict, color: str, style: dict) -> dict:
     if profile["name"] != "default":
         key.update(profile=profile["name"], baseBody=profile["baseBody"],
                    basePrompt=profile["base"]["prompt"])
+        if profile.get("fabric"):
+            key["fabric"] = profile["fabric"]
+        if profile.get("finish"):
+            key["styledWith"] = profile["finish"]["template"]
     return key
 
 
@@ -203,6 +212,11 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
                     records.append({"id": t.id, "status": "restricted-skipped"})
                 continue
             profile = profile_for(t, style, avatar_slug, profile_name)
+            withheld = _profiles(style).get(profile_name or "", {}).get("withheld", {}).get(t.id)
+            if withheld:
+                records.append({"id": t.id, "status": "withheld-quality", "reason": withheld})
+                (destination / f"{t.id}.webp").unlink(missing_ok=True)
+                continue
             color = color_override or color_for(t, catalog, profile["colors"])
             frame = profile["frame"]
             key = cache_key(t, profile, color, style)
@@ -225,7 +239,7 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
                 request = CreateJobRequest.model_validate({
                     "avatar": bases[profile["name"]],
                     "outfit": {
-                        "prompt": f"{color} {t.name}",
+                        "prompt": " ".join(filter(None, (color, profile.get("fabric"), t.name))),
                         "mode": "template",
                         "templateId": t.id,
                         "color": color,
@@ -240,7 +254,7 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
                     and result.fit_report.passed
                     and result.plan is not None
                     and rating_for(result.plan) in profile["ratings"]
-                    and any(g.template_id == t.id for g in result.plan.garments)
+                    and _planned_from(t.id, result.plan)
                 )
                 if not ok:
                     records.append({
@@ -250,6 +264,14 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
                         "reason": str(result.reason or result.error or "fit not verified"),
                     })
                     continue
+                garments = _rendered(result.plan)
+                if profile.get("finish"):
+                    result = await _finish(orch, bases[profile["name"]], result, profile["finish"], color)
+                    if result is None:
+                        records.append({"id": t.id, "status": "failed-or-ineligible", **key,
+                                        "reason": f"{profile['finish']['template']} did not fit over it"})
+                        continue
+                    garments += _rendered(result.plan)
                 data = await store.get(f"looks/{result.look.id}/look.vrm")
                 (work / f"g-{t.id}.vrm").write_bytes(data)
                 stature = _height(GltfDocument.from_bytes(data))
@@ -259,7 +281,7 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
                 to_render.append((t.id, view))
                 records.append({"id": t.id, "status": "pending-render", **key,
                                 "rating": rating_for(result.plan), "fitPassed": True,
-                                "garments": [g.name for g in result.plan.garments],
+                                "garments": garments,
                                 "clippingCheck": str(result.fit_report.clipping_check),
                                 "warnings": [str(w)[:200] for w in result.fit_report.warnings][:6]})
             except Exception as exc:
@@ -352,6 +374,31 @@ async def _reference_base(orch, store, entry, base_style: dict, name: str) -> di
     avatar = {k: v for k, v in dict(entry.avatar_input()).items() if k not in ("url", "sha256", "storageKey")}
     avatar["storageKey"] = key
     return avatar
+
+
+def _planned_from(template_id: str, plan) -> bool:
+    """The plan is this template: its own id, or the parts Forge plans a set as (SET_PARTS)."""
+    ids = {g.template_id for g in plan.garments}
+    return template_id in ids or bool(set(SET_PARTS.get(template_id, ())) & ids)
+
+
+def _rendered(plan) -> list[dict]:
+    """What was actually built, as the planner resolved it: a hosiery belt picks its own colour."""
+    return [{"name": g.name, "templateId": g.template_id, "color": g.material.color_name,
+             "fabric": g.material.fabric} for g in plan.garments]
+
+
+async def _finish(orch, base_avatar: dict, result, finish: dict, color: str):
+    """Fit the profile's finishing piece over the finished look (the guêpière's bralette)."""
+    styled = await orch.run_now(CreateJobRequest.model_validate({
+        "avatar": {**base_avatar, "storageKey": f"looks/{result.look.id}/look.vrm"},
+        "outfit": {"prompt": f"{color} {finish['template']}", "mode": "template",
+                   "templateId": finish["template"], "color": color},
+        "options": {"renderPreview": False, "engine": "native", "baseBody": finish["baseBody"]},
+    }))
+    ok = (styled.state == "completed" and styled.look is not None and styled.fit_report is not None
+          and styled.fit_report.passed)
+    return styled if ok else None
 
 
 def _height(document) -> float:

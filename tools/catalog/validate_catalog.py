@@ -206,7 +206,8 @@ def _adult_sheet(items: list[dict], out: Path, profile: str) -> None:
                 sheet.paste(thumb, (x + 10 + (180 - thumb.width) // 2, y + 4))
             else:
                 draw.rectangle((x + 10, y + 4, x + 190, y + 244), outline="#c0392b")
-                draw.text((x + 16, y + 110), "NOT RENDERED", fill="#ff7b6b")
+                label = "WITHHELD" if item["status"] == "withheld-quality" else "NOT RENDERED"
+                draw.text((x + 16, y + 110), label, fill="#ff7b6b")
                 for n, start in enumerate(range(0, min(len(item.get("reason") or ""), 120), 28)):
                     draw.text((x + 16, y + 128 + 14 * n), item["reason"][start:start + 28], fill="#d0a0a0")
             draw.text((x + 8, y + 250), item["id"][:30], fill="#ffffff")

@@ -109,15 +109,44 @@
           0.36,
           0.86
         ],
+        "why": "Bottoms are framed on her hips, waist to upper thigh, the usual product crop for a brief: the piece fills the picture and the bra above it is out of frame. Belts and stockings are framed low enough to show the stocking tops.",
         "match": {
           "guepiere|waspie|suspender|garter": [
             0.22,
             0.86
+          ],
+          "boyshort|brazilian|briefs|cheeky|g-string|thong|hipster|tanga|v-string|tie-side": [
+            0.34,
+            0.66
           ]
         }
       },
       "colors": {
         "rules": [
+          {
+            "match": "vday-halter-plunge",
+            "color": "crimson"
+          },
+          {
+            "match": "vday-longline",
+            "color": "wine"
+          },
+          {
+            "match": "vday-square",
+            "color": "red"
+          },
+          {
+            "match": "vday-cutout",
+            "color": "wine"
+          },
+          {
+            "match": "vday-high-waist",
+            "color": "red"
+          },
+          {
+            "match": "vday-tie-side",
+            "color": "red"
+          },
           {
             "match": "garter|suspender|guepiere",
             "color": "black"
@@ -125,20 +154,43 @@
         ],
         "palette": [
           "black",
-          "blush",
-          "wine",
-          "ivory",
           "red",
-          "champagne",
+          "wine",
           "navy",
           "emerald",
-          "white",
-          "plum"
-        ]
+          "plum",
+          "crimson",
+          "cobalt",
+          "burgundy",
+          "rose"
+        ],
+        "whyPalette": "Every colour reads against the nude base set and her skin: ivory, champagne, white and blush did not, and a balconette in ivory was nearly invisible."
       },
       "limitations": [
-        "under-guepiere-v1: the generated guêpière ends below the bust, while its template describes balconette cups. Kept as is by the operator's decision; the preview shows it over the nude bralette."
-      ]
+        "under-guepiere-v1: the generated guêpière ends below the bust, while its template describes balconette cups and declares chest coverage. Kept as is by the operator's decision; the preview styles it with a matching bralette fitted on top."
+      ],
+      "styling": {
+        "why": "The Valentine's capsule (templates whose id has vday) is shown in the fabric it is sold in: lace for bras and briefs, satin for one-pieces. Words the planner reads (FABRICS); no texture is added that Forge does not build.",
+        "rules": [
+          {
+            "match": "vday-.*bodysuit",
+            "fabric": "satin"
+          },
+          {
+            "match": "vday-",
+            "fabric": "lace"
+          }
+        ]
+      },
+      "finish": {
+        "match": "guepiere",
+        "template": "under-bralette-v2",
+        "baseBody": "preserve",
+        "why": "The guêpière's template declares chest coverage, so Forge hides what is under her chest and the nude bralette under it disappears; its geometry ends below the bust and is kept exactly as it is (operator's decision). The preview adds a bralette in the same colour on top, as a coordinated set, after the guêpière is fitted. The build report names it (styledWith)."
+      },
+      "withheld": {
+        "why": "Templates whose fitted preview does not meet the catalogue's look, held back until the garment is improved. The template stays in the catalogue (underwear-inventory.json); only its picture is not published, and the build report says why."
+      }
     }
   }
 }

@@ -29,9 +29,38 @@ def test_the_public_build_takes_no_restricted_template():
     assert public and not any(t.category in INTIMATE_CATEGORIES or t.requires_adult for t in public)
 
 
-def test_the_underwear_profile_takes_all_28_and_nothing_else():
-    chosen = [t for t in CATALOG if render.eligible(t, "underwear")]
-    assert len(chosen) == 28 and {t.category for t in chosen} == {"underwear"}
+def test_the_underwear_profile_takes_the_whole_category_and_nothing_else():
+    import json
+
+    chosen = {t.id for t in CATALOG if render.eligible(t, "underwear")}
+    inventory = json.loads((ROOT / "assets/catalog/adult/underwear-inventory.json").read_text(encoding="utf-8"))
+    assert {t["id"] for t in inventory["templates"]} <= chosen  # every original
+    assert chosen == {t.id for t in CATALOG if t.category == "underwear"}
+
+
+def test_a_set_is_recognised_by_the_parts_forge_plans_it_as():
+    from types import SimpleNamespace
+
+    plan = SimpleNamespace(garments=[SimpleNamespace(template_id="under-bralette-v2"),
+                                     SimpleNamespace(template_id="under-briefs-v2")])
+    assert render._planned_from("under-lingerie-set-v1", plan)
+    assert not render._planned_from("under-bodysuit-v2", plan)
+
+
+def test_the_guepiere_preview_is_styled_with_a_bralette_and_its_geometry_is_not_touched():
+    import hashlib
+    import subprocess
+
+    profile = render.profile_for(CATALOG.get("under-guepiere-v1"), STYLE, "fem-vroid", "underwear")
+    assert profile["finish"]["template"] == "under-bralette-v2"
+    key = render.cache_key(CATALOG.get("under-guepiere-v1"), profile, "black", STYLE)
+    assert key["styledWith"] == "under-bralette-v2"
+    # The geometry stays exactly as committed before the adult catalog existed.
+    source = ROOT / "wardrobe/hosiery/garter_belt.py"
+    before = subprocess.run(["git", "show", "a6fa443:wardrobe/hosiery/garter_belt.py"], cwd=ROOT,
+                            capture_output=True, check=False).stdout
+    if before:  # a shallow clone may not have the commit
+        assert hashlib.sha256(source.read_bytes()).digest() == hashlib.sha256(before).digest()
 
 
 @pytest.mark.parametrize("template_id", ["under-guepiere-v1", "under-waspie-v1", "under-suspender-belt-v1",
