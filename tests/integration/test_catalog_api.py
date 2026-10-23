@@ -3,10 +3,23 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+
+import pytest
+from fastapi.testclient import TestClient
+
+from apps.api.main import app
+from wardrobe.pipeline import orchestrator as orchestrator_module
 from unittest.mock import AsyncMock
 
 from apps.api.routes import catalog as catalog_routes
 from wardrobe.domain.jobs import JobState
+
+
+@pytest.fixture
+def client(orchestrator, monkeypatch):
+    monkeypatch.setattr(orchestrator_module, "_orchestrator", orchestrator)
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 def test_public_catalog_is_grouped_and_does_not_advertise_fake_previews(client, tmp_path, monkeypatch):
