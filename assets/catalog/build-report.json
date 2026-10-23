@@ -1,160 +1,472 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-10-23T18:39:31+00:00",
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-23T19:53:38+00:00",
   "sampleAvatar": "avatar-sample-a",
   "previewFormat": "image/webp",
+  "canvas": [
+    480,
+    640
+  ],
+  "styleVersion": 2,
+  "limitations": [
+    "The reference avatar's texture shows a dark band at the waist and brown tights on her legs: they are painted on her body, so no garment job can take them off."
+  ],
   "records": [
     {
       "id": "dress-a-line-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "8747d0e8fcf680cd45c3157024bd4415a399da52c5bc0602013c66536436e046",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "dress-cocktail-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "white",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "458d27900bcfd08353ccb987385e44e1963e24b0c5eaae1d7b736fb18fb81c63",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "dress-evening-column-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "39cadefa6de8467795bddc8d185eb45c4dea0338f611759c8a3fb871421eaeba",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "dress-maxi-sundress-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "olive",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "dbe95b0ead5c11bd82670d1ee4ed36659977912774d5931563defec9dc78498e",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "dress-mini-bodycon-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "pink",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "ba27d1175a1a3968be133c6e38602cb1fca95beb58cb43f6d5623c7184b377a9",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "dress-mini-skater-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "camel",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "a0dd0741c634bf8bbcf435de7faa3db7747eb984712af57d4c5064b1b1f53a50",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "dress-shirt-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "burgundy",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "b3d5ca8b58a61ff7063d772f10a76796761e232aaf8b7d034daaed8d228fbf5e",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "dress-slip-midi-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "grey",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "7fe739dd816c6775075f7c4efd77881a3d2abf5ed9034a55e1fd0aec5c063d2a",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "dress-wrap-sleeve-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "emerald",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "f30668d7449d2369cd9102231a148b5663d8960630a9790326b9493b6c3e923e",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "jacket-blazer-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.38,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "3d7b4292740ee5f8d3ba87bb191c98d461c76d36b189b8b280ff8dd7fb35dc46",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "jacket-cropped-cardigan-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "white",
+      "framing": [
+        0.38,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "c924f4b117a12e6e98845abf927ddeb9c55f5cae7f415e8bc422d53619563daa",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "jacket-long-cardigan-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.38,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "b46cf8a83f6037c8936416c70bec8f71b2815bd155d81c4782a2d68169c8b6ed",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "jacket-oversized-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "olive",
+      "framing": [
+        0.38,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "5e88ce29e44afa84d23e5ff9e3ffd34674af9413fb6d8fbd555d89cffaf9de9f",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "jacket-trench-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "camel",
+      "framing": [
+        0.38,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "a8bd37d2dd0621390d3c77d4c0ce5fe1283e7de94248b10d15a55819940606fa",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "jumpsuit-catsuit-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "4b581ab2bfc9c7840349c971fa1b605e156892a8c8fda78326172de1b2e14901",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "legwear-thigh-highs-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.0,
+        0.62
+      ],
+      "styleVersion": 2,
+      "templateSha256": "a040350954f4156ab842980d0a67b63330259a4c326035b9b134f51cde80a8d4",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "legwear-tights-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.0,
+        0.62
+      ],
+      "styleVersion": 2,
+      "templateSha256": "adfc2745cc885a63a8f9fef2cdef0f47a8a6610f3114615c0aeccbd09e392c73",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "night-nightgown-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "52eae7e330bb5017c24fc939d058e25a6ca79041eb89abf20d699abb292afbed",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "night-pajama-top-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "white",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "740d1b6b6e938b904f52a2ff65f16ca2b0b44f2919a9d46a98e33ddcda8ed868",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "night-pajama-trousers-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.0,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "61a8d5586f8535a808d3b3fc16437d3ddbb395acb93acbc587c4f565892701e1",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "shoes-boots-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.0,
+        0.32
+      ],
+      "styleVersion": 2,
+      "templateSha256": "bb823c6dd5b6ccff02270a1576d3280694e6c39df91a30267f3770ae1d4d4164",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "shoes-combat-boots-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "white",
+      "framing": [
+        0.0,
+        0.32
+      ],
+      "styleVersion": 2,
+      "templateSha256": "b29f34fa3bbc108bcb3df20e32f15d649baa38e74711c9ea8a908ad42007529a",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "shoes-flats-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.0,
+        0.32
+      ],
+      "styleVersion": 2,
+      "templateSha256": "42efcc78ed388a1ddb0c0c4c518b7817572ed77e9a2daebd5a8b105c4d5f5f9b",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "shoes-over-knee-boots-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "olive",
+      "framing": [
+        0.0,
+        0.32
+      ],
+      "styleVersion": 2,
+      "templateSha256": "0c61e9f1f1eaef0ef72b4719412b3e9025083655a8693b15ab73e3441085f47c",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "shoes-over-knee-stiletto-boots-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "pink",
+      "framing": [
+        0.0,
+        0.32
+      ],
+      "styleVersion": 2,
+      "templateSha256": "7424be9f84ab9231e43883dbfec2252988fcb8632ad7942170ea3bfab87f5e1b",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "shoes-platform-boots-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "camel",
+      "framing": [
+        0.0,
+        0.32
+      ],
+      "styleVersion": 2,
+      "templateSha256": "9d4b5ab4df0c962585dbdaf03490ed33d9c57916fc217a6a8b773c5fc104854e",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "shoes-stiletto-ankle-boots-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "burgundy",
+      "framing": [
+        0.0,
+        0.32
+      ],
+      "styleVersion": 2,
+      "templateSha256": "aca73b0b4d28045a948149559594a1ba36e6673b9788078515325eb3221ad433",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "shorts-denim-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "blue",
+      "framing": [
+        0.3,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "4746e4496bb4382ba1a0ae78e9d9aef1861a3093ff7d4ab4621978867978b687",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "shorts-linen-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "white",
+      "framing": [
+        0.3,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "255f632231f21c48138c6f2e5a23079e5cf8c1d05c3a5eba451af7f531975c67",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "shorts-slip-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.3,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "2203e2ea8da9991bc0be4e84e3e708b1607acb163270e5142063829d23ee73b4",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "skirt-a-line-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.15,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "96675eddb2c75f3b68c4cf7f9293bdeb9b6ee6db6074089e5fa31397b8bc002f",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "skirt-maxi-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "white",
+      "framing": [
+        0.15,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "b7f237efd60755bc0087c700e2863c7d2fb95112fad631164e4d0e82a31c8c7f",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "skirt-pencil-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.15,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "d70f5b292dc047de95044671118b5fc9eeb3c5df2c3dcb4211574b85085403c2",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "skirt-pleated-mini-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "olive",
+      "framing": [
+        0.15,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "11c21070619e765d8dcdb7a625d51b08ec3bb03ba8ff517bdd0a78e62b92ef6d",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "skirt-skater-mini-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "pink",
+      "framing": [
+        0.15,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "48c0f615e22fc3b14f6ba19657d1b0489f22fad3bfdd3eee09216f342abf08ab",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "skirt-slip-midi-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "camel",
+      "framing": [
+        0.15,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "876b7cf80b8661d4f2511534065d5fa522ae4d6ffe215cdeab49b642df260e1a",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "skirt-tiered-maxi-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "burgundy",
+      "framing": [
+        0.15,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "dd48b8d03a6de242dbe8c6eb8e9fb4181e295e52be05fff09f26806f2fb491d1",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "skirt-wrap-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "grey",
+      "framing": [
+        0.15,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "32c3a91c834f460177cf8d837897598dd982575b20eb3b11ca4b5792c6f9d6a6",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "swim-bikini-bandeau-v1",
@@ -190,87 +502,261 @@
     },
     {
       "id": "top-blouse-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "a5bc0935d73f2dee9222521d7cfb8c0e8a6b3c6fce3a9db0ee4a73a01a47b644",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "top-camisole-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "white",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "1feceb837c469b7d555dd60218e0d0caab78e3a4ebf89d3366bbd073fd409acb",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "top-corset-cropped-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "b8e54e39969083dfb5cbf190711041212336759cf0053eea103cbc8954e5ad0f",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "top-corset-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "olive",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "15c4df831d85660d427c4cb8b6437bd4dcce3f2725af8a98e03a0ae432358334",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "top-crop-cami-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "pink",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "c0432df323120eb9a2bf07257c7af1233d9eb70fc56b7afed6509815964f7fee",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "top-crop-tee-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "camel",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "5d2fa38b20f12fade8e669c7fe3a777feaeebc6d1d777d3c496255383a246937",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "top-cropped-cami-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "burgundy",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "47b21d10a70316e9bba56189ab48c72d8505e2cd9dcb7d08d40794d78bb1cb02",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "top-fitted-tee-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "grey",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "18a09f35ab5f2db12b1b5fb9a5a32c0ce9c866b5e20e0a221d85fad3356ca66e",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "top-halter-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "emerald",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "949e2461ce339be8d41ec1784c86b842a82b88a357eb562a088cfb2646c00098",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "top-sports-bra-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "navy",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "07bd69b9c5d96c7440b7c98e8ea07e1a9417693a5788c2e7fa1e2f0bd733d6b7",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "top-tee-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "7a9c271b719e388c252fa8cd11d6b7a94920bba957191e31c6352fb9bd45e551",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "top-tube-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "white",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "90b63d9b7af32499e12a3547ce611e7ce5dbbfd1f8e5d71529adfa20d1032cd1",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "jeans-baggy-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "blue",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "212351ac4d192d13ecfd22437ffbeb682e6c269f921c02d9bea3adf58ebf57bd",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "jeans-straight-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "blue",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "a68750e31198eb621e3ee28099995b5d4092bdd69dbeed99f6100fa788dcab81",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "trousers-balloon-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "b438d09d3c1c250c16c3d0078ee428aea9d7206876b2fa323e35bf9128f2e325",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "trousers-leggings-highwaist-v1",
-      "status": "generated"
+      "status": "failed-or-ineligible",
+      "color": "black",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "e052b34de882d828d4b27efdacc0bf856a1324edd57cfd1052453ba85501e6e9",
+      "sampleAvatar": "avatar-sample-a",
+      "jobState": "completed",
+      "reason": "fit not verified"
     },
     {
       "id": "trousers-leggings-seamless-v1",
-      "status": "generated"
+      "status": "failed-or-ineligible",
+      "color": "black",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "9d62eb786f7636ca949d885e166d91a1e07b3e9a84821ecb4d18e68107137b3f",
+      "sampleAvatar": "avatar-sample-a",
+      "jobState": "completed",
+      "reason": "fit not verified"
     },
     {
       "id": "trousers-leggings-v1",
-      "status": "generated"
+      "status": "failed-or-ineligible",
+      "color": "black",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "37e44811ffcbab71e23a843a6f765e6fad7acc38b60b3fc107fffd6be39de0d5",
+      "sampleAvatar": "avatar-sample-a",
+      "jobState": "completed",
+      "reason": "fit not verified"
     },
     {
       "id": "trousers-slim-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "burgundy",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "a7f3739016008dba5755e9805a9be9de58c7148526048e814dd01e2553ca6c91",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "trousers-straight-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "grey",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "a82c5df574534b856413143d7c9edfbe56717f73b5858cc226ddeeca11041a72",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "trousers-wide-v1",
-      "status": "generated"
+      "status": "generated",
+      "color": "emerald",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "466470f3ca49d1f46cf2e3f3afda2dfe675507b77a5faff5640a1a51e8f0d0ef",
+      "sampleAvatar": "avatar-sample-a"
     },
     {
       "id": "under-bodysuit-v1",
