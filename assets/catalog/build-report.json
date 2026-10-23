@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-23T21:17:22+00:00",
+  "generatedAt": "2026-10-23T21:45:59+00:00",
   "sampleAvatar": "avatar-sample-a",
   "profile": "public",
   "previewFormat": "image/webp",
@@ -154,7 +154,7 @@
         1.0
       ],
       "styleVersion": 2,
-      "templateSha256": "113ef106ca5a712655488bd4822977385651562c0bc5f876a3ebaffa2c69eaf3",
+      "templateSha256": "d7a8618d95db4c9c974670c067b72c735745c4e770737234849ab90f4e0d9bb8",
       "sampleAvatar": "avatar-sample-a",
       "rating": "general",
       "fitPassed": true,
@@ -177,27 +177,63 @@
     },
     {
       "id": "jacket-long-cardigan-v1",
-      "status": "cached",
-      "color": "black",
-      "framing": [
-        0.38,
-        1.0
-      ],
-      "styleVersion": 2,
-      "templateSha256": "b46cf8a83f6037c8936416c70bec8f71b2815bd155d81c4782a2d68169c8b6ed",
-      "sampleAvatar": "avatar-sample-a"
-    },
-    {
-      "id": "jacket-oversized-v1",
-      "status": "cached",
+      "status": "generated",
       "color": "olive",
       "framing": [
         0.38,
         1.0
       ],
       "styleVersion": 2,
+      "templateSha256": "b46cf8a83f6037c8936416c70bec8f71b2815bd155d81c4782a2d68169c8b6ed",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Olive Oversized Cardigan",
+          "templateId": "jacket-long-cardigan-v1",
+          "color": "olive",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "the new outfit layers over the worn bottoms, shoes, tops",
+        "clothing painted on her skin shows at a top across her chest and shorts or briefs at her hips (12% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
+    },
+    {
+      "id": "jacket-oversized-v1",
+      "status": "generated",
+      "color": "pink",
+      "framing": [
+        0.38,
+        1.0
+      ],
+      "styleVersion": 2,
       "templateSha256": "5e88ce29e44afa84d23e5ff9e3ffd34674af9413fb6d8fbd555d89cffaf9de9f",
-      "sampleAvatar": "avatar-sample-a"
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Pink Oversized Coat",
+          "templateId": "jacket-oversized-v1",
+          "color": "pink",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "the new outfit layers over the worn bottoms, shoes, tops",
+        "clothing painted on her skin shows at a top across her chest and shorts or briefs at her hips (12% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
       "id": "jacket-trench-v1",
@@ -209,30 +245,6 @@
       ],
       "styleVersion": 2,
       "templateSha256": "a8bd37d2dd0621390d3c77d4c0ce5fe1283e7de94248b10d15a55819940606fa",
-      "sampleAvatar": "avatar-sample-a"
-    },
-    {
-      "id": "jeans-baggy-v1",
-      "status": "cached",
-      "color": "blue",
-      "framing": [
-        0.0,
-        0.7
-      ],
-      "styleVersion": 2,
-      "templateSha256": "212351ac4d192d13ecfd22437ffbeb682e6c269f921c02d9bea3adf58ebf57bd",
-      "sampleAvatar": "avatar-sample-a"
-    },
-    {
-      "id": "jeans-straight-v1",
-      "status": "cached",
-      "color": "blue",
-      "framing": [
-        0.0,
-        0.7
-      ],
-      "styleVersion": 2,
-      "templateSha256": "a68750e31198eb621e3ee28099995b5d4092bdd69dbeed99f6100fa788dcab81",
       "sampleAvatar": "avatar-sample-a"
     },
     {
@@ -448,7 +460,7 @@
         0.72
       ],
       "styleVersion": 2,
-      "templateSha256": "6a8193e47da19f4940fbed13100d935dcfe48368d91ba4f173ff3022c993f8f3",
+      "templateSha256": "c853ea5695c6b150f0cd5bcdc355edbf478b0f4df62d57ee8a6272a7b9283d5e",
       "sampleAvatar": "avatar-sample-a",
       "rating": "general",
       "fitPassed": true,
@@ -470,87 +482,206 @@
     },
     {
       "id": "skirt-maxi-v1",
-      "status": "cached",
-      "color": "white",
-      "framing": [
-        0.15,
-        0.72
-      ],
-      "styleVersion": 2,
-      "templateSha256": "b7f237efd60755bc0087c700e2863c7d2fb95112fad631164e4d0e82a31c8c7f",
-      "sampleAvatar": "avatar-sample-a"
-    },
-    {
-      "id": "skirt-pencil-v1",
-      "status": "cached",
+      "status": "generated",
       "color": "black",
       "framing": [
         0.15,
         0.72
       ],
       "styleVersion": 2,
-      "templateSha256": "d70f5b292dc047de95044671118b5fc9eeb3c5df2c3dcb4211574b85085403c2",
-      "sampleAvatar": "avatar-sample-a"
+      "templateSha256": "b7f237efd60755bc0087c700e2863c7d2fb95112fad631164e4d0e82a31c8c7f",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Maxi Skirt",
+          "templateId": "skirt-maxi-v1",
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest (9% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
-      "id": "skirt-pleated-mini-v1",
-      "status": "cached",
+      "id": "skirt-pencil-v1",
+      "status": "generated",
       "color": "olive",
       "framing": [
         0.15,
         0.72
       ],
       "styleVersion": 2,
-      "templateSha256": "11c21070619e765d8dcdb7a625d51b08ec3bb03ba8ff517bdd0a78e62b92ef6d",
-      "sampleAvatar": "avatar-sample-a"
+      "templateSha256": "d70f5b292dc047de95044671118b5fc9eeb3c5df2c3dcb4211574b85085403c2",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Olive Pencil Skirt",
+          "templateId": "skirt-pencil-v1",
+          "color": "olive",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest (9% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
-      "id": "skirt-skater-mini-v1",
-      "status": "cached",
+      "id": "skirt-pleated-mini-v1",
+      "status": "generated",
       "color": "pink",
       "framing": [
         0.15,
         0.72
       ],
       "styleVersion": 2,
-      "templateSha256": "48c0f615e22fc3b14f6ba19657d1b0489f22fad3bfdd3eee09216f342abf08ab",
-      "sampleAvatar": "avatar-sample-a"
+      "templateSha256": "11c21070619e765d8dcdb7a625d51b08ec3bb03ba8ff517bdd0a78e62b92ef6d",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Pink Pleated Mini Skirt",
+          "templateId": "skirt-pleated-mini-v1",
+          "color": "pink",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest (9% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
-      "id": "skirt-slip-midi-v1",
-      "status": "cached",
+      "id": "skirt-skater-mini-v1",
+      "status": "generated",
       "color": "camel",
       "framing": [
         0.15,
         0.72
       ],
       "styleVersion": 2,
-      "templateSha256": "876b7cf80b8661d4f2511534065d5fa522ae4d6ffe215cdeab49b642df260e1a",
-      "sampleAvatar": "avatar-sample-a"
+      "templateSha256": "48c0f615e22fc3b14f6ba19657d1b0489f22fad3bfdd3eee09216f342abf08ab",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Camel Skater Skirt",
+          "templateId": "skirt-skater-mini-v1",
+          "color": "camel",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest (9% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
-      "id": "skirt-tiered-maxi-v1",
-      "status": "cached",
+      "id": "skirt-slip-midi-v1",
+      "status": "generated",
       "color": "burgundy",
       "framing": [
         0.15,
         0.72
       ],
       "styleVersion": 2,
-      "templateSha256": "dd48b8d03a6de242dbe8c6eb8e9fb4181e295e52be05fff09f26806f2fb491d1",
-      "sampleAvatar": "avatar-sample-a"
+      "templateSha256": "876b7cf80b8661d4f2511534065d5fa522ae4d6ffe215cdeab49b642df260e1a",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Burgundy Slip Skirt",
+          "templateId": "skirt-slip-midi-v1",
+          "color": "burgundy",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest (9% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
-      "id": "skirt-wrap-v1",
-      "status": "cached",
+      "id": "skirt-tiered-maxi-v1",
+      "status": "generated",
       "color": "grey",
       "framing": [
         0.15,
         0.72
       ],
       "styleVersion": 2,
+      "templateSha256": "dd48b8d03a6de242dbe8c6eb8e9fb4181e295e52be05fff09f26806f2fb491d1",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Grey Tiered Maxi Skirt",
+          "templateId": "skirt-tiered-maxi-v1",
+          "color": "grey",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest (9% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
+    },
+    {
+      "id": "skirt-wrap-v1",
+      "status": "generated",
+      "color": "emerald",
+      "framing": [
+        0.15,
+        0.72
+      ],
+      "styleVersion": 2,
       "templateSha256": "32c3a91c834f460177cf8d837897598dd982575b20eb3b11ca4b5792c6f9d6a6",
-      "sampleAvatar": "avatar-sample-a"
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Emerald Wrap Skirt",
+          "templateId": "skirt-wrap-v1",
+          "color": "emerald",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest (9% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
       "id": "swim-bikini-bandeau-v1",
@@ -689,7 +820,7 @@
         1.0
       ],
       "styleVersion": 2,
-      "templateSha256": "55aa76898673991c1866405f619a3faf1f3966a0f5b514ef5381651f7a52c437",
+      "templateSha256": "c6dfb471e87a35943f983943a1712f974d36361bf0fbd744ce5f8fc5cd93ec30",
       "sampleAvatar": "avatar-sample-a",
       "rating": "general",
       "fitPassed": true,
@@ -711,50 +842,141 @@
     },
     {
       "id": "top-halter-v1",
-      "status": "cached",
-      "color": "emerald",
-      "framing": [
-        0.5,
-        1.0
-      ],
-      "styleVersion": 2,
-      "templateSha256": "949e2461ce339be8d41ec1784c86b842a82b88a357eb562a088cfb2646c00098",
-      "sampleAvatar": "avatar-sample-a"
-    },
-    {
-      "id": "top-sports-bra-v1",
-      "status": "cached",
+      "status": "generated",
       "color": "navy",
       "framing": [
         0.5,
         1.0
       ],
       "styleVersion": 2,
-      "templateSha256": "07bd69b9c5d96c7440b7c98e8ea07e1a9417693a5788c2e7fa1e2f0bd733d6b7",
-      "sampleAvatar": "avatar-sample-a"
+      "templateSha256": "949e2461ce339be8d41ec1784c86b842a82b88a357eb562a088cfb2646c00098",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Navy Halter Crop Top",
+          "templateId": "top-halter-v1",
+          "color": "navy",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest and shorts or briefs at her hips (9% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
-      "id": "top-tee-v1",
-      "status": "cached",
+      "id": "top-sports-bra-v1",
+      "status": "generated",
       "color": "red",
       "framing": [
         0.5,
         1.0
       ],
       "styleVersion": 2,
-      "templateSha256": "7a9c271b719e388c252fa8cd11d6b7a94920bba957191e31c6352fb9bd45e551",
-      "sampleAvatar": "avatar-sample-a"
+      "templateSha256": "07bd69b9c5d96c7440b7c98e8ea07e1a9417693a5788c2e7fa1e2f0bd733d6b7",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Red Sports Bra",
+          "templateId": "top-sports-bra-v1",
+          "color": "red",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "warnings",
+      "warnings": [
+        "restored her skin under the outfit's open cut: 766326 texels of painted clothing or cut-away skin filled from the skin round them",
+        "4 garment vertices remain within the clearance margin (0.60% of the shell)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
-      "id": "top-tube-v1",
-      "status": "cached",
+      "id": "top-tee-v1",
+      "status": "generated",
       "color": "white",
       "framing": [
         0.5,
         1.0
       ],
       "styleVersion": 2,
+      "templateSha256": "7a9c271b719e388c252fa8cd11d6b7a94920bba957191e31c6352fb9bd45e551",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "White Basic Tee",
+          "templateId": "top-tee-v1",
+          "color": "white",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [],
+      "views": [
+        "front"
+      ]
+    },
+    {
+      "id": "top-tube-v1",
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
       "templateSha256": "90b63d9b7af32499e12a3547ce611e7ce5dbbfd1f8e5d71529adfa20d1032cd1",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Tube Top",
+          "templateId": "top-tube-v1",
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest and shorts or briefs at her hips (12% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
+    },
+    {
+      "id": "jeans-baggy-v1",
+      "status": "cached",
+      "color": "blue",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "212351ac4d192d13ecfd22437ffbeb682e6c269f921c02d9bea3adf58ebf57bd",
+      "sampleAvatar": "avatar-sample-a"
+    },
+    {
+      "id": "jeans-straight-v1",
+      "status": "cached",
+      "color": "blue",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "a68750e31198eb621e3ee28099995b5d4092bdd69dbeed99f6100fa788dcab81",
       "sampleAvatar": "avatar-sample-a"
     },
     {
