@@ -64,8 +64,9 @@ class Group:
 GROUPS: tuple[Group, ...] = (
     Group("casual", "Casual"),
     Group("dressy", "Dressy"),
-    # DC3. Sexy Discoteca — All Black: the bodycon dress with each of four black boots.
-    Group("discoteca", "Sexy Discoteca · All Black"),
+    # DC3. Sexy Discoteca — All Black: the bodycon dress with each of four black boots. Shown to
+    # everyone as a night-out set (the collection keeps its own name).
+    Group("discoteca", "Night out · All black"),
     Group("smart", "Smart"),
     # OC1. Training, yoga and athleisure: what the Gym occasion (wardrobe.pipeline.occasions) offers.
     Group("active", "Active & gym"),
@@ -78,8 +79,9 @@ GROUPS: tuple[Group, ...] = (
     # AB. An independent collection's own group (wardrobe.collections): swimwear, so private.
     Group("anime-beachwear", "Anime Beachwear", private=True),
     # AN2. One collection, two groups: a group's private flag must match what Forge computes.
-    Group("anime", "Anime fan service"),
-    Group("anime-private", "Anime fan service · swim & bodysuits", private=True),
+    # Named for what the looks are, anime-inspired outfits, on a screen anyone may see.
+    Group("anime", "Anime-inspired"),
+    Group("anime-private", "Anime-inspired · swim & bodysuits", private=True),
 )
 
 
