@@ -32,7 +32,7 @@ def test_ids_are_unique_and_every_look_is_in_the_dictionary(entries):
 def test_the_first_screen_is_the_occasions_asked_for():
     titles = [o.title for o in oc.OCCASIONS]
     assert titles == ["Night out", "Try-on haul", "Work", "Gym", "Sleep", "Shopping", "Vacation", "Campus",
-                      "Anime fan service", "Private"]
+                      "Anime-inspired", "Private"]
 
 
 def test_without_private_mode_no_style_is_left_empty(entries):

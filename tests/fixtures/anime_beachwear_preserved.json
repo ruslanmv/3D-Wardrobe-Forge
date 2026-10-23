@@ -1,5 +1,5 @@
 {
- "note": "AB5. Taken from main (3ff8c94) before Anime Beachwear: what must stay exactly as it was.",
+ "note": "AB5. Taken from main (3ff8c94) before Anime Beachwear: what must stay exactly as it was. Group titles renamed for a general audience (Night out \u00b7 All black, Anime-inspired); ids, contents and privacy unchanged.",
  "groups": [
   [
    "casual",
@@ -13,7 +13,7 @@
   ],
   [
    "discoteca",
-   "Sexy Discoteca \u00b7 All Black",
+   "Night out \u00b7 All black",
    false
   ],
   [

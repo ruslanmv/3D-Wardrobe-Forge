@@ -1475,7 +1475,7 @@ HAUL_KINDS = frozenset(
         # the liner a skirt is worn over (S2, wardrobe.pipeline.generate_garment.with_skirt_liner)
         "slip-shorts",
         # G6: cut as panels on her measured body (wardrobe.geometry.panels)
-        "camisole", "open-cardigan", "tee",
+        "camisole", "open-cardigan", "tee", "sports-bra",
     }
 )
 
@@ -1918,6 +1918,16 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         return [body, *top_straps(params, top_y=bust_top, style=straps or top_straps_default,
                                   underbust_y=underbust)]
 
+    if kind == "sports-bra":
+        # A sports bra, a top: the camisole's panels with an underband, a scoop and wide straps
+        # (wardrobe.geometry.panels.build_camisole(sports=True)). Unmeasured, a cropped cami.
+        from wardrobe.geometry.panels import build_camisole  # it builds on this module
+
+        built = build_camisole(params, cropped=True, sports=True)
+        if built is not None:
+            return built
+        kind = "crop-top"
+        straps = straps or "shoulder"
     if kind == "camisole":
         # G6. Front and back panels round her measured outline, a neckline, underarms and flat
         # straps (wardrobe.geometry.panels). Unmeasured, the cropped cami's band and straps.
@@ -2037,6 +2047,13 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
             sections += build_garter(params, belt_y=params.waist_y, stocking_top_y=stocking_top)
         return sections
     if kind == "leggings":
+        # One piece on her measured outline when the fitter has measured her (SL2's builder, a
+        # plain band); the band, gusset and tubes otherwise (a direct build_garment call).
+        from wardrobe.geometry.lower_panels import build_leggings_panel  # it imports panels
+
+        panel = build_leggings_panel(params, plain=True)
+        if panel:
+            return panel
         waistband = build_band(params, y_bottom=crotch_y(params, params.hip_y - thigh * 0.12),
                                y_top=low_rise + rise * 0.3, rows=5, name="leggings-waist")
         gusset = crotch_gusset(waistband, name="leggings-gusset")

@@ -374,7 +374,7 @@ OCCASIONS: tuple[Occasion, ...] = (
     # server's gate decides that on every job, as it does for any look.
     Occasion(
         "anime",
-        "Anime fan service",
+        "Anime-inspired",
         "🌸",
         "Which heroine tonight?",
         (

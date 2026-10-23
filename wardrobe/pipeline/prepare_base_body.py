@@ -60,7 +60,7 @@ REVEALING_NECKLINES = frozenset({"v", "plunge", "sweetheart"})
 #: camisole replaces her own top, and on most VRoid bodies the top is also painted on her
 #: skin: the cropped camisole of the GC0 review showed AvatarSample A's grey knit below its
 #: hem and her lace above its neckline.
-BARING_KINDS = frozenset({"camisole"})
+BARING_KINDS = frozenset({"camisole", "sports-bra"})
 
 
 def reveals_hidden_skin(plan, kinds: list[tuple[str, str]] = ()) -> bool:
