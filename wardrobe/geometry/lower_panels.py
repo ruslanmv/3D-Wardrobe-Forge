@@ -39,7 +39,7 @@ import math
 import numpy as np
 
 from wardrobe.geometry.mesh import Mesh
-from wardrobe.geometry.panels import SLAB_M, Sections, _Builder, _convex_hull, _ray_hull
+from wardrobe.geometry.panels import SLAB_M, Sections, _Builder, _convex_hull, _ray_hull, bend, thin_outline
 
 #: Columns round her trunk; each leg's loop is half of them plus the crotch curve, the same count.
 TRUNK_COLUMNS = 96
@@ -53,6 +53,8 @@ TOP_ABOVE_WAIST_M = 0.019
 BAND_AT_SIDE_M = 0.064
 V_DEPTH_M = 0.064
 V_HALF_WIDTH = 1.25
+#: A plain pair's band, level all round: how deep it is.
+PLAIN_BAND_M = 0.035
 #: The V's tip stays at least this share of her rise (band top to crotch) above her crotch: on a
 #: short rise (Model Girl's) the full V reached 3 cm from it and read as a dark shield there.
 V_FLOOR_SHARE = 0.5
@@ -78,6 +80,10 @@ CROTCH_UNDERSIDE_M = 0.012
 #: A leg ring stays this far on its own side of her midline: where her thighs touch, the two
 #: legs of the leggings are pressed flat together there instead of passing through each other.
 MIDLINE_GAP_M = 0.0005
+#: The trunk is cut on her outline at each row's own height (``thin_outline``), bent no tighter
+#: than this: the knit follows the small of her back and her waist, and spans the fold under
+#: her seat. On the slabs' widest outline the band stood 2 cm off her back and sides.
+KNIT_BEND_M = 0.02
 
 BAND_SECTION = "skirt-waistband"  # drawn a shade darker by assembly (wardrobe.geometry.waistband)
 BODY_SECTION = "seamless-panel"
@@ -134,8 +140,14 @@ class _Leg:
                          centre[1] + r * np.cos(phi)], axis=1)
 
 
-def build_leggings_panel(params) -> list[Mesh] | None:
-    """High-waist seamless leggings, one surface waist to ankle hems, on her measured outline."""
+def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
+    """High-waist seamless leggings, one surface waist to ankle hems, on her measured outline.
+
+    ``plain``: a plain pair (``leggings``): its top at her natural waist and a level band, no V
+    crossover. The plain pair was a band, a gusset and two tubes fitted one by one, and showed
+    what the seamless pair showed before SL2: a gusset patch at her crotch, a line across her
+    hips where band met tubes, and the slip shorts under them through both.
+    """
     cover = params.metadata.get("coverPoints")
     legs = params.metadata.get("legPoints")
     lower = params.metadata.get("lowerBody")
@@ -151,7 +163,9 @@ def build_leggings_panel(params) -> list[Mesh] | None:
     crotch = float(lower["crotchY"])
     centre_x = float(lower.get("centreX", np.median(cover[:, 0])))
 
-    top = float(params.waist_y) + TOP_ABOVE_WAIST_M * scale
+    # A plain pair sits at her natural waist unless it was asked for high ("high-waist").
+    high = not plain or str(params.metadata.get("rise") or "") == "high"
+    top = float(params.waist_y) + (TOP_ABOVE_WAIST_M if high else 0.0) * scale
     bottom = crotch + CROTCH_ROW_ABOVE_M
     sections = Sections.measure(cover, forward, bottom, top)
     if sections is None:
@@ -160,13 +174,22 @@ def build_leggings_panel(params) -> list[Mesh] | None:
     half = columns // 2
     theta = np.arange(columns) * (2.0 * math.pi / columns)  # 0 her front, π her back
 
-    side = top - BAND_AT_SIDE_M * scale
-    depth = min(V_DEPTH_M * scale, max(side - (crotch + V_FLOOR_SHARE * (top - crotch)), 0.0))
+    side = top - (PLAIN_BAND_M if plain else BAND_AT_SIDE_M) * scale
+    floor = crotch + V_FLOOR_SHARE * (top - crotch)
+    depth = 0.0 if plain else min(V_DEPTH_M * scale, max(side - floor, 0.0))
     vee = side - depth * np.maximum(_plateau(theta, 0.0, V_HALF_WIDTH),
                                                 _plateau(theta, math.pi, V_HALF_WIDTH))
     hip_rows = max(int(math.ceil((float(vee.max()) - bottom) / HIP_ROW_M)), 4)
     axis = np.array([sections.axis[0], 0.0, sections.axis[1]])
     builder = _Builder()
+    levels, outline = thin_outline(cover, sections, theta, bottom, top, forward)
+    # Bent over its own heights only: above its top her ribs widen again, and bent over them the
+    # band stood 6 mm further off her waist than the row below it.
+    own = (levels >= bottom) & (levels <= top)
+    outline[own] = bend(outline[own], levels[own], KNIT_BEND_M * scale)
+
+    def radius(j: int, y: float) -> float:
+        return float(np.interp(y, levels, outline[:, j]))
 
     pool = np.vstack([cover, legs])
     groin_top = bottom + GROIN_M * scale
@@ -177,7 +200,7 @@ def build_leggings_panel(params) -> list[Mesh] | None:
         dark shield in every front view); a knit follows her groin, spanning only the grooves
         narrower than ``BRIDGE_COLUMNS`` either side, as its tension spans them."""
         slab = pool[np.abs(pool[:, 1] - y) < SLAB_M]
-        hull = np.array([float(sections.radius(theta[j], y)) for j in range(columns)])
+        hull = np.array([radius(j, y) for j in range(columns)])
         own = hull.copy()
         for j in range(columns):
             if math.cos(theta[j]) <= math.cos(GROIN_HALF_ANGLE):
@@ -204,7 +227,7 @@ def build_leggings_panel(params) -> list[Mesh] | None:
     groin = np.array([own_radii(float(y)) for y in groin_ys])  # [height, column]
 
     def trunk_point(j: int, y: float, extra: float = 0.0) -> np.ndarray:
-        r = float(sections.radius(theta[j], y))
+        r = radius(j, y)
         if y < groin_top:
             r = min(r, float(np.interp(y, groin_ys, groin[:, j])))
         return sections.point(theta[j], y, r + ease + extra)

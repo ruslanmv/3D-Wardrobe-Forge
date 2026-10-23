@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "top-sports-bra-v1",
+  "name": "Sports Bra",
+  "category": "top",
+  "mesh": "procedural:sports-bra",
+  "coverage": [
+    "chest"
+  ],
+  "anchors": [
+    "chest"
+  ],
+  "silhouette": "slim",
+  "hem": "crop",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.8,
+    "maxLengthScale": 1.2
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "sports bra",
+    "sport bra",
+    "athletic bra",
+    "gym bra",
+    "training bra",
+    "workout bra",
+    "bra top",
+    "crop bra top"
+  ],
+  "description": "A gym sports bra, worn as a top: one supportive front across the bust with a moderate scoop, a continuous underband, a high back and wide straps."
+}
