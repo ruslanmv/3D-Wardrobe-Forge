@@ -10,15 +10,18 @@ eligibility, fit, rate-limit, and job lifecycle checks.
 
 from __future__ import annotations
 
+import hashlib
+from functools import lru_cache
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import CatalogDep, OrchestratorDep
 from apps.api.ratelimit import limit_job_creation
+from apps.api.routes.studio import LibraryJobRequest, create_library_job
 from wardrobe.domain.avatars import AvatarInput
 from wardrobe.domain.garments import INTIMATE_CATEGORIES, GarmentTemplate
 from wardrobe.domain.jobs import CreateJobRequest, JobOptions
@@ -52,8 +55,30 @@ def preview_path(template: GarmentTemplate) -> Path:
     return PREVIEW_ROOT / (template.id + ".webp")
 
 
+@lru_cache(maxsize=512)
+def _digest(path: str, mtime_ns: int, size: int) -> str:
+    # Keyed on the file's stat, so a re-rendered preview gets a new version without a restart.
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()[:16]
+
+
+def preview_version(template: GarmentTemplate) -> str | None:
+    """A short content hash of the shipped preview, or None when there is none.
+
+    It goes in ``previewUrl`` as ``?v=``. Without it a client that cached the
+    previous render for a day kept showing it after a re-render, and the only
+    cure was a cache lifetime too short to be worth caching at all.
+    """
+    path = preview_path(template)
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return _digest(str(path), stat.st_mtime_ns, stat.st_size)
+
+
 def garment_item(template: GarmentTemplate) -> dict:
-    has_preview = preview_path(template).is_file()
+    version = preview_version(template)
+    has_preview = version is not None
     return {
         "id": template.id,
         "name": template.name,
@@ -66,7 +91,7 @@ def garment_item(template: GarmentTemplate) -> dict:
         "supportsColor": template.materials.supports_base_color,
         "requiresAdult": restricted(template),
         "previewStatus": "ready" if has_preview else "pending",
-        "previewUrl": f"/v1/catalog/garments/{template.id}/preview" if has_preview else None,
+        "previewUrl": f"/v1/catalog/garments/{template.id}/preview?v={version}" if has_preview else None,
     }
 
 
@@ -109,37 +134,59 @@ def list_garments(
 
 
 @router.get("/catalog/garments/{template_id}/preview")
-def garment_preview(template_id: str, catalog: CatalogDep, admin: AdminDep) -> FileResponse:
+def garment_preview(
+    template_id: str, catalog: CatalogDep, admin: AdminDep, v: str | None = Query(default=None)
+) -> FileResponse:
     """Serve only pre-generated validated WebP files for known template IDs."""
     template = catalog.get(template_id)
     if template is None or (restricted(template) and admin is None):
         raise HTTPException(status_code=404, detail="preview not available")
-    path = preview_path(template)
-    if not path.is_file():
+    version = preview_version(template)
+    if version is None:
         raise HTTPException(status_code=404, detail="preview not generated")
-    return FileResponse(
-        path,
-        media_type="image/webp",
-        headers={"Cache-Control": "public, max-age=86400" if not restricted(template)
-                 else "private, no-store"},
-    )
+    if restricted(template):
+        cache = "private, no-store"
+    elif v == version:
+        # The URL names these exact bytes, so it can never go stale: cache it for good.
+        cache = "public, max-age=31536000, immutable"
+    else:
+        # Unversioned or outdated link (an old client, a hand-typed URL): still served, briefly.
+        cache = "public, max-age=3600"
+    return FileResponse(preview_path(template), media_type="image/webp", headers={"Cache-Control": cache})
 
 
 class CustomizeGarmentRequest(BaseModel):
-    """A real job request: the AI may choose the prompt and template beforehand."""
+    """A real job request: the AI may choose the prompt and template beforehand.
+
+    The avatar is named one of two ways. ``avatar`` is a raw AvatarInput, as
+    before. ``librarySlug`` names a library avatar instead, and only that form
+    can carry ``baseLookId``: a change to one garment of a look she already
+    has, keeping the rest of it (a new top over the same jeans and shoes).
+    """
     model_config = ConfigDict(populate_by_name=True)
 
-    avatar: AvatarInput
+    avatar: AvatarInput | None = None
+    library_slug: str | None = Field(default=None, alias="librarySlug", max_length=120)
+    base_look_id: str | None = Field(default=None, alias="baseLookId", max_length=120)
     prompt: str = Field(min_length=2, max_length=1000)
     template_id: str | None = Field(default=None, alias="templateId")
     color: str | None = Field(default=None, max_length=40)
     options: JobOptions = Field(default_factory=JobOptions)
 
+    @model_validator(mode="after")
+    def _one_avatar(self) -> CustomizeGarmentRequest:
+        if (self.avatar is None) == (self.library_slug is None):
+            raise ValueError("name the avatar once: either avatar or librarySlug")
+        if self.base_look_id and self.library_slug is None:
+            # A look is found in a library avatar's wardrobe; a raw avatar has none to search.
+            raise ValueError("baseLookId builds on a library avatar's look: send librarySlug with it")
+        return self
+
 
 @router.post("/catalog/customize", status_code=status.HTTP_202_ACCEPTED,
              dependencies=[Depends(limit_job_creation)])
-async def customize_garment(request: CustomizeGarmentRequest, catalog: CatalogDep,
-                            orchestrator: OrchestratorDep) -> dict:
+async def customize_garment(request: CustomizeGarmentRequest, http: Request, catalog: CatalogDep,
+                            orchestrator: OrchestratorDep, admin: AdminDep) -> dict:
     """Queue a real Forge job, rather than painting a fake garment preview.
 
     The client supplies the CURRENT avatar/VRM and, for a single-piece change,
@@ -154,13 +201,21 @@ async def customize_garment(request: CustomizeGarmentRequest, catalog: CatalogDe
         templateId=request.template_id,
         color=request.color,
     )
-    job = CreateJobRequest(
-        avatar=request.avatar, outfit=outfit,
-        # Public facade: callers cannot mark their own results private or
-        # bypass the server's adult/licensing policy.
-        options=request.options.model_copy(update={"private": False}),
-    )
-    record = await orchestrator.submit(job)
+    if request.library_slug is not None:
+        # The library route is the one place that turns a slug into an avatar: the pinned
+        # source, the licence its provenance grants, a base look found only in her own
+        # wardrobe, and privacy decided from those. Delegating keeps this facade from
+        # becoming a second, slightly different copy of that policy.
+        body = LibraryJobRequest(outfit=outfit, options=request.options, baseLookId=request.base_look_id)
+        record = await create_library_job(request.library_slug, body, http, orchestrator, admin)
+    else:
+        job = CreateJobRequest(
+            avatar=request.avatar, outfit=outfit,
+            # Public facade: callers cannot mark their own results private or
+            # bypass the server's adult/licensing policy.
+            options=request.options.model_copy(update={"private": False}),
+        )
+        record = await orchestrator.submit(job)
     return {
         "jobId": record.id,
         "status": str(record.state),

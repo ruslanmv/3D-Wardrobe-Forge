@@ -25,6 +25,9 @@ def validate(root: Path, report_path: Path, contact_sheet: Path) -> int:
     report = json.loads(report_path.read_text())
     reported = {record["id"]: record for record in report["records"]}
     image_paths = sorted(root.glob("*.webp"))
+    # Schema 2 reports declare the canvas every preview was rendered on; a file of another
+    # size is left over from an older style (or hand-placed) and does not belong to this build.
+    canvas = tuple(report["canvas"]) if report.get("canvas") else None
     if len(reported) != len(by_id):
         raise SystemExit(
             f"incomplete catalog run: {len(reported)} template records; expected {len(by_id)}"
@@ -47,17 +50,24 @@ def validate(root: Path, report_path: Path, contact_sheet: Path) -> int:
         with Image.open(path) as img:
             if img.format != "WEBP" or img.width < 300 or img.height < 400:
                 raise SystemExit(f"Bad WebP dimensions/format: {path}")
+            if canvas and (img.width, img.height) != canvas:
+                raise SystemExit(f"Preview {tid} is {img.width}x{img.height}, not the build's {canvas}")
             if max(ImageStat.Stat(img.convert("RGB")).stddev) < 8:
                 raise SystemExit(f"Image looks blank/unrendered: {path}")
-            thumb = img.convert("RGB").resize((144, 250), Image.Resampling.LANCZOS)
+            # Fitted into the tile, never stretched: a squashed contact sheet hides exactly the
+            # proportions a reviewer is looking at.
+            thumb = img.convert("RGB")
+            thumb.thumbnail((144, 250), Image.Resampling.LANCZOS)
+            width, height = img.width, img.height
         audit.append(
             {"id": tid, "category": template.category, "sha256": hashlib.sha256(data).hexdigest(),
-             "bytes": len(data), "width": 480, "preview": path.name, "_thumb": thumb}
+             "bytes": len(data), "width": width, "height": height, "preview": path.name,
+             "color": reported[tid].get("color"), "_thumb": thumb}
         )
     for template in catalog:
-        if reported[template.id]["status"] in {"cached", "generated"}:
-            if not (root / (template.id + ".webp")).is_file():
-                raise SystemExit(f"Build report claims preview that is missing: {template.id}")
+        claimed = reported[template.id]["status"] in {"cached", "generated"}
+        if claimed and not (root / (template.id + ".webp")).is_file():
+            raise SystemExit(f"Build report claims preview that is missing: {template.id}")
 
     # Contact sheet is not distributed in the public API.
     columns = 7
@@ -68,7 +78,8 @@ def validate(root: Path, report_path: Path, contact_sheet: Path) -> int:
     for i, record in enumerate(audit):
         x = (i % columns) * tile_w
         y = (i // columns) * tile_h
-        sheet.paste(record.pop("_thumb"), (x + 10, y + 8))
+        thumb = record.pop("_thumb")
+        sheet.paste(thumb, (x + 10 + (144 - thumb.width) // 2, y + 8 + (250 - thumb.height) // 2))
         label = record["id"]
         draw.text((x + 7, y + 261), label[:22], fill="#ddf7ff")
         draw.text((x + 7, y + 277), record["category"], fill="#5ccee8")
@@ -79,6 +90,7 @@ def validate(root: Path, report_path: Path, contact_sheet: Path) -> int:
         "schemaVersion": 1,
         "source": "Forge template catalog with verified preview images",
         "sampleAvatar": report["sampleAvatar"],
+        "styleVersion": report.get("styleVersion", 1),
         "count": len(audit),
         "items": [{k: v for k, v in item.items() if k != "_thumb"} for item in audit],
     }

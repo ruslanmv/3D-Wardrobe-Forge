@@ -11,7 +11,12 @@ generation endpoint. It does not touch the Together activity launcher.
 - GET /v1/templates is the existing raw template API.
 - GET /v1/catalog/garments groups public templates by category.
 - Each preview is a fitted VRM on the same reference sample avatar, rendered
-  using the existing Studio's VRM viewer (tools/gallery/render.mjs).
+  using the existing Studio's VRM viewer (tools/gallery/views.mjs). She is
+  first dressed in a neutral foundation (beige tube top and slip shorts, her
+  own clothes off), then each garment is fitted over that in its own colour and
+  framed on its category: a top from the hips up, shoes from the knees down.
+  tools/catalog/preview-style.json holds the base, canvas (480x640), framing and
+  colour rules; changing it means bumping styleVersion.
 - These are *reference previews*, not standalone garment GLBs or guaranteed fits
   on different user avatars. Every user-generated outfit must pass fit validation.
 - Missing previews show previewStatus=pending and previewUrl=null; never invent
@@ -34,6 +39,12 @@ GET /v1/catalog/garments returns schemaVersion, totalTemplates, visibleCount,
 previewCount and grouped categories. Each garment includes id, name, category,
 description, tags, silhouette, hem, sleeve, supportsColor, requiresAdult,
 previewStatus, and previewUrl.
+
+previewUrl carries ?v=<content hash>. That exact URL is served with
+Cache-Control: public, max-age=31536000, immutable, so a client may keep it
+forever; a re-rendered preview gets a new hash and therefore a new URL. A link
+without v, or with an outdated one, is still served, but cached for an hour.
+Public previews need no credentials, so an img tag can load them cross-origin.
 
 Default public listings omit adult-gated template categories and explicit
 requiresAdult templates. includeRestricted=true needs an existing admin session
@@ -65,6 +76,23 @@ Example request:
       }
     }
 
+Or, for a library avatar, name it by slug and build on a look she already has:
+
+    {
+      "librarySlug": "avatar-sample-a",
+      "baseLookId": "look_0123abcd",
+      "prompt": "Red cropped tee",
+      "templateId": "top-crop-tee-v1",
+      "color": "red",
+      "options": {"baseBody": "replace-outer"}
+    }
+
+This form is delegated to POST /v1/library/{slug}/jobs: the server fills in the
+pinned source, its licence and privacy, and finds baseLookId only in that
+avatar's own wardrobe (404 otherwise). The new garment replaces what it covers
+and the rest of the look stays: a new top over the same skirt and shoes. Send
+exactly one of avatar and librarySlug; baseLookId needs librarySlug (422).
+
 Returns HTTP 202 and jobId, status, statusUrl and eventsUrl, exactly like
 POST /v1/generate. Follow those existing progress/events routes until complete.
 Only then load the validated VRM via the chatbot's existing wardrobe controller.
@@ -94,10 +122,19 @@ Outputs:
     assets/catalog/previews/<templateId>.webp
     assets/catalog/build-report.json
 
-The renderer skips cached WebPs, skips restricted templates, requires real
-generation success, fit passing and general rating, then calls the same
-Studio viewer as the existing gallery. Output is resized to 480px width
-and encoded as WebP quality 82. Review the images before release.
+The renderer skips restricted templates, requires real generation success, fit
+passing and general rating, then calls the same Studio viewer as the existing
+gallery. Output is 480x640 WebP, quality 82. A preview is reused only when its
+cache key in the previous build report matches: colour, framing, styleVersion,
+the template file's SHA-256 and the sample avatar. A full build deletes WebPs
+no template produced. Then validate and review the contact sheet:
+
+    python tools/catalog/validate_catalog.py --root assets/catalog/previews \
+        --report assets/catalog/build-report.json --contact-sheet /tmp/sheet.webp
+
+Known limitation, recorded in the build report: AvatarSample A's texture paints
+a dark waist band and brown tights on her body, so they show under short
+garments in every preview.
 
 Commit approved assets into the Space repository or a deployed asset bundle;
 local container files can disappear when a Space restarts.

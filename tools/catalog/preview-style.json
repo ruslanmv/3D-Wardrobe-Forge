@@ -1,0 +1,33 @@
+{
+  "styleVersion": 2,
+  "note": "How catalog previews are made (tools/catalog/render_templates.py). Change anything here and bump styleVersion: every preview is then re-rendered, because the cache key includes it.",
+  "base": {
+    "prompt": "beige seamless tube top + beige slip shorts",
+    "why": "The reference avatar is first dressed in the neutral, general-rated foundation with her own clothes off, so each catalog garment is the only thing that reads in its preview."
+  },
+  "canvas": [480, 640],
+  "yaw": -25,
+  "framing": {
+    "why": "Share of her height each category is framed on, bottom to top: a pair of flats in a full-body frame was a few pixels.",
+    "top": [0.5, 1.0],
+    "jacket": [0.38, 1.0],
+    "trousers": [0.0, 0.7],
+    "shorts": [0.3, 0.72],
+    "skirt": [0.15, 0.72],
+    "dress": [0.0, 1.0],
+    "jumpsuit": [0.0, 1.0],
+    "nightwear": [0.0, 1.0],
+    "shoes": [0.0, 0.32],
+    "legwear": [0.0, 0.62]
+  },
+  "colors": {
+    "why": "Each garment in its own colour, so the catalog is not one navy. A template matching a rule takes that colour; the rest take the category palette in order of template id, so the choice is fixed for every build.",
+    "rules": [
+      { "match": "jeans|denim", "color": "blue" },
+      { "match": "leggings", "color": "black" },
+      { "match": "trench", "color": "camel" },
+      { "match": "tights|thigh-high", "color": "black" }
+    ],
+    "palette": ["red", "white", "black", "olive", "pink", "camel", "burgundy", "grey", "emerald", "navy"]
+  }
+}
