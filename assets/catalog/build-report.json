@@ -1,0 +1,388 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-23T18:39:31+00:00",
+  "sampleAvatar": "avatar-sample-a",
+  "previewFormat": "image/webp",
+  "records": [
+    {
+      "id": "dress-a-line-v1",
+      "status": "generated"
+    },
+    {
+      "id": "dress-cocktail-v1",
+      "status": "generated"
+    },
+    {
+      "id": "dress-evening-column-v1",
+      "status": "generated"
+    },
+    {
+      "id": "dress-maxi-sundress-v1",
+      "status": "generated"
+    },
+    {
+      "id": "dress-mini-bodycon-v1",
+      "status": "generated"
+    },
+    {
+      "id": "dress-mini-skater-v1",
+      "status": "generated"
+    },
+    {
+      "id": "dress-shirt-v1",
+      "status": "generated"
+    },
+    {
+      "id": "dress-slip-midi-v1",
+      "status": "generated"
+    },
+    {
+      "id": "dress-wrap-sleeve-v1",
+      "status": "generated"
+    },
+    {
+      "id": "jacket-blazer-v1",
+      "status": "generated"
+    },
+    {
+      "id": "jacket-cropped-cardigan-v1",
+      "status": "generated"
+    },
+    {
+      "id": "jacket-long-cardigan-v1",
+      "status": "generated"
+    },
+    {
+      "id": "jacket-oversized-v1",
+      "status": "generated"
+    },
+    {
+      "id": "jacket-trench-v1",
+      "status": "generated"
+    },
+    {
+      "id": "jumpsuit-catsuit-v1",
+      "status": "generated"
+    },
+    {
+      "id": "legwear-thigh-highs-v1",
+      "status": "generated"
+    },
+    {
+      "id": "legwear-tights-v1",
+      "status": "generated"
+    },
+    {
+      "id": "night-nightgown-v1",
+      "status": "generated"
+    },
+    {
+      "id": "night-pajama-top-v1",
+      "status": "generated"
+    },
+    {
+      "id": "night-pajama-trousers-v1",
+      "status": "generated"
+    },
+    {
+      "id": "shoes-boots-v1",
+      "status": "generated"
+    },
+    {
+      "id": "shoes-combat-boots-v1",
+      "status": "generated"
+    },
+    {
+      "id": "shoes-flats-v1",
+      "status": "generated"
+    },
+    {
+      "id": "shoes-over-knee-boots-v1",
+      "status": "generated"
+    },
+    {
+      "id": "shoes-over-knee-stiletto-boots-v1",
+      "status": "generated"
+    },
+    {
+      "id": "shoes-platform-boots-v1",
+      "status": "generated"
+    },
+    {
+      "id": "shoes-stiletto-ankle-boots-v1",
+      "status": "generated"
+    },
+    {
+      "id": "shorts-denim-v1",
+      "status": "generated"
+    },
+    {
+      "id": "shorts-linen-v1",
+      "status": "generated"
+    },
+    {
+      "id": "shorts-slip-v1",
+      "status": "generated"
+    },
+    {
+      "id": "skirt-a-line-v1",
+      "status": "generated"
+    },
+    {
+      "id": "skirt-maxi-v1",
+      "status": "generated"
+    },
+    {
+      "id": "skirt-pencil-v1",
+      "status": "generated"
+    },
+    {
+      "id": "skirt-pleated-mini-v1",
+      "status": "generated"
+    },
+    {
+      "id": "skirt-skater-mini-v1",
+      "status": "generated"
+    },
+    {
+      "id": "skirt-slip-midi-v1",
+      "status": "generated"
+    },
+    {
+      "id": "skirt-tiered-maxi-v1",
+      "status": "generated"
+    },
+    {
+      "id": "skirt-wrap-v1",
+      "status": "generated"
+    },
+    {
+      "id": "swim-bikini-bandeau-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "swim-bikini-bottom-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "swim-bikini-top-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "swim-bikini-triangle-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "swim-one-piece-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "swim-one-piece-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "swim-skirted-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "swim-string-bikini-bottom-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "top-blouse-v1",
+      "status": "generated"
+    },
+    {
+      "id": "top-camisole-v1",
+      "status": "generated"
+    },
+    {
+      "id": "top-corset-cropped-v1",
+      "status": "generated"
+    },
+    {
+      "id": "top-corset-v1",
+      "status": "generated"
+    },
+    {
+      "id": "top-crop-cami-v1",
+      "status": "generated"
+    },
+    {
+      "id": "top-crop-tee-v1",
+      "status": "generated"
+    },
+    {
+      "id": "top-cropped-cami-v1",
+      "status": "generated"
+    },
+    {
+      "id": "top-fitted-tee-v1",
+      "status": "generated"
+    },
+    {
+      "id": "top-halter-v1",
+      "status": "generated"
+    },
+    {
+      "id": "top-sports-bra-v1",
+      "status": "generated"
+    },
+    {
+      "id": "top-tee-v1",
+      "status": "generated"
+    },
+    {
+      "id": "top-tube-v1",
+      "status": "generated"
+    },
+    {
+      "id": "jeans-baggy-v1",
+      "status": "generated"
+    },
+    {
+      "id": "jeans-straight-v1",
+      "status": "generated"
+    },
+    {
+      "id": "trousers-balloon-v1",
+      "status": "generated"
+    },
+    {
+      "id": "trousers-leggings-highwaist-v1",
+      "status": "generated"
+    },
+    {
+      "id": "trousers-leggings-seamless-v1",
+      "status": "generated"
+    },
+    {
+      "id": "trousers-leggings-v1",
+      "status": "generated"
+    },
+    {
+      "id": "trousers-slim-v1",
+      "status": "generated"
+    },
+    {
+      "id": "trousers-straight-v1",
+      "status": "generated"
+    },
+    {
+      "id": "trousers-wide-v1",
+      "status": "generated"
+    },
+    {
+      "id": "under-bodysuit-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-bodysuit-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-boyshort-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-bra-balconette-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-bra-full-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-bra-plunge-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-bralette-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-bralette-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-brazilian-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-briefs-french-cut-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-briefs-high-leg-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-briefs-string-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-briefs-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-briefs-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-cheeky-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-g-string-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-garter-set-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-guepiere-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-high-waist-briefs-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-high-waist-thong-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-hipster-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-lingerie-set-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-suspender-belt-high-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-suspender-belt-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-tanga-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-thong-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-v-string-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-waspie-v1",
+      "status": "restricted-skipped"
+    }
+  ]
+}

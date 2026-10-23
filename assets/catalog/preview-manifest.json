@@ -1,0 +1,480 @@
+{
+  "schemaVersion": 1,
+  "source": "Forge template catalog with verified preview images",
+  "sampleAvatar": "avatar-sample-a",
+  "count": 59,
+  "items": [
+    {
+      "id": "dress-a-line-v1",
+      "category": "dress",
+      "sha256": "5f7779eb0ea63f75097dd47713358a83c5cdbcd65e5a502ea186ee7661acc848",
+      "bytes": 9026,
+      "width": 480,
+      "preview": "dress-a-line-v1.webp"
+    },
+    {
+      "id": "dress-cocktail-v1",
+      "category": "dress",
+      "sha256": "a5268cb17f2a0284af736f22ecf58e1543b2ec91b7838593e588c559b4982115",
+      "bytes": 9664,
+      "width": 480,
+      "preview": "dress-cocktail-v1.webp"
+    },
+    {
+      "id": "dress-evening-column-v1",
+      "category": "dress",
+      "sha256": "ed5a81b045d83103ce66ab46820327ba9744224960de57ac81966ea44a469986",
+      "bytes": 8442,
+      "width": 480,
+      "preview": "dress-evening-column-v1.webp"
+    },
+    {
+      "id": "dress-maxi-sundress-v1",
+      "category": "dress",
+      "sha256": "a75e5d1adbaeb5d4c7bf8a17c94448141e46472c4abd283ae3c4dadfb9116af8",
+      "bytes": 8622,
+      "width": 480,
+      "preview": "dress-maxi-sundress-v1.webp"
+    },
+    {
+      "id": "dress-mini-bodycon-v1",
+      "category": "dress",
+      "sha256": "3bfc6d799d73d4d1bbe5880a8fa4b6f4788360a01273a945f5e6233d4a85ce0d",
+      "bytes": 9642,
+      "width": 480,
+      "preview": "dress-mini-bodycon-v1.webp"
+    },
+    {
+      "id": "dress-mini-skater-v1",
+      "category": "dress",
+      "sha256": "49d176222315fe0ddd17f6c0078a038fa7da5d8d4cbbeff759a0ef8722f127c1",
+      "bytes": 9624,
+      "width": 480,
+      "preview": "dress-mini-skater-v1.webp"
+    },
+    {
+      "id": "dress-shirt-v1",
+      "category": "dress",
+      "sha256": "b9292c90119d9f71c1b842ba0a64c27684d5fe2a92abc8beedda223fa3da507d",
+      "bytes": 8384,
+      "width": 480,
+      "preview": "dress-shirt-v1.webp"
+    },
+    {
+      "id": "dress-slip-midi-v1",
+      "category": "dress",
+      "sha256": "02a497bd06a214e9a3e508349de8319c6785941a8feb40e17433553299254fba",
+      "bytes": 8780,
+      "width": 480,
+      "preview": "dress-slip-midi-v1.webp"
+    },
+    {
+      "id": "dress-wrap-sleeve-v1",
+      "category": "dress",
+      "sha256": "fcf0628a2b57e5f38df63f62752113840aa3905dfb24e259d1fb7ab574cf3078",
+      "bytes": 7158,
+      "width": 480,
+      "preview": "dress-wrap-sleeve-v1.webp"
+    },
+    {
+      "id": "jacket-blazer-v1",
+      "category": "jacket",
+      "sha256": "aeeea381584b936fe2733fab1e7aae3e3aaa0d889b0adb8bcf0bd706cdc49124",
+      "bytes": 8064,
+      "width": 480,
+      "preview": "jacket-blazer-v1.webp"
+    },
+    {
+      "id": "jacket-cropped-cardigan-v1",
+      "category": "jacket",
+      "sha256": "e51fc3a8930b4733b07907490fa791465e112640c2359958111110386dbd7542",
+      "bytes": 9802,
+      "width": 480,
+      "preview": "jacket-cropped-cardigan-v1.webp"
+    },
+    {
+      "id": "jacket-long-cardigan-v1",
+      "category": "jacket",
+      "sha256": "ba4d5694ea4723138ac119a3bd837a17abc71cd3991be271469c2150cf6fd73d",
+      "bytes": 11468,
+      "width": 480,
+      "preview": "jacket-long-cardigan-v1.webp"
+    },
+    {
+      "id": "jacket-oversized-v1",
+      "category": "jacket",
+      "sha256": "83c7d5d38ea33d1ee5c6ce12e94ed8c7456884d7819dd20f489d6e37c9507b2d",
+      "bytes": 7998,
+      "width": 480,
+      "preview": "jacket-oversized-v1.webp"
+    },
+    {
+      "id": "jacket-trench-v1",
+      "category": "jacket",
+      "sha256": "e618da7fe7d69d731c2bf21ba4282694dc55b7163dd4f4e894f15b5cdde66a9e",
+      "bytes": 8132,
+      "width": 480,
+      "preview": "jacket-trench-v1.webp"
+    },
+    {
+      "id": "jeans-baggy-v1",
+      "category": "trousers",
+      "sha256": "a5252228863968660bfda3b5682bdcb6ff24f16b87815824b2d89298f8aeff32",
+      "bytes": 10676,
+      "width": 480,
+      "preview": "jeans-baggy-v1.webp"
+    },
+    {
+      "id": "jeans-straight-v1",
+      "category": "trousers",
+      "sha256": "c4ef6b612a65f47a91de5a16c58127c9cfb4bf9d646b9b94bf5d5ed39015867b",
+      "bytes": 10898,
+      "width": 480,
+      "preview": "jeans-straight-v1.webp"
+    },
+    {
+      "id": "jumpsuit-catsuit-v1",
+      "category": "jumpsuit",
+      "sha256": "49112ed34c9e546ed11c3ef88d1fdd4726314b507ddd8d490748c93dbbc46e91",
+      "bytes": 7668,
+      "width": 480,
+      "preview": "jumpsuit-catsuit-v1.webp"
+    },
+    {
+      "id": "legwear-thigh-highs-v1",
+      "category": "legwear",
+      "sha256": "720f721be7aa43b3ae3642f7bdc9843cb20468db07c74c6449dda3908c41e678",
+      "bytes": 12660,
+      "width": 480,
+      "preview": "legwear-thigh-highs-v1.webp"
+    },
+    {
+      "id": "legwear-tights-v1",
+      "category": "legwear",
+      "sha256": "20b4d1919fa9c7b45daf5ced180d6119bc5a87f9b496e47ee60c637b5c71dbc9",
+      "bytes": 11608,
+      "width": 480,
+      "preview": "legwear-tights-v1.webp"
+    },
+    {
+      "id": "night-nightgown-v1",
+      "category": "nightwear",
+      "sha256": "b876f19835f93f4f868eb8e4037432be046a7d90a91a30cee880dee67c52edc2",
+      "bytes": 9282,
+      "width": 480,
+      "preview": "night-nightgown-v1.webp"
+    },
+    {
+      "id": "night-pajama-top-v1",
+      "category": "nightwear",
+      "sha256": "c9134d0170b9664e0155ece948af1cf17e204326911d38d0b7a4dc2d0b8b579f",
+      "bytes": 8024,
+      "width": 480,
+      "preview": "night-pajama-top-v1.webp"
+    },
+    {
+      "id": "night-pajama-trousers-v1",
+      "category": "nightwear",
+      "sha256": "fc28c7108bf1dc6ad6bdd3d59a7952ec75a1c527f38b9c3388804bfbed5b2efa",
+      "bytes": 10836,
+      "width": 480,
+      "preview": "night-pajama-trousers-v1.webp"
+    },
+    {
+      "id": "shoes-boots-v1",
+      "category": "shoes",
+      "sha256": "1a458b0e9d3c2f7f85d52ea8ca04ac6ae899cab10387d23dc84e3411c87c8e5b",
+      "bytes": 12756,
+      "width": 480,
+      "preview": "shoes-boots-v1.webp"
+    },
+    {
+      "id": "shoes-combat-boots-v1",
+      "category": "shoes",
+      "sha256": "f93187f7deba69cc36a103c5b751b2babb7dba394e4c9fd145aaf2c4dbcb20c1",
+      "bytes": 13192,
+      "width": 480,
+      "preview": "shoes-combat-boots-v1.webp"
+    },
+    {
+      "id": "shoes-flats-v1",
+      "category": "shoes",
+      "sha256": "d258b1192997dd2569c6a4479f0abd0c95396b2baa05aa72bc6c99989bfc63ca",
+      "bytes": 12760,
+      "width": 480,
+      "preview": "shoes-flats-v1.webp"
+    },
+    {
+      "id": "shoes-over-knee-boots-v1",
+      "category": "shoes",
+      "sha256": "2422f64e4740fc7679c4d6f01322a766705e4b0222ab452ae8ca267f4b5d1e7a",
+      "bytes": 11730,
+      "width": 480,
+      "preview": "shoes-over-knee-boots-v1.webp"
+    },
+    {
+      "id": "shoes-over-knee-stiletto-boots-v1",
+      "category": "shoes",
+      "sha256": "7355f84bf924e439b59971296f32f85a2825da37d792af4a16179b8cb6bf0ead",
+      "bytes": 11706,
+      "width": 480,
+      "preview": "shoes-over-knee-stiletto-boots-v1.webp"
+    },
+    {
+      "id": "shoes-platform-boots-v1",
+      "category": "shoes",
+      "sha256": "e5339121e617f41ef203399baa22586fb7b3c2a53f75b1dc2e4a0f4eb41aa878",
+      "bytes": 11696,
+      "width": 480,
+      "preview": "shoes-platform-boots-v1.webp"
+    },
+    {
+      "id": "shoes-stiletto-ankle-boots-v1",
+      "category": "shoes",
+      "sha256": "2dd2301ff5239070aff9dc5d675118e4e06c0a57ee0eb4499c13a386c4451a8d",
+      "bytes": 12222,
+      "width": 480,
+      "preview": "shoes-stiletto-ankle-boots-v1.webp"
+    },
+    {
+      "id": "shorts-denim-v1",
+      "category": "shorts",
+      "sha256": "f108b10aea75b1374caf907d29f28f5536a875c72eb97be9c1e5acb8cedfe233",
+      "bytes": 11776,
+      "width": 480,
+      "preview": "shorts-denim-v1.webp"
+    },
+    {
+      "id": "shorts-linen-v1",
+      "category": "shorts",
+      "sha256": "0b68aa570c8682b0b8ac7377502a0491f0adb5acf14f6a9c1188ba09432ca76c",
+      "bytes": 11812,
+      "width": 480,
+      "preview": "shorts-linen-v1.webp"
+    },
+    {
+      "id": "shorts-slip-v1",
+      "category": "shorts",
+      "sha256": "0ca9ac50e51c9ceaacf4670735f6e55db69766aff35d0672157a337669254193",
+      "bytes": 12310,
+      "width": 480,
+      "preview": "shorts-slip-v1.webp"
+    },
+    {
+      "id": "skirt-a-line-v1",
+      "category": "skirt",
+      "sha256": "555af85ffd64be0675045187ee6a4df0cf48279d334700654f9bde922841c758",
+      "bytes": 11148,
+      "width": 480,
+      "preview": "skirt-a-line-v1.webp"
+    },
+    {
+      "id": "skirt-maxi-v1",
+      "category": "skirt",
+      "sha256": "8f6ede5ad59a3c11248b4371ff67423c9c98c02b4744136b8d5faca71c10fb05",
+      "bytes": 10432,
+      "width": 480,
+      "preview": "skirt-maxi-v1.webp"
+    },
+    {
+      "id": "skirt-pencil-v1",
+      "category": "skirt",
+      "sha256": "52ffa7de4f679374a58c762139cc039f1e6d1a384b0f5e96729427dec6818af7",
+      "bytes": 11146,
+      "width": 480,
+      "preview": "skirt-pencil-v1.webp"
+    },
+    {
+      "id": "skirt-pleated-mini-v1",
+      "category": "skirt",
+      "sha256": "5c36580faadbf17b12ce49d0ffef2e277ea07d876607e7fbde77d38faa7bdeca",
+      "bytes": 12110,
+      "width": 480,
+      "preview": "skirt-pleated-mini-v1.webp"
+    },
+    {
+      "id": "skirt-skater-mini-v1",
+      "category": "skirt",
+      "sha256": "5489ddab9289ff591d62ca1d2e4537e28ca2eb3158dbe5ee13751e933dd25e40",
+      "bytes": 11076,
+      "width": 480,
+      "preview": "skirt-skater-mini-v1.webp"
+    },
+    {
+      "id": "skirt-slip-midi-v1",
+      "category": "skirt",
+      "sha256": "1e8231be2de0ddffd9f017806d088d3bc3523559196edd40b1027f53707b3674",
+      "bytes": 10796,
+      "width": 480,
+      "preview": "skirt-slip-midi-v1.webp"
+    },
+    {
+      "id": "skirt-tiered-maxi-v1",
+      "category": "skirt",
+      "sha256": "92daff4fcea3aa776782744ccf9b5a1624c7e8c08e5c3603e7dc8a7bed6dc358",
+      "bytes": 10850,
+      "width": 480,
+      "preview": "skirt-tiered-maxi-v1.webp"
+    },
+    {
+      "id": "skirt-wrap-v1",
+      "category": "skirt",
+      "sha256": "46b80c6b8676f11ff94110c3e294cceb242042d83f4b2631508b91dc52106f90",
+      "bytes": 11176,
+      "width": 480,
+      "preview": "skirt-wrap-v1.webp"
+    },
+    {
+      "id": "top-blouse-v1",
+      "category": "top",
+      "sha256": "5336c7b813be3c37274bf2f1bc95fdf6266d6997119a1d03c04a3c7df140c588",
+      "bytes": 8074,
+      "width": 480,
+      "preview": "top-blouse-v1.webp"
+    },
+    {
+      "id": "top-camisole-v1",
+      "category": "top",
+      "sha256": "1e41d2290ad5e7249bd062617ea665b662b2a390794b7a3b706713d4f6c0d4da",
+      "bytes": 10056,
+      "width": 480,
+      "preview": "top-camisole-v1.webp"
+    },
+    {
+      "id": "top-corset-cropped-v1",
+      "category": "top",
+      "sha256": "6469f8461681ea1147293a98201e03981ad6f7e423906c9e6d56564c1fb71154",
+      "bytes": 11676,
+      "width": 480,
+      "preview": "top-corset-cropped-v1.webp"
+    },
+    {
+      "id": "top-corset-v1",
+      "category": "top",
+      "sha256": "9134c016058fcd5e5b713b8c578cc71cd18e871dd8bd4084cea5f0d3527ccd68",
+      "bytes": 11452,
+      "width": 480,
+      "preview": "top-corset-v1.webp"
+    },
+    {
+      "id": "top-crop-cami-v1",
+      "category": "top",
+      "sha256": "7264cc2441ba35b28e04dd06e72bab058a8a0559ac63700fdf24051fcd7cb31e",
+      "bytes": 12136,
+      "width": 480,
+      "preview": "top-crop-cami-v1.webp"
+    },
+    {
+      "id": "top-crop-tee-v1",
+      "category": "top",
+      "sha256": "97ac074c4d1ab04773ca72f921a58c4973d528525cb695af3ebf7d0af5a24ba7",
+      "bytes": 10060,
+      "width": 480,
+      "preview": "top-crop-tee-v1.webp"
+    },
+    {
+      "id": "top-cropped-cami-v1",
+      "category": "top",
+      "sha256": "44d2df0a22a12cb8b9fd179d8c308938c9184840ef8098d9c0cb911ed151af5a",
+      "bytes": 10744,
+      "width": 480,
+      "preview": "top-cropped-cami-v1.webp"
+    },
+    {
+      "id": "top-fitted-tee-v1",
+      "category": "top",
+      "sha256": "99d9e3c4bb690930d0405c32c6c0219c3d5bbab509bfed9b5a94dd9161a010a2",
+      "bytes": 9306,
+      "width": 480,
+      "preview": "top-fitted-tee-v1.webp"
+    },
+    {
+      "id": "top-halter-v1",
+      "category": "top",
+      "sha256": "21027385e45d7b4a19215f00ec09b0d1a9373f0f7641e49290be2f30ae8779ab",
+      "bytes": 10666,
+      "width": 480,
+      "preview": "top-halter-v1.webp"
+    },
+    {
+      "id": "top-sports-bra-v1",
+      "category": "top",
+      "sha256": "85d87b90bb38bc3d598b085623b5e5a802bf7a82ef8b929432d5655c458192f5",
+      "bytes": 10862,
+      "width": 480,
+      "preview": "top-sports-bra-v1.webp"
+    },
+    {
+      "id": "top-tee-v1",
+      "category": "top",
+      "sha256": "205ef833a35fa31daa5ba101b6ea8588e119b84285a40fdf7cd8ed18303279f1",
+      "bytes": 9152,
+      "width": 480,
+      "preview": "top-tee-v1.webp"
+    },
+    {
+      "id": "top-tube-v1",
+      "category": "top",
+      "sha256": "28527830d29a5fd1d108766adbf89674e07a73faa59b05ddc7cc11dec5bd9dcb",
+      "bytes": 10620,
+      "width": 480,
+      "preview": "top-tube-v1.webp"
+    },
+    {
+      "id": "trousers-balloon-v1",
+      "category": "trousers",
+      "sha256": "a5252228863968660bfda3b5682bdcb6ff24f16b87815824b2d89298f8aeff32",
+      "bytes": 10676,
+      "width": 480,
+      "preview": "trousers-balloon-v1.webp"
+    },
+    {
+      "id": "trousers-leggings-highwaist-v1",
+      "category": "trousers",
+      "sha256": "7b88e1a9a6311f8863dccaf78a4bc41ee9c0380a290bae2c3080137c39cd0678",
+      "bytes": 11116,
+      "width": 480,
+      "preview": "trousers-leggings-highwaist-v1.webp"
+    },
+    {
+      "id": "trousers-leggings-seamless-v1",
+      "category": "trousers",
+      "sha256": "ec55fcc0aa73f9d9c2739cb7d9aa149ff34c02ffb898b7fe9a854e301d745c88",
+      "bytes": 11126,
+      "width": 480,
+      "preview": "trousers-leggings-seamless-v1.webp"
+    },
+    {
+      "id": "trousers-leggings-v1",
+      "category": "trousers",
+      "sha256": "45eade5d33cb275e5518b237408a58de7f489d81a6910e6f1ea0356597308306",
+      "bytes": 11198,
+      "width": 480,
+      "preview": "trousers-leggings-v1.webp"
+    },
+    {
+      "id": "trousers-slim-v1",
+      "category": "trousers",
+      "sha256": "536890550ee5fe854a650926525f7eadf2e76b32c926293ea21c4b35d8e85c0f",
+      "bytes": 10896,
+      "width": 480,
+      "preview": "trousers-slim-v1.webp"
+    },
+    {
+      "id": "trousers-straight-v1",
+      "category": "trousers",
+      "sha256": "76458f616a6790ae8bc29dd94654bccefcf1ea53560b19c506e1e13eabb77626",
+      "bytes": 10902,
+      "width": 480,
+      "preview": "trousers-straight-v1.webp"
+    },
+    {
+      "id": "trousers-wide-v1",
+      "category": "trousers",
+      "sha256": "ffb197ba0a4dfc4f82a5b08181ddd030462cf90f8147204d038593e40238d5f4",
+      "bytes": 10624,
+      "width": 480,
+      "preview": "trousers-wide-v1.webp"
+    }
+  ]
+}
