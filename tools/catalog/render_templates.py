@@ -43,7 +43,7 @@ def eligible(template) -> bool:
 
 
 async def build(avatar_slug: str, ids: set[str], destination: Path, color: str) -> int:
-    from PIL import Image
+    from PIL import Image, ImageStat
 
     catalog = TemplateCatalog.from_directory(ROOT / "assets" / "garment_templates")
     unknown = ids - {t.id for t in catalog}
@@ -82,49 +82,91 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color: str) 
                 records.append({"id": t.id, "status": "restricted-skipped"})
                 continue
             if (destination / (t.id + ".webp")).is_file():
-                records.append({"id": t.id, "status": "cached"})
+                try:
+                    with Image.open(destination / (t.id + ".webp")) as cached:
+                        cached.verify()
+                    records.append({"id": t.id, "status": "cached"})
+                    continue
+                except (OSError, ValueError):
+                    (destination / (t.id + ".webp")).unlink(missing_ok=True)
+            try:
+                request = CreateJobRequest.model_validate({
+                    "avatar": entry.avatar_input(),
+                    "outfit": {
+                        "prompt": f"{color} {t.name}",
+                        "mode": "template",
+                        "templateId": t.id,
+                        "color": color,
+                    },
+                    "options": {
+                        "renderPreview": False,
+                        "engine": "native",
+                        "baseBody": "replace-outer",
+                        "ensureFoundation": True,
+                    },
+                })
+                result = await orch.run_now(request)
+                ok = (
+                    result.state == "completed"
+                    and result.look is not None
+                    and result.fit_report is not None
+                    and result.fit_report.passed
+                    and result.plan is not None
+                    and rating_for(result.plan) == "general"
+                    and any(g.template_id == t.id for g in result.plan.garments)
+                )
+                if not ok:
+                    records.append({
+                        "id": t.id, "status": "failed-or-ineligible",
+                        "jobState": str(result.state),
+                        "reason": str(result.reason or result.error or "fit not verified"),
+                    })
+                    continue
+                data = await store.get(f"looks/{result.look.id}/look.vrm")
+                (work / f"g-{t.id}.vrm").write_bytes(data)
+                rendered_ids.append(t.id)
+                records.append({"id": t.id, "status": "pending-render"})
+            except Exception as exc:
+                records.append({
+                    "id": t.id, "status": "failed-or-ineligible",
+                    "reason": f"{type(exc).__name__}: {str(exc)[:200]}",
+                })
                 continue
-            request = CreateJobRequest.model_validate({
-                "avatar": entry.avatar_input(),
-                "outfit": {
-                    "prompt": f"{color} {t.name}",
-                    "mode": "template",
-                    "templateId": t.id,
-                    "color": color,
-                },
-                "options": {
-                    "renderPreview": False, "engine": "native",
-                    "baseBody": "replace-outer", "ensureFoundation": True,
-                },
-            })
-            result = await orch.run_now(request)
-            ok = (result.state == "completed" and result.look is not None
-                  and result.fit_report is not None and result.fit_report.passed
-                  and result.plan is not None and rating_for(result.plan) == "general"
-                  and any(g.template_id == t.id for g in result.plan.garments))
-            if not ok:
-                records.append({"id": t.id, "status": "failed-or-ineligible",
-                                "jobState": str(result.state),
-                                "reason": str(result.reason or result.error or "fit not verified")})
-                continue
-            (work / f"g-{t.id}.vrm").write_bytes(
-                await store.get(f"looks/{result.look.id}/look.vrm")
-            )
-            rendered_ids.append(t.id)
-            records.append({"id": t.id, "status": "generated"})
 
-        if rendered_ids:
-            subprocess.run(
-                ["node", str(ROOT / "tools/gallery/render.mjs"), str(work), *rendered_ids],
-                check=True, cwd=ROOT,
-            )
-            for tid in rendered_ids:
-                # Same 3/4 view as the chatbot's web-preview wardrobe pack.
-                img = Image.open(work / f"r-{tid}-34.png").convert("RGB")
-                width = 480
-                height = round(img.height * width / img.width)
-                img = img.resize((width, height), Image.Resampling.LANCZOS)
-                img.save(destination / f"{tid}.webp", "WEBP", quality=82, method=6)
+        # The existing gallery renderer is the source of visual truth. Render
+        # in bounded chunks so a corrupted VRM cannot discard 50 good images.
+        by_id = {entry["id"]: entry for entry in records}
+        for start in range(0, len(rendered_ids), 6):
+            chunk = rendered_ids[start:start + 6]
+            try:
+                subprocess.run(
+                    ["node", str(ROOT / "tools/gallery/render.mjs"), str(work), *chunk],
+                    check=True, cwd=ROOT, timeout=720,
+                )
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+                print(f"Gallery renderer failed for chunk {chunk}: {exc}", file=sys.stderr)
+
+            for tid in chunk:
+                screenshot = work / f"r-{tid}-34.png"
+                entry = by_id[tid]
+                if not screenshot.is_file():
+                    entry.update(status="render-failed", reason="gallery screenshot missing")
+                    continue
+                try:
+                    with Image.open(screenshot) as original:
+                        img = original.convert("RGB")
+                    # Skip empty/blank browser screenshots; never publish
+                    # an image unrelated to a real rendered avatar.
+                    if max(ImageStat.Stat(img).stddev) < 8:
+                        raise ValueError("screenshot is nearly uniform; model may not have rendered")
+                    width = 480
+                    height = round(img.height * width / img.width)
+                    img = img.resize((width, height), Image.Resampling.LANCZOS)
+                    img.save(destination / f"{tid}.webp", "WEBP", quality=82, method=6)
+                    entry["status"] = "generated"
+                except (OSError, ValueError) as exc:
+                    (destination / f"{tid}.webp").unlink(missing_ok=True)
+                    entry.update(status="render-failed", reason=str(exc)[:200])
 
     summary = {
         "schemaVersion": 1,
@@ -136,9 +178,11 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color: str) 
     # Keep the failure report separate from the public API; the API only checks
     # existence of successfully exported preview image files.
     (destination.parent / "build-report.json").write_text(json.dumps(summary, indent=2) + "\n")
-    failed = [r for r in records if r["status"] == "failed-or-ineligible"]
-    print(f"{len(rendered_ids)} WebPs rendered, {len(failed)} failed, "
-          f"{sum(r['status'] == 'cached' for r in records)} cached → {destination}")
+    failed = [r for r in records if r["status"] in {"failed-or-ineligible", "render-failed"}]
+    generated = sum(r["status"] == "generated" for r in records)
+    cached = sum(r["status"] == "cached" for r in records)
+    print(f"{generated} WebPs rendered, {len(failed)} failed, "
+          f"{cached} cached → {destination}")
     return 1 if failed else 0
 
 
