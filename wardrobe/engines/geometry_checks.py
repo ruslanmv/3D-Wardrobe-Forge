@@ -24,6 +24,8 @@ from wardrobe.vrm.visible import visible_vertices
 
 DEFAULT_BANDS = 64
 DEFAULT_SECTORS = 16
+#: With ``band_m``, a band is her outline only with points in each of this many sectors round her.
+WHOLE_RING_SECTORS = 12
 #: Cap on body points sampled, so a 200k-vertex avatar stays cheap to check.
 MAX_BODY_POINTS = 160_000
 
@@ -212,7 +214,8 @@ class BodyRadialIndex:
     """Max body radius per (height band, angular sector)."""
 
     def __init__(self, points: np.ndarray, *, bands: int = DEFAULT_BANDS, sectors: int = DEFAULT_SECTORS,
-                 surroundings: np.ndarray | None = None, y_range: tuple[float, float] | None = None):
+                 surroundings: np.ndarray | None = None, y_range: tuple[float, float] | None = None,
+                 band_m: float | None = None):
         """``surroundings``: the whole body, when ``points`` is only the part a garment covers.
 
         The hull must be the body's outline, and the covered region alone may
@@ -223,6 +226,15 @@ class BodyRadialIndex:
         covered ones (2.5x their farthest, per band) join the hull. The caller
         passes the torso without arms or head, so an arm out in a T-pose never
         does; the reach limit is a second guard, not the first.
+
+        ``band_m``: bands at most this deep, however tall the garment, and a band's hull only
+        from points all round her (``WHOLE_RING_SECTORS``); a band without is read between its
+        neighbours (``_between_rings``), and with no whole ring near it (a coarse body's rows of
+        vertices are further apart than the band) by the index at its usual bands. For a garment
+        cut on her outline at each height (wardrobe.geometry.panels' ``thin_outline``): 64 bands
+        down a pair of leggings were 15 mm deep, and the band at their top took her waist 1.5 cm
+        lower, 6 mm wider, and read the waistband 20 mm inside her while it was 4 mm clear of her
+        skin.
 
         ``y_range`` is the garment's own height. The index spans it as well as
         the covered points, so a band the garment reaches but its coverage does
@@ -251,13 +263,20 @@ class BodyRadialIndex:
         # the vertical axis sideways.
         self.axis_x = float(np.median(points[:, 0]))
         self.axis_z = float(np.median(points[:, 2]))
+        self.whole_rings = band_m is not None
+        self._coarse: BodyRadialIndex | None = None
+        if band_m is not None:
+            self._coarse = BodyRadialIndex(points, bands=bands, sectors=sectors, surroundings=surroundings,
+                                           y_range=y_range)
+            self.bands = bands = max(bands, int(np.ceil((self.y_max - self.y_min) / band_m)) + 1)
 
         band_index, sector_index, radius = self._bucket(points)
         self.radii = np.zeros((bands, sectors))
         np.maximum.at(self.radii, (band_index, sector_index), radius)
         self._points = points
         self._surroundings = surroundings
-        self._hull = self._fill_empty_bands(self._build_hull())
+        hull = self._build_hull()
+        self._hull = self._between_rings(hull) if self.whole_rings else self._fill_empty_bands(hull)
         self._hull_bands = self._hull.max(axis=1) > 0
 
     def _bucket(self, points: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -294,6 +313,8 @@ class BodyRadialIndex:
             [self.radii[band, sector], self.radii[band, left], self.radii[band, right]]
         )
         hull = self.hull_radius_at(points)
+        if self._coarse is not None:
+            sectors = self._coarse.body_radius_at(points)
         return np.where(self._hull_bands[band], hull, sectors)
 
     def point_radius(self, points: np.ndarray) -> np.ndarray:
@@ -325,6 +346,22 @@ class BodyRadialIndex:
         hi = (lo + 1) % self.HULL_SAMPLES
         t = position - np.floor(position)
         return self._hull[band, lo] * (1.0 - t) + self._hull[band, hi] * t
+
+    @staticmethod
+    def _between_rings(hull: np.ndarray, reach: int = 6) -> np.ndarray:
+        """With ``band_m``: a band without a whole ring of her takes the outline between the
+        nearest bands below and above that have one, as her surface runs between them. The
+        wider of the two, as ``_fill_empty_bands`` takes, read a sports bra's hem 7 mm inside
+        her ribs where it was 5 mm clear of her skin."""
+        filled = hull.copy()
+        present = np.flatnonzero(hull.max(axis=1) > 0)
+        for band in np.flatnonzero(hull.max(axis=1) <= 0):
+            k = int(np.searchsorted(present, band))
+            if 0 < k < present.size and present[k] - present[k - 1] <= reach:
+                below, above = present[k - 1], present[k]
+                t = (band - below) / (above - below)
+                filled[band] = hull[below] * (1.0 - t) + hull[above] * t
+        return filled
 
     @staticmethod
     def _fill_empty_bands(hull: np.ndarray, reach: int = 3) -> np.ndarray:
@@ -372,6 +409,9 @@ class BodyRadialIndex:
             # The farthest point in each fine sector spans the same hull as all of them.
             order = member[np.lexsort((radius[member], sector[member]))]
             last = np.r_[sector[order][1:] != sector[order][:-1], True]
+            if self.whole_rings and np.unique(sector[member] * WHOLE_RING_SECTORS // samples).size \
+                    < WHOLE_RING_SECTORS:
+                continue  # part of a ring: a sliver of her, not her outline
             extreme = np.stack([dx[order][last], dz[order][last]], axis=1)
             polygon = _convex_hull(extreme)
             if polygon.shape[0] >= 3:

@@ -39,7 +39,7 @@ import math
 import numpy as np
 
 from wardrobe.geometry.mesh import Mesh
-from wardrobe.geometry.panels import SLAB_M, Sections, _Builder, _convex_hull, _ray_hull
+from wardrobe.geometry.panels import SLAB_M, Sections, _Builder, _convex_hull, _ray_hull, bend, thin_outline
 
 #: Columns round her trunk; each leg's loop is half of them plus the crotch curve, the same count.
 TRUNK_COLUMNS = 96
@@ -80,6 +80,10 @@ CROTCH_UNDERSIDE_M = 0.012
 #: A leg ring stays this far on its own side of her midline: where her thighs touch, the two
 #: legs of the leggings are pressed flat together there instead of passing through each other.
 MIDLINE_GAP_M = 0.0005
+#: The trunk is cut on her outline at each row's own height (``thin_outline``), bent no tighter
+#: than this: the knit follows the small of her back and her waist, and spans the fold under
+#: her seat. On the slabs' widest outline the band stood 2 cm off her back and sides.
+KNIT_BEND_M = 0.02
 
 BAND_SECTION = "skirt-waistband"  # drawn a shade darker by assembly (wardrobe.geometry.waistband)
 BODY_SECTION = "seamless-panel"
@@ -178,6 +182,14 @@ def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
     hip_rows = max(int(math.ceil((float(vee.max()) - bottom) / HIP_ROW_M)), 4)
     axis = np.array([sections.axis[0], 0.0, sections.axis[1]])
     builder = _Builder()
+    levels, outline = thin_outline(cover, sections, theta, bottom, top, forward)
+    # Bent over its own heights only: above its top her ribs widen again, and bent over them the
+    # band stood 6 mm further off her waist than the row below it.
+    own = (levels >= bottom) & (levels <= top)
+    outline[own] = bend(outline[own], levels[own], KNIT_BEND_M * scale)
+
+    def radius(j: int, y: float) -> float:
+        return float(np.interp(y, levels, outline[:, j]))
 
     pool = np.vstack([cover, legs])
     groin_top = bottom + GROIN_M * scale
@@ -188,7 +200,7 @@ def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
         dark shield in every front view); a knit follows her groin, spanning only the grooves
         narrower than ``BRIDGE_COLUMNS`` either side, as its tension spans them."""
         slab = pool[np.abs(pool[:, 1] - y) < SLAB_M]
-        hull = np.array([float(sections.radius(theta[j], y)) for j in range(columns)])
+        hull = np.array([radius(j, y) for j in range(columns)])
         own = hull.copy()
         for j in range(columns):
             if math.cos(theta[j]) <= math.cos(GROIN_HALF_ANGLE):
@@ -215,7 +227,7 @@ def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
     groin = np.array([own_radii(float(y)) for y in groin_ys])  # [height, column]
 
     def trunk_point(j: int, y: float, extra: float = 0.0) -> np.ndarray:
-        r = float(sections.radius(theta[j], y))
+        r = radius(j, y)
         if y < groin_top:
             r = min(r, float(np.interp(y, groin_ys, groin[:, j])))
         return sections.point(theta[j], y, r + ease + extra)

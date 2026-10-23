@@ -99,7 +99,8 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # Over another garment, allow for its thickness and for this shell's faces
         # dipping between vertices: lace specks showed through an opaque dress
         # at the body clearance alone.
-        clearance += INNER_LAYER_ALLOWANCE_M
+        knit = (artifact.procedural_kind or context.plan.category) in LEGGINGS_PANEL_KINDS
+        clearance += KNIT_OVER_LAYER_M if knit else INNER_LAYER_ALLOWANCE_M
 
     metadata = dict(artifact.metadata)
     # Which way she faces, for a rig without toes to say so: VRM 0.x faces -Z.
@@ -264,7 +265,15 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
                 inner_legs = inner_legs[inner_legs[:, 1] < float(profile["crotchY"]) - 0.01]
             legs = inner_legs if legs is None else np.vstack([legs, inner_legs])
     heights = (float(mesh.positions[:, 1].min()), float(mesh.positions[:, 1].max()))
-    index = BodyRadialIndex(body, surroundings=torso, y_range=heights)
+    if mesh.metadata.get("panelBuilt"):
+        # A panel garment is only measured by the index, never moved by it: measured on her
+        # about its own heights (see _about).
+        near_body, near_torso = _about(heights, body, torso)
+        thin = kind in THIN_OUTLINE_KINDS
+        index = BodyRadialIndex(near_body, surroundings=near_torso, y_range=heights,
+                                band_m=PANEL_BAND_M if thin else None)
+    else:
+        index = BodyRadialIndex(body, surroundings=torso, y_range=heights)
 
     axis_mask = on_axis_mask(mesh, context.measurements)
     # A pattern block marks what it places itself (a brief's gusset crosses under her,
@@ -694,6 +703,10 @@ SHEER_SEGMENTS = 48
 
 #: Extra clearance for a garment going on over another one (see build_fitted_shell).
 INNER_LAYER_ALLOWANCE_M = 0.003
+#: The same for one-piece leggings: cut on the hull of what is under them, its own points, a row
+#: every 1.5 cm (wardrobe.geometry.lower_panels), they stood 10 mm proud of the small of her back
+#: over briefs 3 mm proud of it, and their band floated.
+KNIT_OVER_LAYER_M = 0.001
 
 #: Never part of the body's outline for a torso garment: they share height bands
 #: with it (a T-pose arm, the head above a collar) without being under it.
@@ -795,6 +808,35 @@ def _boot_body(context: PipelineContext, body: np.ndarray) -> dict:
         if points is not None:
             out[side] = points
     return out
+
+
+#: The radial index is built from her outline this far above and below a panel garment, no
+#: further, in bands no deeper than this (BodyRadialIndex's ``band_m``).
+INDEX_REACH_M = 0.05
+PANEL_BAND_M = 0.006
+#: The panel garments cut on her outline at each height (wardrobe.geometry.panels' ``thin_outline``),
+#: measured in those fine bands; the others are cut on the sections' widest outline.
+THIN_OUTLINE_KINDS = frozenset({"sports-bra", "seamless-leggings", "leggings"})
+
+
+def _about(heights: tuple[float, float], body: np.ndarray,
+           torso: np.ndarray | None) -> tuple[np.ndarray, np.ndarray | None]:
+    """``body`` and ``torso`` about a panel garment's own heights, for the radial index.
+
+    Its 64 bands split the height its points span. With the leggings already on her, a sports
+    bra's index ran from her ankles to her shoulders, bands 19 mm deep whose hulls were the widest
+    of her over that depth, and a bra cut on her at each row's own height read 4 mm inside her
+    back while it was 3 mm clear of her skin. Where trimming would empty a set, it is kept whole.
+    """
+    lo, hi = heights[0] - INDEX_REACH_M, heights[1] + INDEX_REACH_M
+
+    def near(points):
+        if points is None:
+            return None
+        kept = points[(points[:, 1] >= lo) & (points[:, 1] <= hi)]
+        return kept if kept.shape[0] >= 200 else points
+
+    return near(body), near(torso)
 
 
 def _torso(context: PipelineContext, body: np.ndarray) -> np.ndarray | None:

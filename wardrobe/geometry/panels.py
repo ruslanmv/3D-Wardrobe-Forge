@@ -98,7 +98,22 @@ SPORTS_STRAP_AT = 0.5
 SPORTS_SCOOP = 0.25
 #: At most this far from her bust point down to the top of the underband.
 SPORTS_UNDERBUST_M = 0.045
+#: How steeply its front may come in from her bust onto her ribs (per metre of drop): a
+#: compression knit follows the curve under her bust. At 0 it hung straight from her bust and
+#: armpit to the hem, a box standing off her ribs.
+SPORTS_TAPER = 1.2
+#: Its rows are cut on her outline at their own height (a slab this thick), not on the
+#: largest of the slabs about it (Sections.radius): under her bust that was her bust's
+#: radius, and the bra stood 9-12 mm off her ribs and back.
+SPORTS_SLAB_M = 0.006
+#: A slab is her outline only with points all round her, in each of this many sectors.
+SLAB_SECTORS = 12
+#: Slabs without a whole ring are read between the whole rings about them, this many levels
+#: apart at most; further, the sections stand in.
+RING_GAP_LEVELS = 6
 STRAP_THICKNESS_M = 0.0016
+#: Stations of a flat strap's arc over her shoulder.
+OVER_STATIONS = 5
 
 
 # ----------------------------------------------------------------------
@@ -872,11 +887,12 @@ def build_camisole(params, *, cropped: bool, sports: bool = False) -> list[Mesh]
     grid_thetas = np.broadcast_to(thetas, ys.shape)
     radius = sections.radius(grid_thetas, ys) + ease
     if sports:
+        radius = _row_radius(cover, sections, grid_thetas, ys, f) + ease
         # The underband holds her: no ease under the fold, only the clearance.
         band = ys < hem + SPORTS_BAND_M * s
         radius = np.where(band, radius - CAMI_EASE_M, radius)
     for c in range(columns):
-        radius[:, c] = _hang(radius[:, c], ys[:, c], 0.0 if sports else CAMI_TAPER)
+        radius[:, c] = _hang(radius[:, c], ys[:, c], SPORTS_TAPER if sports else CAMI_TAPER)
     points = sections.point(grid_thetas, ys, radius)
     builder = _Builder()
     ids = []
@@ -906,6 +922,71 @@ def build_camisole(params, *, cropped: bool, sports: bool = False) -> list[Mesh]
         if strap is not None:
             straps.append(strap)
     return [*pieces, *straps]
+
+
+def _row_radius(points: np.ndarray, sections: Sections, thetas: np.ndarray, ys: np.ndarray,
+                f: float) -> np.ndarray:
+    """Her outline's radius at each grid point's own height (``thin_outline``), read between the
+    two levels about it. ``thetas`` are the same down every column."""
+    levels, table = thin_outline(points, sections, thetas[0], float(ys.min()), float(ys.max()), f)
+    out = np.empty_like(ys)
+    for c in range(thetas.shape[1]):
+        out[:, c] = np.interp(ys[:, c], levels, table[:, c])
+    return out
+
+
+def thin_outline(points: np.ndarray, sections: Sections, column: np.ndarray, y_lo: float, y_hi: float,
+                 f: float) -> tuple[np.ndarray, np.ndarray]:
+    """(levels, radius per level and column): her outline at its own height every half slab.
+
+    The convex hull of a thin slab (``SPORTS_SLAB_M``): a cloth drawn taut across her (between
+    her breasts, her buttocks) but on her at that height. ``Sections.radius`` is the largest
+    outline within about 3 cm, and a stretch knit cut on it stood off her wherever she narrows:
+    a sports bra 9-12 mm off her ribs, leggings 2 cm off the small of her back. Where a slab is
+    too sparse, or holds only part of a ring, it is read between the whole rings about it, and
+    with none near, the sections stand in."""
+    ax, az = sections.axis
+    directions = np.stack([np.sin(column), f * np.cos(column)], axis=1)
+    levels = np.arange(y_lo - SPORTS_SLAB_M, y_hi + SPORTS_SLAB_M, SPORTS_SLAB_M * 0.5)
+    table = np.empty((levels.size, column.size))
+    whole = np.zeros(levels.size, dtype=bool)
+    for k, y in enumerate(levels):
+        table[k] = sections.radius(column, y)
+        slab = points[np.abs(points[:, 1] - y) < SPORTS_SLAB_M * 0.5]
+        if slab.shape[0] < 24:
+            continue
+        flat = np.stack([slab[:, 0] - ax, slab[:, 2] - az], axis=1)
+        sector = ((np.arctan2(flat[:, 1], flat[:, 0]) + math.pi) / (2 * math.pi) * SLAB_SECTORS).astype(int)
+        if np.unique(sector % SLAB_SECTORS).size < SLAB_SECTORS:
+            # Part of a ring (a coarse body's rows of vertices are further apart than the
+            # slab): its hull is a sliver of her, 6 cm inside her side on the calibration body.
+            continue
+        hull = _convex_hull(flat)
+        if hull.shape[0] >= 3:
+            table[k] = _ray_hull(hull, directions)
+            whole[k] = True
+    # Between two whole rings a few levels apart her surface runs from one to the other (a
+    # coarse body's triangles span its rows of vertices): read there, not on the sections.
+    known = np.flatnonzero(whole)
+    for k in np.flatnonzero(~whole):
+        i = int(np.searchsorted(known, k))
+        if 0 < i < known.size and known[i] - known[i - 1] <= RING_GAP_LEVELS:
+            below, above = known[i - 1], known[i]
+            t = (k - below) / (above - below)
+            table[k] = table[below] * (1.0 - t) + table[above] * t
+    # The widest of each level and the two about it (±3 mm): the radial index measures clearance
+    # in bands about that deep, each its widest, and where she widens fast (beside her armpit)
+    # a row at its own level read 0.3 mm clear of her at a 1 mm threshold.
+    padded = np.vstack([table[:1], table, table[-1:]])
+    return levels, np.maximum.reduce([padded[:-2], padded[1:-1], padded[2:]])
+
+
+def bend(table: np.ndarray, levels: np.ndarray, radius_m: float) -> np.ndarray:
+    """Each column of ``table`` as a cloth bends over it: never curving in tighter than
+    ``radius_m``, so it spans a hollow narrower than that (the fold under her seat) and
+    follows a wider one (the small of her back)."""
+    drop = (levels[:, None] - levels[None, :]) ** 2 / (2.0 * radius_m)
+    return (table[None, :, :] - drop[:, :, None]).max(axis=1)
 
 
 def _bust_heights(params, marks: dict | None, torso: float) -> tuple[float, float]:
@@ -964,8 +1045,15 @@ def _flat_strap(sections: Sections, shoulders: Shoulders, x_body: float, x_top: 
             zf, zb = front[-1][2] * f - lift, back[-1][2] * f + lift  # carried on from the last station
         front.append([x, yf, f * (zf + lift)])
         back.append([x, yb, f * (zb - lift)])
-    over = [x_top, peak + lift, (front[-1][2] + back[-1][2]) * 0.5]
-    path = np.array(front + [over] + back[::-1])
+    # Over her shoulder in an arc through its top, not one peak a centimetre above the last
+    # stations: the ribbon folded over that ridge and showed a pointed tab on each shoulder.
+    a, b = np.array(front[-1]), np.array(back[-1])
+    top = np.array([x_top, peak + lift, (a[2] + b[2]) * 0.5])
+    control = 2.0 * top - 0.5 * (a + b)
+    over = [list((1 - t) ** 2 * a + 2 * (1 - t) * t * control + t * t * b)
+            for t in np.linspace(0.0, 1.0, OVER_STATIONS + 2)[1:-1]]
+    path = np.array(front + over + back[::-1])
+    arc = range(len(front), len(front) + len(over))
     # Four corners per station: the ribbon's width runs across her shoulder (x), its thickness
     # out from her. A flat band, not a round cord.
     builder = _Builder()
@@ -976,7 +1064,7 @@ def _flat_strap(sections: Sections, shoulders: Shoulders, x_body: float, x_top: 
         across = np.array([1.0, 0.0, 0.0]) - tangent * tangent[0]
         across /= max(np.linalg.norm(across), 1e-9)
         out = np.cross(tangent, across)
-        inside = np.array([ax, point[1] - (0.06 if k == 9 else 0.0), az])
+        inside = np.array([ax, point[1] - (0.06 if k in arc else 0.0), az])
         if float(out @ (point - inside)) < 0:
             out = -out
         half_w, half_t = across * width / 2, out * thickness / 2
@@ -992,5 +1080,5 @@ def _flat_strap(sections: Sections, shoulders: Shoulders, x_body: float, x_top: 
 
 __all__ = [
     "CARDIGAN", "FITTED_TEE", "Sections", "Shoulders", "TopStyle",
-    "build_camisole", "build_fitted_tee", "build_open_cardigan", "build_set_in_top",
+    "bend", "build_camisole", "build_fitted_tee", "build_open_cardigan", "build_set_in_top", "thin_outline",
 ]

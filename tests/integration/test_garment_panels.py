@@ -212,7 +212,9 @@ async def test_the_camisole_has_a_neckline_flat_straps_and_a_cropped_hem(camisol
     for strap in straps:
         p = strap.positions.astype(float)
         # A ribbon, not a cord: across her shoulder it is several times wider than it is thick.
-        over = p[p[:, 1] > p[:, 1].max() - 0.004]
+        # Four corners a station along it; the highest station is the one over her shoulder.
+        stations = p.reshape(-1, 4, 3)
+        over = stations[int(np.argmax(stations[:, :, 1].mean(axis=1)))]
         assert np.ptp(over[:, 0]) > 4 * np.ptp(over[:, 1])
         assert p[:, 1].max() > params.shoulder_y  # over her shoulder
     assert body.metadata["panelBuilt"]
