@@ -6,11 +6,19 @@ in its own colour, and framed by category; preview-style.json says how.
 Usage (after make library and browser dependencies):
     python tools/catalog/render_templates.py --avatar avatar-sample-a
     python tools/catalog/render_templates.py --avatar avatar-sample-a --ids top-crop-tee-v1 jeans-straight-v1
+    python tools/catalog/render_templates.py --profile underwear --avatar fem-vroid
+
+The default build is the public catalog and skips every restricted template. The
+underwear profile is the adult catalog: only that category, written to
+assets/catalog/adult/ (previews, build report), never into the public folder.
 
 Previews are REAL generated looks fitted to a fixed sample avatar, NOT
 isolated GLBs or promised universal garment assets. The catalog API only
 advertises images that this script successfully created and that have been
-included in the deployment. The public builder never renders adult-gated looks.
+included in the deployment. Adult-gated garments are rendered only for a category
+preview-style.json gives a profile (underwear), on that profile's avatar, which the
+operator must have declared adult in assets/library/policy.json; Forge refuses it on
+any other. A garment that is adult-gated by itself (requiresAdult) is never rendered.
 
 Requirements: Python Forge dependencies, Pillow; Node Playwright + Chromium
 and the gallery's three.js CDN access. Does not run during API startup.
@@ -43,8 +51,44 @@ from wardrobe.storage.object_store import LocalObjectStore  # noqa: E402
 from wardrobe.targets.pack import rating_for  # noqa: E402
 
 
-def eligible(template) -> bool:
-    return template.category not in INTIMATE_CATEGORIES and not template.requires_adult
+def eligible(template, profile: str | None = None) -> bool:
+    """The public build takes no restricted template; a profile build takes its own category only."""
+    if template.requires_adult:
+        return False
+    if profile is None:
+        return template.category not in INTIMATE_CATEGORIES
+    return template.category == profile
+
+
+def _profiles(style: dict) -> dict:
+    return {k: v for k, v in style.get("profiles", {}).items() if isinstance(v, dict)}
+
+
+def profile_for(template, style: dict, default_avatar: str, active: str | None = None) -> dict:
+    """How this template is previewed: avatar, base, mode, framing, colours and accepted ratings.
+
+    The default profile is the public one (her reference base, rating general). A category
+    with a profile of its own overrides each of those fields it names.
+    """
+    own = _profiles(style).get(template.category, {}) if active == template.category else {}
+    framing = own.get("framing")
+    if framing is None:
+        frame = style["framing"].get(template.category, [0.0, 1.0])
+    else:
+        matches = (f for pattern, f in framing.get("match", {}).items() if re.search(pattern, template.id))
+        frame = next(matches, framing["default"])
+    layer = own.get("layer", {})
+    mode = layer["baseBody"] if layer and re.search(layer["match"], template.id) else own.get(
+        "baseBody", "replace-outer")
+    return {
+        "name": template.category if own else "default",
+        "avatar": own.get("avatar", default_avatar),
+        "base": {"prompt": style["base"]["prompt"], "baseBody": "replace-outer", **own.get("base", {})},
+        "baseBody": mode,
+        "frame": frame,
+        "colors": own.get("colors", style["colors"]),
+        "ratings": own.get("ratings", ["general"]),
+    }
 
 
 #: How previews look: base outfit, canvas, framing by category, colour rules (bump its
@@ -56,15 +100,30 @@ def load_style() -> dict:
     return json.loads(STYLE_PATH.read_text(encoding="utf-8"))
 
 
-def color_for(template, catalog, style: dict) -> str:
+def color_for(template, catalog, colors: dict) -> str:
     """The colour a template is previewed in: a matching rule, else the category palette in
     order of template id. Fixed for every build, so a preview never changes colour by itself."""
-    for rule in style["colors"]["rules"]:
+    for rule in colors["rules"]:
         if re.search(rule["match"], template.id):
             return rule["color"]
-    palette = style["colors"]["palette"]
+    palette = colors["palette"]
     siblings = sorted(t.id for t in catalog if t.category == template.category)
     return palette[siblings.index(template.id) % len(palette)]
+
+
+def cache_key(template, profile: dict, color: str, style: dict) -> dict:
+    """What a preview was made from. Any field that differs from the last build re-renders it.
+
+    A profile's build also records its base set and layering mode: the same bra fitted over
+    a different base, or a guêpière switched from layering to replacing, is a different
+    picture. The public build keeps the fields it always had, so its cache stays valid.
+    """
+    key = {"color": color, "framing": profile["frame"], "styleVersion": style["styleVersion"],
+           "templateSha256": template_digest(template.id), "sampleAvatar": profile["avatar"]}
+    if profile["name"] != "default":
+        key.update(profile=profile["name"], baseBody=profile["baseBody"],
+                   basePrompt=profile["base"]["prompt"])
+    return key
 
 
 def template_digest(template_id: str) -> str:
@@ -82,7 +141,8 @@ def _previous(destination: Path) -> dict:
     return {r["id"]: r for r in records if "id" in r}
 
 
-async def build(avatar_slug: str, ids: set[str], destination: Path, color_override: str | None) -> int:
+async def build(avatar_slug: str, ids: set[str], destination: Path, color_override: str | None,
+                profile_name: str | None = None) -> int:
     from PIL import Image, ImageStat
 
     from wardrobe.vrm.document import GltfDocument
@@ -92,16 +152,30 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
     unknown = ids - {t.id for t in catalog}
     if unknown:
         raise SystemExit(f"Unknown garment template IDs: {', '.join(sorted(unknown))}")
+    if profile_name is not None:
+        chosen = _profiles(style).get(profile_name)
+        if chosen is None:
+            raise SystemExit(f"No preview profile {profile_name!r} in preview-style.json")
+        if chosen.get("avatar") != avatar_slug:
+            raise SystemExit(f"The {profile_name} profile is rendered on {chosen.get('avatar')}, "
+                             f"not {avatar_slug}")
     library = AvatarLibrary.from_directory(ROOT / "assets" / "library")
-    entry = library.get(avatar_slug)
-    if entry is None or entry.path is None:
-        raise SystemExit(f"Missing sample avatar {avatar_slug}. Run make library first.")
-    if (entry.presentation or "") != "feminine":
-        raise SystemExit(
-            "Use a vetted feminine sample for the reference catalog; do not mix body types."
-        )
-    if entry.license.strip() not in {"CC0", "CC0-1.0"}:
-        raise SystemExit("Sample avatar license not approved for distribution of derivative previews.")
+    entries = {}
+    for slug in {avatar_slug}:
+        entry = library.get(slug)
+        if entry is None or entry.path is None:
+            raise SystemExit(f"Missing sample avatar {slug}. Run make library first.")
+        if (entry.presentation or "") != "feminine":
+            raise SystemExit(
+                "Use a vetted feminine sample for the reference catalog; do not mix body types."
+            )
+        if entry.license.strip() not in {"CC0", "CC0-1.0"}:
+            raise SystemExit("Sample avatar license not approved for distribution of derivative previews.")
+        if profile_name is not None and not entry.depicts_adult:
+            # The same declaration a person's job needs: the build does not get a way round it.
+            raise SystemExit(f"{slug} is not declared adult in assets/library/policy.json; "
+                             f"the {profile_name} profile renders only on an avatar the operator declared")
+        entries[slug] = entry
 
     destination.mkdir(parents=True, exist_ok=True)
     previous = _previous(destination)
@@ -119,40 +193,44 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
             queue=AsyncioJobQueue(concurrency=1), catalog=catalog,
         )
         await library.seed(store)
-        base_avatar = None  # made on the first garment that needs rendering
+        bases: dict[str, dict] = {}  # profile name -> its base avatar, made when first needed
 
         for t in sorted(catalog, key=lambda v: (v.category, v.id)):
             if ids and t.id not in ids:
                 continue
-            if not eligible(t):
-                records.append({"id": t.id, "status": "restricted-skipped"})
+            if not eligible(t, profile_name):
+                if profile_name is None:
+                    records.append({"id": t.id, "status": "restricted-skipped"})
                 continue
-            color = color_override or color_for(t, catalog, style)
-            frame = style["framing"].get(t.category, [0.0, 1.0])
-            key = {"color": color, "framing": frame, "styleVersion": style["styleVersion"],
-                   "templateSha256": template_digest(t.id), "sampleAvatar": avatar_slug}
+            profile = profile_for(t, style, avatar_slug, profile_name)
+            color = color_override or color_for(t, catalog, profile["colors"])
+            frame = profile["frame"]
+            key = cache_key(t, profile, color, style)
             target = destination / (t.id + ".webp")
             before = previous.get(t.id, {})
             if target.is_file() and all(before.get(k) == v for k, v in key.items()):
                 try:
                     with Image.open(target) as cached:
                         cached.verify()
-                    records.append({"id": t.id, "status": "cached", **key})
+                    qa = ("rating", "fitPassed", "garments", "clippingCheck", "warnings")
+                    kept = {k: before[k] for k in qa if k in before}
+                    records.append({"id": t.id, "status": "cached", **key, **kept})
                     continue
                 except (OSError, ValueError):
                     target.unlink(missing_ok=True)
             try:
-                if base_avatar is None:
-                    base_avatar = await _reference_base(orch, store, entry, style)
+                if profile["name"] not in bases:
+                    bases[profile["name"]] = await _reference_base(
+                        orch, store, entries[profile["avatar"]], profile["base"], profile["name"])
                 request = CreateJobRequest.model_validate({
-                    "avatar": base_avatar,
+                    "avatar": bases[profile["name"]],
                     "outfit": {
                         "prompt": f"{color} {t.name}",
                         "mode": "template",
                         "templateId": t.id,
                         "color": color,
                     },
-                    "options": {"renderPreview": False, "engine": "native", "baseBody": "replace-outer"},
+                    "options": {"renderPreview": False, "engine": "native", "baseBody": profile["baseBody"]},
                 })
                 result = await orch.run_now(request)
                 ok = (
@@ -161,13 +239,14 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
                     and result.fit_report is not None
                     and result.fit_report.passed
                     and result.plan is not None
-                    and rating_for(result.plan) == "general"
+                    and rating_for(result.plan) in profile["ratings"]
                     and any(g.template_id == t.id for g in result.plan.garments)
                 )
                 if not ok:
                     records.append({
                         "id": t.id, "status": "failed-or-ineligible", **key,
                         "jobState": str(result.state),
+                        "fitPassed": bool(result.fit_report and result.fit_report.passed),
                         "reason": str(result.reason or result.error or "fit not verified"),
                     })
                     continue
@@ -178,7 +257,11 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
                 view = {"file": f"g-{t.id}.vrm", "out": f"r-{t.id}.png", "size": [width, height],
                         "yaw": style["yaw"], "focus": focus}
                 to_render.append((t.id, view))
-                records.append({"id": t.id, "status": "pending-render", **key})
+                records.append({"id": t.id, "status": "pending-render", **key,
+                                "rating": rating_for(result.plan), "fitPassed": True,
+                                "garments": [g.name for g in result.plan.garments],
+                                "clippingCheck": str(result.fit_report.clipping_check),
+                                "warnings": [str(w)[:200] for w in result.fit_report.warnings][:6]})
             except Exception as exc:
                 records.append({
                     "id": t.id, "status": "failed-or-ineligible", **key,
@@ -231,10 +314,11 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
         "schemaVersion": 2,
         "generatedAt": datetime.now(UTC).replace(microsecond=0).isoformat(),
         "sampleAvatar": avatar_slug,
+        "profile": profile_name or "public",
         "previewFormat": "image/webp",
         "canvas": [width, height],
         "styleVersion": style["styleVersion"],
-        "limitations": [
+        "limitations": _profiles(style).get(profile_name, {}).get("limitations", []) if profile_name else [
             "The reference avatar's texture shows a dark band at the waist and brown tights on her "
             "legs: they are painted on her body, so no garment job can take them off.",
         ],
@@ -251,20 +335,22 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
     return 1 if failed else 0
 
 
-async def _reference_base(orch, store, entry, style: dict) -> dict:
-    """Her reference base, made once per build: the neutral foundation on and her own clothes
-    off (replace-outer takes off what the foundation covers). Every garment is fitted onto
-    this, so her cardigan, shorts and tights no longer hid the trousers, skirts and shoes."""
+async def _reference_base(orch, store, entry, base_style: dict, name: str) -> dict:
+    """Her reference base, made once per profile and build: the neutral foundation on and her
+    own clothes off (replace-outer takes off what the foundation covers). Every garment is
+    fitted onto this, so her cardigan, shorts and tights no longer hid the trousers, skirts
+    and shoes. The underwear profile's base is a nude set, put on with underwear-base."""
     base = await orch.run_now(CreateJobRequest.model_validate({
         "avatar": entry.avatar_input(),
-        "outfit": {"prompt": style["base"]["prompt"], "mode": "auto"},
-        "options": {"renderPreview": False, "engine": "native", "baseBody": "replace-outer"},
+        "outfit": {"prompt": base_style["prompt"], "mode": "auto"},
+        "options": {"renderPreview": False, "engine": "native", "baseBody": base_style["baseBody"]},
     }))
     if base.state != "completed" or base.look is None or not (base.fit_report and base.fit_report.passed):
         raise RuntimeError(f"the reference base could not be made: {base.reason or base.error or base.state}")
-    await store.put("sources/catalog-base.vrm", await store.get(f"looks/{base.look.id}/look.vrm"))
+    key = f"sources/catalog-base-{name}.vrm"
+    await store.put(key, await store.get(f"looks/{base.look.id}/look.vrm"))
     avatar = {k: v for k, v in dict(entry.avatar_input()).items() if k not in ("url", "sha256", "storageKey")}
-    avatar["storageKey"] = "sources/catalog-base.vrm"
+    avatar["storageKey"] = key
     return avatar
 
 
@@ -286,10 +372,12 @@ def main() -> int:
     parser.add_argument("--ids", nargs="*", default=[])
     parser.add_argument("--color", default=None,
                         help="one colour for every garment (default: preview-style.json's rules)")
-    parser.add_argument("--out", type=Path,
-                        default=ROOT / "assets" / "catalog" / "previews")
+    parser.add_argument("--profile", default=None,
+                        help="a preview-style.json profile (underwear): the adult catalog, built apart")
+    parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
-    return asyncio.run(build(args.avatar, set(args.ids), args.out, args.color))
+    out = args.out or (ROOT / "assets" / "catalog" / ("adult/previews" if args.profile else "previews"))
+    return asyncio.run(build(args.avatar, set(args.ids), out, args.color, args.profile))
 
 
 if __name__ == "__main__":

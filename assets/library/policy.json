@@ -1,5 +1,12 @@
 {
   "schemaVersion": 1,
   "about": "Operator declarations about library avatars that their files cannot carry. depictsAdult: true allows swimwear and underwear for that avatar (wardrobe/policy/intimate.py). Shipped empty on purpose: set it only for an avatar you have decided depicts an adult. The model's own sexual-usage terms are still checked first.",
-  "avatars": {}
+  "avatars": {
+    "fem-vroid": {
+      "depictsAdult": true,
+      "declaredBy": "operator (ruslanmv)",
+      "declared": "2026-10-23",
+      "why": "VRoid Female is the adult-proportioned VRoid base body; declared so the underwear catalog previews and adult users' lingerie looks can be fitted on her."
+    }
+  }
 }

@@ -26,12 +26,20 @@ from wardrobe.domain.avatars import AvatarInput
 from wardrobe.domain.garments import INTIMATE_CATEGORIES, GarmentTemplate
 from wardrobe.domain.jobs import CreateJobRequest, JobOptions
 from wardrobe.domain.looks import OutfitMode, OutfitRequest
+from wardrobe.pipeline.plan_outfit import COLORS
 
 router = APIRouter(tags=["garment catalog"])
 
 # Only files shipped in this repository are publicly served. A URL cannot
 # be invented for a template whose fit and rendered preview did not pass.
 PREVIEW_ROOT = Path(__file__).resolve().parents[3] / "assets" / "catalog" / "previews"
+#: The adult collection's previews (tools/catalog/render_templates.py --profile underwear),
+#: kept out of the public folder. Served only to an admin session, never cached shared.
+ADULT_PREVIEW_ROOT = Path(__file__).resolve().parents[3] / "assets" / "catalog" / "adult" / "previews"
+
+#: Material options a template can switch on, from its own MaterialPolicy flags.
+MATERIAL_OPTIONS = {"supports_pattern": "pattern", "supports_metallic": "metallic",
+                    "supports_finish": "finish", "supports_transparency": "sheer"}
 
 LABELS = {
     "top": "Tops", "trousers": "Trousers & jeans",
@@ -52,7 +60,8 @@ def restricted(template: GarmentTemplate) -> bool:
 def preview_path(template: GarmentTemplate) -> Path:
     # IDs come from the validated on-disk template catalog. No raw user input
     # is joined to a filesystem path.
-    return PREVIEW_ROOT / (template.id + ".webp")
+    root = ADULT_PREVIEW_ROOT if restricted(template) else PREVIEW_ROOT
+    return root / (template.id + ".webp")
 
 
 @lru_cache(maxsize=512)
@@ -92,6 +101,11 @@ def garment_item(template: GarmentTemplate) -> dict:
         "requiresAdult": restricted(template),
         "previewStatus": "ready" if has_preview else "pending",
         "previewUrl": f"/v1/catalog/garments/{template.id}/preview?v={version}" if has_preview else None,
+        # Forge's colour vocabulary is what the planner reads; a template that takes no base
+        # colour takes none of it. Never a list made up per garment.
+        "availableColors": sorted(COLORS) if template.materials.supports_base_color else [],
+        "supportedMaterials": [name for flag, name in MATERIAL_OPTIONS.items()
+                               if getattr(template.materials, flag)],
     }
 
 
@@ -224,4 +238,5 @@ async def customize_garment(request: CustomizeGarmentRequest, http: Request, cat
     }
 
 
-__all__ = ["router", "list_garments", "garment_preview", "customize_garment", "PREVIEW_ROOT"]
+__all__ = ["router", "list_garments", "garment_preview", "customize_garment", "PREVIEW_ROOT",
+           "ADULT_PREVIEW_ROOT"]

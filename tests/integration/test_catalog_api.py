@@ -167,3 +167,66 @@ def test_customize_on_a_library_look_changes_one_garment_and_keeps_the_rest(orch
         assert client.post("/v1/catalog/customize", json=missing).status_code == 404
         assert client.post("/v1/catalog/customize", json={"librarySlug": "nobody", "prompt": "red tee"}
                            ).status_code == 404
+
+
+# ----------------------------------------------------------------------
+# the adult collection: complete, separate, and only for an admin session
+# ----------------------------------------------------------------------
+@pytest.fixture
+def adult_previews(tmp_path, monkeypatch):
+    public, adult = tmp_path / "public", tmp_path / "adult"
+    public.mkdir()
+    adult.mkdir()
+    monkeypatch.setattr(catalog_routes, "PREVIEW_ROOT", public)
+    monkeypatch.setattr(catalog_routes, "ADULT_PREVIEW_ROOT", adult)
+    return public, adult
+
+
+@pytest.fixture
+def as_admin():
+    from apps.api.admin import current_admin
+
+    app.dependency_overrides[current_admin] = lambda: SimpleNamespace(username="admin")
+    yield
+    app.dependency_overrides.pop(current_admin, None)
+
+
+def test_the_adult_collection_is_listed_and_served_only_to_an_admin(client, adult_previews, as_admin):
+    public, adult = adult_previews
+    tid = "under-bralette-v1"
+    (adult / f"{tid}.webp").write_bytes(b"RIFF1234WEBPadult")
+    data = client.get("/v1/catalog/garments?category=underwear&includeRestricted=true").json()
+    items = data["categories"][0]["garments"]
+    assert len(items) == 28 and all(item["requiresAdult"] for item in items)
+    shown = next(item for item in items if item["id"] == tid)
+    assert shown["previewStatus"] == "ready"
+    response = client.get(shown["previewUrl"])
+    assert response.status_code == 200 and response.content == b"RIFF1234WEBPadult"
+    # Never a shared cache, whatever the URL says.
+    assert response.headers["cache-control"] == "private, no-store"
+    # Only what was rendered is ready: no thumbnail is claimed for the other 27.
+    assert sum(item["previewStatus"] == "ready" for item in items) == 1
+    assert all(item["previewUrl"] is None for item in items if item["id"] != tid)
+
+
+def test_without_an_admin_the_adult_collection_does_not_exist(client, adult_previews):
+    public, adult = adult_previews
+    tid = "under-bralette-v1"
+    (adult / f"{tid}.webp").write_bytes(b"RIFF1234WEBPadult")
+    # A copy that strayed into the public folder is not served from there either.
+    (public / f"{tid}.webp").write_bytes(b"RIFF1234WEBPstray")
+    assert client.get(f"/v1/catalog/garments/{tid}/preview").status_code == 404
+    assert client.get("/v1/catalog/garments?includeRestricted=true").status_code == 403
+    listed = client.get("/v1/catalog/garments").json()
+    assert all(group["id"] not in {"underwear", "swimwear"} for group in listed["categories"])
+    assert client.get("/v1/catalog/garments?category=underwear").json()["categories"] == []
+
+
+def test_colours_and_materials_come_from_what_forge_supports(client):
+    from wardrobe.pipeline.plan_outfit import COLORS
+
+    items = [item for group in client.get("/v1/catalog/garments").json()["categories"]
+             for item in group["garments"]]
+    for item in items:
+        assert item["availableColors"] == (sorted(COLORS) if item["supportsColor"] else [])
+        assert set(item["supportedMaterials"]) <= {"pattern", "metallic", "finish", "sheer"}
