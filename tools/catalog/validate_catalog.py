@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from PIL import Image, ImageDraw, ImageFont, ImageStat  # noqa: E402
+from PIL import Image, ImageDraw, ImageStat  # noqa: E402
 
 from wardrobe.domain.garments import INTIMATE_CATEGORIES, TemplateCatalog  # noqa: E402
 
