@@ -54,7 +54,9 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color: str) 
     if entry is None or entry.path is None:
         raise SystemExit(f"Missing sample avatar {avatar_slug}. Run make library first.")
     if (entry.presentation or "") != "feminine":
-        raise SystemExit("Use a vetted feminine sample for the first reference catalog; do not mix body types.")
+        raise SystemExit(
+            "Use a vetted feminine sample for the reference catalog; do not mix body types."
+        )
     if entry.license.strip() not in {"CC0", "CC0-1.0"}:
         raise SystemExit("Sample avatar license not approved for distribution of derivative previews.")
 
