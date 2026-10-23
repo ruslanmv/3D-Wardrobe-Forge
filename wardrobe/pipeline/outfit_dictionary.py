@@ -82,6 +82,10 @@ GROUPS: tuple[Group, ...] = (
     # Named for what the looks are, anime-inspired outfits, on a screen anyone may see.
     Group("anime", "Anime-inspired"),
     Group("anime-private", "Anime-inspired · swim & bodysuits", private=True),
+    # RP1. Classic adult role-play costumes, made of catalogue garments only: no hat, badge,
+    # apron or stethoscope is claimed, because Forge builds none. Each wears sheer stockings,
+    # so each is gated as the stockings are, and the group says so.
+    Group("roleplay", "Role-play · adults", private=True),
 )
 
 
@@ -534,6 +538,40 @@ OUTFITS: tuple[Outfit, ...] = (
         "sheer",
         "black lace bralette + sheer white blouse + black mini skirt",
     ),
+    # --- role-play · adults (RP1) -------------------------------------------
+    Outfit("roleplay-secretary", "Secretary", "roleplay",
+           "white blouse + black pencil skirt + sheer black thigh-high stockings"
+           " + black stiletto ankle boots",
+           tags=("role-play", "office")),
+    Outfit("roleplay-police", "Police officer", "roleplay",
+           "navy fitted tee + navy pleated mini skirt + sheer black thigh-high stockings"
+           " + black over-the-knee boots",
+           tags=("role-play", "uniform")),
+    Outfit("roleplay-firefighter", "Firefighter", "roleplay",
+           "red corset + black skater mini skirt + sheer black thigh-high stockings"
+           " + black over-the-knee boots",
+           tags=("role-play", "uniform")),
+    Outfit("roleplay-nurse", "Nurse", "roleplay",
+           "white bodycon mini dress + sheer white thigh-high stockings + white stiletto ankle boots",
+           tags=("role-play", "uniform")),
+    Outfit("roleplay-flight-attendant", "Flight attendant", "roleplay",
+           "navy blazer + white blouse + navy pencil skirt + sheer nude thigh-high stockings"
+           " + navy stiletto ankle boots",
+           tags=("role-play", "uniform")),
+    # GL1. Glamour editions: the same themes on fitted garments (top-glam-blouse-v1,
+    # skirt-glam-pencil-mini-v1, jacket-glam-cropped-v1). The originals above stay as they are.
+    Outfit("roleplay-secretary-glam", "Secretary · Glamour", "roleplay",
+           "ivory satin fitted v-neck blouse + charcoal pencil mini skirt + sheer black thigh-high stockings"
+           " + black stiletto ankle boots",
+           tags=("role-play", "office", "glamour")),
+    Outfit("roleplay-flight-attendant-glam", "Flight attendant · Glamour", "roleplay",
+           "navy fitted cropped jacket + white fitted v-neck blouse + navy pencil mini skirt"
+           " + sheer nude thigh-high stockings + navy stiletto ankle boots",
+           tags=("role-play", "uniform", "glamour")),
+    Outfit("roleplay-firefighter-glam", "Firefighter · Glamour", "roleplay",
+           "red satin corset + black satin skater mini skirt + sheer black thigh-high stockings"
+           " + black over-the-knee stiletto boots",
+           tags=("role-play", "uniform", "glamour")),
 )
 
 

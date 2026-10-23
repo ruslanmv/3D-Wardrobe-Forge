@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "skirt-glam-pencil-mini-v1",
+  "name": "Pencil Mini Skirt",
+  "category": "skirt",
+  "mesh": "procedural:skirt",
+  "coverage": [
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "anchors": [
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "pencil",
+  "hem": "mini",
+  "fit": {
+    "bodyClearanceMm": 4.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 0.92,
+    "hemFlareRatio": 0.92,
+    "flareStart": "below-hip",
+    "flarePower": 1.15,
+    "waistEaseMm": 2.0
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "pencil mini skirt",
+    "pencil mini"
+  ],
+  "description": "A pencil skirt cut at mid-thigh: high at the waist, close over her hips, tapering slightly to the hem.",
+  "collection": "glamour",
+  "optIn": true
+}

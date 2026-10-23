@@ -122,3 +122,45 @@ def test_the_public_cache_key_is_unchanged_by_profiles():
     template = CATALOG.get("top-crop-tee-v1")
     key = render.cache_key(template, render.profile_for(template, STYLE, "avatar-sample-a"), "red", STYLE)
     assert set(key) == {"color", "framing", "styleVersion", "templateSha256", "sampleAvatar"}
+
+
+def test_product_views_hide_the_base_set_and_keep_fitting_unchanged():
+    template = CATALOG.get("under-bra-plunge-v2")
+    profile = render.profile_for(template, STYLE, "fem-vroid", "underwear")
+    views = render.presentation_views(template.id, profile, STYLE, [1.0, 1.4], (480, 640),
+                                      ["Wine Plunge Bra"], ["Wine Plunge Bra"])
+    names = [v["variant"] for v in views]
+    assert names[0] == "front" and {"back", "three-quarter", "garment-only"} <= set(names)
+    for view in views:
+        # Only the product is drawn: the nude base set it was fitted over is not in the list.
+        assert view["present"]["product"] == ["Wine Plunge Bra"]
+    assert next(v for v in views if v["variant"] == "garment-only")["present"]["mode"] == "ghost"
+    assert "styled" not in names
+
+
+def test_a_finishing_piece_gets_its_own_labelled_view_and_never_the_plain_ones():
+    template = CATALOG.get("under-guepiere-v1")
+    profile = render.profile_for(template, STYLE, "fem-vroid", "underwear")
+    own, styled = ["Black Guêpière"], ["Black Guêpière", "Black Tailored Triangle Bralette"]
+    views = render.presentation_views(template.id, profile, STYLE, [0.3, 1.4], (480, 640), own, styled)
+    assert next(v for v in views if v["variant"] == "front")["present"]["product"] == own
+    assert next(v for v in views if v["variant"] == "styled")["present"]["product"] == styled
+
+
+def test_the_public_build_still_renders_one_plain_view():
+    template = CATALOG.get("top-crop-tee-v1")
+    profile = render.profile_for(template, STYLE, "avatar-sample-a")
+    (view,) = render.presentation_views(template.id, profile, STYLE, [0.8, 1.5], (480, 640), ["x"], ["x"])
+    assert "present" not in view and "variant" not in view
+
+
+def test_the_glamour_variants_use_the_new_fitted_panel_shapes():
+    from wardrobe.domain.garments import PROCEDURAL_KINDS
+
+    assert {"fitted-blouse", "fitted-jacket"} <= PROCEDURAL_KINDS
+    assert CATALOG.get("top-glam-blouse-v1").procedural_kind == "fitted-blouse"
+    assert CATALOG.get("jacket-glam-cropped-v1").procedural_kind == "fitted-jacket"
+    assert CATALOG.get("skirt-glam-pencil-mini-v1").hem == "mini"
+    # The tee and the blazer they were cut beside are unchanged.
+    assert CATALOG.get("top-blouse-v1").procedural_kind == "top"
+    assert CATALOG.get("jacket-blazer-v1").procedural_kind == "jacket"

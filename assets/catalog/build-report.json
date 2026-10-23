@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-23T20:35:57+00:00",
+  "generatedAt": "2026-10-23T21:17:22+00:00",
   "sampleAvatar": "avatar-sample-a",
   "profile": "public",
   "previewFormat": "image/webp",
@@ -146,6 +146,36 @@
       "sampleAvatar": "avatar-sample-a"
     },
     {
+      "id": "jacket-glam-cropped-v1",
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.38,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "113ef106ca5a712655488bd4822977385651562c0bc5f876a3ebaffa2c69eaf3",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Fitted Cropped Jacket",
+          "templateId": "jacket-glam-cropped-v1",
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "the new outfit layers over the worn bottoms, shoes, tops",
+        "clothing painted on her skin shows at a top across her chest and shorts or briefs at her hips (12% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
+    },
+    {
       "id": "jacket-long-cardigan-v1",
       "status": "cached",
       "color": "black",
@@ -179,6 +209,30 @@
       ],
       "styleVersion": 2,
       "templateSha256": "a8bd37d2dd0621390d3c77d4c0ce5fe1283e7de94248b10d15a55819940606fa",
+      "sampleAvatar": "avatar-sample-a"
+    },
+    {
+      "id": "jeans-baggy-v1",
+      "status": "cached",
+      "color": "blue",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "212351ac4d192d13ecfd22437ffbeb682e6c269f921c02d9bea3adf58ebf57bd",
+      "sampleAvatar": "avatar-sample-a"
+    },
+    {
+      "id": "jeans-straight-v1",
+      "status": "cached",
+      "color": "blue",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "a68750e31198eb621e3ee28099995b5d4092bdd69dbeed99f6100fa788dcab81",
       "sampleAvatar": "avatar-sample-a"
     },
     {
@@ -384,6 +438,35 @@
       "styleVersion": 2,
       "templateSha256": "96675eddb2c75f3b68c4cf7f9293bdeb9b6ee6db6074089e5fa31397b8bc002f",
       "sampleAvatar": "avatar-sample-a"
+    },
+    {
+      "id": "skirt-glam-pencil-mini-v1",
+      "status": "generated",
+      "color": "white",
+      "framing": [
+        0.15,
+        0.72
+      ],
+      "styleVersion": 2,
+      "templateSha256": "6a8193e47da19f4940fbed13100d935dcfe48368d91ba4f173ff3022c993f8f3",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "White Pencil Mini Skirt",
+          "templateId": "skirt-glam-pencil-mini-v1",
+          "color": "white",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest (9% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
       "id": "skirt-maxi-v1",
@@ -598,6 +681,35 @@
       "sampleAvatar": "avatar-sample-a"
     },
     {
+      "id": "top-glam-blouse-v1",
+      "status": "generated",
+      "color": "emerald",
+      "framing": [
+        0.5,
+        1.0
+      ],
+      "styleVersion": 2,
+      "templateSha256": "55aa76898673991c1866405f619a3faf1f3966a0f5b514ef5381651f7a52c437",
+      "sampleAvatar": "avatar-sample-a",
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Emerald Fitted V-Neck Blouse",
+          "templateId": "top-glam-blouse-v1",
+          "color": "emerald",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "restored her skin under the outfit's open cut: 1907082 texels of painted clothing or cut-away skin filled from the skin round them"
+      ],
+      "views": [
+        "front"
+      ]
+    },
+    {
       "id": "top-halter-v1",
       "status": "cached",
       "color": "emerald",
@@ -643,30 +755,6 @@
       ],
       "styleVersion": 2,
       "templateSha256": "90b63d9b7af32499e12a3547ce611e7ce5dbbfd1f8e5d71529adfa20d1032cd1",
-      "sampleAvatar": "avatar-sample-a"
-    },
-    {
-      "id": "jeans-baggy-v1",
-      "status": "cached",
-      "color": "blue",
-      "framing": [
-        0.0,
-        0.7
-      ],
-      "styleVersion": 2,
-      "templateSha256": "212351ac4d192d13ecfd22437ffbeb682e6c269f921c02d9bea3adf58ebf57bd",
-      "sampleAvatar": "avatar-sample-a"
-    },
-    {
-      "id": "jeans-straight-v1",
-      "status": "cached",
-      "color": "blue",
-      "framing": [
-        0.0,
-        0.7
-      ],
-      "styleVersion": 2,
-      "templateSha256": "a68750e31198eb621e3ee28099995b5d4092bdd69dbeed99f6100fa788dcab81",
       "sampleAvatar": "avatar-sample-a"
     },
     {
@@ -868,6 +956,30 @@
     },
     {
       "id": "under-v-string-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-vday-cutout-bodysuit-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-vday-halter-plunge-bra-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-vday-high-waist-cheeky-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-vday-longline-bralette-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-vday-square-bodysuit-v1",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-vday-tie-side-brief-v1",
       "status": "restricted-skipped"
     },
     {

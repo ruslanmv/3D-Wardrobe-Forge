@@ -1476,6 +1476,8 @@ HAUL_KINDS = frozenset(
         "slip-shorts",
         # G6: cut as panels on her measured body (wardrobe.geometry.panels)
         "camisole", "open-cardigan", "tee", "sports-bra",
+        # GL1. The glamour variants' fitted blouse and tailored jacket (wardrobe.geometry.panels)
+        "fitted-blouse", "fitted-jacket",
     }
 )
 
@@ -2200,6 +2202,23 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
             _cut_bodice(build_bodice(params, y_top=params.top_edge(0.6), y_bottom=bottom_y, name="top"),
                         params, bottom_y, params.top_edge(0.6)),
             *build_sleeves(params, length="short"),
+        ]
+
+    elif category in ("fitted-blouse", "fitted-jacket"):
+        # GL1. The glamour variants: panels cut close to her, long slim sleeves. The blouse
+        # ends at her high hip, to be tucked into a skirt; the jacket is cropped at her waist.
+        from wardrobe.geometry import panels  # it builds on this module
+
+        if category == "fitted-blouse":
+            bottom_y = params.hip_y + (params.waist_y - params.hip_y) * 0.35
+            built = panels.build_fitted_blouse(params, hem_y=bottom_y)
+        else:
+            bottom_y = params.waist_y - (params.waist_y - params.hip_y) * 0.15
+            built = panels.build_fitted_jacket(params, hem_y=bottom_y)
+        sections = [built] if built is not None else [
+            _cut_bodice(build_bodice(params, y_top=params.top_edge(0.6), y_bottom=bottom_y, name="top"),
+                        params, bottom_y, params.top_edge(0.6)),
+            *build_sleeves(params, length="long"),
         ]
 
     elif category == "jacket":

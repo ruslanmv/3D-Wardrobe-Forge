@@ -118,6 +118,10 @@
           "boyshort|brazilian|briefs|cheeky|g-string|thong|hipster|tanga|v-string|tie-side": [
             0.34,
             0.66
+          ],
+          "bra|bralette": [
+            0.6,
+            0.88
           ]
         }
       },
@@ -190,6 +194,29 @@
       },
       "withheld": {
         "why": "Templates whose fitted preview does not meet the catalogue's look, held back until the garment is improved. The template stays in the catalogue (underwear-inventory.json); only its picture is not published, and the build report says why."
+      },
+      "presentation": {
+        "why": "PR1. Fitting and presentation are separate: every piece is still fitted over the nude base set (and the guêpière still styled with its bralette), but only the piece itself is drawn, on a neutral grey form, under studio light. The base set and her own clothes are hidden, not removed. garment-only adds the piece alone; a finishing piece adds a labelled styled view.",
+        "productFocus": true,
+        "mode": "form",
+        "light": "studio",
+        "showUnrelatedFoundation": false,
+        "enableGarmentIsolation": true,
+        "views": [
+          {
+            "name": "front",
+            "yaw": 0
+          },
+          {
+            "name": "back",
+            "yaw": 180
+          },
+          {
+            "name": "three-quarter",
+            "yaw": -35
+          }
+        ],
+        "shading": "standard"
       }
     }
   }

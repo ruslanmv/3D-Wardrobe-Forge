@@ -3,7 +3,7 @@
   "source": "Forge template catalog with verified preview images",
   "sampleAvatar": "avatar-sample-a",
   "styleVersion": 2,
-  "count": 56,
+  "count": 59,
   "items": [
     {
       "id": "dress-a-line-v1",
@@ -114,6 +114,16 @@
       "height": 640,
       "preview": "jacket-cropped-cardigan-v1.webp",
       "color": "white"
+    },
+    {
+      "id": "jacket-glam-cropped-v1",
+      "category": "jacket",
+      "sha256": "bcb117471f756f55d75779a7d3793569b53235d0ca54828060bd78301430c7a4",
+      "bytes": 10156,
+      "width": 480,
+      "height": 640,
+      "preview": "jacket-glam-cropped-v1.webp",
+      "color": "black"
     },
     {
       "id": "jacket-long-cardigan-v1",
@@ -336,6 +346,16 @@
       "color": "red"
     },
     {
+      "id": "skirt-glam-pencil-mini-v1",
+      "category": "skirt",
+      "sha256": "9b128d7f3bbc5d50392f324cd6950fc956c8d14e927c9068d68526cb27bc2443",
+      "bytes": 8722,
+      "width": 480,
+      "height": 640,
+      "preview": "skirt-glam-pencil-mini-v1.webp",
+      "color": "white"
+    },
+    {
       "id": "skirt-maxi-v1",
       "category": "skirt",
       "sha256": "0375f401514d1d488f485698f202503d93c5b05eb5568828311c9d810e263107",
@@ -484,6 +504,16 @@
       "height": 640,
       "preview": "top-fitted-tee-v1.webp",
       "color": "grey"
+    },
+    {
+      "id": "top-glam-blouse-v1",
+      "category": "top",
+      "sha256": "023e0aae189cd2f79772c006b65617a72bbf494e3866487fd7a7edf8cb0794f6",
+      "bytes": 11772,
+      "width": 480,
+      "height": 640,
+      "preview": "top-glam-blouse-v1.webp",
+      "color": "emerald"
     },
     {
       "id": "top-halter-v1",

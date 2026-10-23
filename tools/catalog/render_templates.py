@@ -93,6 +93,7 @@ def profile_for(template, style: dict, default_avatar: str, active: str | None =
         "fabric": next((r["fabric"] for r in own.get("styling", {}).get("rules", [])
                         if re.search(r["match"], template.id)), None),
         "finish": finish if finish and re.search(finish["match"], template.id) else None,
+        "presentation": own.get("presentation"),
     }
 
 
@@ -132,6 +133,9 @@ def cache_key(template, profile: dict, color: str, style: dict) -> dict:
             key["fabric"] = profile["fabric"]
         if profile.get("finish"):
             key["styledWith"] = profile["finish"]["template"]
+        if profile.get("presentation"):
+            key["presentation"] = hashlib.sha256(
+                json.dumps(profile["presentation"], sort_keys=True).encode()).hexdigest()[:12]
     return key
 
 
@@ -151,7 +155,7 @@ def _previous(destination: Path) -> dict:
 
 
 async def build(avatar_slug: str, ids: set[str], destination: Path, color_override: str | None,
-                profile_name: str | None = None) -> int:
+                profile_name: str | None = None, size: tuple[int, int] | None = None) -> int:
     from PIL import Image, ImageStat
 
     from wardrobe.vrm.document import GltfDocument
@@ -188,7 +192,7 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
 
     destination.mkdir(parents=True, exist_ok=True)
     previous = _previous(destination)
-    width, height = style["canvas"]
+    width, height = size or style["canvas"]
     records = []
     to_render: list[tuple[str, dict]] = []  # (template id, view)
     with tempfile.TemporaryDirectory(prefix="catalog-templates-") as tmp:
@@ -265,6 +269,7 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
                     })
                     continue
                 garments = _rendered(result.plan)
+                product = [g["name"] for g in garments]
                 if profile.get("finish"):
                     result = await _finish(orch, bases[profile["name"]], result, profile["finish"], color)
                     if result is None:
@@ -276,9 +281,9 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
                 (work / f"g-{t.id}.vrm").write_bytes(data)
                 stature = _height(GltfDocument.from_bytes(data))
                 focus = [round(frame[0] * stature, 3), round(frame[1] * stature, 3)]
-                view = {"file": f"g-{t.id}.vrm", "out": f"r-{t.id}.png", "size": [width, height],
-                        "yaw": style["yaw"], "focus": focus}
-                to_render.append((t.id, view))
+                styled = [g["name"] for g in garments]
+                for view in presentation_views(t.id, profile, style, focus, (width, height), product, styled):
+                    to_render.append((t.id, view))
                 records.append({"id": t.id, "status": "pending-render", **key,
                                 "rating": rating_for(result.plan), "fitPassed": True,
                                 "garments": garments,
@@ -307,6 +312,20 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
             for tid, view in chunk:
                 screenshot = work / view["out"]
                 record = by_id[tid]
+                variant = view.get("variant", "front")
+                name = tid if variant == "front" else f"{tid}--{variant}"
+                if variant != "front":
+                    # A product view beside the thumbnail: its failure is reported, not fatal.
+                    try:
+                        with Image.open(screenshot) as original:
+                            extra = original.convert("RGB")
+                        if max(ImageStat.Stat(extra).stddev) < 8:
+                            raise ValueError("nearly uniform")
+                        extra.save(destination / f"{name}.webp", "WEBP", quality=86, method=6)
+                        record.setdefault("views", []).append(variant)
+                    except (OSError, ValueError) as exc:
+                        record.setdefault("viewErrors", {})[variant] = str(exc)[:120]
+                    continue
                 if not screenshot.is_file():
                     record.update(status="render-failed", reason="gallery screenshot missing")
                     continue
@@ -321,6 +340,7 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
                         img = img.resize((width, height), Image.Resampling.LANCZOS)
                     img.save(destination / f"{tid}.webp", "WEBP", quality=82, method=6)
                     record["status"] = "generated"
+                    record.setdefault("views", []).insert(0, "front")
                 except (OSError, ValueError) as exc:
                     (destination / f"{tid}.webp").unlink(missing_ok=True)
                     record.update(status="render-failed", reason=str(exc)[:200])
@@ -329,7 +349,7 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
     published = {r["id"] for r in records if r["status"] in {"generated", "cached"}}
     if not ids:
         for stale in destination.glob("*.webp"):
-            if stale.stem not in published:
+            if stale.stem.split("--")[0] not in published:
                 stale.unlink()
 
     summary = {
@@ -376,6 +396,44 @@ async def _reference_base(orch, store, entry, base_style: dict, name: str) -> di
     return avatar
 
 
+def presentation_views(template_id: str, profile: dict, style: dict, focus: list, size: tuple[int, int],
+                       product: list[str], styled: list[str]) -> list[dict]:
+    """The views one fitted garment is rendered as.
+
+    Without a ``presentation`` block: one view, exactly the one this builder always made. With
+    one (PR1): fitting is unchanged, and what is drawn is chosen here. ``product`` is the
+    garments of this template's own job; the nude base set it was fitted over, and her own
+    clothes, are hidden unless ``showUnrelatedFoundation`` says otherwise. Each named view
+    turns her (front, back, three-quarter); ``enableGarmentIsolation`` adds the garment alone
+    (ghost); a finishing piece (the guêpière's bralette) adds a ``styled`` view naming it,
+    while the plain views show the template's own construction only.
+    """
+    base = {"file": f"g-{template_id}.vrm", "size": list(size), "focus": focus}
+    present = profile.get("presentation")
+    if not present:
+        return [{**base, "out": f"r-{template_id}.png", "yaw": style["yaw"]}]
+    show = None if present.get("showUnrelatedFoundation") else product
+    light = present.get("light")
+    views = []
+    for spec in present["views"]:
+        view = {**base, "out": f"r-{template_id}--{spec['name']}.png", "yaw": spec["yaw"],
+                "variant": spec["name"], "light": light}
+        if show is not None:
+            view["present"] = {"mode": present.get("mode", "form"), "product": show,
+                               "shading": present.get("shading")}
+        views.append(view)
+    if present.get("enableGarmentIsolation"):
+        views.append({**base, "out": f"r-{template_id}--garment-only.png", "yaw": -20,
+                      "variant": "garment-only", "light": light,
+                      "present": {"mode": "ghost", "product": product, "shading": present.get("shading")}})
+    if styled != product:
+        views.append({**base, "out": f"r-{template_id}--styled.png", "yaw": present["views"][0]["yaw"],
+                      "variant": "styled", "light": light,
+                      "present": {"mode": present.get("mode", "form"), "product": styled,
+                                  "shading": present.get("shading")}})
+    return views
+
+
 def _planned_from(template_id: str, plan) -> bool:
     """The plan is this template: its own id, or the parts Forge plans a set as (SET_PARTS)."""
     ids = {g.template_id for g in plan.garments}
@@ -419,12 +477,14 @@ def main() -> int:
     parser.add_argument("--ids", nargs="*", default=[])
     parser.add_argument("--color", default=None,
                         help="one colour for every garment (default: preview-style.json's rules)")
+    parser.add_argument("--size", default=None, help="WxH, e.g. 960x1280 for a review build")
     parser.add_argument("--profile", default=None,
                         help="a preview-style.json profile (underwear): the adult catalog, built apart")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
     out = args.out or (ROOT / "assets" / "catalog" / ("adult/previews" if args.profile else "previews"))
-    return asyncio.run(build(args.avatar, set(args.ids), out, args.color, args.profile))
+    size = tuple(int(n) for n in args.size.split("x")) if args.size else None
+    return asyncio.run(build(args.avatar, set(args.ids), out, args.color, args.profile, size))
 
 
 if __name__ == "__main__":

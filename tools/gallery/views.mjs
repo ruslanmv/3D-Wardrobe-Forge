@@ -3,7 +3,8 @@
  *
  *   node tools/gallery/views.mjs WORK_DIR
  *
- * WORK_DIR/views.json lists the views: [{file, out, yaw, focus: [y0, y1] | null, size: [w, h]}].
+ * WORK_DIR/views.json lists the views: [{file, out, yaw, focus: [y0, y1] | null, size: [w, h]}],
+ * optionally `present` ({mode: form | ghost, product: [garment names]}) and `light` (studio).
  * `file` and `out` are names inside WORK_DIR. Called by wardrobe.hosiery.previews; the same
  * page, viewer and lights as the gallery (render.mjs), so a preview is what the Studio shows.
  * PLAYWRIGHT_CHROMIUM and GALLERY_CDN_ROUTE work as they do for render.mjs.
@@ -57,8 +58,11 @@ try {
         // G7: an orthographic view (garment_review.py) — a 1.5° lens from far away.
         const ortho = view.ortho ? '&ortho=1' : '';
         const centre = (view.fx ? `&fx=${Number(view.fx)}` : '') + (view.fz ? `&fz=${Number(view.fz)}` : '');
+        // PR1. Product presentation and studio light (see page.html). Absent, unchanged.
+        const present = view.present ? `&present=${encodeURIComponent(JSON.stringify(view.present))}` : '';
+        const light = view.light ? `&light=${encodeURIComponent(view.light)}` : '';
         await page.goto(
-            `${base}/page.html?a=${encodeURIComponent(view.file)}&yaw=${view.yaw || 0}${focus}${elev}${bones}${centre}${ortho}`,
+            `${base}/page.html?a=${encodeURIComponent(view.file)}&yaw=${view.yaw || 0}${focus}${elev}${bones}${centre}${ortho}${present}${light}`,
         );
         await page.waitForFunction(() => window.ready, null, { timeout: 90000 });
         await page.waitForTimeout(700);

@@ -51,10 +51,12 @@ PROCEDURAL_KINDS = {
     "boots",
     # G6: cut as panels on her measured body (wardrobe.geometry.panels)
     "camisole", "open-cardigan", "tee", "sports-bra",
+    # GL1. Glamour variants (wardrobe.geometry.panels)
+    "fitted-blouse", "fitted-jacket",
 } | set(LINGERIE_KINDS)
 
 #: Shapes worn over everything else, always with long sleeves: layers, never a slot's garment.
-JACKET_KINDS = frozenset({"jacket", "cropped-jacket", "open-cardigan"})
+JACKET_KINDS = frozenset({"jacket", "cropped-jacket", "open-cardigan", "fitted-jacket"})
 
 #: The template schema that carries a ``lingerie`` block (pattern blocks, wardrobe.lingerie).
 LINGERIE_SCHEMA_VERSION = 2
