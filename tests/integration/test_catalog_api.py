@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.main import app
-from wardrobe.pipeline import orchestrator as orchestrator_module
-from unittest.mock import AsyncMock
-
 from apps.api.routes import catalog as catalog_routes
 from wardrobe.domain.jobs import JobState
+from wardrobe.pipeline import orchestrator as orchestrator_module
 
 
 @pytest.fixture
