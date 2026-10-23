@@ -72,6 +72,8 @@ jobs:
           path: |
             assets/catalog/previews/*.webp
             assets/catalog/build-report.json
+            assets/catalog/preview-manifest.json
+            /tmp/catalog-contact-sheet.webp
           if-no-files-found: warn
           retention-days: 14
 
@@ -81,7 +83,7 @@ jobs:
           # The script outputs only public-safe images that passed fit/validation.
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f assets/catalog/build-report.json
+          git add -f assets/catalog/build-report.json assets/catalog/preview-manifest.json
           find assets/catalog/previews -maxdepth 1 -name '*.webp' -print0 |
             xargs -0 -r git add -f --
           if git diff --cached --quiet; then
