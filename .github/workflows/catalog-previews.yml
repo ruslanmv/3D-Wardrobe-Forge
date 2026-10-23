@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: garment-catalog-reference-previews
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   render-public-catalog:
