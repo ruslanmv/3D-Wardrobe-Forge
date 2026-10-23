@@ -35,6 +35,17 @@ if (q.get('present')) {
           });
           out.name = m.name;
         }
+        // PR2. Engineering views of the product alone: its per-vertex colours (a measured
+        // clearance or strain written into COLOR_0 by tools/inspect/pose_contact.py), or its
+        // triangles as a wireframe. Absent, the product is drawn as above.
+        if (present.vertexColors) {
+          out = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, side: THREE.DoubleSide });
+          out.name = m.name;
+        }
+        if (present.wireframe) {
+          out = new THREE.MeshBasicMaterial({ color: 0x1b2633, wireframe: true });
+          out.name = m.name;
+        }
         if (present.mode === 'ghost') out.side = THREE.DoubleSide;
         return out;
       }
