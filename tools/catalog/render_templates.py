@@ -22,7 +22,6 @@ import subprocess
 import sys
 import tempfile
 from datetime import UTC, datetime
-from io import BytesIO
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,7 +30,6 @@ sys.path.insert(0, str(ROOT))
 from wardrobe.config import Settings  # noqa: E402
 from wardrobe.domain.garments import INTIMATE_CATEGORIES, TemplateCatalog  # noqa: E402
 from wardrobe.domain.jobs import CreateJobRequest  # noqa: E402
-from wardrobe.engines import NativeEngine  # noqa: E402
 from wardrobe.library import AvatarLibrary  # noqa: E402
 from wardrobe.pipeline.orchestrator import Orchestrator  # noqa: E402
 from wardrobe.queue.jobs import AsyncioJobQueue  # noqa: E402
@@ -100,7 +98,7 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color: str) 
             result = await orch.run_now(request)
             ok = (result.state == "completed" and result.look is not None
                   and result.fit_report is not None and result.fit_report.passed
-                  and rating_for(result.plan) == "general"
+                  and result.plan is not None and rating_for(result.plan) == "general"
                   and any(g.template_id == t.id for g in result.plan.garments))
             if not ok:
                 records.append({"id": t.id, "status": "failed-or-ineligible",
