@@ -128,22 +128,22 @@
     {
       "id": "jacket-long-cardigan-v1",
       "category": "jacket",
-      "sha256": "a4a33f2390f111cc0fea8575c91bb766e8c3444ca840ca56c14f91e9e0585705",
-      "bytes": 9854,
+      "sha256": "ad137d2f8878b87748597562ebc10e4a04b24f01c44c3789e21b49aeaededf7e",
+      "bytes": 11146,
       "width": 480,
       "height": 640,
       "preview": "jacket-long-cardigan-v1.webp",
-      "color": "black"
+      "color": "olive"
     },
     {
       "id": "jacket-oversized-v1",
       "category": "jacket",
-      "sha256": "2e5e377ed348ea333bd9907dac7d4cb708e685c01738715479dc225061f0b521",
-      "bytes": 9758,
+      "sha256": "3e16c9e77c8a456d384693452da9ea3adcf3c27dacb67cafd333e7ffe3cbecef",
+      "bytes": 10414,
       "width": 480,
       "height": 640,
       "preview": "jacket-oversized-v1.webp",
-      "color": "olive"
+      "color": "pink"
     },
     {
       "id": "jacket-trench-v1",
@@ -358,72 +358,72 @@
     {
       "id": "skirt-maxi-v1",
       "category": "skirt",
-      "sha256": "0375f401514d1d488f485698f202503d93c5b05eb5568828311c9d810e263107",
-      "bytes": 7682,
+      "sha256": "4896ad159a064c9676186edf3c1636ef924c5dab24b01b952b06ac20e2295bc6",
+      "bytes": 6540,
       "width": 480,
       "height": 640,
       "preview": "skirt-maxi-v1.webp",
-      "color": "white"
+      "color": "black"
     },
     {
       "id": "skirt-pencil-v1",
       "category": "skirt",
-      "sha256": "df77fd4a8f698a18ce997c99db21e7a66951428059abb1c7cc40b68777e5a2e4",
-      "bytes": 7176,
+      "sha256": "b521cd223ad0cf81a7e0cd86413d862af9fffaa02f71fd522d5f4ddb4ce7ecf8",
+      "bytes": 7790,
       "width": 480,
       "height": 640,
       "preview": "skirt-pencil-v1.webp",
-      "color": "black"
+      "color": "olive"
     },
     {
       "id": "skirt-pleated-mini-v1",
       "category": "skirt",
-      "sha256": "06478b0aa1bddb5e04af9fcab747bceebbb8ab216c30f4ddf31435a9724f5917",
-      "bytes": 9502,
+      "sha256": "95dcc2ff3720b5fbeade411b78c74951ff10232a4581a2caf3ee3b3b42e7912c",
+      "bytes": 10482,
       "width": 480,
       "height": 640,
       "preview": "skirt-pleated-mini-v1.webp",
-      "color": "olive"
+      "color": "pink"
     },
     {
       "id": "skirt-skater-mini-v1",
       "category": "skirt",
-      "sha256": "720b52fae9ac40f2997101aa866ea3792f78e602b936b39ca403f638771cdf71",
-      "bytes": 8578,
+      "sha256": "21853a465347b6c1faeb14543d192bfe22a4f282b686d7040ce557b0fda1a7f7",
+      "bytes": 8150,
       "width": 480,
       "height": 640,
       "preview": "skirt-skater-mini-v1.webp",
-      "color": "pink"
+      "color": "camel"
     },
     {
       "id": "skirt-slip-midi-v1",
       "category": "skirt",
-      "sha256": "48cd7b6e5476b72015fce659e75291c2abd4fa61309d59003b211afc81c9e4ed",
-      "bytes": 6968,
+      "sha256": "f5bd0020a25b124b459ce7a0e847fa306d314a9e8678af6af2f650bd6e9c7acd",
+      "bytes": 6702,
       "width": 480,
       "height": 640,
       "preview": "skirt-slip-midi-v1.webp",
-      "color": "camel"
+      "color": "burgundy"
     },
     {
       "id": "skirt-tiered-maxi-v1",
       "category": "skirt",
-      "sha256": "d657b88ae9c7b6f8e851c9bd414f8984681da098c6fa797f88af260b91e38f3a",
-      "bytes": 6874,
+      "sha256": "8f170d67cffecee7eace3793b785a55384f850e6dbe65743427336e5d001a68c",
+      "bytes": 7476,
       "width": 480,
       "height": 640,
       "preview": "skirt-tiered-maxi-v1.webp",
-      "color": "burgundy"
+      "color": "grey"
     },
     {
       "id": "skirt-wrap-v1",
       "category": "skirt",
-      "sha256": "1a4b9b401488fa99480903e5f5c6d939d9d2fe28ea5c6115bd069f93ab943d2a",
-      "bytes": 7956,
+      "sha256": "37442336019ef5730ba333298f58a753b6aabfe93ce9f6e1b836c2c8754e3663",
+      "bytes": 7798,
       "width": 480,
       "height": 640,
       "preview": "skirt-wrap-v1.webp",
-      "color": "grey"
+      "color": "emerald"
     },
     {
       "id": "top-blouse-v1",
@@ -518,42 +518,42 @@
     {
       "id": "top-halter-v1",
       "category": "top",
-      "sha256": "8b8acdd2920f4ce6c3735a47f9c2484221d66f3b42cf9d338319cd3d0d4cf5c7",
-      "bytes": 16088,
+      "sha256": "d637d0ea696b96ba09015438a1cc122cdfd0cc88255f1c95d033677bf5bd017b",
+      "bytes": 15764,
       "width": 480,
       "height": 640,
       "preview": "top-halter-v1.webp",
-      "color": "emerald"
+      "color": "navy"
     },
     {
       "id": "top-sports-bra-v1",
       "category": "top",
-      "sha256": "dccd95f4a974204b456ec90f8457e58a366693bdea5bba668f91a5d6dd98b7fb",
-      "bytes": 14354,
+      "sha256": "338c93f0a77bcf73552a50a705808656697a6aafdfa396be82f4e244e8fe694e",
+      "bytes": 14590,
       "width": 480,
       "height": 640,
       "preview": "top-sports-bra-v1.webp",
-      "color": "navy"
+      "color": "red"
     },
     {
       "id": "top-tee-v1",
       "category": "top",
-      "sha256": "6c17362c36e210b3a6148242b05e5e2003d55abc9012328955d20030bdb31018",
-      "bytes": 13874,
+      "sha256": "02765630883f4b7df3758fb0f351151871b24d386518e0f287d8864f97ea536b",
+      "bytes": 13640,
       "width": 480,
       "height": 640,
       "preview": "top-tee-v1.webp",
-      "color": "red"
+      "color": "white"
     },
     {
       "id": "top-tube-v1",
       "category": "top",
-      "sha256": "4c306a0d44955244781551cd6f80f2e69c60bee9ef8035cf098ea89b0b5daf2b",
-      "bytes": 15626,
+      "sha256": "f0b3194fcf00802686c9bdf0719078f397008b5ad1e2de879366740858d5c23d",
+      "bytes": 15420,
       "width": 480,
       "height": 640,
       "preview": "top-tube-v1.webp",
-      "color": "white"
+      "color": "black"
     },
     {
       "id": "trousers-balloon-v1",
