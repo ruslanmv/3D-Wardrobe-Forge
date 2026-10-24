@@ -116,6 +116,11 @@ class JobOptions(BaseModel):
     #: tube top and slip shorts on any other: no avatar needs a declaration to get dressed.
     #: Off by default, so a job that never asked is planned exactly as before.
     ensure_foundation: bool = Field(default=False, alias="ensureFoundation")
+    #: FC1. The colour of the foundation ``ensureFoundation`` adds — any colour in the vocabulary
+    #: (``GET /v1/vocabulary``). Try-On lets her choose it once and keeps it under every look of
+    #: the haul. A foundation she already wears in another colour is replaced by one in this
+    #: colour; one in this colour is kept. Unset, it is beige and the job plans exactly as before.
+    foundation_color: str | None = Field(default=None, alias="foundationColor", max_length=32)
     #: BS5. Relax each fitted garment with XPBD against the collision body (stretch, bending,
     #: contact). Runs only when the job also has a ``bodySurface``; "none" — the default — fits
     #: exactly as before.
@@ -134,6 +139,20 @@ class JobOptions(BaseModel):
         if self.base_body is not None:
             return self.base_body
         return "replace-outer" if self.replace_garments else "preserve"
+
+    @model_validator(mode="after")
+    def _foundation_color_is_a_colour(self) -> JobOptions:
+        """FC1. A name the planner reads as a colour, or nothing: a prompt fragment is not a colour."""
+        if self.foundation_color is not None:
+            from wardrobe.pipeline.plan_outfit import COLORS
+
+            name = self.foundation_color.strip().lower()
+            if name not in COLORS:
+                raise ValueError(
+                    f"foundationColor must be a colour from GET /v1/vocabulary, not {self.foundation_color!r}"
+                )
+            self.foundation_color = name
+        return self
 
 
 class CreateJobRequest(BaseModel):

@@ -280,6 +280,11 @@ class NativeEngine(FittingEngine):
             if layer.plan.hosiery is not None:  # its part in a hosiery design, for posed previews
                 forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
                 forge["hosiery"] = layer.artifact.metadata.get("hosieryRole", layer.plan.role)
+            if context.foundation_color and layer.plan.role == "foundation" \
+                    and layer.plan.template_id in context.foundation_templates:
+                # FC1. Only on a coloured foundation, so no other garment's extras change.
+                forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
+                forge["foundationColor"] = context.foundation_color
             if layer.plan.set_id:  # a coordinated set: only then, so no other garment's extras change
                 forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
                 forge["setId"] = layer.plan.set_id

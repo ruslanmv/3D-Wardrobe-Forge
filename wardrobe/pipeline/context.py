@@ -68,6 +68,10 @@ class PipelineContext:
     #: PB1. The outfit asked for is itself underwear or swimwear (not a foundation the
     #: pipeline added under clothes): it must end up on bare skin, and is checked for it.
     requested_foundation: bool = False
+    #: FC1. The colour of the foundation this job added (``foundationColor``), and its templates:
+    #: tagged on those garments so the next job keeps them, or replaces them in another colour.
+    foundation_color: str | None = None
+    foundation_templates: set[str] = field(default_factory=set)
     #: Surface points of the layers already fitted: what the next layer must clear.
     collision_points: np.ndarray | None = None
 

@@ -44,8 +44,15 @@ async def plan(context: PipelineContext) -> None:
     # PB1. Read before any foundation is added: underwear she asked for, not one put under clothes.
     context.requested_foundation = any(g.role in FOUNDATION_ROLES for g in outfit_plan.garments)
     if context.record.request.options.ensure_foundation and mode != "preserve":
+        color = context.record.request.options.foundation_color
         founded, added = ensure_foundation(outfit_plan, request, context.catalog, _worn(context),
-                                           depicts_adult=context.record.request.avatar.depicts_adult)
+                                           depicts_adult=context.record.request.avatar.depicts_adult,
+                                           color=color)
+        if color and added:
+            # FC1. Which pieces are the coloured foundation, for the tag the next job reads.
+            context.foundation_color = color
+            context.foundation_templates = {g.template_id for g in founded.garments
+                                            if g.role in FOUNDATION_ROLES and g.template_id}
         if added:
             context.warn(f"added {' and '.join(added)} underneath: the foundation her clothes go over")
         outfit_plan = founded
@@ -163,7 +170,8 @@ NEXT_TO_SKIN_UPPER = frozenset({"sports-bra"})
 FOUNDATION_REGIONS = ("upper", "lower")
 
 
-def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: bool):
+def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: bool,
+                      color: str | None = None):
     """MG3. The outfit with a foundation under it, adding only the halves that are missing.
 
     A half is wanted where the new outfit will be on her, and where one of her own garments
@@ -173,6 +181,11 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
     not added where the outfit brings its own foundation (a bikini, a lingerie set replaces
     the foundation rather than going over it) or where a Forge foundation is already on her
     (kept: only a foundation replaces a foundation). Shoes alone want nothing.
+
+    FC1. ``color`` (``foundationColor``) is the colour of the halves added, in place of beige.
+    With a colour asked for, a worn foundation is kept only if Forge made it in that colour; one
+    in any other colour — or one that does not say — is replaced, as a new foundation replaces a
+    foundation. Without one, every worn foundation is kept, as before.
 
     Returns (plan, prompts added); the plan unchanged, and nothing added, when it is complete.
     """
@@ -196,7 +209,8 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
     for garment in worn:
         if garment.role not in FOUNDATION_ROLES and garment.regions & covered:
             reach |= garment.regions & set(FOUNDATION_REGIONS)
-    kept = set().union(*(g.regions for g in worn if g.role in FOUNDATION_ROLES))
+    kept = set().union(*(g.regions for g in worn if g.role in FOUNDATION_ROLES
+                         and (color is None or g.foundation_color == color)))
     needed = reach - regions(outfit_plan.garments, FOUNDATION_ROLES) - kept
     # A sports bra is worn next to her skin, as a bikini top is: nothing goes under it (the
     # full-cup bra the foundation added under one showed as a ledge at its hem).
@@ -212,6 +226,8 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
     rise = _lowest_rise(outfit_plan.garments)
     if rise:
         halves["lower"] = halves["lower"].replace("beige ", "beige ultra-low-rise ", 1)
+    if color:
+        halves = {region: prompt.replace("beige ", f"{color} ", 1) for region, prompt in halves.items()}
     prompts = [halves[region] for region in FOUNDATION_REGIONS if region in needed]
     if not prompts:
         return outfit_plan, []

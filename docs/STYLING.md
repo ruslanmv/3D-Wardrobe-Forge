@@ -183,6 +183,20 @@ them on under its clothes: only a new foundation replaces a foundation. So:
 The body under her own clothes is checked before anything comes off, as for every
 job. The stored source is never modified.
 
+**Its colour (`options.foundationColor`, FC1).** Any colour in `GET /v1/vocabulary`
+(`white`, `black`, `red`, …) in place of beige; anything else is a 422. Try-On asks
+her once and sends it with every look of the haul. The pieces it adds record the
+colour in their node tag (`extras.wardrobeForge.foundationColor`), and a later job
+asking for a colour keeps a worn foundation only if it is in that colour:
+
+- Same colour: kept, as before.
+- Another colour: the half under the new clothes is replaced, never doubled. A half
+  under clothes she keeps (the jeans when only the top changes) keeps its colour and
+  changes with them: replacing it would mean taking the jeans off.
+- A dress covers both halves, so the whole foundation changes.
+
+Without `foundationColor` nothing is tagged and every job plans exactly as before.
+
 **A top that is really a dress.** VRM has no clothing slots. VRoid files Model
 Girl's flared dress as `Tops`. A VRoid `Tops` whose *visible* hem reaches 45% of
 the way from her hip joint to her knee is read as covering her lower half too
