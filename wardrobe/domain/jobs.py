@@ -116,6 +116,15 @@ class JobOptions(BaseModel):
     #: tube top and slip shorts on any other: no avatar needs a declaration to get dressed.
     #: Off by default, so a job that never asked is planned exactly as before.
     ensure_foundation: bool = Field(default=False, alias="ensureFoundation")
+    #: How underwear is added under a requested outfit. Absent, ``ensureFoundation``
+    #: decides, exactly as before. ``auto-compatible`` adds a foundation only where
+    #: she has none (the same path as ensureFoundation). ``preserve-existing`` keeps
+    #: underwear already on her and does not generate another layer. ``none`` does
+    #: not add one. Neither of those strips clothing or builds a body that is not
+    #: already in the source.
+    foundation_policy: Literal["auto-compatible", "preserve-existing", "none"] | None = Field(
+        default=None, alias="foundationPolicy"
+    )
     #: BS5. Relax each fitted garment with XPBD against the collision body (stretch, bending,
     #: contact). Runs only when the job also has a ``bodySurface``; "none" — the default — fits
     #: exactly as before.
@@ -134,6 +143,20 @@ class JobOptions(BaseModel):
         if self.base_body is not None:
             return self.base_body
         return "replace-outer" if self.replace_garments else "preserve"
+
+    @property
+    def requests_added_foundation(self) -> bool:
+        """Whether this job should generate a foundation layer it was not already wearing.
+
+        An explicit policy wins over ``ensureFoundation``, so ``none`` can be sent
+        beside an older client that still sets the flag. Absent, the flag alone
+        decides and a job that never asked is unchanged.
+        """
+        if self.foundation_policy in ("none", "preserve-existing"):
+            return False
+        if self.foundation_policy == "auto-compatible":
+            return True
+        return self.ensure_foundation
 
 
 class CreateJobRequest(BaseModel):

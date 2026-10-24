@@ -155,6 +155,18 @@ cross under a single vertex: no choice of weights lets one point follow two thig
 move apart. That, and the 10–17 mm at the seat creases, need the posed correction pass
 (defect 2), not skinning weights.
 
+## PS4: the posed correction, on the viewer
+
+`src/wardrobe/PoseGarmentCorrection.js` in HomePilot, run from `VRPoseSystem` when a
+preset finishes blending (and when it is applied instantly, which is how a new look
+keeps the pose she was already in). It starts from the bind pose skinned by the
+current bones, pushes lap vertices out along the posed body normal to 1.5 mm, and
+shortens edges stretched past 1.45×. The body mesh is not moved and not hidden, so
+the pelvic surface in the file stays the one on screen. A sibling mesh carries the
+corrected cloth in the same scene; there is no second renderer. The same numbers
+are in `wardrobe/vrm/pose_correction.py` for a measurement that does not depend on
+a browser. Weight smoothing (PF2) stays; this pass is what it could not do.
+
 ## Known defect: a seated gusset is squeezed to a strip (GF1, parked)
 
 Found while proving RL4 (2026-10-24). A brief's gusset is drafted 55 mm wide across her

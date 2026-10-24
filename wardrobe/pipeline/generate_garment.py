@@ -43,7 +43,7 @@ async def plan(context: PipelineContext) -> None:
     mode = context.record.request.options.base_body_mode
     # PB1. Read before any foundation is added: underwear she asked for, not one put under clothes.
     context.requested_foundation = any(g.role in FOUNDATION_ROLES for g in outfit_plan.garments)
-    if context.record.request.options.ensure_foundation and mode != "preserve":
+    if context.record.request.options.requests_added_foundation and mode != "preserve":
         founded, added = ensure_foundation(outfit_plan, request, context.catalog, _worn(context),
                                            depicts_adult=context.record.request.avatar.depicts_adult)
         if added:
