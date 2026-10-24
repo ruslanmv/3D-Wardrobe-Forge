@@ -96,3 +96,15 @@ test('no serious or critical accessibility violations', async ({ page }) => {
     const bad = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
     expect(bad.map((v) => `${v.id}: ${v.help} (${v.nodes.length})`)).toEqual([]);
 });
+
+test('a narrow screen, before the avatar lands, is still keyboard-reachable', async ({ page, isMobile }) => {
+    // CI's slower runner found it: on a narrow screen the camera toolbar scrolls sideways, and while
+    // the avatar is still loading every button in it is disabled, so nothing in it could take focus.
+    test.skip(!isMobile, 'phone layout');
+    await page.setViewportSize({ width: 320, height: 700 });
+    await page.route('**/*.vrm', () => {}); // hold the avatar: the viewer stays loading
+    await open(page);
+    const results = await new AxeBuilder({ page }).exclude('canvas').analyze();
+    const bad = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+    expect(bad.map((v) => `${v.id}: ${v.help} (${v.nodes.length})`)).toEqual([]);
+});

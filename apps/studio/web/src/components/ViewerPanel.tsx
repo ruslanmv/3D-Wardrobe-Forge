@@ -108,6 +108,9 @@ export function ViewerPanel({ avatar, compact = false }: { avatar: LibraryAvatar
             <div
                 className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-line bg-surface px-2 py-1.5 whitespace-nowrap"
                 role="toolbar"
+                // A narrow screen scrolls this sideways: focusable, so the keyboard can scroll it too,
+                // even before the avatar lands and every camera button is still disabled (WCAG 2.1.1).
+                tabIndex={0}
                 aria-label="Viewer mode"
             >
                 <ToggleButton
@@ -175,6 +178,9 @@ export function ViewerPanel({ avatar, compact = false }: { avatar: LibraryAvatar
             <div
                 className={`flex shrink-0 items-center gap-1 overflow-x-auto border-t border-line bg-surface px-2 whitespace-nowrap ${compact ? 'py-1' : 'py-1.5'}`}
                 role="toolbar"
+                // A narrow screen scrolls this sideways: focusable, so the keyboard can scroll it too,
+                // even before the avatar lands and every camera button is still disabled (WCAG 2.1.1).
+                tabIndex={0}
                 aria-label="Camera"
             >
                 {VIEWS.map(({ id, label }) => (
