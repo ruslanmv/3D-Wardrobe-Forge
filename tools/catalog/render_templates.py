@@ -423,9 +423,13 @@ def presentation_views(template_id: str, profile: dict, style: dict, focus: list
                                "shading": present.get("shading")}
         views.append(view)
     if present.get("enableGarmentIsolation"):
-        views.append({**base, "out": f"r-{template_id}--garment-only.png", "yaw": -20,
-                      "variant": "garment-only", "light": light,
-                      "present": {"mode": "ghost", "product": product, "shading": present.get("shading")}})
+        # UA2. ``isolationViews`` turns the garment alone more than one way: from behind is how a
+        # thong's or a G-string's back is inspected, since on the form it sits between her glutes
+        # and the dress-form back view barely shows it. Without the list, the one view as before.
+        alone = {"mode": "ghost", "product": product, "shading": present.get("shading")}
+        for spec in present.get("isolationViews") or [{"name": "garment-only", "yaw": -20}]:
+            views.append({**base, "out": f"r-{template_id}--{spec['name']}.png", "yaw": spec["yaw"],
+                          "variant": spec["name"], "light": light, "present": alone})
     if styled != product:
         views.append({**base, "out": f"r-{template_id}--styled.png", "yaw": present["views"][0]["yaw"],
                       "variant": "styled", "light": light,
