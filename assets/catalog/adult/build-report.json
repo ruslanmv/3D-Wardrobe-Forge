@@ -1,0 +1,1359 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-23T23:44:45+00:00",
+  "sampleAvatar": "fem-vroid",
+  "profile": "underwear",
+  "previewFormat": "image/webp",
+  "canvas": [
+    480,
+    640
+  ],
+  "styleVersion": 2,
+  "limitations": [
+    "under-guepiere-v1: the generated gu\u00eapi\u00e8re ends below the bust, while its template describes balconette cups and declares chest coverage. Kept as is by the operator's decision; the preview styles it with a matching bralette fitted on top."
+  ],
+  "records": [
+    {
+      "id": "under-bodysuit-v1",
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.36,
+        0.86
+      ],
+      "styleVersion": 2,
+      "templateSha256": "d4c738e1c563bad3a171a4c894b1097e05d9cd6bd14703ef38f7de7f2e6d78fa",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Bodysuit",
+          "templateId": "under-bodysuit-v1",
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-bodysuit-v2",
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.36,
+        0.86
+      ],
+      "styleVersion": 2,
+      "templateSha256": "16618d988751bd0dcbc36acb0567ac5078e9d2c34067ab0d9e6586796a89973e",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Red Tailored Bodysuit",
+          "templateId": "under-bodysuit-v2",
+          "color": "red",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: bodysuit.leg-negativeX.strain.stand is 0.1236, expected 0.03\u20130.12",
+        "lingerie: bodysuit.leg-negativeX.pressure.sit is 1.5441 kPa, expected 0.0\u20131.5 kPa",
+        "lingerie: bodysuit.leg-positiveX.pressure.sit is 1.5598 kPa, expected 0.0\u20131.5 kPa"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-boyshort-v2",
+      "status": "generated",
+      "color": "wine",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "91011f1ea23b4cf98c719bcd635a713b7c753d36c7b228dba636a3f2306e45a7",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Wine Tailored Boyshorts",
+          "templateId": "under-boyshort-v2",
+          "color": "wine",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.coverage.front is 0.9658, expected 0.88\u20130.92",
+        "lingerie: brief.leg-negativeX.strain.stand is 0.1206, expected 0.03\u20130.12",
+        "lingerie: brief.leg-negativeX.pressure.sit is 1.5181 kPa, expected 0.0\u20131.5 kPa",
+        "lingerie: brief.leg-positiveX.strain.stand is 0.1209, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-bra-balconette-v2",
+      "status": "generated",
+      "color": "navy",
+      "framing": [
+        0.6,
+        0.88
+      ],
+      "styleVersion": 2,
+      "templateSha256": "8b286e450c4e4703fcbc4740808d3e6273c505c71dc15291147f8ddef337ed8b",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Navy Tailored Balconette Bra",
+          "templateId": "under-bra-balconette-v2",
+          "color": "navy",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "clearance-only",
+      "warnings": [
+        "lingerie: bra.underband.level is 12.5 mm, expected 0.0\u201310.0 mm"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-bra-full-v2",
+      "status": "generated",
+      "color": "emerald",
+      "framing": [
+        0.6,
+        0.88
+      ],
+      "styleVersion": 2,
+      "templateSha256": "02ca4a4a68a2d54a333390d34c896f8c376f0ed8ff8859168994205fa30a19ff",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Emerald Tailored Full-Cup Bra",
+          "templateId": "under-bra-full-v2",
+          "color": "emerald",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "clearance-only",
+      "warnings": [
+        "lingerie: bra.underband.level is 18.5 mm, expected 0.0\u201310.0 mm"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-bra-plunge-v2",
+      "status": "generated",
+      "color": "plum",
+      "framing": [
+        0.6,
+        0.88
+      ],
+      "styleVersion": 2,
+      "templateSha256": "597e76fad8e8013952738e28038971c94cc0bf61b66f5ec74a051a26df294a52",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Plum Tailored Plunge Bra",
+          "templateId": "under-bra-plunge-v2",
+          "color": "plum",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "clearance-only",
+      "warnings": [
+        "lingerie: bra.underband.level is 12.0075 mm, expected 0.0\u201310.0 mm"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-bralette-v1",
+      "status": "generated",
+      "color": "crimson",
+      "framing": [
+        0.6,
+        0.88
+      ],
+      "styleVersion": 2,
+      "templateSha256": "fb05a7cf86282e20d81ace2212d34338f40e7f0dca492a595d8cb748161436b9",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Crimson Bralette",
+          "templateId": "under-bralette-v1",
+          "color": "crimson",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-bralette-v2",
+      "status": "generated",
+      "color": "cobalt",
+      "framing": [
+        0.6,
+        0.88
+      ],
+      "styleVersion": 2,
+      "templateSha256": "40765cd98fabc4819cb9e2d9afc971406ad07452d46e90518aae0aece2d97455",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Cobalt Tailored Triangle Bralette",
+          "templateId": "under-bralette-v2",
+          "color": "cobalt",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "clearance-only",
+      "warnings": [
+        "lingerie: bra.underband.strain.stand is 0.2659, expected 0.1\u20130.25"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-brazilian-v2",
+      "status": "generated",
+      "color": "burgundy",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "b71a8fafc4ba72ad0527453f29726a4158ccb30eaf290b2d6478da9204c8803e",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Burgundy Tailored Brazilian Briefs",
+          "templateId": "under-brazilian-v2",
+          "color": "burgundy",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.leg-positiveX.strain.stand is 0.1246, expected 0.03\u20130.12",
+        "lingerie: brief.leg-positiveX.pressure.sit is 1.5649 kPa, expected 0.0\u20131.5 kPa"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-briefs-french-cut-v2",
+      "status": "generated",
+      "color": "rose",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "cfa047337646b50467b0b73731aaee1d21fd74aaaea56960ed493c2c41b1c7de",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Rose Tailored French-Cut Briefs",
+          "templateId": "under-briefs-french-cut-v2",
+          "color": "rose",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.leg-negativeX.strain.stand is 0.1237, expected 0.03\u20130.12",
+        "lingerie: brief.leg-positiveX.strain.stand is 0.1203, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-briefs-high-leg-v2",
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "1d9c0194dab12546ae12908aefea8d3337e70141124928f674c64ef11b02d60a",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Tailored High-Leg Briefs",
+          "templateId": "under-briefs-high-leg-v2",
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-briefs-string-v2",
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "0390e1598ca62b05af75d4e1c1a8f5ab479d139bac6693919dc37b9074c3a3e7",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Red Tailored String Briefs",
+          "templateId": "under-briefs-string-v2",
+          "color": "red",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.leg-negativeX.strain.stand is 0.1259, expected 0.03\u20130.12",
+        "lingerie: brief.leg-positiveX.strain.stand is 0.1229, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-briefs-v1",
+      "status": "generated",
+      "color": "wine",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "22844dae6c7af6747c86dc0e2588f042b8ce29d0cb4f8e51a8f27dc43815730c",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Wine Briefs",
+          "templateId": "under-briefs-v1",
+          "color": "wine",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-briefs-v2",
+      "status": "generated",
+      "color": "navy",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "3b8aab7e5520115f7846df062cac08e4ceb778fbdaf27c261fb46fb57ad133f1",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Navy Tailored Briefs",
+          "templateId": "under-briefs-v2",
+          "color": "navy",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.leg-positiveX.strain.stand is 0.1263, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-cheeky-v2",
+      "status": "generated",
+      "color": "emerald",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "38be5e5d7228bb5844a79001f33260f1e2d331ac2e84d36c02a8f87d139b83bb",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Emerald Tailored Cheeky Briefs",
+          "templateId": "under-cheeky-v2",
+          "color": "emerald",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.leg-negativeX.strain.stand is 0.1271, expected 0.03\u20130.12",
+        "lingerie: brief.leg-positiveX.strain.stand is 0.1296, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-chemise-satin-v1",
+      "status": "generated",
+      "color": "wine",
+      "framing": [
+        0.2,
+        0.88
+      ],
+      "styleVersion": 2,
+      "templateSha256": "90cbc6fe5ef8eb8685c2e46461811d4f179a2dc2a4c2a51eaf18c6323910e005",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "fabric": "satin",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Wine Satin Chemise",
+          "templateId": "under-chemise-satin-v1",
+          "color": "wine",
+          "fabric": "satin"
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-g-string-v2",
+      "status": "generated",
+      "color": "crimson",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "f9e821830b2dce1a3b1039890d130ac8166128fbb1b66bf6272fe363a57c4c56",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Crimson Micro Tailored G-String",
+          "templateId": "under-g-string-v2",
+          "color": "crimson",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.coverage.back is 0.0873, expected 0.01\u20130.05"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-garter-set-v1",
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.22,
+        0.86
+      ],
+      "styleVersion": 2,
+      "templateSha256": "b3ba6d3b680827051f940a7c17cc6e56911c183bc8d5ea0095a1fe56f92cc9c6",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "preserve",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Garter Set",
+          "templateId": "under-garter-set-v1",
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-guepiere-v1",
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.22,
+        0.86
+      ],
+      "styleVersion": 2,
+      "templateSha256": "a9400091c72ea76119ccd53769a3d06dc2a4811c6f0ee33044e5aafeeb13d85d",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "preserve",
+      "basePrompt": "nude bralette + nude briefs",
+      "styledWith": "under-bralette-v2",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Gu\u00eapi\u00e8re",
+          "templateId": "under-guepiere-v1",
+          "color": "black",
+          "fabric": "satin"
+        },
+        {
+          "name": "Black Thigh-High Stockings",
+          "templateId": "legwear-thigh-highs-v1",
+          "color": "black",
+          "fabric": null
+        },
+        {
+          "name": "Black Suspender Straps",
+          "templateId": null,
+          "color": "black",
+          "fabric": null
+        },
+        {
+          "name": "Black Tailored Triangle Bralette",
+          "templateId": "under-bralette-v2",
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "clearance-only",
+      "warnings": [
+        "lingerie: bra.underband.strain.stand is 0.2581, expected 0.1\u20130.25"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only",
+        "styled"
+      ]
+    },
+    {
+      "id": "under-high-waist-briefs-v2",
+      "status": "generated",
+      "color": "rose",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "cba1a627f4cb4177b0d880c766b52323543ef3271bd41783125c9b34a35cadf3",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Rose Tailored High-Waist Briefs",
+          "templateId": "under-high-waist-briefs-v2",
+          "color": "rose",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-high-waist-thong-v2",
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "b0c156accdbd974a389932d133d9dd495368500bfa403e42a6f721d46c8b0186",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Micro Tailored High-Waist Thong",
+          "templateId": "under-high-waist-thong-v2",
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "warnings",
+      "warnings": [
+        "8 garment vertices remain within the clearance margin (0.80% of the shell)",
+        "lingerie: brief.coverage.back is 0.151, expected 0.08\u20130.12",
+        "lingerie: brief.leg-negativeX.strain.stand is 0.1348, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-hipster-v2",
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "e63623de96e263dc3a943356ea65470304ae31103faa9db9b9b6d7738cbae6a0",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Red Tailored Hipster Briefs",
+          "templateId": "under-hipster-v2",
+          "color": "red",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.leg-negativeX.strain.stand is 0.1249, expected 0.03\u20130.12",
+        "lingerie: brief.leg-negativeX.pressure.sit is 1.6373 kPa, expected 0.0\u20131.5 kPa",
+        "lingerie: brief.leg-positiveX.strain.stand is 0.126, expected 0.03\u20130.12",
+        "lingerie: brief.leg-positiveX.pressure.sit is 1.6081 kPa, expected 0.0\u20131.5 kPa"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-lingerie-set-v1",
+      "status": "generated",
+      "color": "wine",
+      "framing": [
+        0.36,
+        0.86
+      ],
+      "styleVersion": 2,
+      "templateSha256": "9b86cc47b033b7e9eab60e6017a01da33a198be1da3fd69f2cbd671623e19388",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Wine Tailored Triangle Bralette",
+          "templateId": "under-bralette-v2",
+          "color": "wine",
+          "fabric": null
+        },
+        {
+          "name": "Wine Tailored Briefs",
+          "templateId": "under-briefs-v2",
+          "color": "wine",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "clearance-only",
+      "warnings": [
+        "lingerie: bra.underband.strain.stand is 0.2659, expected 0.1\u20130.25",
+        "lingerie: brief.leg-positiveX.strain.stand is 0.129, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-suspender-belt-high-v1",
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.22,
+        0.86
+      ],
+      "styleVersion": 2,
+      "templateSha256": "e7a1ab5f047f3f40f0714226e703d14872291c0b4ddf86bc89a43c36b0140757",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "preserve",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black High-Waisted Suspender Belt",
+          "templateId": "under-suspender-belt-high-v1",
+          "color": "black",
+          "fabric": "satin"
+        },
+        {
+          "name": "Black Thigh-High Stockings",
+          "templateId": "legwear-thigh-highs-v1",
+          "color": "black",
+          "fabric": null
+        },
+        {
+          "name": "Black Suspender Straps",
+          "templateId": null,
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "clearance-only",
+      "warnings": [
+        "the belt is asked to be hidden under a skirt, but nothing covers it",
+        "hosiery: RL (left-back) pulls 7.1% in walk",
+        "hosiery: RL (left-back) pulls 8.0% in sit",
+        "hosiery: RR (right-back) pulls 8.0% in sit",
+        "hosiery: FR (right-front) stretches 10.5% in walk, past the 10% limit"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-suspender-belt-v1",
+      "status": "generated",
+      "color": "black",
+      "framing": [
+        0.22,
+        0.86
+      ],
+      "styleVersion": 2,
+      "templateSha256": "bfa1b3305b41b522fff0598cbec1590d7f5820337fef50e13554120854e5c2a3",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "preserve",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Suspender Belt",
+          "templateId": "under-suspender-belt-v1",
+          "color": "black",
+          "fabric": "satin"
+        },
+        {
+          "name": "Black Thigh-High Stockings",
+          "templateId": "legwear-thigh-highs-v1",
+          "color": "black",
+          "fabric": null
+        },
+        {
+          "name": "Black Suspender Straps",
+          "templateId": null,
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "clearance-only",
+      "warnings": [
+        "the belt is asked to be hidden under a skirt, but nothing covers it",
+        "hosiery: FR (right-front) stretches 10.7% in walk, past the 10% limit"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-tanga-v2",
+      "status": "generated",
+      "color": "plum",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "04b68b7990c5a62e04ed9cf59e247e7b0c251c3283ae76c5be6695ec17ea3271",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Plum Tailored Tanga",
+          "templateId": "under-tanga-v2",
+          "color": "plum",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.leg-negativeX.strain.stand is 0.1231, expected 0.03\u20130.12",
+        "lingerie: brief.leg-positiveX.strain.stand is 0.139, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-thong-v2",
+      "status": "generated",
+      "color": "crimson",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "1d8705e238637e57cb57bf3d5e82e39ffe948e735e09c7bd4508fe794444aa31",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Crimson Micro Tailored Thong",
+          "templateId": "under-thong-v2",
+          "color": "crimson",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.coverage.back is 0.198, expected 0.1\u20130.14",
+        "lingerie: brief.leg-negativeX.strain.stand is 0.1213, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-v-string-v2",
+      "status": "generated",
+      "color": "cobalt",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "c5f60c6cdbe5d8be44570227cea8f2eba9bd0fe871bae7abc89334453b7398eb",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Cobalt Tailored V-String",
+          "templateId": "under-v-string-v2",
+          "color": "cobalt",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "warnings",
+      "warnings": [
+        "10 garment vertices remain within the clearance margin (1.75% of the shell)",
+        "lingerie: brief.leg-negativeX.strain.stand is 0.1259, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-vday-cutout-bodysuit-v1",
+      "status": "generated",
+      "color": "wine",
+      "framing": [
+        0.36,
+        0.86
+      ],
+      "styleVersion": 2,
+      "templateSha256": "55c3488ca98bdde51d329e225004e0cb75c8ce4ed3bc8a354a8649e73dfe44b1",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "fabric": "satin",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Wine Halter Cut-Out Bodysuit",
+          "templateId": "under-vday-cutout-bodysuit-v1",
+          "color": "wine",
+          "fabric": "satin"
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: bodysuit.leg-negativeX.strain.stand is 0.1292, expected 0.03\u20130.12",
+        "lingerie: bodysuit.leg-positiveX.strain.stand is 0.1267, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-vday-halter-plunge-bra-v1",
+      "status": "generated",
+      "color": "crimson",
+      "framing": [
+        0.6,
+        0.88
+      ],
+      "styleVersion": 2,
+      "templateSha256": "f12459345acb56a7d11a726bf603da35bd0b3fe12adf2eeb2f4b4b26b3eb88d4",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "fabric": "lace",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Crimson Lace Halter Plunge Bra",
+          "templateId": "under-vday-halter-plunge-bra-v1",
+          "color": "crimson",
+          "fabric": "lace"
+        }
+      ],
+      "clippingCheck": "clearance-only",
+      "warnings": [
+        "lingerie: bra.underband.level is 12.0075 mm, expected 0.0\u201310.0 mm"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-vday-high-waist-cheeky-v1",
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "67171a21892c5af1a948c1a013540a0d4d0d27819a79ed92774789f0d832643a",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "fabric": "lace",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Red Lace High-Waist Cheeky Briefs",
+          "templateId": "under-vday-high-waist-cheeky-v1",
+          "color": "red",
+          "fabric": "lace"
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.leg-negativeX.strain.stand is 0.1244, expected 0.03\u20130.12",
+        "lingerie: brief.leg-positiveX.strain.stand is 0.1224, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-vday-longline-bralette-v1",
+      "status": "generated",
+      "color": "wine",
+      "framing": [
+        0.6,
+        0.88
+      ],
+      "styleVersion": 2,
+      "templateSha256": "323f80d0de780a99320399ec41955d5a6e91b5d04eb27e29460cbe2772fc749a",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "fabric": "lace",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Wine Lace Longline Triangle Bralette",
+          "templateId": "under-vday-longline-bralette-v1",
+          "color": "wine",
+          "fabric": "lace"
+        }
+      ],
+      "clippingCheck": "clearance-only",
+      "warnings": [],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-vday-square-bodysuit-v1",
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.36,
+        0.86
+      ],
+      "styleVersion": 2,
+      "templateSha256": "f644823177defa50b3a34779bb34512a67a30eb059b2a76fe299f177128887f2",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "fabric": "satin",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Red Square-Neck Bodysuit",
+          "templateId": "under-vday-square-bodysuit-v1",
+          "color": "red",
+          "fabric": "satin"
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: bodysuit.leg-negativeX.strain.stand is 0.1212, expected 0.03\u20130.12"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-vday-tie-side-brief-v1",
+      "status": "generated",
+      "color": "red",
+      "framing": [
+        0.34,
+        0.66
+      ],
+      "styleVersion": 2,
+      "templateSha256": "bdf5545ddabbe1eb4117680b87f29db0939a6321ad46176b5b67a8df918842ec",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "replace-outer",
+      "basePrompt": "nude bralette + nude briefs",
+      "fabric": "lace",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Red Lace Tie-Side Briefs",
+          "templateId": "under-vday-tie-side-brief-v1",
+          "color": "red",
+          "fabric": "lace"
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "lingerie: brief.coverage.back is 0.6899, expected 0.63\u20130.67"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    },
+    {
+      "id": "under-waspie-v1",
+      "status": "generated",
+      "color": "emerald",
+      "framing": [
+        0.22,
+        0.86
+      ],
+      "styleVersion": 2,
+      "templateSha256": "78769f7ec99ff4564752df14170c12b7d390ead3ef3f87069760ad2bd3016e34",
+      "sampleAvatar": "fem-vroid",
+      "profile": "underwear",
+      "baseBody": "preserve",
+      "basePrompt": "nude bralette + nude briefs",
+      "presentation": "954c5f8e047c",
+      "rating": "intimate",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Waspie",
+          "templateId": "under-waspie-v1",
+          "color": "black",
+          "fabric": "satin"
+        },
+        {
+          "name": "Black Thigh-High Stockings",
+          "templateId": "legwear-thigh-highs-v1",
+          "color": "black",
+          "fabric": null
+        },
+        {
+          "name": "Black Suspender Straps",
+          "templateId": null,
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "clearance-only",
+      "warnings": [
+        "the belt is asked to be hidden under a skirt, but nothing covers it",
+        "hosiery: RL (left-back) pulls 9.4% in walk",
+        "hosiery: FR (right-front) pulls 6.2% in walk",
+        "hosiery: RL (left-back) stretches 12.5% in sit, past the 10% limit",
+        "hosiery: RR (right-back) stretches 12.5% in sit, past the 10% limit"
+      ],
+      "views": [
+        "front",
+        "back",
+        "three-quarter",
+        "garment-only"
+      ]
+    }
+  ]
+}

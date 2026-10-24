@@ -103,6 +103,9 @@ class BriefSpec:
     #: Legacy (L3 templates): side height as a fraction of the span, and the front scoop.
     side_height: float | None = None
     front_scoop: float | None = None
+    #: RL4. Draft the gusset from a reference instead of the constants above
+    #: (wardrobe.lingerie.references.GUSSET_DRAFTS): ``freesewing-uma``. Absent, the constants.
+    gusset_draft: str | None = None
     #: Elastic names from wardrobe.lingerie.elastic.ELASTICS.
     waist_elastic: str = "picot-10"
     leg_elastic: str = "picot-8"
@@ -135,6 +138,8 @@ class BriefSpec:
             raise ValueError(f"legExtensionMm {self.leg_extension_mm} outside 0-150")
         if not 20 <= self.gusset_width_mm <= 120 or not 20 <= self.gusset_front_width_mm <= 140:
             raise ValueError("gusset widths outside 20-140 mm")
+        if self.gusset_draft is not None and self.gusset_draft not in ("freesewing-uma",):
+            raise ValueError(f"gussetDraft {self.gusset_draft!r} not one of ('freesewing-uma',)")
         if self.back_center_width_mm is not None and not 2.0 <= self.back_center_width_mm <= 160.0:
             raise ValueError(f"backCenterWidthMm {self.back_center_width_mm} outside 2-160")
 

@@ -185,6 +185,22 @@ data: {"state":"completed","progress":1.0,"message":"look ready"}
 
 Recent jobs, newest first.
 
+## Garment catalog and styling for HomePilot
+
+New endpoints for real template previews and queued customization:
+
+| Endpoint | Returns |
+| --- | --- |
+| `GET /v1/catalog/garments[?category=top]` | Public-safe garment groups with real-preview status |
+| `GET /v1/catalog/garments/{templateId}/preview` | Cached WebP if generated, otherwise 404 |
+| `POST /v1/catalog/customize` | Real async job, same progress and validation as `/v1/generate` |
+
+The public catalog does not advertise restricted garments or nonexistent
+previews, and browsing never triggers rendering jobs. `includeRestricted=true`
+is only available to an active admin session; it does not override job policy.
+Pre-generate approved previews via `tools/catalog/render_templates.py`.
+See [GARMENT_CATALOG_API.md](GARMENT_CATALOG_API.md) for examples and Space deployment.
+
 ## Looks, templates and assets
 
 | Endpoint | Returns |

@@ -1,0 +1,94 @@
+name: Build garment catalog previews
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/garment-catalog-previews-api
+    paths:
+      - .github/workflows/catalog-previews.yml
+      - tools/catalog/**
+      - tools/gallery/**
+      - wardrobe/**
+      - assets/garment_templates/**
+
+# Only this branch publishes catalog samples. A separate Space release is
+# required: this workflow never modifies Hugging Face automatically.
+permissions:
+  contents: write
+
+concurrency:
+  group: garment-catalog-reference-previews
+  cancel-in-progress: true
+
+jobs:
+  render-public-catalog:
+    if: github.repository == 'ruslanmv/3D-Wardrobe-Forge'
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: feat/garment-catalog-previews-api
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Forge and browser renderer
+        run: |
+          python -m pip install -e '.[dev,preview]'
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: Obtain pinned-license sample avatar
+        run: |
+          # Download only the reference model, not every Studio avatar.
+          python tools/catalog/fetch_reference_avatar.py --avatar avatar-sample-a
+
+      - name: Render all eligible garment reference previews
+        id: render
+        shell: bash
+        run: |
+          set +e
+          python tools/catalog/render_templates.py --avatar avatar-sample-a
+          code=$?
+          set -e
+          echo "render_exit=$code" >> "$GITHUB_OUTPUT"
+          test -f assets/catalog/build-report.json
+          python tools/catalog/validate_catalog.py             --root assets/catalog/previews             --report assets/catalog/build-report.json
+
+      - name: Upload gallery and failure report for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: garment-catalog-previews
+          path: |
+            assets/catalog/previews/*.webp
+            assets/catalog/build-report.json
+            assets/catalog/preview-manifest.json
+            /tmp/catalog-contact-sheet.webp
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Commit verified WebP previews
+        shell: bash
+        run: |
+          # The script outputs only public-safe images that passed fit/validation.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f assets/catalog/build-report.json assets/catalog/preview-manifest.json
+          find assets/catalog/previews -maxdepth 1 -name '*.webp' -print0 |
+            xargs -0 -r git add -f --
+          if git diff --cached --quiet; then
+            echo "No new verified previews."
+            exit 0
+          fi
+          git commit -m "assets(catalog): publish real fitted WebP garment previews"
+          git push origin HEAD:feat/garment-catalog-previews-api

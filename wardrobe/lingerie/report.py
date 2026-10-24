@@ -34,8 +34,12 @@ def build(context) -> dict | None:
         kind = layer.artifact.procedural_kind or layer.plan.category
         own = [e for e in edges if e.piece == layer.plan.name]
         rules = rules_for(kind, layer.mesh, own, centre_x)
-        pieces.append({"name": layer.plan.name, "kind": kind,
-                       "elastics": [e.to_dict() for e in own], "rules": rules})
+        tension = [e.to_dict() for e in own]
+        piece = {"name": layer.plan.name, "kind": kind, "elastics": tension, "rules": rules}
+        # RL4. Figures drafted from the reference library, with inputs and provenance; absent otherwise.
+        if layer.mesh.metadata.get("lingerieReferences"):
+            piece["references"] = layer.mesh.metadata["lingerieReferences"]
+        pieces.append(piece)
     rows = [r for piece in pieces for r in piece["rules"]]
     warned = [r for r in rows if r["status"] != "pass"]
     return {"pieces": pieces, "rulesChecked": len(rows), "rulesWarned": len(warned),

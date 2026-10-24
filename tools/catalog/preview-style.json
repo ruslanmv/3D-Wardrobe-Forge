@@ -1,0 +1,235 @@
+{
+  "styleVersion": 2,
+  "note": "How catalog previews are made (tools/catalog/render_templates.py). Change anything here and bump styleVersion: every preview is then re-rendered, because the cache key includes it.",
+  "base": {
+    "prompt": "beige seamless tube top + beige slip shorts",
+    "why": "The reference avatar is first dressed in the neutral, general-rated foundation with her own clothes off, so each catalog garment is the only thing that reads in its preview."
+  },
+  "canvas": [
+    480,
+    640
+  ],
+  "yaw": -25,
+  "framing": {
+    "why": "Share of her height each category is framed on, bottom to top: a pair of flats in a full-body frame was a few pixels.",
+    "top": [
+      0.5,
+      1.0
+    ],
+    "jacket": [
+      0.38,
+      1.0
+    ],
+    "trousers": [
+      0.0,
+      0.7
+    ],
+    "shorts": [
+      0.3,
+      0.72
+    ],
+    "skirt": [
+      0.15,
+      0.72
+    ],
+    "dress": [
+      0.0,
+      1.0
+    ],
+    "jumpsuit": [
+      0.0,
+      1.0
+    ],
+    "nightwear": [
+      0.0,
+      1.0
+    ],
+    "shoes": [
+      0.0,
+      0.32
+    ],
+    "legwear": [
+      0.0,
+      0.62
+    ]
+  },
+  "colors": {
+    "why": "Each garment in its own colour, so the catalog is not one navy. A template matching a rule takes that colour; the rest take the category palette in order of template id, so the choice is fixed for every build.",
+    "rules": [
+      {
+        "match": "jeans|denim",
+        "color": "blue"
+      },
+      {
+        "match": "leggings",
+        "color": "black"
+      },
+      {
+        "match": "trench",
+        "color": "camel"
+      },
+      {
+        "match": "tights|thigh-high",
+        "color": "black"
+      }
+    ],
+    "palette": [
+      "red",
+      "white",
+      "black",
+      "olive",
+      "pink",
+      "camel",
+      "burgundy",
+      "grey",
+      "emerald",
+      "navy"
+    ]
+  },
+  "profiles": {
+    "why": "A category listed here is previewed on its own avatar and base instead of the default ones. Underwear needs an avatar the operator has declared adult (assets/library/policy.json): Forge fits it on no other, and the preview is the same job a person would run.",
+    "underwear": {
+      "avatar": "fem-vroid",
+      "base": {
+        "prompt": "nude bralette + nude briefs",
+        "baseBody": "underwear-base",
+        "why": "A nude set under every piece, so a bra preview is never topless below and briefs never topless above."
+      },
+      "baseBody": "replace-outer",
+      "layer": {
+        "match": "guepiere|waspie|suspender|garter",
+        "baseBody": "preserve",
+        "why": "Underbust and belt pieces are layered over the nude base set rather than replacing it. The guêpière's geometry ends below the bust although its template describes balconette cups; the operator chose to keep that geometry as it is, and layering keeps the bralette under it so the preview shows no bare chest."
+      },
+      "ratings": [
+        "intimate"
+      ],
+      "framing": {
+        "default": [
+          0.36,
+          0.86
+        ],
+        "why": "Bottoms are framed on her hips, waist to upper thigh, the usual product crop for a brief: the piece fills the picture and the bra above it is out of frame. Belts and stockings are framed low enough to show the stocking tops.",
+        "match": {
+          "chemise": [
+            0.2,
+            0.88
+          ],
+          "guepiere|waspie|suspender|garter": [
+            0.22,
+            0.86
+          ],
+          "boyshort|brazilian|briefs|cheeky|g-string|thong|hipster|tanga|v-string|tie-side": [
+            0.34,
+            0.66
+          ],
+          "bra|bralette": [
+            0.6,
+            0.88
+          ]
+        }
+      },
+      "colors": {
+        "rules": [
+          {
+            "match": "chemise",
+            "color": "wine"
+          },
+          {
+            "match": "vday-halter-plunge",
+            "color": "crimson"
+          },
+          {
+            "match": "vday-longline",
+            "color": "wine"
+          },
+          {
+            "match": "vday-square",
+            "color": "red"
+          },
+          {
+            "match": "vday-cutout",
+            "color": "wine"
+          },
+          {
+            "match": "vday-high-waist",
+            "color": "red"
+          },
+          {
+            "match": "vday-tie-side",
+            "color": "red"
+          },
+          {
+            "match": "garter|suspender|guepiere",
+            "color": "black"
+          }
+        ],
+        "palette": [
+          "black",
+          "red",
+          "wine",
+          "navy",
+          "emerald",
+          "plum",
+          "crimson",
+          "cobalt",
+          "burgundy",
+          "rose"
+        ],
+        "whyPalette": "Every colour reads against the nude base set and her skin: ivory, champagne, white and blush did not, and a balconette in ivory was nearly invisible."
+      },
+      "limitations": [
+        "under-guepiere-v1: the generated guêpière ends below the bust, while its template describes balconette cups and declares chest coverage. Kept as is by the operator's decision; the preview styles it with a matching bralette fitted on top."
+      ],
+      "styling": {
+        "why": "The Valentine's capsule (templates whose id has vday) is shown in the fabric it is sold in: lace for bras and briefs, satin for one-pieces. Words the planner reads (FABRICS); no texture is added that Forge does not build.",
+        "rules": [
+          {
+            "match": "chemise",
+            "fabric": "satin"
+          },
+          {
+            "match": "vday-.*bodysuit",
+            "fabric": "satin"
+          },
+          {
+            "match": "vday-",
+            "fabric": "lace"
+          }
+        ]
+      },
+      "finish": {
+        "match": "guepiere",
+        "template": "under-bralette-v2",
+        "baseBody": "preserve",
+        "why": "The guêpière's template declares chest coverage, so Forge hides what is under her chest and the nude bralette under it disappears; its geometry ends below the bust and is kept exactly as it is (operator's decision). The preview adds a bralette in the same colour on top, as a coordinated set, after the guêpière is fitted. The build report names it (styledWith)."
+      },
+      "withheld": {
+        "why": "Templates whose fitted preview does not meet the catalogue's look, held back until the garment is improved. The template stays in the catalogue (underwear-inventory.json); only its picture is not published, and the build report says why."
+      },
+      "presentation": {
+        "why": "PR1. Fitting and presentation are separate: every piece is still fitted over the nude base set (and the guêpière still styled with its bralette), but only the piece itself is drawn, on a neutral grey form, under studio light. The base set and her own clothes are hidden, not removed. garment-only adds the piece alone; a finishing piece adds a labelled styled view.",
+        "productFocus": true,
+        "mode": "form",
+        "light": "studio",
+        "showUnrelatedFoundation": false,
+        "enableGarmentIsolation": true,
+        "views": [
+          {
+            "name": "front",
+            "yaw": 0
+          },
+          {
+            "name": "back",
+            "yaw": 180
+          },
+          {
+            "name": "three-quarter",
+            "yaw": -35
+          }
+        ],
+        "shading": "standard"
+      }
+    }
+  }
+}

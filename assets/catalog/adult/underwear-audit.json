@@ -1,0 +1,6128 @@
+{
+ "schemaVersion": 1,
+ "generatedAt": "2026-10-24T08:50:29+00:00",
+ "avatar": "fem-vroid",
+ "tolerances": {
+  "coverage": 0.05,
+  "lengthShare": 0.25,
+  "lengthFloorMm": 6.0
+ },
+ "items": [
+  {
+   "id": "under-bodysuit-v1",
+   "name": "Bodysuit",
+   "kind": "one-piece",
+   "baseBody": "replace-outer",
+   "color": "black",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [],
+   "fitted": {
+    "frontCoverage": 0.375,
+    "backCoverage": 0.443,
+    "sideHeightMm": 15.7,
+    "backWidthAboveSeamMm": 227.4,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "8b36f01d5034e2dc4982d889a90dc8c36227ed9ef3f5f03cfbe4fec66cc45115",
+   "vertices": 809,
+   "rules": [],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.9,
+     "penetratingPct": 0.99,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.8,
+     "penetratingPct": 4.33,
+     "maxEdgeStretch": 2.02,
+     "stretchedPct": 0.69
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 13.1,
+     "penetratingPct": 4.57,
+     "maxEdgeStretch": 1.86,
+     "stretchedPct": 0.62
+    },
+    "standing": {
+     "maxPenetrationMm": 2.9,
+     "penetratingPct": 0.99,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "no pattern spec"
+  },
+  {
+   "id": "under-bodysuit-v2",
+   "name": "Tailored Bodysuit",
+   "kind": "bodysuit-block",
+   "baseBody": "replace-outer",
+   "color": "red",
+   "spec": {
+    "preset": "cheeky",
+    "rise": 0.72,
+    "backRise": 0.06,
+    "frontCoverage": 0.6,
+    "backCoverage": 0.58,
+    "sideType": "panel",
+    "sideWidthMm": 38,
+    "legCutHeight": null,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: bodysuit.leg-negativeX.strain.stand is 0.1236, expected 0.03\u20130.12",
+    "lingerie: bodysuit.leg-negativeX.pressure.sit is 1.5441 kPa, expected 0.0\u20131.5 kPa",
+    "lingerie: bodysuit.leg-positiveX.pressure.sit is 1.5598 kPa, expected 0.0\u20131.5 kPa"
+   ],
+   "fitted": {
+    "frontCoverage": 0.751,
+    "backCoverage": 0.682,
+    "sideHeightMm": 44.0,
+    "backWidthAboveSeamMm": 108.7,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.749,
+    "backCoverage": 0.683,
+    "sideHeightMm": 44.0,
+    "backWidthAboveSeamMm": 102.1,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "71e7b9269f49a757fa3f0a9df8a9411afbd72ebd1c2b7575d6facc994a66f11a",
+   "vertices": 2351,
+   "rules": [
+    {
+     "id": "bodysuit.gusset.midline",
+     "value": 0.3162,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.coverage.front",
+     "value": 0.6,
+     "spec": [
+      0.58,
+      0.62
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.coverage.back",
+     "value": 0.58,
+     "spec": [
+      0.56,
+      0.6
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-negativeX.strain.stand",
+     "value": 0.1236,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "bodysuit.leg-negativeX.pressure.sit",
+     "value": 1.5441,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "warn"
+    },
+    {
+     "id": "bodysuit.leg-negativeX.gape",
+     "value": 0.1236,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-positiveX.strain.stand",
+     "value": 0.1173,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-positiveX.pressure.sit",
+     "value": 1.5598,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "warn"
+    },
+    {
+     "id": "bodysuit.leg-positiveX.gape",
+     "value": 0.1173,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.6,
+     "measured": 0.6,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.58,
+     "measured": 0.58,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 38.0,
+     "measured": 44.0,
+     "tolerance": 9.5,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.749,
+     "measured": 0.751,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.683,
+     "measured": 0.682,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 44.0,
+     "measured": 44.0,
+     "tolerance": 11.0,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 102.1,
+     "measured": 108.7,
+     "tolerance": 25.5,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 1.8,
+     "penetratingPct": 1.02,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 8.3,
+     "penetratingPct": 2.38,
+     "maxEdgeStretch": 2.0,
+     "stretchedPct": 0.09
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 16.0,
+     "penetratingPct": 3.23,
+     "maxEdgeStretch": 1.68,
+     "stretchedPct": 0.07
+    },
+    "standing": {
+     "maxPenetrationMm": 1.8,
+     "penetratingPct": 1.02,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "bodysuit.leg-negativeX.strain.stand",
+    "bodysuit.leg-negativeX.pressure.sit",
+    "bodysuit.leg-positiveX.pressure.sit"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-boyshort-v2",
+   "name": "Tailored Boyshorts",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "wine",
+   "spec": {
+    "preset": "boyshort",
+    "rise": 0.5,
+    "backRise": 0.06,
+    "frontCoverage": 0.9,
+    "backCoverage": 0.95,
+    "sideType": "panel",
+    "sideWidthMm": null,
+    "legCutHeight": 0.02,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.coverage.front is 0.9658, expected 0.88\u20130.92",
+    "lingerie: brief.leg-negativeX.strain.stand is 0.1206, expected 0.03\u20130.12",
+    "lingerie: brief.leg-negativeX.pressure.sit is 1.5181 kPa, expected 0.0\u20131.5 kPa",
+    "lingerie: brief.leg-positiveX.strain.stand is 0.1209, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 1.0,
+    "backCoverage": 1.0,
+    "sideHeightMm": 97.0,
+    "backWidthAboveSeamMm": 230.8,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 1.0,
+    "backCoverage": 1.0,
+    "sideHeightMm": 97.0,
+    "backWidthAboveSeamMm": 216.9,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "1d6366a608962a27f138f32bf1208ae48f43fcf99e87d0c9cb1e56d59fc0c5cb",
+   "vertices": 959,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 1.0163,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.9658,
+     "spec": [
+      0.88,
+      0.92
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.9697,
+     "spec": [
+      0.93,
+      0.97
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1217,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.009,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.118,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1206,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 1.5181,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.1206,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.1209,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 0.972,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.0847,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.9,
+     "measured": 0.9658,
+     "tolerance": 0.02,
+     "ok": false
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.95,
+     "measured": 0.9697,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 1.0,
+     "measured": 1.0,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 1.0,
+     "measured": 1.0,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 97.0,
+     "measured": 97.0,
+     "tolerance": 24.2,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 216.9,
+     "measured": 230.8,
+     "tolerance": 54.2,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.5,
+     "penetratingPct": 3.02,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 14.9,
+     "penetratingPct": 16.89,
+     "maxEdgeStretch": 2.56,
+     "stretchedPct": 2.75
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 13.4,
+     "penetratingPct": 17.73,
+     "maxEdgeStretch": 2.27,
+     "stretchedPct": 2.35
+    },
+    "standing": {
+     "maxPenetrationMm": 2.5,
+     "penetratingPct": 3.02,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [
+    "pattern.frontCoverage"
+   ],
+   "soft": [
+    "brief.leg-negativeX.strain.stand",
+    "brief.leg-negativeX.pressure.sit",
+    "brief.leg-positiveX.strain.stand"
+   ],
+   "verdict": "deviates from spec"
+  },
+  {
+   "id": "under-bra-balconette-v2",
+   "name": "Tailored Balconette Bra",
+   "kind": "bra-block",
+   "baseBody": "replace-outer",
+   "color": "navy",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: bra.underband.level is 12.5 mm, expected 0.0\u201310.0 mm"
+   ],
+   "fitted": {
+    "frontCoverage": 0.124,
+    "backCoverage": 0.093,
+    "sideHeightMm": 4.7,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "08e0383bbbed5eee4f593e996c6d7aef2fcea92f77fac9a711b7e00038e32d9c",
+   "vertices": 700,
+   "rules": [
+    {
+     "id": "bra.underband.level",
+     "value": 12.5,
+     "spec": [
+      0.0,
+      10.0
+     ],
+     "unit": "mm",
+     "status": "warn"
+    },
+    {
+     "id": "bra.cups.symmetry",
+     "value": 0.0,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.strain.stand",
+     "value": 0.1488,
+     "spec": [
+      0.1,
+      0.25
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.gape",
+     "value": 0.1488,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "bra.underband.level"
+   ],
+   "verdict": "rules only"
+  },
+  {
+   "id": "under-bra-full-v2",
+   "name": "Tailored Full-Cup Bra",
+   "kind": "bra-block",
+   "baseBody": "replace-outer",
+   "color": "emerald",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: bra.underband.level is 18.5 mm, expected 0.0\u201310.0 mm"
+   ],
+   "fitted": {
+    "frontCoverage": 0.146,
+    "backCoverage": 0.104,
+    "sideHeightMm": 4.0,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "d2861b8c69cf6d3aee2cc99b1100efa79fe194a5e103cfc0a233e67182127c40",
+   "vertices": 668,
+   "rules": [
+    {
+     "id": "bra.underband.level",
+     "value": 18.5,
+     "spec": [
+      0.0,
+      10.0
+     ],
+     "unit": "mm",
+     "status": "warn"
+    },
+    {
+     "id": "bra.cups.symmetry",
+     "value": 0.0,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.strain.stand",
+     "value": 0.1446,
+     "spec": [
+      0.1,
+      0.25
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.gape",
+     "value": 0.1446,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.2,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 0.2,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 0.2,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.2,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "bra.underband.level"
+   ],
+   "verdict": "rules only"
+  },
+  {
+   "id": "under-bra-plunge-v2",
+   "name": "Tailored Plunge Bra",
+   "kind": "bra-block",
+   "baseBody": "replace-outer",
+   "color": "plum",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: bra.underband.level is 12.0075 mm, expected 0.0\u201310.0 mm"
+   ],
+   "fitted": {
+    "frontCoverage": 0.117,
+    "backCoverage": 0.089,
+    "sideHeightMm": 2.4,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "8cca5eef873e95a6df4932c9ca3f73afa650aec0f989b951ad471a20edf9a61e",
+   "vertices": 684,
+   "rules": [
+    {
+     "id": "bra.underband.level",
+     "value": 12.0075,
+     "spec": [
+      0.0,
+      10.0
+     ],
+     "unit": "mm",
+     "status": "warn"
+    },
+    {
+     "id": "bra.cups.symmetry",
+     "value": 0.0,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.strain.stand",
+     "value": 0.1479,
+     "spec": [
+      0.1,
+      0.25
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.gape",
+     "value": 0.1479,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "bra.underband.level"
+   ],
+   "verdict": "rules only"
+  },
+  {
+   "id": "under-bralette-v1",
+   "name": "Bralette",
+   "kind": "bra",
+   "baseBody": "replace-outer",
+   "color": "crimson",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [],
+   "fitted": {
+    "frontCoverage": 0.12,
+    "backCoverage": 0.142,
+    "sideHeightMm": 15.7,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "5f843ccbbaf314ce62739c4fa2a2f354afe3ef83bf7612c9b4c7efb251a40640",
+   "vertices": 380,
+   "rules": [],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.9,
+     "penetratingPct": 1.58,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 2.9,
+     "penetratingPct": 1.58,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 2.9,
+     "penetratingPct": 1.58,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 2.9,
+     "penetratingPct": 1.58,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "no pattern spec"
+  },
+  {
+   "id": "under-bralette-v2",
+   "name": "Tailored Triangle Bralette",
+   "kind": "bra-block",
+   "baseBody": "replace-outer",
+   "color": "cobalt",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: bra.underband.strain.stand is 0.2659, expected 0.1\u20130.25"
+   ],
+   "fitted": {
+    "frontCoverage": 0.132,
+    "backCoverage": 0.072,
+    "sideHeightMm": 4.0,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "aa5f3560db958f73df75a74e6fbc12dc4149d1a5c88645da0a0cc89c9cf5d579",
+   "vertices": 652,
+   "rules": [
+    {
+     "id": "bra.underband.level",
+     "value": 8.0,
+     "spec": [
+      0.0,
+      10.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bra.cups.symmetry",
+     "value": 0.0,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.strain.stand",
+     "value": 0.2659,
+     "spec": [
+      0.1,
+      0.25
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "bra.underband.gape",
+     "value": 0.2659,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "bra.underband.strain.stand"
+   ],
+   "verdict": "rules only"
+  },
+  {
+   "id": "under-brazilian-v2",
+   "name": "Tailored Brazilian Briefs",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "burgundy",
+   "spec": {
+    "preset": "brazilian",
+    "rise": 0.72,
+    "backRise": 0.06,
+    "frontCoverage": 0.55,
+    "backCoverage": 0.42,
+    "sideType": "narrow",
+    "sideWidthMm": 26,
+    "legCutHeight": null,
+    "backCenterWidthMm": 60
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.leg-positiveX.strain.stand is 0.1246, expected 0.03\u20130.12",
+    "lingerie: brief.leg-positiveX.pressure.sit is 1.5649 kPa, expected 0.0\u20131.5 kPa"
+   ],
+   "fitted": {
+    "frontCoverage": 0.69,
+    "backCoverage": 0.511,
+    "sideHeightMm": 26.0,
+    "backWidthAboveSeamMm": 71.0,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.693,
+    "backCoverage": 0.509,
+    "sideHeightMm": 26.0,
+    "backWidthAboveSeamMm": 69.3,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "b6150f6e68c1c1da4025aa8af56794a43e3729655fd3a54e89996260c8537e5e",
+   "vertices": 870,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 1.3355,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.55,
+     "spec": [
+      0.53,
+      0.57
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.42,
+     "spec": [
+      0.4,
+      0.44
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.122,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.0791,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1214,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.116,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 1.4619,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.116,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.1246,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 1.5649,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.1158,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.55,
+     "measured": 0.55,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.42,
+     "measured": 0.42,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 26.0,
+     "measured": 26.0,
+     "tolerance": 6.5,
+     "ok": true
+    },
+    {
+     "id": "fitted.backWidthMm",
+     "spec": 60.0,
+     "measured": 71.0,
+     "tolerance": 15.0,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.693,
+     "measured": 0.69,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.509,
+     "measured": 0.511,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 26.0,
+     "measured": 26.0,
+     "tolerance": 6.5,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 69.3,
+     "measured": 71.0,
+     "tolerance": 17.3,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 1.7,
+     "penetratingPct": 0.57,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 10.0,
+     "penetratingPct": 5.86,
+     "maxEdgeStretch": 1.97,
+     "stretchedPct": 0.38
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 12.0,
+     "penetratingPct": 6.55,
+     "maxEdgeStretch": 1.67,
+     "stretchedPct": 0.38
+    },
+    "standing": {
+     "maxPenetrationMm": 1.7,
+     "penetratingPct": 0.57,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "brief.leg-positiveX.strain.stand",
+    "brief.leg-positiveX.pressure.sit"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-briefs-french-cut-v2",
+   "name": "Tailored French-Cut Briefs",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "rose",
+   "spec": {
+    "preset": "french-cut",
+    "rise": 0.85,
+    "backRise": 0.06,
+    "frontCoverage": 0.6,
+    "backCoverage": 0.8,
+    "sideType": "panel",
+    "sideWidthMm": null,
+    "legCutHeight": 0.72,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.leg-negativeX.strain.stand is 0.1237, expected 0.03\u20130.12",
+    "lingerie: brief.leg-positiveX.strain.stand is 0.1203, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.729,
+    "backCoverage": 0.853,
+    "sideHeightMm": 69.6,
+    "backWidthAboveSeamMm": 178.6,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.73,
+    "backCoverage": 0.853,
+    "sideHeightMm": 69.5,
+    "backWidthAboveSeamMm": 163.8,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "d268abeaef68c8c7474651dfdf9686a79e547d7c062ef37c1d3ee4f481d95fb2",
+   "vertices": 1053,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.448,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.6,
+     "spec": [
+      0.58,
+      0.62
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.8,
+     "spec": [
+      0.78,
+      0.82
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1337,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.2804,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1337,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1237,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 0.6381,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.0668,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.1203,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 0.681,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.0713,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.6,
+     "measured": 0.6,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.8,
+     "measured": 0.8,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.73,
+     "measured": 0.729,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.853,
+     "measured": 0.853,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 69.5,
+     "measured": 69.6,
+     "tolerance": 17.4,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 163.8,
+     "measured": 178.6,
+     "tolerance": 41.0,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.2,
+     "penetratingPct": 1.61,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.3,
+     "penetratingPct": 6.93,
+     "maxEdgeStretch": 1.43,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 12.6,
+     "penetratingPct": 7.41,
+     "maxEdgeStretch": 1.55,
+     "stretchedPct": 0.1
+    },
+    "standing": {
+     "maxPenetrationMm": 2.2,
+     "penetratingPct": 1.61,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "brief.leg-negativeX.strain.stand",
+    "brief.leg-positiveX.strain.stand"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-briefs-high-leg-v2",
+   "name": "Tailored High-Leg Briefs",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "black",
+   "spec": {
+    "preset": "high-leg",
+    "rise": 0.8,
+    "backRise": 0.06,
+    "frontCoverage": 0.6,
+    "backCoverage": 0.72,
+    "sideType": "panel",
+    "sideWidthMm": null,
+    "legCutHeight": 0.62,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [],
+   "fitted": {
+    "frontCoverage": 0.727,
+    "backCoverage": 0.79,
+    "sideHeightMm": 54.1,
+    "backWidthAboveSeamMm": 144.4,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.728,
+    "backCoverage": 0.79,
+    "sideHeightMm": 54.1,
+    "backWidthAboveSeamMm": 132.5,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "cdb3ae22bd5b4895f5703551d9965b43ece09d3ed9e1aa9758080025648d45a9",
+   "vertices": 992,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.6228,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.6,
+     "spec": [
+      0.58,
+      0.62
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.72,
+     "spec": [
+      0.7,
+      0.74
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1365,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.2726,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1365,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1181,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 0.8524,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.0858,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.1186,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 0.6366,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.0624,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.6,
+     "measured": 0.6,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.72,
+     "measured": 0.72,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.728,
+     "measured": 0.727,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.79,
+     "measured": 0.79,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 54.1,
+     "measured": 54.1,
+     "tolerance": 13.5,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 132.5,
+     "measured": 144.4,
+     "tolerance": 33.1,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.1,
+     "penetratingPct": 1.31,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.7,
+     "penetratingPct": 7.36,
+     "maxEdgeStretch": 1.42,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 13.0,
+     "penetratingPct": 7.16,
+     "maxEdgeStretch": 1.54,
+     "stretchedPct": 0.11
+    },
+    "standing": {
+     "maxPenetrationMm": 2.1,
+     "penetratingPct": 1.31,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-briefs-string-v2",
+   "name": "Tailored String Briefs",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "red",
+   "spec": {
+    "preset": "string",
+    "rise": 0.62,
+    "backRise": 0.06,
+    "frontCoverage": 0.55,
+    "backCoverage": 0.55,
+    "sideType": "string",
+    "sideWidthMm": 6,
+    "legCutHeight": null,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.leg-negativeX.strain.stand is 0.1259, expected 0.03\u20130.12",
+    "lingerie: brief.leg-positiveX.strain.stand is 0.1229, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.707,
+    "backCoverage": 0.657,
+    "sideHeightMm": 9.5,
+    "backWidthAboveSeamMm": 123.6,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.708,
+    "backCoverage": 0.656,
+    "sideHeightMm": 9.5,
+    "backWidthAboveSeamMm": 114.8,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "7ab7beea18626ed96fccb313df7906cb54392f774a4e2e46152d16645a409226",
+   "vertices": 809,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.6269,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.55,
+     "spec": [
+      0.53,
+      0.57
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.55,
+     "spec": [
+      0.53,
+      0.57
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1344,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.1413,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1343,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1259,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 1.1164,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.1161,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.1229,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 0.9187,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.0922,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.55,
+     "measured": 0.55,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.55,
+     "measured": 0.55,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 6.0,
+     "measured": 9.5,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.708,
+     "measured": 0.707,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.656,
+     "measured": 0.657,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 9.5,
+     "measured": 9.5,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 114.8,
+     "measured": 123.6,
+     "tolerance": 28.7,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.5,
+     "penetratingPct": 1.73,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.4,
+     "penetratingPct": 9.89,
+     "maxEdgeStretch": 1.55,
+     "stretchedPct": 0.14
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 13.8,
+     "penetratingPct": 10.51,
+     "maxEdgeStretch": 1.54,
+     "stretchedPct": 0.14
+    },
+    "standing": {
+     "maxPenetrationMm": 2.5,
+     "penetratingPct": 1.73,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "brief.leg-negativeX.strain.stand",
+    "brief.leg-positiveX.strain.stand"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-briefs-v1",
+   "name": "Briefs",
+   "kind": "briefs",
+   "baseBody": "replace-outer",
+   "color": "wine",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [],
+   "fitted": {
+    "frontCoverage": 0.864,
+    "backCoverage": 0.864,
+    "sideHeightMm": 84.4,
+    "backWidthAboveSeamMm": 230.6,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "bc92a70b1cdbbd8cd248fa4b965e536e42ca9c8051c362e04723ed23bdd4e349",
+   "vertices": 198,
+   "rules": [],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.7,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 15.1,
+     "penetratingPct": 21.72,
+     "maxEdgeStretch": 2.08,
+     "stretchedPct": 3.44
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 12.1,
+     "penetratingPct": 20.71,
+     "maxEdgeStretch": 1.87,
+     "stretchedPct": 2.81
+    },
+    "standing": {
+     "maxPenetrationMm": 0.7,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "no pattern spec"
+  },
+  {
+   "id": "under-briefs-v2",
+   "name": "Tailored Briefs",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "navy",
+   "spec": {
+    "preset": "classic",
+    "rise": 0.72,
+    "backRise": 0.06,
+    "frontCoverage": 0.75,
+    "backCoverage": 0.85,
+    "sideType": "panel",
+    "sideWidthMm": 80,
+    "legCutHeight": null,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.leg-positiveX.strain.stand is 0.1263, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.845,
+    "backCoverage": 0.887,
+    "sideHeightMm": 77.9,
+    "backWidthAboveSeamMm": 209.6,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.846,
+    "backCoverage": 0.887,
+    "sideHeightMm": 77.9,
+    "backWidthAboveSeamMm": 192.8,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "afc4829390b88064a7d8298a9b103bf17e65d8fe5e41fa138af891a0a4b7497a",
+   "vertices": 931,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.4472,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.75,
+     "spec": [
+      0.73,
+      0.77
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.85,
+     "spec": [
+      0.83,
+      0.87
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1267,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.1449,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1263,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1196,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 0.6948,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.0632,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.1263,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 0.7859,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.0719,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.75,
+     "measured": 0.75,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.85,
+     "measured": 0.85,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 80.0,
+     "measured": 77.9,
+     "tolerance": 20.0,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.846,
+     "measured": 0.845,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.887,
+     "measured": 0.887,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 77.9,
+     "measured": 77.9,
+     "tolerance": 19.5,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 192.8,
+     "measured": 209.6,
+     "tolerance": 48.2,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.0,
+     "penetratingPct": 2.36,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.7,
+     "penetratingPct": 10.85,
+     "maxEdgeStretch": 1.87,
+     "stretchedPct": 0.6
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 14.3,
+     "penetratingPct": 10.96,
+     "maxEdgeStretch": 1.68,
+     "stretchedPct": 0.71
+    },
+    "standing": {
+     "maxPenetrationMm": 2.0,
+     "penetratingPct": 2.36,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "brief.leg-positiveX.strain.stand"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-cheeky-v2",
+   "name": "Tailored Cheeky Briefs",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "emerald",
+   "spec": {
+    "preset": "cheeky",
+    "rise": 0.72,
+    "backRise": 0.06,
+    "frontCoverage": 0.6,
+    "backCoverage": 0.58,
+    "sideType": "panel",
+    "sideWidthMm": 38,
+    "legCutHeight": null,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.leg-negativeX.strain.stand is 0.1271, expected 0.03\u20130.12",
+    "lingerie: brief.leg-positiveX.strain.stand is 0.1296, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.733,
+    "backCoverage": 0.671,
+    "sideHeightMm": 37.6,
+    "backWidthAboveSeamMm": 109.4,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.735,
+    "backCoverage": 0.669,
+    "sideHeightMm": 37.6,
+    "backWidthAboveSeamMm": 102.3,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "46ba60411c1f978376673a85a3a23ab9a812010980e44de217d0b1ec51e4a94a",
+   "vertices": 931,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.4532,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.6,
+     "spec": [
+      0.58,
+      0.62
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.58,
+     "spec": [
+      0.56,
+      0.6
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1272,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.1508,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1269,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1271,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 0.9774,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.0975,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.1296,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 1.1168,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.1141,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.6,
+     "measured": 0.6,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.58,
+     "measured": 0.58,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 38.0,
+     "measured": 37.6,
+     "tolerance": 9.5,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.735,
+     "measured": 0.733,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.669,
+     "measured": 0.671,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 37.6,
+     "measured": 37.6,
+     "tolerance": 9.4,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 102.3,
+     "measured": 109.4,
+     "tolerance": 25.6,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.3,
+     "penetratingPct": 0.86,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 9.8,
+     "penetratingPct": 5.26,
+     "maxEdgeStretch": 1.38,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 16.3,
+     "penetratingPct": 6.66,
+     "maxEdgeStretch": 1.43,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 2.3,
+     "penetratingPct": 0.86,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "brief.leg-negativeX.strain.stand",
+    "brief.leg-positiveX.strain.stand"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-chemise-satin-v1",
+   "name": "Satin Chemise",
+   "kind": "slip-dress",
+   "baseBody": "replace-outer",
+   "color": "wine",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [],
+   "fitted": {
+    "frontCoverage": 0.259,
+    "backCoverage": 0.459,
+    "sideHeightMm": 15.7,
+    "backWidthAboveSeamMm": 234.3,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "3a26544203fd6a8858a457c08238b8aef0cf953e3db9e4d557fab34424392833",
+   "vertices": 1139,
+   "rules": [],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.9,
+     "penetratingPct": 0.97,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 39.3,
+     "penetratingPct": 15.8,
+     "maxEdgeStretch": 2.01,
+     "stretchedPct": 2.13
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 37.9,
+     "penetratingPct": 14.14,
+     "maxEdgeStretch": 2.03,
+     "stretchedPct": 1.64
+    },
+    "standing": {
+     "maxPenetrationMm": 2.9,
+     "penetratingPct": 0.97,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "no pattern spec"
+  },
+  {
+   "id": "under-g-string-v2",
+   "name": "Tailored G-String",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "crimson",
+   "spec": {
+    "preset": "g-string",
+    "rise": 0.66,
+    "backRise": 0.06,
+    "frontCoverage": 0.45,
+    "backCoverage": 0.03,
+    "sideType": "string",
+    "sideWidthMm": 5,
+    "legCutHeight": null,
+    "backCenterWidthMm": 5
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.coverage.back is 0.0873, expected 0.01\u20130.05"
+   ],
+   "fitted": {
+    "frontCoverage": 0.597,
+    "backCoverage": 0.14,
+    "sideHeightMm": 4.0,
+    "backWidthAboveSeamMm": 11.3,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.602,
+    "backCoverage": 0.144,
+    "sideHeightMm": 3.7,
+    "backWidthAboveSeamMm": 8.1,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "f107f15fbd53373eb19e48851d086450132e7e1f5d7d06f96d46924683d05e88",
+   "vertices": 870,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.0783,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.45,
+     "spec": [
+      0.43,
+      0.47
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.0873,
+     "spec": [
+      0.01,
+      0.05
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1363,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.1705,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.136,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1161,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 1.1858,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.1161,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.0867,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 0.9217,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.0714,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.45,
+     "measured": 0.45,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.03,
+     "measured": 0.0873,
+     "tolerance": 0.02,
+     "ok": false
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 5.0,
+     "measured": 4.0,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "fitted.backWidthMm",
+     "spec": 5.0,
+     "measured": 11.3,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.602,
+     "measured": 0.597,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.144,
+     "measured": 0.14,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 3.7,
+     "measured": 4.0,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 8.1,
+     "measured": 11.3,
+     "tolerance": 6.0,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 1.2,
+     "penetratingPct": 0.11,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 3.9,
+     "penetratingPct": 0.8,
+     "maxEdgeStretch": 1.87,
+     "stretchedPct": 0.19
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 7.4,
+     "penetratingPct": 2.07,
+     "maxEdgeStretch": 1.81,
+     "stretchedPct": 0.13
+    },
+    "standing": {
+     "maxPenetrationMm": 1.2,
+     "penetratingPct": 0.11,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [
+    "pattern.backCoverage"
+   ],
+   "soft": [],
+   "verdict": "deviates from spec"
+  },
+  {
+   "id": "under-garter-set-v1",
+   "name": "Garter Set",
+   "kind": "briefs",
+   "baseBody": "preserve",
+   "color": "black",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [],
+   "fitted": {
+    "frontCoverage": 0.904,
+    "backCoverage": 0.904,
+    "sideHeightMm": 116.5,
+    "backWidthAboveSeamMm": 237.1,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "dee3944b18914203dc5dc86e5950012f01755db44916cd3398e49916907a3733",
+   "vertices": 381,
+   "rules": [],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 1.1,
+     "penetratingPct": 0.52,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 12.0,
+     "penetratingPct": 13.12,
+     "maxEdgeStretch": 2.24,
+     "stretchedPct": 2.39
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 13.4,
+     "penetratingPct": 14.44,
+     "maxEdgeStretch": 2.02,
+     "stretchedPct": 1.84
+    },
+    "standing": {
+     "maxPenetrationMm": 1.1,
+     "penetratingPct": 0.52,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "no pattern spec"
+  },
+  {
+   "id": "under-guepiere-v1",
+   "name": "Gu\u00eapi\u00e8re",
+   "kind": "guepiere",
+   "baseBody": "preserve",
+   "color": "black",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "the belt is asked to be hidden under a skirt, but nothing covers it",
+    "hosiery: RL (left-back) pulls 9.4% in walk",
+    "hosiery: FR (right-front) pulls 6.2% in walk",
+    "hosiery: RL (left-back) stretches 12.5% in sit, past the 10% limit",
+    "hosiery: RR (right-back) stretches 12.4% in sit, past the 10% limit"
+   ],
+   "fitted": {
+    "frontCoverage": 0.674,
+    "backCoverage": 0.735,
+    "sideHeightMm": 269.0,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "9ccbcfa7a9f1841f85ba8136d6acc2f78d08a630d65d9184a4d4be61aa7a1948",
+   "vertices": 660,
+   "rules": [],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.7,
+     "penetratingPct": 0.91,
+     "maxEdgeStretch": 1.03,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 16.4,
+     "penetratingPct": 1.06,
+     "maxEdgeStretch": 1.03,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "no pattern spec"
+  },
+  {
+   "id": "under-high-waist-briefs-v2",
+   "name": "Tailored High-Waist Briefs",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "rose",
+   "spec": {
+    "preset": "high-waist",
+    "rise": 1.05,
+    "backRise": 0.06,
+    "frontCoverage": 0.8,
+    "backCoverage": 0.9,
+    "sideType": "panel",
+    "sideWidthMm": 130,
+    "legCutHeight": null,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [],
+   "fitted": {
+    "frontCoverage": 0.878,
+    "backCoverage": 0.924,
+    "sideHeightMm": 134.5,
+    "backWidthAboveSeamMm": 219.5,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.879,
+    "backCoverage": 0.923,
+    "sideHeightMm": 134.6,
+    "backWidthAboveSeamMm": 202.7,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "10a268345f191ba9041511e7850441afb6fdfe03b3857751507616d80f2599ef",
+   "vertices": 1236,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.6269,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.8,
+     "spec": [
+      0.78,
+      0.82
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.9,
+     "spec": [
+      0.88,
+      0.92
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1384,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.4124,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1384,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1177,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 0.9591,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.0939,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.117,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 0.7531,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.0719,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.8,
+     "measured": 0.8,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.9,
+     "measured": 0.9,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 130.0,
+     "measured": 134.5,
+     "tolerance": 32.5,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.879,
+     "measured": 0.878,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.923,
+     "measured": 0.924,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 134.6,
+     "measured": 134.5,
+     "tolerance": 33.6,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 202.7,
+     "measured": 219.5,
+     "tolerance": 50.7,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.3,
+     "penetratingPct": 1.38,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.5,
+     "penetratingPct": 8.66,
+     "maxEdgeStretch": 1.79,
+     "stretchedPct": 0.44
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 12.5,
+     "penetratingPct": 8.33,
+     "maxEdgeStretch": 1.7,
+     "stretchedPct": 0.48
+    },
+    "standing": {
+     "maxPenetrationMm": 2.3,
+     "penetratingPct": 1.38,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-high-waist-thong-v2",
+   "name": "Tailored High-Waist Thong",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "black",
+   "spec": {
+    "preset": "high-waist-thong",
+    "rise": 1.05,
+    "backRise": 0.06,
+    "frontCoverage": 0.6,
+    "backCoverage": 0.1,
+    "sideType": "narrow",
+    "sideWidthMm": 20,
+    "legCutHeight": null,
+    "backCenterWidthMm": 18
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "8 garment vertices remain within the clearance margin (0.80% of the shell)",
+    "lingerie: brief.coverage.back is 0.151, expected 0.08\u20130.12",
+    "lingerie: brief.leg-negativeX.strain.stand is 0.1348, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.688,
+    "backCoverage": 0.256,
+    "sideHeightMm": 22.1,
+    "backWidthAboveSeamMm": 16.0,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.69,
+    "backCoverage": 0.219,
+    "sideHeightMm": 22.1,
+    "backWidthAboveSeamMm": 18.3,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "e16a0be637b3bf2510e7894f5be218d9fe3e7322553c0ef3e5a66344e1e94272",
+   "vertices": 1236,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.0459,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.6,
+     "spec": [
+      0.58,
+      0.62
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.151,
+     "spec": [
+      0.08,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1279,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.2833,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1279,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1348,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 1.3588,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.1348,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.1153,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 1.1053,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.1153,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.6,
+     "measured": 0.6,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.1,
+     "measured": 0.151,
+     "tolerance": 0.02,
+     "ok": false
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 20.0,
+     "measured": 22.1,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "fitted.backWidthMm",
+     "spec": 18.0,
+     "measured": 16.0,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.69,
+     "measured": 0.688,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.219,
+     "measured": 0.256,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 22.1,
+     "measured": 22.1,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 18.3,
+     "measured": 16.0,
+     "tolerance": 6.0,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 11.2,
+     "penetratingPct": 0.89,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.1,
+     "penetratingPct": 12.38,
+     "maxEdgeStretch": 1.49,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 11.1,
+     "penetratingPct": 12.7,
+     "maxEdgeStretch": 1.32,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 11.2,
+     "penetratingPct": 0.89,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [
+    "pattern.backCoverage"
+   ],
+   "soft": [
+    "brief.leg-negativeX.strain.stand"
+   ],
+   "verdict": "deviates from spec"
+  },
+  {
+   "id": "under-hipster-v2",
+   "name": "Tailored Hipster Briefs",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "red",
+   "spec": {
+    "preset": "hipster",
+    "rise": 0.5,
+    "backRise": 0.06,
+    "frontCoverage": 0.85,
+    "backCoverage": 0.9,
+    "sideType": "panel",
+    "sideWidthMm": 70,
+    "legCutHeight": null,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.leg-negativeX.strain.stand is 0.1249, expected 0.03\u20130.12",
+    "lingerie: brief.leg-negativeX.pressure.sit is 1.6373 kPa, expected 0.0\u20131.5 kPa",
+    "lingerie: brief.leg-positiveX.strain.stand is 0.126, expected 0.03\u20130.12",
+    "lingerie: brief.leg-positiveX.pressure.sit is 1.6081 kPa, expected 0.0\u20131.5 kPa"
+   ],
+   "fitted": {
+    "frontCoverage": 0.917,
+    "backCoverage": 0.927,
+    "sideHeightMm": 67.9,
+    "backWidthAboveSeamMm": 229.5,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.918,
+    "backCoverage": 0.927,
+    "sideHeightMm": 68.2,
+    "backWidthAboveSeamMm": 217.5,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "38d39d48cb1a82cca290c38036fde88a22525427a340b16040a1fc0bd6d4cfb4",
+   "vertices": 687,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.8264,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.85,
+     "spec": [
+      0.83,
+      0.87
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.9,
+     "spec": [
+      0.88,
+      0.92
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1249,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.03,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1199,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1249,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 1.6373,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.1249,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.126,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 1.6081,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.126,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.85,
+     "measured": 0.85,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.9,
+     "measured": 0.9,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 70.0,
+     "measured": 67.9,
+     "tolerance": 17.5,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.918,
+     "measured": 0.917,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.927,
+     "measured": 0.927,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 68.2,
+     "measured": 67.9,
+     "tolerance": 17.1,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 217.5,
+     "measured": 229.5,
+     "tolerance": 54.4,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.2,
+     "penetratingPct": 3.35,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.1,
+     "penetratingPct": 19.51,
+     "maxEdgeStretch": 2.11,
+     "stretchedPct": 1.83
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 12.2,
+     "penetratingPct": 19.21,
+     "maxEdgeStretch": 1.92,
+     "stretchedPct": 1.42
+    },
+    "standing": {
+     "maxPenetrationMm": 2.2,
+     "penetratingPct": 3.35,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "brief.leg-negativeX.strain.stand",
+    "brief.leg-negativeX.pressure.sit",
+    "brief.leg-positiveX.strain.stand",
+    "brief.leg-positiveX.pressure.sit"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-lingerie-set-v1",
+   "name": "Lingerie Set",
+   "kind": "bikini",
+   "baseBody": "replace-outer",
+   "color": "wine",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: bra.underband.strain.stand is 0.2659, expected 0.1\u20130.25",
+    "lingerie: brief.leg-positiveX.strain.stand is 0.129, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.132,
+    "backCoverage": 0.072,
+    "sideHeightMm": 4.0,
+    "backWidthAboveSeamMm": 211.4,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "28fe0f16fcd9d580e7bbdddb93e3fd8354ebce5a5d6d5aa155f3819354cbcec5",
+   "vertices": 1583,
+   "rules": [
+    {
+     "id": "bra.underband.level",
+     "value": 8.0,
+     "spec": [
+      0.0,
+      10.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bra.cups.symmetry",
+     "value": 0.0,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.strain.stand",
+     "value": 0.2659,
+     "spec": [
+      0.1,
+      0.25
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "bra.underband.gape",
+     "value": 0.2659,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.7661,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.75,
+     "spec": [
+      0.73,
+      0.77
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.85,
+     "spec": [
+      0.83,
+      0.87
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.136,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.1845,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1356,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1117,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 0.9519,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.0922,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.129,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 1.3903,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.129,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "bra.underband.strain.stand",
+    "brief.leg-positiveX.strain.stand"
+   ],
+   "verdict": "no pattern spec"
+  },
+  {
+   "id": "under-suspender-belt-high-v1",
+   "name": "High-Waisted Suspender Belt",
+   "kind": "suspender-belt",
+   "baseBody": "preserve",
+   "color": "black",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "the belt is asked to be hidden under a skirt, but nothing covers it",
+    "hosiery: RL (left-back) pulls 7.1% in walk",
+    "hosiery: RL (left-back) pulls 8.0% in sit",
+    "hosiery: RR (right-back) pulls 8.0% in sit",
+    "hosiery: FR (right-front) stretches 10.5% in walk, past the 10% limit"
+   ],
+   "fitted": {
+    "frontCoverage": 0.591,
+    "backCoverage": 0.591,
+    "sideHeightMm": 118.8,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "74e9d2f7f031a722341b82a78805feaed20bd8fd47877e4c8e81dc378d906971",
+   "vertices": 297,
+   "rules": [],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 19.9,
+     "penetratingPct": 4.04,
+     "maxEdgeStretch": 1.04,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 20.4,
+     "penetratingPct": 4.04,
+     "maxEdgeStretch": 1.04,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "no pattern spec"
+  },
+  {
+   "id": "under-suspender-belt-v1",
+   "name": "Suspender Belt",
+   "kind": "suspender-belt",
+   "baseBody": "preserve",
+   "color": "black",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "the belt is asked to be hidden under a skirt, but nothing covers it",
+    "hosiery: FR (right-front) stretches 10.7% in walk, past the 10% limit"
+   ],
+   "fitted": {
+    "frontCoverage": 0.585,
+    "backCoverage": 0.585,
+    "sideHeightMm": 87.1,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "7499516928becab8fb647581419cad2469100305cf4912e428e06170a52c0ef7",
+   "vertices": 231,
+   "rules": [],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 31.8,
+     "penetratingPct": 10.39,
+     "maxEdgeStretch": 1.03,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 28.5,
+     "penetratingPct": 9.96,
+     "maxEdgeStretch": 1.03,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "no pattern spec"
+  },
+  {
+   "id": "under-tanga-v2",
+   "name": "Tailored Tanga",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "plum",
+   "spec": {
+    "preset": "tanga",
+    "rise": 0.5,
+    "backRise": 0.06,
+    "frontCoverage": 0.5,
+    "backCoverage": 0.38,
+    "sideType": "narrow",
+    "sideWidthMm": 12,
+    "legCutHeight": null,
+    "backCenterWidthMm": 45
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.leg-negativeX.strain.stand is 0.1231, expected 0.03\u20130.12",
+    "lingerie: brief.leg-positiveX.strain.stand is 0.139, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.67,
+    "backCoverage": 0.474,
+    "sideHeightMm": 12.0,
+    "backWidthAboveSeamMm": 62.5,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.672,
+    "backCoverage": 0.473,
+    "sideHeightMm": 12.0,
+    "backWidthAboveSeamMm": 61.1,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "68699f2bdf8247713d822862ee3c226939cb94c6c1f2e1f882e418c0f689855d",
+   "vertices": 687,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.3685,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.5,
+     "spec": [
+      0.48,
+      0.52
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.38,
+     "spec": [
+      0.36,
+      0.4
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1276,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.0479,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1224,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1231,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 1.1524,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.1204,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.139,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 1.4278,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.139,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.5,
+     "measured": 0.5,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.38,
+     "measured": 0.38,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 12.0,
+     "measured": 12.0,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "fitted.backWidthMm",
+     "spec": 45.0,
+     "measured": 62.5,
+     "tolerance": 11.2,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.672,
+     "measured": 0.67,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.473,
+     "measured": 0.474,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 12.0,
+     "measured": 12.0,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 61.1,
+     "measured": 62.5,
+     "tolerance": 15.3,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 1.9,
+     "penetratingPct": 2.33,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 10.1,
+     "penetratingPct": 14.56,
+     "maxEdgeStretch": 1.9,
+     "stretchedPct": 0.5
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 12.7,
+     "penetratingPct": 13.25,
+     "maxEdgeStretch": 1.65,
+     "stretchedPct": 0.33
+    },
+    "standing": {
+     "maxPenetrationMm": 1.9,
+     "penetratingPct": 2.33,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "brief.leg-negativeX.strain.stand",
+    "brief.leg-positiveX.strain.stand"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-thong-v2",
+   "name": "Tailored Thong",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "crimson",
+   "spec": {
+    "preset": "thong",
+    "rise": 0.66,
+    "backRise": 0.06,
+    "frontCoverage": 0.45,
+    "backCoverage": 0.12,
+    "sideType": "narrow",
+    "sideWidthMm": 18,
+    "legCutHeight": null,
+    "backCenterWidthMm": 18
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.coverage.back is 0.198, expected 0.1\u20130.14",
+    "lingerie: brief.leg-negativeX.strain.stand is 0.1213, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.594,
+    "backCoverage": 0.238,
+    "sideHeightMm": 18.1,
+    "backWidthAboveSeamMm": 14.2,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.594,
+    "backCoverage": 0.269,
+    "sideHeightMm": 18.1,
+    "backWidthAboveSeamMm": 20.4,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "19eb8133aeead934c268fbd2f5f330791fa1c0e71d7984ea2531ab5112239460",
+   "vertices": 870,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.4104,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.45,
+     "spec": [
+      0.43,
+      0.47
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.198,
+     "spec": [
+      0.1,
+      0.14
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1382,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.1873,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1376,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1213,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 1.2624,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.1213,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.1157,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 1.2121,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.1099,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.45,
+     "measured": 0.45,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.12,
+     "measured": 0.198,
+     "tolerance": 0.02,
+     "ok": false
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 18.0,
+     "measured": 18.1,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "fitted.backWidthMm",
+     "spec": 18.0,
+     "measured": 14.2,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.594,
+     "measured": 0.594,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.269,
+     "measured": 0.238,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 18.1,
+     "measured": 18.1,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 20.4,
+     "measured": 14.2,
+     "tolerance": 6.0,
+     "ok": false
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.9,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 4.2,
+     "penetratingPct": 1.03,
+     "maxEdgeStretch": 1.51,
+     "stretchedPct": 0.06
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 5.1,
+     "penetratingPct": 2.18,
+     "maxEdgeStretch": 1.34,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.9,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [
+    "pattern.backCoverage",
+    "drift.backWidthAboveSeamMm"
+   ],
+   "soft": [
+    "brief.leg-negativeX.strain.stand"
+   ],
+   "verdict": "deviates from spec"
+  },
+  {
+   "id": "under-v-string-v2",
+   "name": "Tailored V-String",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "cobalt",
+   "spec": {
+    "preset": "v-string",
+    "rise": 0.7,
+    "backRise": 0.06,
+    "frontCoverage": 0.45,
+    "backCoverage": 0.03,
+    "sideType": "string",
+    "sideWidthMm": 5,
+    "legCutHeight": null,
+    "backCenterWidthMm": 5
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "10 garment vertices remain within the clearance margin (1.75% of the shell)",
+    "lingerie: brief.leg-negativeX.strain.stand is 0.1259, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.597,
+    "backCoverage": 0.135,
+    "sideHeightMm": 5.3,
+    "backWidthAboveSeamMm": 11.1,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.596,
+    "backCoverage": 0.126,
+    "sideHeightMm": 5.8,
+    "backWidthAboveSeamMm": 7.7,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "b38f91c9741af5e8a993b75e9270e191f455065b4fc05f45038930a90126b38f",
+   "vertices": 748,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.0622,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.45,
+     "spec": [
+      0.43,
+      0.47
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.0419,
+     "spec": [
+      0.01,
+      0.05
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1295,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.1167,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1275,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1259,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 1.2743,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.1259,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.0869,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 0.9284,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.0728,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.45,
+     "measured": 0.45,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.03,
+     "measured": 0.0419,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 5.0,
+     "measured": 5.3,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "fitted.backWidthMm",
+     "spec": 5.0,
+     "measured": 11.1,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.596,
+     "measured": 0.597,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.126,
+     "measured": 0.135,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 5.8,
+     "measured": 5.3,
+     "tolerance": 6.0,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 7.7,
+     "measured": 11.1,
+     "tolerance": 6.0,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 10.1,
+     "penetratingPct": 0.94,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 8.8,
+     "penetratingPct": 1.6,
+     "maxEdgeStretch": 1.86,
+     "stretchedPct": 0.23
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 8.5,
+     "penetratingPct": 2.94,
+     "maxEdgeStretch": 1.8,
+     "stretchedPct": 0.23
+    },
+    "standing": {
+     "maxPenetrationMm": 10.1,
+     "penetratingPct": 0.94,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "brief.leg-negativeX.strain.stand"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-vday-cutout-bodysuit-v1",
+   "name": "Halter Cut-Out Bodysuit",
+   "kind": "bodysuit-block",
+   "baseBody": "replace-outer",
+   "color": "wine",
+   "spec": {
+    "preset": "cheeky",
+    "rise": 0.72,
+    "backRise": 0.06,
+    "frontCoverage": 0.6,
+    "backCoverage": 0.58,
+    "sideType": "panel",
+    "sideWidthMm": 38,
+    "legCutHeight": null,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: bodysuit.leg-negativeX.strain.stand is 0.1292, expected 0.03\u20130.12",
+    "lingerie: bodysuit.leg-positiveX.strain.stand is 0.1267, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.75,
+    "backCoverage": 0.682,
+    "sideHeightMm": 44.0,
+    "backWidthAboveSeamMm": 108.2,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.747,
+    "backCoverage": 0.682,
+    "sideHeightMm": 44.0,
+    "backWidthAboveSeamMm": 102.2,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "8b8a306920ff39eae0e533eee686dbff81108eece359b3f5e66cec341de6bca4",
+   "vertices": 2351,
+   "rules": [
+    {
+     "id": "bodysuit.gusset.midline",
+     "value": 0.5367,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.coverage.front",
+     "value": 0.6,
+     "spec": [
+      0.58,
+      0.62
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.coverage.back",
+     "value": 0.58,
+     "spec": [
+      0.56,
+      0.6
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-negativeX.strain.stand",
+     "value": 0.1292,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "bodysuit.leg-negativeX.pressure.sit",
+     "value": 1.1797,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-negativeX.gape",
+     "value": 0.1231,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-positiveX.strain.stand",
+     "value": 0.1267,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "bodysuit.leg-positiveX.pressure.sit",
+     "value": 0.9859,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-positiveX.gape",
+     "value": 0.0992,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.6,
+     "measured": 0.6,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.58,
+     "measured": 0.58,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 38.0,
+     "measured": 44.0,
+     "tolerance": 9.5,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.747,
+     "measured": 0.75,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.682,
+     "measured": 0.682,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 44.0,
+     "measured": 44.0,
+     "tolerance": 11.0,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 102.2,
+     "measured": 108.2,
+     "tolerance": 25.6,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 4.3,
+     "penetratingPct": 0.98,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 8.0,
+     "penetratingPct": 2.81,
+     "maxEdgeStretch": 1.38,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 15.9,
+     "penetratingPct": 3.7,
+     "maxEdgeStretch": 1.44,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 4.3,
+     "penetratingPct": 0.98,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "bodysuit.leg-negativeX.strain.stand",
+    "bodysuit.leg-positiveX.strain.stand"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-vday-halter-plunge-bra-v1",
+   "name": "Halter Plunge Bra",
+   "kind": "bra-block",
+   "baseBody": "replace-outer",
+   "color": "crimson",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: bra.underband.level is 12.0075 mm, expected 0.0\u201310.0 mm"
+   ],
+   "fitted": {
+    "frontCoverage": 0.118,
+    "backCoverage": 0.018,
+    "sideHeightMm": 3.3,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "9809199737a99aef73df917e7b79f58ac0201ef4d94fb9894a94b60a2a460ace",
+   "vertices": 572,
+   "rules": [
+    {
+     "id": "bra.underband.level",
+     "value": 12.0075,
+     "spec": [
+      0.0,
+      10.0
+     ],
+     "unit": "mm",
+     "status": "warn"
+    },
+    {
+     "id": "bra.cups.symmetry",
+     "value": 0.0,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.strain.stand",
+     "value": 0.1479,
+     "spec": [
+      0.1,
+      0.25
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.gape",
+     "value": 0.1479,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.3,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "bra.underband.level"
+   ],
+   "verdict": "rules only"
+  },
+  {
+   "id": "under-vday-high-waist-cheeky-v1",
+   "name": "High-Waist Cheeky Briefs",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "red",
+   "spec": {
+    "preset": null,
+    "rise": 1.05,
+    "backRise": 0.06,
+    "frontCoverage": 0.8,
+    "backCoverage": 0.55,
+    "sideType": "panel",
+    "sideWidthMm": 90,
+    "legCutHeight": null,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.leg-negativeX.strain.stand is 0.1244, expected 0.03\u20130.12",
+    "lingerie: brief.leg-positiveX.strain.stand is 0.1224, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.887,
+    "backCoverage": 0.628,
+    "sideHeightMm": 88.3,
+    "backWidthAboveSeamMm": 99.6,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.888,
+    "backCoverage": 0.628,
+    "sideHeightMm": 88.2,
+    "backWidthAboveSeamMm": 86.4,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "4eafb8d82f92b32accbff475bf48216f2b8eb7ebb71714d8f55fb7a2661f3069",
+   "vertices": 1236,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.6949,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.8,
+     "spec": [
+      0.78,
+      0.82
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.55,
+     "spec": [
+      0.53,
+      0.57
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1381,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.4108,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1381,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1244,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 1.4199,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.1244,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.1224,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 1.3658,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.1224,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.8,
+     "measured": 0.8,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.55,
+     "measured": 0.55,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "fitted.sideHeightMm",
+     "spec": 90.0,
+     "measured": 88.3,
+     "tolerance": 22.5,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.888,
+     "measured": 0.887,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.628,
+     "measured": 0.628,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 88.2,
+     "measured": 88.3,
+     "tolerance": 22.1,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 86.4,
+     "measured": 99.6,
+     "tolerance": 21.6,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 1.7,
+     "penetratingPct": 0.24,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.9,
+     "penetratingPct": 5.34,
+     "maxEdgeStretch": 1.79,
+     "stretchedPct": 0.48
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 8.4,
+     "penetratingPct": 6.8,
+     "maxEdgeStretch": 1.66,
+     "stretchedPct": 0.61
+    },
+    "standing": {
+     "maxPenetrationMm": 1.7,
+     "penetratingPct": 0.24,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "brief.leg-negativeX.strain.stand",
+    "brief.leg-positiveX.strain.stand"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-vday-longline-bralette-v1",
+   "name": "Longline Triangle Bralette",
+   "kind": "bra-block",
+   "baseBody": "replace-outer",
+   "color": "wine",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [],
+   "fitted": {
+    "frontCoverage": 0.16,
+    "backCoverage": 0.107,
+    "sideHeightMm": 4.3,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "0156df1965edc540cf74406d72aceddd5bdc8b0b7f26c75f066710d10519f912",
+   "vertices": 660,
+   "rules": [
+    {
+     "id": "bra.underband.level",
+     "value": 4.0175,
+     "spec": [
+      0.0,
+      10.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bra.cups.symmetry",
+     "value": 0.0,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-left.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.stretch",
+     "value": 0.04,
+     "spec": [
+      null,
+      0.08
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.strap-right.slack",
+     "value": 0.04,
+     "spec": [
+      -0.05,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.strain.stand",
+     "value": 0.1473,
+     "spec": [
+      0.1,
+      0.25
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bra.underband.gape",
+     "value": 0.1473,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "rules only"
+  },
+  {
+   "id": "under-vday-square-bodysuit-v1",
+   "name": "Square-Neck Bodysuit",
+   "kind": "bodysuit-block",
+   "baseBody": "replace-outer",
+   "color": "red",
+   "spec": {
+    "preset": "high-leg",
+    "rise": 0.8,
+    "backRise": 0.06,
+    "frontCoverage": 0.6,
+    "backCoverage": 0.72,
+    "sideType": "panel",
+    "sideWidthMm": null,
+    "legCutHeight": 0.62,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: bodysuit.leg-negativeX.strain.stand is 0.1212, expected 0.03\u20130.12"
+   ],
+   "fitted": {
+    "frontCoverage": 0.742,
+    "backCoverage": 0.796,
+    "sideHeightMm": 59.4,
+    "backWidthAboveSeamMm": 143.2,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.738,
+    "backCoverage": 0.797,
+    "sideHeightMm": 58.5,
+    "backWidthAboveSeamMm": 132.3,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "9755bc86fd042c8701224b7064a8db0e45b651b77731a7008a04fa96df537594",
+   "vertices": 2290,
+   "rules": [
+    {
+     "id": "bodysuit.gusset.midline",
+     "value": 0.535,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.coverage.front",
+     "value": 0.6,
+     "spec": [
+      0.58,
+      0.62
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.coverage.back",
+     "value": 0.72,
+     "spec": [
+      0.7,
+      0.74
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-negativeX.strain.stand",
+     "value": 0.1212,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "bodysuit.leg-negativeX.pressure.sit",
+     "value": 0.8664,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-negativeX.gape",
+     "value": 0.0877,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-positiveX.strain.stand",
+     "value": 0.117,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-positiveX.pressure.sit",
+     "value": 0.6215,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "bodysuit.leg-positiveX.gape",
+     "value": 0.0612,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.6,
+     "measured": 0.6,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.72,
+     "measured": 0.72,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.738,
+     "measured": 0.742,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.797,
+     "measured": 0.796,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 58.5,
+     "measured": 59.4,
+     "tolerance": 14.6,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 132.3,
+     "measured": 143.2,
+     "tolerance": 33.1,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 1.7,
+     "penetratingPct": 0.17,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.7,
+     "penetratingPct": 2.79,
+     "maxEdgeStretch": 1.36,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 12.5,
+     "penetratingPct": 3.41,
+     "maxEdgeStretch": 1.48,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 1.7,
+     "penetratingPct": 0.17,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [
+    "bodysuit.leg-negativeX.strain.stand"
+   ],
+   "verdict": "matches spec"
+  },
+  {
+   "id": "under-vday-tie-side-brief-v1",
+   "name": "Tie-Side Briefs",
+   "kind": "brief-block",
+   "baseBody": "replace-outer",
+   "color": "red",
+   "spec": {
+    "preset": null,
+    "rise": 0.72,
+    "backRise": 0.06,
+    "frontCoverage": 0.7,
+    "backCoverage": 0.65,
+    "sideType": "tie",
+    "sideWidthMm": null,
+    "legCutHeight": null,
+    "backCenterWidthMm": null
+   },
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "lingerie: brief.coverage.back is 0.6899, expected 0.63\u20130.67"
+   ],
+   "fitted": {
+    "frontCoverage": 0.784,
+    "backCoverage": 0.749,
+    "sideHeightMm": 94.7,
+    "backWidthAboveSeamMm": 96.5,
+    "seamY": 0.8156
+   },
+   "pattern": {
+    "frontCoverage": 0.784,
+    "backCoverage": 0.748,
+    "sideHeightMm": 94.7,
+    "backWidthAboveSeamMm": 88.7,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "f442d5a2706a2d5249d6130a22ea0f5ebd82752401b86fe187ba8490f0d993a0",
+   "vertices": 1347,
+   "rules": [
+    {
+     "id": "brief.gusset.midline",
+     "value": 0.63,
+     "spec": [
+      0.0,
+      5.0
+     ],
+     "unit": "mm",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.front",
+     "value": 0.7,
+     "spec": [
+      0.68,
+      0.72
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.coverage.back",
+     "value": 0.6899,
+     "spec": [
+      0.63,
+      0.67
+     ],
+     "unit": "",
+     "status": "warn"
+    },
+    {
+     "id": "brief.waist.strain.stand",
+     "value": 0.1279,
+     "spec": [
+      0.05,
+      0.15
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.pressure.stand",
+     "value": 1.1733,
+     "spec": [
+      0.4,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.waist.gape",
+     "value": 0.1275,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.strain.stand",
+     "value": 0.1154,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.pressure.sit",
+     "value": 0.9016,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-negativeX.gape",
+     "value": 0.0904,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.strain.stand",
+     "value": 0.1126,
+     "spec": [
+      0.03,
+      0.12
+     ],
+     "unit": "",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.pressure.sit",
+     "value": 0.6589,
+     "spec": [
+      0.0,
+      1.5
+     ],
+     "unit": "kPa",
+     "status": "pass"
+    },
+    {
+     "id": "brief.leg-positiveX.gape",
+     "value": 0.0643,
+     "spec": [
+      -0.02,
+      null
+     ],
+     "unit": "",
+     "status": "pass"
+    }
+   ],
+   "comparison": [
+    {
+     "id": "pattern.frontCoverage",
+     "spec": 0.7,
+     "measured": 0.7,
+     "tolerance": 0.02,
+     "ok": true
+    },
+    {
+     "id": "pattern.backCoverage",
+     "spec": 0.65,
+     "measured": 0.6899,
+     "tolerance": 0.02,
+     "ok": false
+    },
+    {
+     "id": "drift.frontCoverage",
+     "spec": 0.784,
+     "measured": 0.784,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.backCoverage",
+     "spec": 0.748,
+     "measured": 0.749,
+     "tolerance": 0.05,
+     "ok": true
+    },
+    {
+     "id": "drift.sideHeightMm",
+     "spec": 94.7,
+     "measured": 94.7,
+     "tolerance": 23.7,
+     "ok": true
+    },
+    {
+     "id": "drift.backWidthAboveSeamMm",
+     "spec": 88.7,
+     "measured": 96.5,
+     "tolerance": 22.2,
+     "ok": true
+    }
+   ],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 2.1,
+     "penetratingPct": 0.3,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 10.9,
+     "penetratingPct": 5.2,
+     "maxEdgeStretch": 1.54,
+     "stretchedPct": 0.04
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 13.1,
+     "penetratingPct": 5.12,
+     "maxEdgeStretch": 1.6,
+     "stretchedPct": 0.36
+    },
+    "standing": {
+     "maxPenetrationMm": 2.1,
+     "penetratingPct": 0.3,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [
+    "pattern.backCoverage"
+   ],
+   "soft": [],
+   "verdict": "deviates from spec"
+  },
+  {
+   "id": "under-waspie-v1",
+   "name": "Waspie",
+   "kind": "waspie",
+   "baseBody": "preserve",
+   "color": "emerald",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "the belt is asked to be hidden under a skirt, but nothing covers it",
+    "hosiery: RL (left-back) pulls 9.4% in walk",
+    "hosiery: FR (right-front) pulls 6.2% in walk",
+    "hosiery: RL (left-back) stretches 12.5% in sit, past the 10% limit",
+    "hosiery: RR (right-back) stretches 12.5% in sit, past the 10% limit"
+   ],
+   "fitted": {
+    "frontCoverage": 0.651,
+    "backCoverage": 0.651,
+    "sideHeightMm": 182.2,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "18e9aed9f69345f9aa002142cfddfa9161678eaeb052f05b77f35a844bdcacd3",
+   "vertices": 462,
+   "rules": [],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 11.7,
+     "penetratingPct": 1.3,
+     "maxEdgeStretch": 1.03,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 16.4,
+     "penetratingPct": 1.52,
+     "maxEdgeStretch": 1.03,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "no pattern spec"
+  }
+ ]
+}

@@ -476,6 +476,12 @@ def _seat_brief_gusset(context, mesh, positions: np.ndarray, record: dict, clear
                            metadata={**(context.artifact.metadata or {}), **_frame_metadata(mesh)})
     frame = body_frame(params)
     spec = parse_block("brief-block", params.metadata.get("lingerie") or {}).brief
+    for drafted in mesh.metadata.get("lingerieReferences") or []:
+        # RL4. Seat the gusset the block drafted, not the template's constant it replaced.
+        from dataclasses import replace
+
+        width, length = drafted["gussetWidthMm"], drafted["gussetLengthMm"]
+        spec = replace(spec, gusset_width_mm=width, gusset_length_mm=length)
     initial = {}
     for r, row in enumerate(grid[1:-1], start=1):
         t = r / (len(grid) - 1)

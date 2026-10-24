@@ -1,0 +1,427 @@
+{
+ "schema": "forge.reference.fabrics/1",
+ "about": "Mechanical fabric classes a lingerie block may name (lingerie.fabric). Visual appearance stays in wardrobe/lingerie/fabrics.py and the material plan; this file is behaviour only. Every value carries its status: 'measured' (a cited test on a named fabric), 'designer-convention' (a cited pattern-maker's allowance), 'class-typical' (this project's estimate for the class), or 'unmeasured' (null, with how to measure it). Nothing here is certified to ISO or ASTM. See docs/research/LINGERIE_FABRIC_PHYSICS.md.",
+ "classes": [
+  {
+   "id": "stretch-knit",
+   "label": "Stretch knit (jersey, microfibre)",
+   "construction": "weft knit with elastane",
+   "patternStretchCourse": {
+    "value": 0.15,
+    "unit": "fraction",
+    "status": "designer-convention",
+    "source": "freesewing-uma",
+    "note": "Uma's xStretch default: the negative ease its designer drafts a stretch-knit brief with. Not a fabric test result."
+   },
+   "patternStretchWale": {
+    "value": 0.05,
+    "unit": "fraction",
+    "status": "designer-convention",
+    "source": "freesewing-uma",
+    "note": "Uma's yStretch default: the negative ease its designer drafts a stretch-knit brief with. Not a fabric test result."
+   },
+   "mechanical": {
+    "arealDensity": {
+     "value": null,
+     "unit": "g/m2",
+     "status": "unmeasured",
+     "calibrate": "Weigh a die-cut 100 cm2 specimen conditioned at 20 C / 65% RH (the usual textile method); report g/m2."
+    },
+    "thickness": {
+     "value": null,
+     "unit": "mm",
+     "status": "unmeasured",
+     "calibrate": "Compression thickness gauge at a stated pressure (textiles use about 1 kPa); report mm."
+    },
+    "stretchCourse": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Extension across the courses (or weft) at a stated load, as for low-power knits (ASTM D2594 class of test); report the fraction at that load."
+    },
+    "stretchWale": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "The same along the wales (or warp)."
+    },
+    "recovery": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Residual growth after the stretch hold and a timed relaxation (the same test family); report 1 - growth."
+    },
+    "shearStiffness": {
+     "value": null,
+     "unit": "N/m",
+     "status": "unmeasured",
+     "calibrate": "Bias extension or picture-frame shear test; report the initial slope."
+    },
+    "bendingStiffness": {
+     "value": null,
+     "unit": "uN*m",
+     "status": "unmeasured",
+     "calibrate": "Cantilever bending length (fabric drape test); convert with the areal density."
+    },
+    "friction": {
+     "value": null,
+     "unit": "coefficient",
+     "status": "unmeasured",
+     "calibrate": "Sled on a skin simulant at a stated normal load; report kinetic coefficient."
+    }
+   },
+   "opacity": "opaque"
+  },
+  {
+   "id": "stretch-lace",
+   "label": "Stretch lace",
+   "construction": "raschel lace with elastane",
+   "patternStretchCourse": {
+    "value": null,
+    "unit": "fraction",
+    "status": "unmeasured",
+    "calibrate": "Draft allowance for this lace: from its stretchCourse at the wearing load, or a pattern-maker's stated allowance."
+   },
+   "patternStretchWale": {
+    "value": null,
+    "unit": "fraction",
+    "status": "unmeasured",
+    "calibrate": "As above, along the wales."
+   },
+   "mechanical": {
+    "arealDensity": {
+     "value": null,
+     "unit": "g/m2",
+     "status": "unmeasured",
+     "calibrate": "Weigh a die-cut 100 cm2 specimen conditioned at 20 C / 65% RH (the usual textile method); report g/m2."
+    },
+    "thickness": {
+     "value": null,
+     "unit": "mm",
+     "status": "unmeasured",
+     "calibrate": "Compression thickness gauge at a stated pressure (textiles use about 1 kPa); report mm."
+    },
+    "stretchCourse": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Extension across the courses (or weft) at a stated load, as for low-power knits (ASTM D2594 class of test); report the fraction at that load."
+    },
+    "stretchWale": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "The same along the wales (or warp)."
+    },
+    "recovery": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Residual growth after the stretch hold and a timed relaxation (the same test family); report 1 - growth."
+    },
+    "shearStiffness": {
+     "value": null,
+     "unit": "N/m",
+     "status": "unmeasured",
+     "calibrate": "Bias extension or picture-frame shear test; report the initial slope."
+    },
+    "bendingStiffness": {
+     "value": null,
+     "unit": "uN*m",
+     "status": "unmeasured",
+     "calibrate": "Cantilever bending length (fabric drape test); convert with the areal density."
+    },
+    "friction": {
+     "value": null,
+     "unit": "coefficient",
+     "status": "unmeasured",
+     "calibrate": "Sled on a skin simulant at a stated normal load; report kinetic coefficient."
+    },
+    "laceOpening": {
+     "value": null,
+     "unit": "mm",
+     "status": "unmeasured",
+     "calibrate": "Measure the open net cell and the largest motif gap on a flat specimen."
+    }
+   },
+   "opacity": "partial"
+  },
+  {
+   "id": "power-mesh",
+   "label": "Power mesh",
+   "construction": "warp-knit mesh with high elastane (support panels)",
+   "patternStretchCourse": {
+    "value": null,
+    "unit": "fraction",
+    "status": "unmeasured",
+    "calibrate": "From stretchCourse at the wearing load."
+   },
+   "patternStretchWale": {
+    "value": null,
+    "unit": "fraction",
+    "status": "unmeasured",
+    "calibrate": "From stretchWale at the wearing load."
+   },
+   "mechanical": {
+    "arealDensity": {
+     "value": null,
+     "unit": "g/m2",
+     "status": "unmeasured",
+     "calibrate": "Weigh a die-cut 100 cm2 specimen conditioned at 20 C / 65% RH (the usual textile method); report g/m2."
+    },
+    "thickness": {
+     "value": null,
+     "unit": "mm",
+     "status": "unmeasured",
+     "calibrate": "Compression thickness gauge at a stated pressure (textiles use about 1 kPa); report mm."
+    },
+    "stretchCourse": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Extension across the courses (or weft) at a stated load, as for low-power knits (ASTM D2594 class of test); report the fraction at that load."
+    },
+    "stretchWale": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "The same along the wales (or warp)."
+    },
+    "recovery": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Residual growth after the stretch hold and a timed relaxation (the same test family); report 1 - growth."
+    },
+    "shearStiffness": {
+     "value": null,
+     "unit": "N/m",
+     "status": "unmeasured",
+     "calibrate": "Bias extension or picture-frame shear test; report the initial slope."
+    },
+    "bendingStiffness": {
+     "value": null,
+     "unit": "uN*m",
+     "status": "unmeasured",
+     "calibrate": "Cantilever bending length (fabric drape test); convert with the areal density."
+    },
+    "friction": {
+     "value": null,
+     "unit": "coefficient",
+     "status": "unmeasured",
+     "calibrate": "Sled on a skin simulant at a stated normal load; report kinetic coefficient."
+    }
+   },
+   "opacity": "sheer"
+  },
+  {
+   "id": "tulle",
+   "label": "Tulle",
+   "construction": "fine hexagonal net, little or no elastane",
+   "patternStretchCourse": {
+    "value": null,
+    "unit": "fraction",
+    "status": "unmeasured",
+    "calibrate": "From stretchCourse; often near zero."
+   },
+   "patternStretchWale": {
+    "value": null,
+    "unit": "fraction",
+    "status": "unmeasured",
+    "calibrate": "From stretchWale."
+   },
+   "mechanical": {
+    "arealDensity": {
+     "value": null,
+     "unit": "g/m2",
+     "status": "unmeasured",
+     "calibrate": "Weigh a die-cut 100 cm2 specimen conditioned at 20 C / 65% RH (the usual textile method); report g/m2."
+    },
+    "thickness": {
+     "value": null,
+     "unit": "mm",
+     "status": "unmeasured",
+     "calibrate": "Compression thickness gauge at a stated pressure (textiles use about 1 kPa); report mm."
+    },
+    "stretchCourse": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Extension across the courses (or weft) at a stated load, as for low-power knits (ASTM D2594 class of test); report the fraction at that load."
+    },
+    "stretchWale": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "The same along the wales (or warp)."
+    },
+    "recovery": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Residual growth after the stretch hold and a timed relaxation (the same test family); report 1 - growth."
+    },
+    "shearStiffness": {
+     "value": null,
+     "unit": "N/m",
+     "status": "unmeasured",
+     "calibrate": "Bias extension or picture-frame shear test; report the initial slope."
+    },
+    "bendingStiffness": {
+     "value": null,
+     "unit": "uN*m",
+     "status": "unmeasured",
+     "calibrate": "Cantilever bending length (fabric drape test); convert with the areal density."
+    },
+    "friction": {
+     "value": null,
+     "unit": "coefficient",
+     "status": "unmeasured",
+     "calibrate": "Sled on a skin simulant at a stated normal load; report kinetic coefficient."
+    }
+   },
+   "opacity": "sheer"
+  },
+  {
+   "id": "satin",
+   "label": "Satin",
+   "construction": "woven satin (with or without elastane)",
+   "patternStretchCourse": {
+    "value": null,
+    "unit": "fraction",
+    "status": "unmeasured",
+    "calibrate": "Woven satin without elastane takes no negative ease; with elastane, from its weft stretch."
+   },
+   "patternStretchWale": {
+    "value": null,
+    "unit": "fraction",
+    "status": "unmeasured",
+    "calibrate": "From its warp stretch."
+   },
+   "mechanical": {
+    "arealDensity": {
+     "value": null,
+     "unit": "g/m2",
+     "status": "unmeasured",
+     "calibrate": "Weigh a die-cut 100 cm2 specimen conditioned at 20 C / 65% RH (the usual textile method); report g/m2."
+    },
+    "thickness": {
+     "value": null,
+     "unit": "mm",
+     "status": "unmeasured",
+     "calibrate": "Compression thickness gauge at a stated pressure (textiles use about 1 kPa); report mm."
+    },
+    "stretchCourse": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Extension across the courses (or weft) at a stated load, as for low-power knits (ASTM D2594 class of test); report the fraction at that load."
+    },
+    "stretchWale": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "The same along the wales (or warp)."
+    },
+    "recovery": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Residual growth after the stretch hold and a timed relaxation (the same test family); report 1 - growth."
+    },
+    "shearStiffness": {
+     "value": null,
+     "unit": "N/m",
+     "status": "unmeasured",
+     "calibrate": "Bias extension or picture-frame shear test; report the initial slope."
+    },
+    "bendingStiffness": {
+     "value": null,
+     "unit": "uN*m",
+     "status": "unmeasured",
+     "calibrate": "Cantilever bending length (fabric drape test); convert with the areal density."
+    },
+    "friction": {
+     "value": null,
+     "unit": "coefficient",
+     "status": "unmeasured",
+     "calibrate": "Sled on a skin simulant at a stated normal load; report kinetic coefficient."
+    }
+   },
+   "opacity": "opaque"
+  },
+  {
+   "id": "gusset-lining",
+   "label": "Gusset lining",
+   "construction": "cotton jersey",
+   "patternStretchCourse": {
+    "value": null,
+    "unit": "fraction",
+    "status": "unmeasured",
+    "calibrate": "Cut to the gusset it lines; from stretchCourse if drafted on its own."
+   },
+   "patternStretchWale": {
+    "value": null,
+    "unit": "fraction",
+    "status": "unmeasured",
+    "calibrate": "As above."
+   },
+   "mechanical": {
+    "arealDensity": {
+     "value": null,
+     "unit": "g/m2",
+     "status": "unmeasured",
+     "calibrate": "Weigh a die-cut 100 cm2 specimen conditioned at 20 C / 65% RH (the usual textile method); report g/m2."
+    },
+    "thickness": {
+     "value": null,
+     "unit": "mm",
+     "status": "unmeasured",
+     "calibrate": "Compression thickness gauge at a stated pressure (textiles use about 1 kPa); report mm."
+    },
+    "stretchCourse": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Extension across the courses (or weft) at a stated load, as for low-power knits (ASTM D2594 class of test); report the fraction at that load."
+    },
+    "stretchWale": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "The same along the wales (or warp)."
+    },
+    "recovery": {
+     "value": null,
+     "unit": "fraction",
+     "status": "unmeasured",
+     "calibrate": "Residual growth after the stretch hold and a timed relaxation (the same test family); report 1 - growth."
+    },
+    "shearStiffness": {
+     "value": null,
+     "unit": "N/m",
+     "status": "unmeasured",
+     "calibrate": "Bias extension or picture-frame shear test; report the initial slope."
+    },
+    "bendingStiffness": {
+     "value": null,
+     "unit": "uN*m",
+     "status": "unmeasured",
+     "calibrate": "Cantilever bending length (fabric drape test); convert with the areal density."
+    },
+    "friction": {
+     "value": null,
+     "unit": "coefficient",
+     "status": "unmeasured",
+     "calibrate": "Sled on a skin simulant at a stated normal load; report kinetic coefficient."
+    }
+   },
+   "opacity": "opaque"
+  }
+ ],
+ "elastics": {
+  "see": "wardrobe/lingerie/elastic.py ELASTICS",
+  "status": "class-typical",
+  "note": "Force curves typical of picot-edge and plush-back lingerie elastic, not a measured lot; a production style replaces them with its lot's ASTM D4964-type force-extension curve."
+ }
+}

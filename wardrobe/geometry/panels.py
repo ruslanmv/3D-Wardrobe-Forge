@@ -83,6 +83,15 @@ CARDIGAN = TopStyle("open-cardigan", open_front=True, ease_m=0.014, yoke_ease_m=
 FITTED_TEE = TopStyle("tee", open_front=False, ease_m=0.005, yoke_ease_m=0.003, taper=0.5,
                       sleeve="short", sleeve_ease_m=0.012, front_drop_m=0.035, relax_passes=30)
 
+#: GL1. A glamour blouse: the tee's close body and yoke, with long slim sleeves and a V that
+#: drops well below her collarbones. Cut for the fitted costume variants; the tee is unchanged.
+FITTED_BLOUSE = TopStyle("fitted-blouse", open_front=False, ease_m=0.004, yoke_ease_m=0.003, taper=0.5,
+                         sleeve="long", sleeve_ease_m=0.007, front_drop_m=0.11, relax_passes=30)
+#: GL1. A tailored jacket worn open over a blouse: close enough to show her waist, a little
+#: more ease than the blouse so it clears it, slim long sleeves, fronts that part from the bust.
+FITTED_JACKET = TopStyle("fitted-jacket", open_front=True, ease_m=0.009, yoke_ease_m=0.006, taper=0.45,
+                         sleeve="long", sleeve_ease_m=0.012, open_bust=0.3, open_hem=0.42, relax_passes=24)
+
 #: Camisole: a stretch knit on her, a millimetre over the template clearance.
 CAMI_EASE_M = 0.001
 #: Under the bust it may come in this steeply (a stretch fabric follows her, almost).
@@ -728,6 +737,14 @@ def build_fitted_tee(params, *, hem_y: float) -> Mesh | None:
     return build_set_in_top(params, FITTED_TEE, hem_y=hem_y)
 
 
+def build_fitted_blouse(params, *, hem_y: float) -> Mesh | None:
+    return build_set_in_top(params, FITTED_BLOUSE, hem_y=hem_y)
+
+
+def build_fitted_jacket(params, *, hem_y: float) -> Mesh | None:
+    return build_set_in_top(params, FITTED_JACKET, hem_y=hem_y)
+
+
 def _frame(direction: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     helper = np.array([0.0, 1.0, 0.0]) if abs(direction[1]) < 0.9 else np.array([1.0, 0.0, 0.0])
     n = np.cross(direction, helper)
@@ -1079,6 +1096,6 @@ def _flat_strap(sections: Sections, shoulders: Shoulders, x_body: float, x_top: 
 
 
 __all__ = [
-    "CARDIGAN", "FITTED_TEE", "Sections", "Shoulders", "TopStyle",
+    "CARDIGAN", "FITTED_BLOUSE", "FITTED_JACKET", "FITTED_TEE", "Sections", "Shoulders", "TopStyle",
     "bend", "build_camisole", "build_fitted_tee", "build_open_cardigan", "build_set_in_top", "thin_outline",
 ]

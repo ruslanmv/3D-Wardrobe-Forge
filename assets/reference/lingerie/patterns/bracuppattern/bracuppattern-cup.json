@@ -1,0 +1,319 @@
+{
+ "schema": "forge.reference.cup-outline/1",
+ "units": "mm",
+ "what": "One cup panel outline: a closed path of cubic Bezier segments (origin, handles), drawn at the reference size; every other size is this outline scaled by line1Mm / reference line1Mm.",
+ "referenceSize": 4,
+ "points": [
+  {
+   "origin": [
+    0.0,
+    0.0
+   ],
+   "controlCcw": [
+    14.0407,
+    25.0918
+   ],
+   "controlCw": [
+    -14.5372,
+    22.8171
+   ]
+  },
+  {
+   "origin": [
+    -65.0,
+    57.7614
+   ],
+   "controlCcw": [
+    -40.1933,
+    43.6463
+   ],
+   "controlCw": [
+    -83.4987,
+    37.6504
+   ]
+  },
+  {
+   "origin": [
+    -97.7787,
+    -29.8535
+   ],
+   "controlCcw": [
+    -106.1128,
+    11.0309
+   ],
+   "controlCw": [
+    -96.0463,
+    -38.3517
+   ]
+  },
+  {
+   "origin": [
+    -88.9743,
+    -54.2035
+   ],
+   "controlCcw": [
+    -92.8233,
+    -46.481
+   ],
+   "controlCw": [
+    -67.1478,
+    -60.2205
+   ]
+  },
+  {
+   "origin": [
+    -41.9367,
+    -107.5931
+   ],
+   "controlCcw": [
+    -57.6472,
+    -75.3583
+   ],
+   "controlCw": null
+  },
+  {
+   "origin": [
+    78.7962,
+    -46.7356
+   ],
+   "controlCcw": null,
+   "controlCw": [
+    100.4121,
+    -14.4459
+   ]
+  },
+  {
+   "origin": [
+    62.7811,
+    59.2765
+   ],
+   "controlCcw": [
+    87.6192,
+    32.6349
+   ],
+   "controlCw": [
+    39.5943,
+    43.9509
+   ]
+  }
+ ],
+ "grading": {
+  "rule": "linear scale by line 1",
+  "line1AtSize1Mm": 115.7,
+  "line1StepMm": 10.7,
+  "line1Meaning": "not documented by the source"
+ },
+ "sizes": [
+  {
+   "size": 1,
+   "overBreastMinMm": 141.0,
+   "overBreastMaxMm": 147.0,
+   "line1Mm": 115.7,
+   "scale": 0.782815
+  },
+  {
+   "size": 2,
+   "overBreastMinMm": 158.0,
+   "overBreastMaxMm": 164.0,
+   "line1Mm": 126.4,
+   "scale": 0.85521
+  },
+  {
+   "size": 3,
+   "overBreastMinMm": 175.0,
+   "overBreastMaxMm": 181.0,
+   "line1Mm": 137.1,
+   "scale": 0.927605
+  },
+  {
+   "size": 4,
+   "overBreastMinMm": 192.0,
+   "overBreastMaxMm": 198.0,
+   "line1Mm": 147.8,
+   "scale": 1.0
+  },
+  {
+   "size": 5,
+   "overBreastMinMm": 209.0,
+   "overBreastMaxMm": 215.0,
+   "line1Mm": 158.5,
+   "scale": 1.072395
+  },
+  {
+   "size": 6,
+   "overBreastMinMm": 226.0,
+   "overBreastMaxMm": 232.0,
+   "line1Mm": 169.2,
+   "scale": 1.14479
+  },
+  {
+   "size": 7,
+   "overBreastMinMm": 243.0,
+   "overBreastMaxMm": 249.0,
+   "line1Mm": 179.9,
+   "scale": 1.217185
+  },
+  {
+   "size": 8,
+   "overBreastMinMm": 260.0,
+   "overBreastMaxMm": 266.0,
+   "line1Mm": 190.6,
+   "scale": 1.289581
+  },
+  {
+   "size": 9,
+   "overBreastMinMm": 277.0,
+   "overBreastMaxMm": 283.0,
+   "line1Mm": 201.3,
+   "scale": 1.361976
+  },
+  {
+   "size": 10,
+   "overBreastMinMm": 294.0,
+   "overBreastMaxMm": 300.0,
+   "line1Mm": 212.0,
+   "scale": 1.434371
+  },
+  {
+   "size": 11,
+   "overBreastMinMm": 311.0,
+   "overBreastMaxMm": 317.0,
+   "line1Mm": 222.7,
+   "scale": 1.506766
+  },
+  {
+   "size": 12,
+   "overBreastMinMm": 328.0,
+   "overBreastMaxMm": 334.0,
+   "line1Mm": 233.4,
+   "scale": 1.579161
+  },
+  {
+   "size": 13,
+   "overBreastMinMm": 345.0,
+   "overBreastMaxMm": 351.0,
+   "line1Mm": 244.1,
+   "scale": 1.651556
+  },
+  {
+   "size": 14,
+   "overBreastMinMm": 362.0,
+   "overBreastMaxMm": 368.0,
+   "line1Mm": 254.8,
+   "scale": 1.723951
+  },
+  {
+   "size": 15,
+   "overBreastMinMm": 379.0,
+   "overBreastMaxMm": 385.0,
+   "line1Mm": 265.5,
+   "scale": 1.796346
+  },
+  {
+   "size": 16,
+   "overBreastMinMm": 396.0,
+   "overBreastMaxMm": 402.0,
+   "line1Mm": 276.2,
+   "scale": 1.868742
+  },
+  {
+   "size": 17,
+   "overBreastMinMm": 413.0,
+   "overBreastMaxMm": 419.0,
+   "line1Mm": 286.9,
+   "scale": 1.941137
+  },
+  {
+   "size": 18,
+   "overBreastMinMm": 430.0,
+   "overBreastMaxMm": 436.0,
+   "line1Mm": 297.6,
+   "scale": 2.013532
+  },
+  {
+   "size": 19,
+   "overBreastMinMm": 447.0,
+   "overBreastMaxMm": 453.0,
+   "line1Mm": 308.3,
+   "scale": 2.085927
+  },
+  {
+   "size": 20,
+   "overBreastMinMm": 464.0,
+   "overBreastMaxMm": 470.0,
+   "line1Mm": 319.0,
+   "scale": 2.158322
+  },
+  {
+   "size": 21,
+   "overBreastMinMm": 481.0,
+   "overBreastMaxMm": 487.0,
+   "line1Mm": 329.7,
+   "scale": 2.230717
+  },
+  {
+   "size": 22,
+   "overBreastMinMm": 498.0,
+   "overBreastMaxMm": 504.0,
+   "line1Mm": 340.4,
+   "scale": 2.303112
+  },
+  {
+   "size": 23,
+   "overBreastMinMm": 515.0,
+   "overBreastMaxMm": 521.0,
+   "line1Mm": 351.1,
+   "scale": 2.375507
+  },
+  {
+   "size": 24,
+   "overBreastMinMm": 532.0,
+   "overBreastMaxMm": 538.0,
+   "line1Mm": 361.8,
+   "scale": 2.447903
+  },
+  {
+   "size": 25,
+   "overBreastMinMm": 549.0,
+   "overBreastMaxMm": 555.0,
+   "line1Mm": 372.5,
+   "scale": 2.520298
+  },
+  {
+   "size": 26,
+   "overBreastMinMm": 566.0,
+   "overBreastMaxMm": 572.0,
+   "line1Mm": 383.2,
+   "scale": 2.592693
+  },
+  {
+   "size": 27,
+   "overBreastMinMm": 583.0,
+   "overBreastMaxMm": 589.0,
+   "line1Mm": 393.9,
+   "scale": 2.665088
+  },
+  {
+   "size": 28,
+   "overBreastMinMm": 600.0,
+   "overBreastMaxMm": 606.0,
+   "line1Mm": 404.6,
+   "scale": 2.737483
+  },
+  {
+   "size": 29,
+   "overBreastMinMm": 617.0,
+   "overBreastMaxMm": 623.0,
+   "line1Mm": 415.3,
+   "scale": 2.809878
+  }
+ ],
+ "provenance": {
+  "source": "bracuppattern",
+  "license": "Apache-2.0",
+  "commit": "d488c1a18623f3413718e41ffa0c5c369e17ae48",
+  "file": "assets/reference/lingerie/patterns/bracuppattern/generate_site.py",
+  "sha256": "6c000a70b575108356ea2b91ad79836576c9d05f72f743e00c536e6137c6fbe8",
+  "attribution": "Bra cup outline and size table from SewSphere/BraCupPattern (Apache-2.0), commit d488c1a."
+ }
+}

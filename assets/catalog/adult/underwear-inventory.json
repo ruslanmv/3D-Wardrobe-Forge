@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "about": "The original underwear inventory, recorded from commit a6fa443 before the adult catalog profile was added. tests/unit/test_underwear_inventory.py fails if any of these templates is removed, renamed or edited: the catalog is made to render them, never trimmed to what renders easily. A deliberate edit to a template updates its hash here in the same change.",
+  "recordedAt": "a6fa443",
+  "count": 28,
+  "templates": [
+    {
+      "id": "under-bodysuit-v1",
+      "name": "Bodysuit",
+      "file": "assets/garment_templates/underwear/under-bodysuit-v1.json",
+      "proceduralKind": "one-piece",
+      "sha256": "d4c738e1c563bad3a171a4c894b1097e05d9cd6bd14703ef38f7de7f2e6d78fa"
+    },
+    {
+      "id": "under-bodysuit-v2",
+      "name": "Tailored Bodysuit",
+      "file": "assets/garment_templates/underwear/under-bodysuit-v2.json",
+      "proceduralKind": "bodysuit-block",
+      "sha256": "16618d988751bd0dcbc36acb0567ac5078e9d2c34067ab0d9e6586796a89973e"
+    },
+    {
+      "id": "under-boyshort-v2",
+      "name": "Tailored Boyshorts",
+      "file": "assets/garment_templates/underwear/under-boyshort-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "91011f1ea23b4cf98c719bcd635a713b7c753d36c7b228dba636a3f2306e45a7"
+    },
+    {
+      "id": "under-bra-balconette-v2",
+      "name": "Tailored Balconette Bra",
+      "file": "assets/garment_templates/underwear/under-bra-balconette-v2.json",
+      "proceduralKind": "bra-block",
+      "sha256": "8b286e450c4e4703fcbc4740808d3e6273c505c71dc15291147f8ddef337ed8b"
+    },
+    {
+      "id": "under-bra-full-v2",
+      "name": "Tailored Full-Cup Bra",
+      "file": "assets/garment_templates/underwear/under-bra-full-v2.json",
+      "proceduralKind": "bra-block",
+      "sha256": "02ca4a4a68a2d54a333390d34c896f8c376f0ed8ff8859168994205fa30a19ff"
+    },
+    {
+      "id": "under-bra-plunge-v2",
+      "name": "Tailored Plunge Bra",
+      "file": "assets/garment_templates/underwear/under-bra-plunge-v2.json",
+      "proceduralKind": "bra-block",
+      "sha256": "597e76fad8e8013952738e28038971c94cc0bf61b66f5ec74a051a26df294a52"
+    },
+    {
+      "id": "under-bralette-v1",
+      "name": "Bralette",
+      "file": "assets/garment_templates/underwear/under-bralette-v1.json",
+      "proceduralKind": "bra",
+      "sha256": "fb05a7cf86282e20d81ace2212d34338f40e7f0dca492a595d8cb748161436b9"
+    },
+    {
+      "id": "under-bralette-v2",
+      "name": "Tailored Triangle Bralette",
+      "file": "assets/garment_templates/underwear/under-bralette-v2.json",
+      "proceduralKind": "bra-block",
+      "sha256": "40765cd98fabc4819cb9e2d9afc971406ad07452d46e90518aae0aece2d97455"
+    },
+    {
+      "id": "under-brazilian-v2",
+      "name": "Tailored Brazilian Briefs",
+      "file": "assets/garment_templates/underwear/under-brazilian-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "b71a8fafc4ba72ad0527453f29726a4158ccb30eaf290b2d6478da9204c8803e"
+    },
+    {
+      "id": "under-briefs-french-cut-v2",
+      "name": "Tailored French-Cut Briefs",
+      "file": "assets/garment_templates/underwear/under-briefs-french-cut-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "cfa047337646b50467b0b73731aaee1d21fd74aaaea56960ed493c2c41b1c7de"
+    },
+    {
+      "id": "under-briefs-high-leg-v2",
+      "name": "Tailored High-Leg Briefs",
+      "file": "assets/garment_templates/underwear/under-briefs-high-leg-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "1d9c0194dab12546ae12908aefea8d3337e70141124928f674c64ef11b02d60a"
+    },
+    {
+      "id": "under-briefs-string-v2",
+      "name": "Tailored String Briefs",
+      "file": "assets/garment_templates/underwear/under-briefs-string-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "0390e1598ca62b05af75d4e1c1a8f5ab479d139bac6693919dc37b9074c3a3e7"
+    },
+    {
+      "id": "under-briefs-v1",
+      "name": "Briefs",
+      "file": "assets/garment_templates/underwear/under-briefs-v1.json",
+      "proceduralKind": "briefs",
+      "sha256": "22844dae6c7af6747c86dc0e2588f042b8ce29d0cb4f8e51a8f27dc43815730c"
+    },
+    {
+      "id": "under-briefs-v2",
+      "name": "Tailored Briefs",
+      "file": "assets/garment_templates/underwear/under-briefs-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "3b8aab7e5520115f7846df062cac08e4ceb778fbdaf27c261fb46fb57ad133f1"
+    },
+    {
+      "id": "under-cheeky-v2",
+      "name": "Tailored Cheeky Briefs",
+      "file": "assets/garment_templates/underwear/under-cheeky-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "38be5e5d7228bb5844a79001f33260f1e2d331ac2e84d36c02a8f87d139b83bb"
+    },
+    {
+      "id": "under-g-string-v2",
+      "name": "Tailored G-String",
+      "file": "assets/garment_templates/underwear/under-g-string-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "f9e821830b2dce1a3b1039890d130ac8166128fbb1b66bf6272fe363a57c4c56"
+    },
+    {
+      "id": "under-garter-set-v1",
+      "name": "Garter Set",
+      "file": "assets/garment_templates/underwear/under-garter-set-v1.json",
+      "proceduralKind": "briefs",
+      "sha256": "b3ba6d3b680827051f940a7c17cc6e56911c183bc8d5ea0095a1fe56f92cc9c6"
+    },
+    {
+      "id": "under-guepiere-v1",
+      "name": "Guêpière",
+      "file": "assets/garment_templates/underwear/under-guepiere-v1.json",
+      "proceduralKind": "guepiere",
+      "sha256": "a9400091c72ea76119ccd53769a3d06dc2a4811c6f0ee33044e5aafeeb13d85d"
+    },
+    {
+      "id": "under-high-waist-briefs-v2",
+      "name": "Tailored High-Waist Briefs",
+      "file": "assets/garment_templates/underwear/under-high-waist-briefs-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "cba1a627f4cb4177b0d880c766b52323543ef3271bd41783125c9b34a35cadf3"
+    },
+    {
+      "id": "under-high-waist-thong-v2",
+      "name": "Tailored High-Waist Thong",
+      "file": "assets/garment_templates/underwear/under-high-waist-thong-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "b0c156accdbd974a389932d133d9dd495368500bfa403e42a6f721d46c8b0186"
+    },
+    {
+      "id": "under-hipster-v2",
+      "name": "Tailored Hipster Briefs",
+      "file": "assets/garment_templates/underwear/under-hipster-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "e63623de96e263dc3a943356ea65470304ae31103faa9db9b9b6d7738cbae6a0"
+    },
+    {
+      "id": "under-lingerie-set-v1",
+      "name": "Lingerie Set",
+      "file": "assets/garment_templates/underwear/under-lingerie-set-v1.json",
+      "proceduralKind": "bikini",
+      "sha256": "9b86cc47b033b7e9eab60e6017a01da33a198be1da3fd69f2cbd671623e19388"
+    },
+    {
+      "id": "under-suspender-belt-high-v1",
+      "name": "High-Waisted Suspender Belt",
+      "file": "assets/garment_templates/underwear/under-suspender-belt-high-v1.json",
+      "proceduralKind": "suspender-belt",
+      "sha256": "e7a1ab5f047f3f40f0714226e703d14872291c0b4ddf86bc89a43c36b0140757"
+    },
+    {
+      "id": "under-suspender-belt-v1",
+      "name": "Suspender Belt",
+      "file": "assets/garment_templates/underwear/under-suspender-belt-v1.json",
+      "proceduralKind": "suspender-belt",
+      "sha256": "bfa1b3305b41b522fff0598cbec1590d7f5820337fef50e13554120854e5c2a3"
+    },
+    {
+      "id": "under-tanga-v2",
+      "name": "Tailored Tanga",
+      "file": "assets/garment_templates/underwear/under-tanga-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "04b68b7990c5a62e04ed9cf59e247e7b0c251c3283ae76c5be6695ec17ea3271"
+    },
+    {
+      "id": "under-thong-v2",
+      "name": "Tailored Thong",
+      "file": "assets/garment_templates/underwear/under-thong-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "1d8705e238637e57cb57bf3d5e82e39ffe948e735e09c7bd4508fe794444aa31"
+    },
+    {
+      "id": "under-v-string-v2",
+      "name": "Tailored V-String",
+      "file": "assets/garment_templates/underwear/under-v-string-v2.json",
+      "proceduralKind": "brief-block",
+      "sha256": "c5f60c6cdbe5d8be44570227cea8f2eba9bd0fe871bae7abc89334453b7398eb"
+    },
+    {
+      "id": "under-waspie-v1",
+      "name": "Waspie",
+      "file": "assets/garment_templates/underwear/under-waspie-v1.json",
+      "proceduralKind": "waspie",
+      "sha256": "78769f7ec99ff4564752df14170c12b7d390ead3ef3f87069760ad2bd3016e34"
+    }
+  ]
+}

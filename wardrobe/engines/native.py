@@ -48,6 +48,28 @@ GENERATOR = "3D-Wardrobe-Forge (native engine)"
 STRETCH_KNIT_KINDS = frozenset({"leggings", "seamless-leggings", "sports-bra"})
 KNIT_TOONY = 0.5
 
+def fitted_short(template, plan) -> bool:
+    """PS3. A dress or skirt cut close to her and ending above mid-thigh: bound like her skin.
+
+    A bodycon mini was bound to her pelvis while the foundation under it, a second-skin
+    garment, followed her thighs: seated, her thighs and the slip shorts rose through the
+    dress's lap and sides. Cut this close (conform 0.9 and up) and this short, the dress is
+    on her skin and has no hem to hang; a looser or longer skirt keeps the hanging binding.
+    """
+    if template is None or plan is None:
+        return False
+    hem = plan.hem or template.hem
+    # A flared or pleated mini is excluded: its hem stands off her, and bound to her thighs the
+    # pleats would part between her legs as she sat.
+    return (template.category in ("dress", "skirt") and template.fit.conform >= 0.9
+            and hem in ("mini", "crop") and template.silhouette in ("sheath", "pencil", "slim"))
+
+
+#: PS1. Shapes with a separate tube round each leg (see the skin binding below).
+LEG_TUBE_KINDS = frozenset({"trousers", "leggings", "seamless-leggings", "shorts", "slip-shorts",
+                            "catsuit", "jumpsuit"})
+
+
 class NativeEngine(FittingEngine):
     name = "native"
     supports_raw_mesh = False
@@ -82,6 +104,16 @@ class NativeEngine(FittingEngine):
         # ---- skin binding ----------------------------------------------
         regions = artifact.anchors or artifact.coverage
         candidates = bones_for_coverage(regions)
+        kind = artifact.procedural_kind or context.plan.category
+        if kind in LEG_TUBE_KINDS:
+            # PS1. A garment with a tube round each leg bends at her knee as she does. Its
+            # anchors name where it hangs from (jeans: waist and hips), which gives her thigh
+            # bones but no shin: every vertex below the knee followed the thigh, so seated or
+            # kneeling the trouser leg stayed straight out while her shin went down through it.
+            # The leg bones of what it covers are added for these kinds only; a skirt or dress is
+            # one tube across both legs, and a hem split between them is worse than a stiff one.
+            leg_regions = [r for r in artifact.coverage if r in ("upperLegs", "lowerLegs")]
+            candidates += [b for b in bones_for_coverage(leg_regions) if b not in candidates]
         if not candidates:
             raise FittingError(f"template declares no usable anchor regions: {regions}")
 
@@ -99,7 +131,8 @@ class NativeEngine(FittingEngine):
             # components cannot tell sleeve from body: the builder says which is which.
             torso = ~np.asarray(sleeve, dtype=bool)
         bind_mesh(mesh, segments, torso=torso)
-        second_skin = bool(artifact.metadata.get("secondSkin"))
+        template = context.catalog.get(artifact.template_id) if artifact.template_id else None
+        second_skin = bool(artifact.metadata.get("secondSkin")) or fitted_short(template, context.plan)
         if mesh.metadata.get("panelBuilt") or second_skin:
             # G5. A garment cut on her (wardrobe.geometry.panels) takes her own skin weights
             # above her hips, so its set-in sleeves bend at her shoulder as she does.

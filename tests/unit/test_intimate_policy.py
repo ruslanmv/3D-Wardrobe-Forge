@@ -48,12 +48,22 @@ def test_library_declarations_come_from_the_operator_file_and_only_a_literal_tru
     assert not library.get("nia").depicts_adult and "depictsAdult" not in library.get("nia").avatar_input()
 
 
-def test_the_shipped_policy_declares_nobody():
-    """Deciding that an avatar depicts an adult is the operator's call, recorded by them."""
+def test_every_shipped_declaration_is_explicit_and_says_who_and_why():
+    """Deciding that an avatar depicts an adult is the operator's call, recorded by them.
+
+    The file shipped empty until the operator declared VRoid Female for the underwear
+    catalog. What stays pinned is the shape of a declaration: a literal ``true``, a
+    library avatar, and who made it and why, so none is ever added in passing.
+    """
     from pathlib import Path
 
-    policy = json.loads((Path(__file__).resolve().parents[2] / "assets/library/policy.json").read_text())
-    assert policy["avatars"] == {}
+    root = Path(__file__).resolve().parents[2] / "assets/library"
+    policy = json.loads((root / "policy.json").read_text())
+    slugs = {item["slug"] for item in json.loads((root / "models.json").read_text())["items"]}
+    assert set(policy["avatars"]) <= slugs
+    for declaration in policy["avatars"].values():
+        assert declaration["depictsAdult"] is True
+        assert declaration["declaredBy"] and declaration["why"]
 
 
 def test_see_through_fabric_in_an_everyday_category_is_gated_like_swimwear():

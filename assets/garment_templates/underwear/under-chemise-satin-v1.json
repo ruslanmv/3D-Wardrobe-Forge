@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "under-chemise-satin-v1",
+  "name": "Satin Chemise",
+  "category": "underwear",
+  "mesh": "procedural:slip-dress",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 4.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 0.75,
+    "straps": "shoulder",
+    "neckline": "plunge"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "satin chemise",
+    "chemise",
+    "slip nightie"
+  ],
+  "description": "A short bias-cut chemise on thin straps: a plunging V neckline, a hem at the upper thigh.",
+  "optIn": true,
+  "collection": "valentines"
+}

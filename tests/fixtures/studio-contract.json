@@ -1,0 +1,1508 @@
+{
+ "/v1/admin": {
+  "$": [
+   "object"
+  ],
+  "$.enabled": [
+   "boolean"
+  ],
+  "$.minPasswordLength": [
+   "number"
+  ],
+  "$.session": [
+   "null"
+  ],
+  "$.signedIn": [
+   "boolean"
+  ],
+  "$.unavailable": [
+   "null"
+  ],
+  "$.username": [
+   "null"
+  ]
+ },
+ "/v1/body-art": {
+  "$": [
+   "object"
+  ],
+  "$.designs": [
+   "array"
+  ],
+  "$.designs[]": [
+   "object"
+  ],
+  "$.designs[].aspect": [
+   "number"
+  ],
+  "$.designs[].description": [
+   "string"
+  ],
+  "$.designs[].family": [
+   "string"
+  ],
+  "$.designs[].id": [
+   "string"
+  ],
+  "$.designs[].license": [
+   "string"
+  ],
+  "$.designs[].name": [
+   "string"
+  ],
+  "$.designs[].placements": [
+   "array"
+  ],
+  "$.designs[].placements[]": [
+   "string"
+  ],
+  "$.designs[].ratings": [
+   "object"
+  ],
+  "$.designs[].ratings.left-outer-thigh": [
+   "string"
+  ],
+  "$.designs[].ratings.left-rib": [
+   "string"
+  ],
+  "$.designs[].ratings.left-shoulder-blade": [
+   "string"
+  ],
+  "$.designs[].ratings.left-upper-thigh": [
+   "string"
+  ],
+  "$.designs[].ratings.lower-back": [
+   "string"
+  ],
+  "$.designs[].ratings.nape": [
+   "string"
+  ],
+  "$.designs[].ratings.right-outer-thigh": [
+   "string"
+  ],
+  "$.designs[].ratings.right-rib": [
+   "string"
+  ],
+  "$.designs[].ratings.right-shoulder-blade": [
+   "string"
+  ],
+  "$.designs[].ratings.right-upper-thigh": [
+   "string"
+  ],
+  "$.designs[].ratings.spine-full": [
+   "string"
+  ],
+  "$.designs[].ratings.spine-upper": [
+   "string"
+  ],
+  "$.designs[].ratings.sternum": [
+   "string"
+  ],
+  "$.designs[].ratings.under-bust": [
+   "string"
+  ],
+  "$.designs[].ratings.upper-back": [
+   "string"
+  ],
+  "$.designs[].ratings.waistline": [
+   "string"
+  ],
+  "$.placements": [
+   "array"
+  ],
+  "$.placements[]": [
+   "object"
+  ],
+  "$.placements[].facing": [
+   "string"
+  ],
+  "$.placements[].id": [
+   "string"
+  ],
+  "$.placements[].name": [
+   "string"
+  ],
+  "$.placements[].rating": [
+   "string"
+  ],
+  "$.placements[].region": [
+   "string"
+  ]
+ },
+ "/v1/capabilities": {
+  "$": [
+   "object"
+  ],
+  "$.auth": [
+   "object"
+  ],
+  "$.auth.keyRequired": [
+   "boolean"
+  ],
+  "$.auth.mode": [
+   "string"
+  ],
+  "$.auth.trusted": [
+   "null"
+  ],
+  "$.bodyArt": [
+   "object"
+  ],
+  "$.bodyArt.designs": [
+   "number"
+  ],
+  "$.bodyArt.placements": [
+   "array"
+  ],
+  "$.bodyArt.placements[]": [
+   "string"
+  ],
+  "$.bodyArt.version": [
+   "number"
+  ],
+  "$.bodySurface": [
+   "object"
+  ],
+  "$.bodySurface.adultEnabled": [
+   "boolean"
+  ],
+  "$.bodySurface.clothRelaxation": [
+   "array"
+  ],
+  "$.bodySurface.clothRelaxation[]": [
+   "string"
+  ],
+  "$.bodySurface.profiles": [
+   "array"
+  ],
+  "$.bodySurface.profiles[]": [
+   "string"
+  ],
+  "$.bodySurface.version": [
+   "number"
+  ],
+  "$.categories": [
+   "array"
+  ],
+  "$.categories[]": [
+   "string"
+  ],
+  "$.engines": [
+   "object"
+  ],
+  "$.engines.blender": [
+   "boolean"
+  ],
+  "$.engines.bodyMasking": [
+   "boolean"
+  ],
+  "$.engines.default": [
+   "string"
+  ],
+  "$.engines.generatedMeshes": [
+   "boolean"
+  ],
+  "$.engines.native": [
+   "boolean"
+  ],
+  "$.maxAvatarBytes": [
+   "number"
+  ],
+  "$.outputVersions": [
+   "array"
+  ],
+  "$.outputVersions[]": [
+   "string"
+  ],
+  "$.provider": [
+   "string"
+  ],
+  "$.strictLicensing": [
+   "boolean"
+  ],
+  "$.templates": [
+   "number"
+  ],
+  "$.version": [
+   "string"
+  ]
+ },
+ "/v1/catalog/garments": {
+  "$": [
+   "object"
+  ],
+  "$.categories": [
+   "array"
+  ],
+  "$.categories[]": [
+   "object"
+  ],
+  "$.categories[].count": [
+   "number"
+  ],
+  "$.categories[].garments": [
+   "array"
+  ],
+  "$.categories[].garments[]": [
+   "object"
+  ],
+  "$.categories[].garments[].availableColors": [
+   "array"
+  ],
+  "$.categories[].garments[].availableColors[]": [
+   "string"
+  ],
+  "$.categories[].garments[].category": [
+   "string"
+  ],
+  "$.categories[].garments[].description": [
+   "string"
+  ],
+  "$.categories[].garments[].hem": [
+   "string"
+  ],
+  "$.categories[].garments[].id": [
+   "string"
+  ],
+  "$.categories[].garments[].name": [
+   "string"
+  ],
+  "$.categories[].garments[].previewStatus": [
+   "string"
+  ],
+  "$.categories[].garments[].previewUrl": [
+   "null",
+   "string"
+  ],
+  "$.categories[].garments[].requiresAdult": [
+   "boolean"
+  ],
+  "$.categories[].garments[].silhouette": [
+   "string"
+  ],
+  "$.categories[].garments[].sleeve": [
+   "string"
+  ],
+  "$.categories[].garments[].supportedMaterials": [
+   "array"
+  ],
+  "$.categories[].garments[].supportedMaterials[]": [
+   "string"
+  ],
+  "$.categories[].garments[].supportsColor": [
+   "boolean"
+  ],
+  "$.categories[].garments[].tags": [
+   "array"
+  ],
+  "$.categories[].garments[].tags[]": [
+   "string"
+  ],
+  "$.categories[].id": [
+   "string"
+  ],
+  "$.categories[].label": [
+   "string"
+  ],
+  "$.previewCount": [
+   "number"
+  ],
+  "$.schemaVersion": [
+   "number"
+  ],
+  "$.totalTemplates": [
+   "number"
+  ],
+  "$.visibleCount": [
+   "number"
+  ]
+ },
+ "/v1/library": {
+  "$": [
+   "object"
+  ],
+  "$.avatars": [
+   "array"
+  ],
+  "$.avatars[]": [
+   "object"
+  ],
+  "$.avatars[].available": [
+   "boolean"
+  ],
+  "$.avatars[].collection": [
+   "string"
+  ],
+  "$.avatars[].creator": [
+   "null"
+  ],
+  "$.avatars[].declaredBy": [
+   "null"
+  ],
+  "$.avatars[].depictsAdult": [
+   "boolean"
+  ],
+  "$.avatars[].file": [
+   "string"
+  ],
+  "$.avatars[].fileUrl": [
+   "string"
+  ],
+  "$.avatars[].license": [
+   "string"
+  ],
+  "$.avatars[].licenseGrants": [
+   "object"
+  ],
+  "$.avatars[].licenseGrants.modification": [
+   "string"
+  ],
+  "$.avatars[].licenseGrants.redistribution": [
+   "string"
+  ],
+  "$.avatars[].name": [
+   "string"
+  ],
+  "$.avatars[].presentation": [
+   "null"
+  ],
+  "$.avatars[].problem": [
+   "null"
+  ],
+  "$.avatars[].sha256": [
+   "string"
+  ],
+  "$.avatars[].sizeBytes": [
+   "number"
+  ],
+  "$.avatars[].slug": [
+   "string"
+  ],
+  "$.avatars[].source": [
+   "string"
+  ],
+  "$.avatars[].storageKey": [
+   "string"
+  ],
+  "$.avatars[].vroidModelId": [
+   "null"
+  ],
+  "$.licenseNote": [
+   "string"
+  ],
+  "$.problem": [
+   "null"
+  ]
+ },
+ "/v1/outfits": {
+  "$": [
+   "object"
+  ],
+  "$.groups": [
+   "array"
+  ],
+  "$.groups[]": [
+   "object"
+  ],
+  "$.groups[].id": [
+   "string"
+  ],
+  "$.groups[].private": [
+   "boolean"
+  ],
+  "$.groups[].title": [
+   "string"
+  ],
+  "$.occasions": [
+   "array"
+  ],
+  "$.occasions[]": [
+   "object"
+  ],
+  "$.occasions[].icon": [
+   "string"
+  ],
+  "$.occasions[].id": [
+   "string"
+  ],
+  "$.occasions[].private": [
+   "boolean"
+  ],
+  "$.occasions[].question": [
+   "string"
+  ],
+  "$.occasions[].styles": [
+   "array"
+  ],
+  "$.occasions[].styles[]": [
+   "object"
+  ],
+  "$.occasions[].styles[].blurb": [
+   "string"
+  ],
+  "$.occasions[].styles[].collection": [
+   "string"
+  ],
+  "$.occasions[].styles[].content": [
+   "object"
+  ],
+  "$.occasions[].styles[].content.bodyArt": [
+   "object"
+  ],
+  "$.occasions[].styles[].content.bodyArt.designs": [
+   "array"
+  ],
+  "$.occasions[].styles[].content.bodyArt.designs[]": [
+   "string"
+  ],
+  "$.occasions[].styles[].content.bodyArt.placements": [
+   "array"
+  ],
+  "$.occasions[].styles[].content.bodyArt.placements[]": [
+   "string"
+  ],
+  "$.occasions[].styles[].content.detail": [
+   "string"
+  ],
+  "$.occasions[].styles[].content.shots": [
+   "array"
+  ],
+  "$.occasions[].styles[].content.shots[]": [
+   "string"
+  ],
+  "$.occasions[].styles[].gallery": [
+   "string"
+  ],
+  "$.occasions[].styles[].icon": [
+   "string"
+  ],
+  "$.occasions[].styles[].id": [
+   "string"
+  ],
+  "$.occasions[].styles[].looks": [
+   "array"
+  ],
+  "$.occasions[].styles[].looks[]": [
+   "string"
+  ],
+  "$.occasions[].styles[].rating": [
+   "string"
+  ],
+  "$.occasions[].styles[].title": [
+   "string"
+  ],
+  "$.occasions[].title": [
+   "string"
+  ],
+  "$.outfits": [
+   "array"
+  ],
+  "$.outfits[]": [
+   "object"
+  ],
+  "$.outfits[].addOns": [
+   "array"
+  ],
+  "$.outfits[].addOns[]": [
+   "object"
+  ],
+  "$.outfits[].addOns[].blocks": [
+   "object"
+  ],
+  "$.outfits[].addOns[].blocks.hosiery": [
+   "object"
+  ],
+  "$.outfits[].addOns[].blocks.hosiery.color": [
+   "string"
+  ],
+  "$.outfits[].addOns[].blocks.hosiery.denier": [
+   "number"
+  ],
+  "$.outfits[].addOns[].blocks.hosiery.topStyle": [
+   "string"
+  ],
+  "$.outfits[].addOns[].blocks.hosiery.type": [
+   "string"
+  ],
+  "$.outfits[].addOns[].blocks.reveal": [
+   "object"
+  ],
+  "$.outfits[].addOns[].blocks.reveal.level": [
+   "string"
+  ],
+  "$.outfits[].addOns[].blocks.suspenderBelt": [
+   "object"
+  ],
+  "$.outfits[].addOns[].blocks.suspenderBelt.color": [
+   "string"
+  ],
+  "$.outfits[].addOns[].blocks.suspenderBelt.hardware": [
+   "object"
+  ],
+  "$.outfits[].addOns[].blocks.suspenderBelt.hardware.color": [
+   "string"
+  ],
+  "$.outfits[].addOns[].blocks.suspenderBelt.strapCount": [
+   "number"
+  ],
+  "$.outfits[].addOns[].blocks.suspenderBelt.style": [
+   "string"
+  ],
+  "$.outfits[].addOns[].blocks.suspenderBelt.visibility": [
+   "string"
+  ],
+  "$.outfits[].addOns[].id": [
+   "string"
+  ],
+  "$.outfits[].addOns[].rating": [
+   "string"
+  ],
+  "$.outfits[].addOns[].request": [
+   "object"
+  ],
+  "$.outfits[].addOns[].request.hosiery": [
+   "object"
+  ],
+  "$.outfits[].addOns[].request.hosiery.color": [
+   "string"
+  ],
+  "$.outfits[].addOns[].request.hosiery.denier": [
+   "number"
+  ],
+  "$.outfits[].addOns[].request.hosiery.topStyle": [
+   "string"
+  ],
+  "$.outfits[].addOns[].request.hosiery.type": [
+   "string"
+  ],
+  "$.outfits[].addOns[].request.preset": [
+   "string"
+  ],
+  "$.outfits[].addOns[].request.prompt": [
+   "string"
+  ],
+  "$.outfits[].addOns[].request.reveal": [
+   "object"
+  ],
+  "$.outfits[].addOns[].request.reveal.level": [
+   "string"
+  ],
+  "$.outfits[].addOns[].request.suspenderBelt": [
+   "object"
+  ],
+  "$.outfits[].addOns[].request.suspenderBelt.color": [
+   "string"
+  ],
+  "$.outfits[].addOns[].request.suspenderBelt.hardware": [
+   "object"
+  ],
+  "$.outfits[].addOns[].request.suspenderBelt.hardware.color": [
+   "string"
+  ],
+  "$.outfits[].addOns[].request.suspenderBelt.strapCount": [
+   "number"
+  ],
+  "$.outfits[].addOns[].request.suspenderBelt.style": [
+   "string"
+  ],
+  "$.outfits[].addOns[].request.suspenderBelt.visibility": [
+   "string"
+  ],
+  "$.outfits[].addOns[].title": [
+   "string"
+  ],
+  "$.outfits[].garments": [
+   "array"
+  ],
+  "$.outfits[].garments[]": [
+   "object"
+  ],
+  "$.outfits[].garments[].adultGate": [
+   "boolean"
+  ],
+  "$.outfits[].garments[].category": [
+   "string"
+  ],
+  "$.outfits[].garments[].name": [
+   "string"
+  ],
+  "$.outfits[].garments[].slot": [
+   "string"
+  ],
+  "$.outfits[].garments[].template": [
+   "null",
+   "string"
+  ],
+  "$.outfits[].group": [
+   "string"
+  ],
+  "$.outfits[].id": [
+   "string"
+  ],
+  "$.outfits[].preset": [
+   "string"
+  ],
+  "$.outfits[].prompt": [
+   "string"
+  ],
+  "$.outfits[].rating": [
+   "string"
+  ],
+  "$.outfits[].request": [
+   "object"
+  ],
+  "$.outfits[].request.design": [
+   "object"
+  ],
+  "$.outfits[].request.design.collection": [
+   "string"
+  ],
+  "$.outfits[].request.design.id": [
+   "string"
+  ],
+  "$.outfits[].request.preset": [
+   "string"
+  ],
+  "$.outfits[].request.prompt": [
+   "string"
+  ],
+  "$.outfits[].slots": [
+   "array"
+  ],
+  "$.outfits[].slots[]": [
+   "string"
+  ],
+  "$.outfits[].tags": [
+   "array"
+  ],
+  "$.outfits[].tags[]": [
+   "string"
+  ],
+  "$.outfits[].title": [
+   "string"
+  ],
+  "$.version": [
+   "number"
+  ]
+ },
+ "/v1/templates": {
+  "$": [
+   "array"
+  ],
+  "$[]": [
+   "object"
+  ],
+  "$[].anchors": [
+   "array"
+  ],
+  "$[].anchors[]": [
+   "string"
+  ],
+  "$[].boot": [
+   "null",
+   "object"
+  ],
+  "$[].boot.heel": [
+   "string"
+  ],
+  "$[].boot.heelLeanMm": [
+   "number"
+  ],
+  "$[].boot.heelMm": [
+   "number"
+  ],
+  "$[].boot.heelTipMm": [
+   "array"
+  ],
+  "$[].boot.heelTipMm[]": [
+   "number"
+  ],
+  "$[].boot.heelTopMm": [
+   "array"
+  ],
+  "$[].boot.heelTopMm[]": [
+   "number"
+  ],
+  "$[].boot.platformMm": [
+   "number"
+  ],
+  "$[].boot.style": [
+   "string"
+  ],
+  "$[].boot.toe": [
+   "string"
+  ],
+  "$[].boot.toeExtensionMm": [
+   "number"
+  ],
+  "$[].category": [
+   "string"
+  ],
+  "$[].coverage": [
+   "array"
+  ],
+  "$[].coverage[]": [
+   "string"
+  ],
+  "$[].defaultForCategory": [
+   "boolean"
+  ],
+  "$[].description": [
+   "string"
+  ],
+  "$[].fit": [
+   "object"
+  ],
+  "$[].fit.allowLengthScale": [
+   "boolean"
+  ],
+  "$[].fit.allowWidthScale": [
+   "boolean"
+  ],
+  "$[].fit.back": [
+   "string"
+  ],
+  "$[].fit.backFlare": [
+   "null",
+   "number"
+  ],
+  "$[].fit.bodyClearanceMm": [
+   "number"
+  ],
+  "$[].fit.conform": [
+   "number"
+  ],
+  "$[].fit.conformBelowHips": [
+   "boolean"
+  ],
+  "$[].fit.conformTo": [
+   "null",
+   "string"
+  ],
+  "$[].fit.coverage": [
+   "string"
+  ],
+  "$[].fit.drapeFolds": [
+   "number"
+  ],
+  "$[].fit.flarePower": [
+   "null",
+   "number"
+  ],
+  "$[].fit.flareStart": [
+   "null",
+   "string"
+  ],
+  "$[].fit.frontFlare": [
+   "null",
+   "number"
+  ],
+  "$[].fit.hemDrape": [
+   "number"
+  ],
+  "$[].fit.hemFlareRatio": [
+   "null",
+   "number"
+  ],
+  "$[].fit.hipEaseMm": [
+   "null",
+   "number"
+  ],
+  "$[].fit.legCut": [
+   "string"
+  ],
+  "$[].fit.maxLengthScale": [
+   "number"
+  ],
+  "$[].fit.minLengthScale": [
+   "number"
+  ],
+  "$[].fit.neckline": [
+   "string"
+  ],
+  "$[].fit.pleatDepth": [
+   "null",
+   "number"
+  ],
+  "$[].fit.pleats": [
+   "number"
+  ],
+  "$[].fit.straps": [
+   "string"
+  ],
+  "$[].fit.waistEaseMm": [
+   "null",
+   "number"
+  ],
+  "$[].fit.waistbandMm": [
+   "null",
+   "number"
+  ],
+  "$[].hem": [
+   "string"
+  ],
+  "$[].id": [
+   "string"
+  ],
+  "$[].lingerie": [
+   "null",
+   "object"
+  ],
+  "$[].lingerie.block": [
+   "string"
+  ],
+  "$[].lingerie.bodysuit": [
+   "object"
+  ],
+  "$[].lingerie.bodysuit.armhole": [
+   "number"
+  ],
+  "$[].lingerie.bodysuit.back": [
+   "string"
+  ],
+  "$[].lingerie.bodysuit.cutouts": [
+   "string"
+  ],
+  "$[].lingerie.bodysuit.neckline": [
+   "string"
+  ],
+  "$[].lingerie.bodysuit.sideEaseMm": [
+   "number"
+  ],
+  "$[].lingerie.bodysuit.strapOffset": [
+   "number"
+  ],
+  "$[].lingerie.bra": [
+   "object"
+  ],
+  "$[].lingerie.bra.bandElastic": [
+   "string"
+  ],
+  "$[].lingerie.bra.closure": [
+   "string"
+  ],
+  "$[].lingerie.bra.cupEaseMm": [
+   "number"
+  ],
+  "$[].lingerie.bra.cupHeight": [
+   "number"
+  ],
+  "$[].lingerie.bra.cupInner": [
+   "number"
+  ],
+  "$[].lingerie.bra.cupOuter": [
+   "number"
+  ],
+  "$[].lingerie.bra.goreHeightMm": [
+   "number"
+  ],
+  "$[].lingerie.bra.goreWidthMm": [
+   "number"
+  ],
+  "$[].lingerie.bra.style": [
+   "string"
+  ],
+  "$[].lingerie.bra.underbandWidthMm": [
+   "number"
+  ],
+  "$[].lingerie.bra.wingHeightMm": [
+   "number"
+  ],
+  "$[].lingerie.brief": [
+   "object"
+  ],
+  "$[].lingerie.brief.backCoverage": [
+   "number"
+  ],
+  "$[].lingerie.brief.frontCoverage": [
+   "number"
+  ],
+  "$[].lingerie.brief.frontVDepth": [
+   "number"
+  ],
+  "$[].lingerie.brief.legElastic": [
+   "string"
+  ],
+  "$[].lingerie.brief.preset": [
+   "string"
+  ],
+  "$[].lingerie.brief.rise": [
+   "string"
+  ],
+  "$[].lingerie.brief.sideType": [
+   "string"
+  ],
+  "$[].lingerie.brief.sideWidthMm": [
+   "number"
+  ],
+  "$[].lingerie.brief.waistElastic": [
+   "string"
+  ],
+  "$[].lingerie.straps": [
+   "object"
+  ],
+  "$[].lingerie.straps.adjustable": [
+   "boolean"
+  ],
+  "$[].lingerie.straps.elastic": [
+   "string"
+  ],
+  "$[].lingerie.straps.profile": [
+   "string"
+  ],
+  "$[].lingerie.straps.style": [
+   "string"
+  ],
+  "$[].lingerie.straps.thicknessMm": [
+   "number"
+  ],
+  "$[].lingerie.straps.widthMm": [
+   "number"
+  ],
+  "$[].materials": [
+   "object"
+  ],
+  "$[].materials.supportsBaseColor": [
+   "boolean"
+  ],
+  "$[].materials.supportsFinish": [
+   "boolean"
+  ],
+  "$[].materials.supportsMetallic": [
+   "boolean"
+  ],
+  "$[].materials.supportsPattern": [
+   "boolean"
+  ],
+  "$[].materials.supportsTransparency": [
+   "boolean"
+  ],
+  "$[].mesh": [
+   "string"
+  ],
+  "$[].name": [
+   "string"
+  ],
+  "$[].optIn": [
+   "boolean"
+  ],
+  "$[].requiresAdult": [
+   "boolean"
+  ],
+  "$[].schemaVersion": [
+   "number"
+  ],
+  "$[].silhouette": [
+   "string"
+  ],
+  "$[].sleeve": [
+   "string"
+  ],
+  "$[].tags": [
+   "array"
+  ],
+  "$[].tags[]": [
+   "string"
+  ]
+ },
+ "/v1/vocabulary": {
+  "$": [
+   "object"
+  ],
+  "$.collections": [
+   "array"
+  ],
+  "$.collections[]": [
+   "object"
+  ],
+  "$.collections[].bootMaterials": [
+   "array"
+  ],
+  "$.collections[].bootMaterials[]": [
+   "object"
+  ],
+  "$.collections[].bootMaterials[].id": [
+   "string"
+  ],
+  "$.collections[].bootMaterials[].title": [
+   "string"
+  ],
+  "$.collections[].bootMaterials[].words": [
+   "string"
+  ],
+  "$.collections[].boots": [
+   "array"
+  ],
+  "$.collections[].boots[]": [
+   "object"
+  ],
+  "$.collections[].boots[].heelNouns": [
+   "object"
+  ],
+  "$.collections[].boots[].heelNouns.block": [
+   "string"
+  ],
+  "$.collections[].boots[].heelNouns.stiletto": [
+   "string"
+  ],
+  "$.collections[].boots[].heels": [
+   "array"
+  ],
+  "$.collections[].boots[].heels[]": [
+   "string"
+  ],
+  "$.collections[].boots[].id": [
+   "string"
+  ],
+  "$.collections[].boots[].letter": [
+   "string"
+  ],
+  "$.collections[].boots[].material": [
+   "string"
+  ],
+  "$.collections[].boots[].noun": [
+   "string"
+  ],
+  "$.collections[].boots[].points": [
+   "array"
+  ],
+  "$.collections[].boots[].points[]": [
+   "string"
+  ],
+  "$.collections[].boots[].prompt": [
+   "string"
+  ],
+  "$.collections[].boots[].templateId": [
+   "string"
+  ],
+  "$.collections[].boots[].title": [
+   "string"
+  ],
+  "$.collections[].colour": [
+   "string"
+  ],
+  "$.collections[].description": [
+   "string"
+  ],
+  "$.collections[].dress": [
+   "object"
+  ],
+  "$.collections[].dress.defaults": [
+   "object"
+  ],
+  "$.collections[].dress.defaults.back": [
+   "string"
+  ],
+  "$.collections[].dress.defaults.material": [
+   "string"
+  ],
+  "$.collections[].dress.defaults.neckline": [
+   "string"
+  ],
+  "$.collections[].dress.defaults.straps": [
+   "string"
+  ],
+  "$.collections[].dress.noun": [
+   "string"
+  ],
+  "$.collections[].dress.options": [
+   "object"
+  ],
+  "$.collections[].dress.options.back": [
+   "array"
+  ],
+  "$.collections[].dress.options.back[]": [
+   "object"
+  ],
+  "$.collections[].dress.options.back[].id": [
+   "string"
+  ],
+  "$.collections[].dress.options.back[].title": [
+   "string"
+  ],
+  "$.collections[].dress.options.back[].words": [
+   "string"
+  ],
+  "$.collections[].dress.options.material": [
+   "array"
+  ],
+  "$.collections[].dress.options.material[]": [
+   "object"
+  ],
+  "$.collections[].dress.options.material[].id": [
+   "string"
+  ],
+  "$.collections[].dress.options.material[].title": [
+   "string"
+  ],
+  "$.collections[].dress.options.material[].words": [
+   "string"
+  ],
+  "$.collections[].dress.options.neckline": [
+   "array"
+  ],
+  "$.collections[].dress.options.neckline[]": [
+   "object"
+  ],
+  "$.collections[].dress.options.neckline[].id": [
+   "string"
+  ],
+  "$.collections[].dress.options.neckline[].title": [
+   "string"
+  ],
+  "$.collections[].dress.options.neckline[].words": [
+   "string"
+  ],
+  "$.collections[].dress.options.straps": [
+   "array"
+  ],
+  "$.collections[].dress.options.straps[]": [
+   "object"
+  ],
+  "$.collections[].dress.options.straps[].id": [
+   "string"
+  ],
+  "$.collections[].dress.options.straps[].title": [
+   "string"
+  ],
+  "$.collections[].dress.options.straps[].words": [
+   "string"
+  ],
+  "$.collections[].dress.prompt": [
+   "string"
+  ],
+  "$.collections[].dress.templateId": [
+   "string"
+  ],
+  "$.collections[].id": [
+   "string"
+  ],
+  "$.collections[].presets": [
+   "array"
+  ],
+  "$.collections[].presets[]": [
+   "object"
+  ],
+  "$.collections[].presets[].boot": [
+   "string"
+  ],
+  "$.collections[].presets[].dress": [
+   "object"
+  ],
+  "$.collections[].presets[].dress.material": [
+   "string"
+  ],
+  "$.collections[].presets[].dress.neckline": [
+   "string"
+  ],
+  "$.collections[].presets[].dress.straps": [
+   "string"
+  ],
+  "$.collections[].presets[].id": [
+   "string"
+  ],
+  "$.collections[].presets[].prompt": [
+   "string"
+  ],
+  "$.collections[].presets[].title": [
+   "string"
+  ],
+  "$.collections[].subtitle": [
+   "string"
+  ],
+  "$.collections[].title": [
+   "string"
+  ],
+  "$.hosiery": [
+   "object"
+  ],
+  "$.hosiery.beltMaterials": [
+   "array"
+  ],
+  "$.hosiery.beltMaterials[]": [
+   "string"
+  ],
+  "$.hosiery.beltStyles": [
+   "array"
+  ],
+  "$.hosiery.beltStyles[]": [
+   "string"
+  ],
+  "$.hosiery.deniers": [
+   "array"
+  ],
+  "$.hosiery.deniers[]": [
+   "number"
+  ],
+  "$.hosiery.hardwareColors": [
+   "array"
+  ],
+  "$.hosiery.hardwareColors[]": [
+   "string"
+  ],
+  "$.hosiery.presets": [
+   "array"
+  ],
+  "$.hosiery.presets[]": [
+   "object"
+  ],
+  "$.hosiery.presets[].hosiery": [
+   "object"
+  ],
+  "$.hosiery.presets[].hosiery.backSeam": [
+   "object"
+  ],
+  "$.hosiery.presets[].hosiery.backSeam.enabled": [
+   "boolean"
+  ],
+  "$.hosiery.presets[].hosiery.color": [
+   "string"
+  ],
+  "$.hosiery.presets[].hosiery.denier": [
+   "number"
+  ],
+  "$.hosiery.presets[].hosiery.rolledEdge": [
+   "boolean"
+  ],
+  "$.hosiery.presets[].hosiery.topStyle": [
+   "string"
+  ],
+  "$.hosiery.presets[].hosiery.type": [
+   "string"
+  ],
+  "$.hosiery.presets[].id": [
+   "string"
+  ],
+  "$.hosiery.presets[].prompt": [
+   "string"
+  ],
+  "$.hosiery.presets[].reveal": [
+   "object"
+  ],
+  "$.hosiery.presets[].reveal.level": [
+   "string"
+  ],
+  "$.hosiery.presets[].suspenderBelt": [
+   "object"
+  ],
+  "$.hosiery.presets[].suspenderBelt.color": [
+   "string"
+  ],
+  "$.hosiery.presets[].suspenderBelt.hardware": [
+   "object"
+  ],
+  "$.hosiery.presets[].suspenderBelt.hardware.color": [
+   "string"
+  ],
+  "$.hosiery.presets[].suspenderBelt.strapCount": [
+   "number"
+  ],
+  "$.hosiery.presets[].suspenderBelt.style": [
+   "string"
+  ],
+  "$.hosiery.presets[].suspenderBelt.visibility": [
+   "string"
+  ],
+  "$.hosiery.presets[].title": [
+   "string"
+  ],
+  "$.hosiery.revealLevels": [
+   "array"
+  ],
+  "$.hosiery.revealLevels[]": [
+   "string"
+  ],
+  "$.hosiery.strapCounts": [
+   "array"
+  ],
+  "$.hosiery.strapCounts[]": [
+   "number"
+  ],
+  "$.hosiery.topStyles": [
+   "array"
+  ],
+  "$.hosiery.topStyles[]": [
+   "string"
+  ],
+  "$.hosiery.types": [
+   "array"
+  ],
+  "$.hosiery.types[]": [
+   "string"
+  ],
+  "$.hosiery.visibility": [
+   "array"
+  ],
+  "$.hosiery.visibility[]": [
+   "string"
+  ],
+  "$.intimateCategories": [
+   "array"
+  ],
+  "$.intimateCategories[]": [
+   "string"
+  ],
+  "$.jobStates": [
+   "array"
+  ],
+  "$.jobStates[]": [
+   "string"
+  ],
+  "$.lookPresets": [
+   "object"
+  ],
+  "$.lookPresets.presets": [
+   "array"
+  ],
+  "$.lookPresets.presets[]": [
+   "object"
+  ],
+  "$.lookPresets.presets[].collection": [
+   "string"
+  ],
+  "$.lookPresets.presets[].id": [
+   "string"
+  ],
+  "$.lookPresets.presets[].lingerieSet": [
+   "object"
+  ],
+  "$.lookPresets.presets[].lingerieSet.bottomStyle": [
+   "string"
+  ],
+  "$.lookPresets.presets[].lingerieSet.collection": [
+   "string"
+  ],
+  "$.lookPresets.presets[].prompt": [
+   "string"
+  ],
+  "$.lookPresets.presets[].title": [
+   "string"
+  ],
+  "$.lookPresets.presets[].visibleThong": [
+   "object"
+  ],
+  "$.lookPresets.presets[].visibleThong.style": [
+   "string"
+  ],
+  "$.lookPresets.visibleThongStyles": [
+   "array"
+  ],
+  "$.lookPresets.visibleThongStyles[]": [
+   "string"
+  ],
+  "$.overrides": [
+   "object"
+  ],
+  "$.overrides.category": [
+   "array"
+  ],
+  "$.overrides.category[]": [
+   "string"
+  ],
+  "$.overrides.color": [
+   "array"
+  ],
+  "$.overrides.color[]": [
+   "object"
+  ],
+  "$.overrides.color[].hex": [
+   "string"
+  ],
+  "$.overrides.color[].name": [
+   "string"
+  ],
+  "$.overrides.coverage": [
+   "array"
+  ],
+  "$.overrides.coverage[]": [
+   "string"
+  ],
+  "$.overrides.finish": [
+   "array"
+  ],
+  "$.overrides.finish[]": [
+   "string"
+  ],
+  "$.overrides.hem": [
+   "array"
+  ],
+  "$.overrides.hem[]": [
+   "string"
+  ],
+  "$.overrides.neckline": [
+   "array"
+  ],
+  "$.overrides.neckline[]": [
+   "string"
+  ],
+  "$.overrides.opacity": [
+   "array"
+  ],
+  "$.overrides.opacity[]": [
+   "object"
+  ],
+  "$.overrides.opacity[].name": [
+   "string"
+  ],
+  "$.overrides.opacity[].value": [
+   "number"
+  ],
+  "$.overrides.pattern": [
+   "array"
+  ],
+  "$.overrides.pattern[]": [
+   "string"
+  ],
+  "$.overrides.silhouette": [
+   "array"
+  ],
+  "$.overrides.silhouette[]": [
+   "string"
+  ],
+  "$.overrides.straps": [
+   "array"
+  ],
+  "$.overrides.straps[]": [
+   "string"
+  ],
+  "$.promptWords": [
+   "object"
+  ],
+  "$.promptWords.cut": [
+   "array"
+  ],
+  "$.promptWords.cut[]": [
+   "string"
+  ],
+  "$.promptWords.fabric": [
+   "array"
+  ],
+  "$.promptWords.fabric[]": [
+   "string"
+  ],
+  "$.promptWords.sleeve": [
+   "object"
+  ],
+  "$.promptWords.sleeve.long": [
+   "string"
+  ],
+  "$.promptWords.sleeve.none": [
+   "string"
+  ],
+  "$.promptWords.sleeve.short": [
+   "string"
+  ],
+  "$.seeThroughPatterns": [
+   "array"
+  ],
+  "$.seeThroughPatterns[]": [
+   "string"
+  ],
+  "$.terminalStates": [
+   "array"
+  ],
+  "$.terminalStates[]": [
+   "string"
+  ]
+ }
+}
