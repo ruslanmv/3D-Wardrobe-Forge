@@ -215,6 +215,19 @@ def distance_to_segments(points: np.ndarray, segments: list[BoneSegment]) -> np.
 ARM_BONES = frozenset(
     {"leftUpperArm", "rightUpperArm", "leftLowerArm", "rightLowerArm", "leftHand", "rightHand"}
 )
+#: A skirt is one sheet. These bones pull the two sides of that sheet apart.
+LEG_BONES = frozenset(
+    {
+        "leftUpperLeg",
+        "rightUpperLeg",
+        "leftLowerLeg",
+        "rightLowerLeg",
+        "leftFoot",
+        "rightFoot",
+        "leftToes",
+        "rightToes",
+    }
+)
 
 
 def bind_mesh(
@@ -295,6 +308,58 @@ def bind_mesh(
     return mesh
 
 
+def hang_from_pelvis(mesh: Mesh, segments: list[BoneSegment], *, hip_y: float) -> None:
+    """A dress or skirt below the hip joint hangs from the pelvis.
+
+    The hips region binds to the thighs as well, and the hem is nearer those
+    bones than the pelvis. Sitting (Wide) then asks one sheet to follow both
+    legs: a 15 mm edge at the crotch of a bodycon became 66 mm, a triangle
+    between the thighs. Vertices below the hip joint give that leg weight to
+    the hips. The bodice, above the joint, is left as it was bound. Briefs and
+    leggings are not passed here; they have to move with the thigh they cover.
+    """
+    if mesh.joints is None or mesh.weights is None or not segments:
+        return
+    hips = next((i for i, segment in enumerate(segments) if segment.name == "hips"), None)
+    if hips is None:
+        return
+    legs = {i for i, segment in enumerate(segments) if segment.name in LEG_BONES}
+    if not legs:
+        return
+    below = mesh.positions[:, 1] < hip_y
+    if not below.any():
+        return
+    joints = mesh.joints.astype(np.int64, copy=True)
+    weights = mesh.weights.astype(np.float64, copy=True)
+    for vertex in np.flatnonzero(below):
+        moved = 0.0
+        for slot in range(joints.shape[1]):
+            if int(joints[vertex, slot]) in legs and weights[vertex, slot] > 0.0:
+                moved += float(weights[vertex, slot])
+                weights[vertex, slot] = 0.0
+        if moved <= 1e-8:
+            continue
+        placed = False
+        for slot in range(joints.shape[1]):
+            if int(joints[vertex, slot]) == hips:
+                weights[vertex, slot] += moved
+                placed = True
+                break
+        if not placed:
+            for slot in range(joints.shape[1]):
+                if weights[vertex, slot] <= 1e-8:
+                    joints[vertex, slot] = hips
+                    weights[vertex, slot] = moved
+                    placed = True
+                    break
+        total = float(weights[vertex].sum())
+        if total > 1e-8:
+            weights[vertex] /= total
+    mesh.joints = joints.astype(mesh.joints.dtype)
+    mesh.weights = weights.astype(np.float32)
+    mesh.weights[:, 0] += (1.0 - mesh.weights.sum(axis=1)).astype(np.float32)
+
+
 def weight_report(mesh: Mesh, segments: list[BoneSegment]) -> dict:
     """Summary used by the fit report and by CI acceptance checks."""
     if mesh.weights is None or mesh.joints is None:
@@ -328,5 +393,6 @@ __all__ = [
     "bones_for_coverage",
     "build_bone_segments",
     "bind_mesh",
+    "hang_from_pelvis",
     "weight_report",
 ]

@@ -35,7 +35,13 @@ from wardrobe.pipeline.context import BuiltLayer, PipelineContext
 from wardrobe.vrm.garments import garment_material_name, garment_slot
 from wardrobe.vrm.inspect import VrmSpec
 from wardrobe.vrm.merge import GarmentMaterial, attach_garment, set_title, tag_derived
-from wardrobe.vrm.skinning import bind_mesh, bones_for_coverage, build_bone_segments, weight_report
+from wardrobe.vrm.skinning import (
+    bind_mesh,
+    bones_for_coverage,
+    build_bone_segments,
+    hang_from_pelvis,
+    weight_report,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +155,12 @@ class NativeEngine(FittingEngine):
                              forward=-1.0 if context.info.spec is VrmSpec.VRM0 else 1.0,
                              axis_z=float(hip[2]) if hip is not None else 0.0,
                              whole=second_skin)
+        if kind in {"dress", "skirt"} and not second_skin and mesh.joints is not None:
+            # One sheet across both legs. Thigh weights turn the crotch into
+            # triangles when she sits wide; the hem hangs from the pelvis instead.
+            hip = context.measurements.bone_positions.get("hips") if context.measurements else None
+            if hip is not None:
+                hang_from_pelvis(mesh, segments, hip_y=float(hip[1]))
         hosiery_fit.after_bind(context, mesh, segments)
 
         issues = mesh.validate()
