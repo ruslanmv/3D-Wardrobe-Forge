@@ -125,7 +125,9 @@ def validate_adult(profile: str, adult_root: Path) -> int:
     missing = [t.id for t in templates if t.id not in reported]
     if missing:
         raise SystemExit(f"incomplete {profile} run, never attempted: {', '.join(missing)}")
-    stray = sorted(p.stem for p in previews.glob("*.webp") if p.stem not in {t.id for t in templates})
+    # PR1. A product view beside the thumbnail is named {id}--{view}.webp; it belongs to its template.
+    ids = {t.id for t in templates}
+    stray = sorted(p.stem for p in previews.glob("*.webp") if p.stem.split("--")[0] not in ids)
     if stray:
         raise SystemExit(f"Previews outside the {profile} category in the adult folder: {', '.join(stray)}")
     canvas = tuple(report["canvas"])

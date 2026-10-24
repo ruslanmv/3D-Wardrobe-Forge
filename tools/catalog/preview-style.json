@@ -111,6 +111,10 @@
         ],
         "why": "Bottoms are framed on her hips, waist to upper thigh, the usual product crop for a brief: the piece fills the picture and the bra above it is out of frame. Belts and stockings are framed low enough to show the stocking tops.",
         "match": {
+          "chemise": [
+            0.2,
+            0.88
+          ],
           "guepiere|waspie|suspender|garter": [
             0.22,
             0.86
@@ -127,6 +131,10 @@
       },
       "colors": {
         "rules": [
+          {
+            "match": "chemise",
+            "color": "wine"
+          },
           {
             "match": "vday-halter-plunge",
             "color": "crimson"
@@ -176,6 +184,10 @@
       "styling": {
         "why": "The Valentine's capsule (templates whose id has vday) is shown in the fabric it is sold in: lace for bras and briefs, satin for one-pieces. Words the planner reads (FABRICS); no texture is added that Forge does not build.",
         "rules": [
+          {
+            "match": "chemise",
+            "fabric": "satin"
+          },
           {
             "match": "vday-.*bodysuit",
             "fabric": "satin"
