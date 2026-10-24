@@ -139,6 +139,84 @@ def _segment_of(bone: str, segments: list[BoneSegment], humanoid: dict[str, int]
     return -1
 
 
+#: PF2. How far a second-skin garment's weights are spread over its own surface below her hips.
+#: 3 cm took a seated brief to 1.44x, but the further a vertex's weights are from the skin
+#: under it, the more it lags her when she moves: striding, briefs went 0.58 mm into the median
+#: reference body (tests/integration/test_second_skin_binding.py). 2 cm keeps that at zero and
+#: still halves the seated stretch (docs/POSE_CONTACT_QA.md).
+SMOOTH_RADIUS_M = 0.02
+#: PF2. Below the hip bone, the band of her thighs the smoothing reaches: in full to the first
+#: depth (just under her crotch), fading out by the second, well above her knee.
+SMOOTH_FULL_BELOW_M = 0.14
+SMOOTH_FADE_BELOW_M = 0.22
+#: Positions this close are one vertex for the smoothing: a seam's two copies move together.
+WELD_M = 1e-4
+
+
+def _neighbours(mesh: Mesh) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """(welded id per vertex, edge list between welded ids, median edge length)."""
+    keys = np.round(mesh.positions.astype(np.float64) / WELD_M).astype(np.int64)
+    _, welded = np.unique(keys, axis=0, return_inverse=True)
+    welded = welded.reshape(-1)
+    tris = mesh.indices.reshape(-1, 3).astype(np.int64)
+    edges = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    lengths = np.linalg.norm(mesh.positions[edges[:, 0]] - mesh.positions[edges[:, 1]], axis=1)
+    edges = welded[edges]
+    edges = edges[edges[:, 0] != edges[:, 1]]
+    edges = np.unique(np.sort(edges, axis=1), axis=0)
+    median = float(np.median(lengths[lengths > 0])) if (lengths > 0).any() else SMOOTH_RADIUS_M
+    return welded, edges, median
+
+
+def smooth_below_hips(mesh: Mesh, dense: np.ndarray, *, hip_y: float) -> np.ndarray:
+    """PF2. ``dense`` (vertex x segment) diffused over the garment's own surface below her hips.
+
+    A second-skin garment copies the weights of the skin nearest each vertex, and between her
+    legs and round her seat the nearest skin changes owner abruptly: one vertex of a brief's
+    leg opening had 0.62 of its weight on her thigh and its neighbour 0.33, and at the crotch
+    of leggings one had 0.46 and the next 0.06 (its nearest skin was her pelvis). Weights that
+    step like that are fine standing; at 90 degrees of hip flexion the step becomes a gap, and
+    those single edges were the 4x (briefs) and 9x (leggings, a bodycon's lap) of the pose
+    contact baseline (docs/POSE_CONTACT_QA.md).
+
+    Diffusing the weights over the garment's surface turns each step into a slope a few
+    centimetres wide, which the fabric takes as an even stretch instead of a tear. Only below
+    the top of her hip band and above mid-thigh, where the legs part from the pelvis: above it
+    her skin's weights are already smooth, and lower down a leg tube's knee must keep her
+    skin's weights exactly (spread across the knee, leggings sank 20 mm into it kneeling
+    instead of 13). Vertices a seam duplicates are welded first, so
+    the two sides of a seam smooth as one. A leg tube's weights are uniform along it, so
+    diffusion leaves them where they were; what moves is the step, not the field.
+    """
+    welded, edges, edge = _neighbours(mesh)
+    count = int(welded.max()) + 1 if welded.size else 0
+    if count == 0 or edges.size == 0:
+        return dense
+    field = np.zeros((count, dense.shape[1]))
+    np.add.at(field, welded, dense)
+    copies = np.bincount(welded, minlength=count).astype(np.float64)
+    field /= copies[:, None]
+    height = np.full(count, np.inf)
+    np.minimum.at(height, welded, mesh.positions[:, 1].astype(np.float64))
+    fade = np.clip((height - (hip_y - SMOOTH_FADE_BELOW_M)) / (SMOOTH_FADE_BELOW_M - SMOOTH_FULL_BELOW_M),
+                   0.0, 1.0)
+    rate = 0.5 * fade * fade * (3 - 2 * fade) * (height < hip_y + HIP_BAND_M)
+    free = rate > 0
+    if not free.any():
+        return dense
+    rate = rate[free][:, None]
+    degree = np.bincount(edges.ravel(), minlength=count).astype(np.float64)
+    # Explicit diffusion at half-step: after n rounds a step is spread over about edge * sqrt(n).
+    rounds = int(np.clip((SMOOTH_RADIUS_M / max(edge, 1e-4)) ** 2, 1, 400))
+    for _ in range(rounds):
+        total = np.zeros_like(field)
+        np.add.at(total, edges[:, 0], field[edges[:, 1]])
+        np.add.at(total, edges[:, 1], field[edges[:, 0]])
+        mean = total / np.maximum(degree, 1.0)[:, None]
+        field[free] = (1.0 - rate) * field[free] + rate * mean[free]
+    return field[welded]
+
+
 def transfer_weights(mesh: Mesh, segments: list[BoneSegment], document: GltfDocument,
                      humanoid: dict[str, int], *, hip_y: float, forward: float = 1.0,
                      axis_z: float = 0.0, whole: bool = False) -> bool:
@@ -194,7 +272,9 @@ def transfer_weights(mesh: Mesh, segments: list[BoneSegment], document: GltfDocu
         share = np.where(sleeve, share * u * u * (3 - 2 * u), share)
     share = share[:, None]
     dense = transferred * share + bound * (1.0 - share)
-    legs = np.array([("UpperLeg" in s_.name or "LowerLeg" in s_.name) for s_ in segments])
+    if whole and mesh.indices is not None and mesh.indices.size:
+        dense = smooth_below_hips(mesh, dense, hip_y=hip_y)
+    legs =np.array([("UpperLeg" in s_.name or "LowerLeg" in s_.name) for s_ in segments])
     hips = next((i for i, s_ in enumerate(segments) if s_.name == "hips"), None)
     if legs.any() and hips is not None:
         behind = np.clip(((axis_z - points[:, 2]) * forward + 0.03) / 0.06, 0.0, 1.0)

@@ -108,17 +108,49 @@ VRoid Female, Sitting (Wide), from this branch:
 | Black Tailored Bodysuit | her skin           | 3.02%  | 16.3 mm | 2.57×       |
 | Black Thigh-High Stockings | hosiery         | 8.58%  | 21.7 mm | 2.44×       |
 
-Known defects these numbers point at, not yet fixed:
+Known defects these numbers pointed at:
 
-1. **Briefs tear at the gusset when she sits wide.** Each garment vertex takes the
-   weights of its six nearest skin vertices; between her legs those are a mix of left-
-   and right-thigh skin, so neighbouring gusset vertices follow opposite thighs and pull
-   apart. The stretch map shows it on the gusset and the leg-opening edges; the same
-   cause opens a split in a skin-bound dress's lap. The fix to try: across a band at her
-   midline, blend the thigh weights by distance from it instead of copying the nearest.
+1. **Briefs tear at the gusset when she sits wide — reduced by PF2, see below.** The
+   first diagnosis (neighbouring gusset vertices following opposite thighs) was only part
+   of it: of the 200 worst-stretched edges, few flip sides. Most join a vertex with a lot
+   of thigh weight to one with little, because its nearest skin was her pelvis (leggings'
+   crotch: 0.46 against 0.06; a brief's leg opening: 0.62 against 0.33).
 2. **10–17 mm inside at the seat and thigh creases** for every second-skin bottom when
    seated: linear blend skinning at 90° hip flexion. Needs a posed correction pass
    (push garment vertices out of the posed body once per pose change), not a weight
    change; narrowing the transfer to one skin vertex was tried and stretched more.
 3. **Stockings sink up to 54 mm into her thighs** with legs crossed: a hosiery binding
    problem of its own.
+
+## PF2: second-skin weights smoothed between her legs, 2026-10-24
+
+`wardrobe/vrm/weight_transfer.py: smooth_below_hips`. A second-skin garment (`whole`)
+copies the weights of the skin nearest each vertex, and between her legs and round her
+seat the nearest skin changes owner abruptly. The weights are now diffused over the
+garment's own surface, seams welded, from the top of her hip band down to 14 cm below
+her hip bone, fading out by 22 cm (well above her knee). A step becomes a slope about
+2 cm wide.
+
+Five looks on VRoid Female, fitted with `tools/inspect/fit_look.py`, before (PS3) and
+after; deepest point and maximum edge stretch:
+
+| Garment                    | Sitting (Wide) before | after          | Sitting (Crossed) before | after          |
+| -------------------------- | --------------------- | -------------- | ------------------------ | -------------- |
+| Beige Tailored Briefs      | 14.3 mm, 2.37×        | 14.3 mm, 1.68× | 11.7 mm, 3.33×           | 11.4 mm, 2.06× |
+| Black Micro Tailored Thong | 4.0 mm, 2.02×         | 5.1 mm, 1.34×  | 6.7 mm, 3.21×            | 4.1 mm, 1.70×  |
+| Black Tailored Bodysuit    | 16.3 mm, 2.57×        | 16.0 mm, 1.68× | 12.0 mm, 4.08×           | 10.2 mm, 2.57× |
+| Red Bodycon Mini Dress     | 22.3 mm, 3.92×        | 23.0 mm, 2.32× | 16.5 mm, 5.66×           | 17.0 mm, 3.48× |
+| Black Leggings             | 16.9 mm, 7.11×        | 16.8 mm, 5.07× | 13.1 mm, 9.38×           | 16.0 mm, 6.80× |
+
+Kneeling is unchanged (leggings 13.3 mm, briefs 5.7 mm). Standing is unchanged.
+
+**The radius is a trade.** At 3 cm the seated brief reached 1.44×, but a vertex whose
+weights are further from the skin under it lags her when she moves: striding, briefs went
+0.58 mm into the median reference body, which `test_second_skin_binding.py` rightly
+forbids. At 2 cm that is zero again. Reaching wider across the knee was worse still:
+leggings sank 20 mm into the knee kneeling, which is why the smoothing fades out above it.
+
+**What is left.** Leggings still stretch 5–7× at the crotch point, where her thighs
+cross under a single vertex: no choice of weights lets one point follow two thighs that
+move apart. That, and the 10–17 mm at the seat creases, need the posed correction pass
+(defect 2), not skinning weights.
