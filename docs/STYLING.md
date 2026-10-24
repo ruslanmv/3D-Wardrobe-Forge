@@ -197,6 +197,11 @@ asking for a colour keeps a worn foundation only if it is in that colour:
 
 Without `foundationColor` nothing is tagged and every job plans exactly as before.
 
+**Strapless over strapless (FC3).** When the outfit has a strapless garment over her
+upper body (`style.straps: "none"` — a strapless bodycon, a bandeau top), the upper
+half is the seamless tube top on any avatar: a full-cup bra's straps showed on her
+shoulders above a strapless dress.
+
 **Only the colour, on the look she has on (FC2).** A job with no `outfit`, a
 `baseLookId` and `options.foundationColor` recolours the foundation of that look
 and changes nothing else: the look is carried over as a tattoo-only job carries it,

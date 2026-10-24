@@ -219,6 +219,11 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
     if kinds & NEXT_TO_SKIN_UPPER:
         needed -= {"upper"}
     halves = dict(NEUTRAL_HALF if depicts_adult else GENERAL_FOUNDATION)
+    # FC3. Under a strapless outfit, a strapless foundation: the full-cup bra's straps showed on
+    # her shoulders above a strapless bodycon. The seamless tube top is strapless and is already
+    # every other avatar's upper half.
+    if _strapless(outfit_plan.garments):
+        halves["upper"] = GENERAL_FOUNDATION["upper"]
     # CR1. Never higher than the outfit's own waistband: under a low-rise skirt or low-rise jeans
     # slip shorts at their usual rise showed as a beige band across the bare waist the look is for.
     # A step below it, not at it: "low" is drawn a little differently by each garment, and slip
@@ -243,6 +248,12 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
         else:
             rest.append(garment)
     return stacked.model_copy(update={"layers": [*base, *rest], "name": outfit_plan.name}), prompts
+
+
+def _strapless(garments) -> bool:
+    """FC3. Whether the outfit has a strapless garment over her upper body (``straps: none``)."""
+    return any(getattr(g.style, "straps", "") == "none" and g.role not in ("foundation",)
+               and g.category in ("top", "dress", "one-piece", "jumpsuit") for g in garments)
 
 
 #: Rises lower than a garment's ordinary waist, lowest first, as the planner names them.

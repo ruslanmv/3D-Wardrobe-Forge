@@ -75,3 +75,19 @@ async def test_the_same_colour_is_kept_and_another_replaces_it(orchestrator, sto
 async def test_without_a_colour_nothing_is_tagged(orchestrator, store, body):  # noqa: F811
     _, look = await dress(orchestrator, store, body, OUTFIT, ensureFoundation=True)
     assert {colour for colour, _ in colours(look).values()} == {None}
+
+
+def test_a_strapless_outfit_gets_a_strapless_foundation_on_any_avatar(template_catalog):
+    """FC3. The full-cup bra's straps showed on her shoulders above a strapless bodycon."""
+    from wardrobe.domain.looks import OutfitRequest
+    from wardrobe.pipeline.generate_garment import ensure_foundation
+    from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
+
+    for prompt, upper in (
+        ("black strapless bodycon mini dress", "white seamless tube top"),
+        ("black bodycon mini dress", "white seamless full-cup bra"),
+    ):
+        request = OutfitRequest(prompt=prompt)
+        plan = plan_outfit_stack(request, template_catalog)
+        _, added = ensure_foundation(plan, request, template_catalog, [], depicts_adult=True, color="white")
+        assert added[0] == upper, (prompt, added)
