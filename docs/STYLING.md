@@ -197,6 +197,22 @@ asking for a colour keeps a worn foundation only if it is in that colour:
 
 Without `foundationColor` nothing is tagged and every job plans exactly as before.
 
+**Only the colour, on the look she has on (FC2).** A job with no `outfit`, a
+`baseLookId` and `options.foundationColor` recolours the foundation of that look
+and changes nothing else: the look is carried over as a tattoo-only job carries it,
+and each material on a garment tagged `role: foundation` has its colour rewritten
+(`baseColorFactor`, and the toon shade in VRM 1.0's MToon or VRM 0.x's
+`_Color`/`_ShadeColor`), keeping its alpha, finish and shade ratio. Every buffer
+byte, mesh and other material — the dress's, the boots' — is the base look's. A
+trim keeps its own colour. Refused with `foundation_not_recoloured` and the reason
+when the look has no Forge foundation, when its colour is in a pattern's texture,
+or when it is already that colour.
+
+```json
+POST /v1/library/fem-vroid/jobs
+{"baseLookId": "look_…", "options": {"foundationColor": "black"}}
+```
+
 **A top that is really a dress.** VRM has no clothing slots. VRoid files Model
 Girl's flared dress as `Tops`. A VRoid `Tops` whose *visible* hem reaches 45% of
 the way from her hip joint to her knee is read as covering her lower half too

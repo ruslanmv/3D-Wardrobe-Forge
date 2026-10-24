@@ -50,6 +50,7 @@ from wardrobe.pipeline import (
     generate_garment,
     prepare_base_body,
     prepare_body_surface,
+    recolour_foundation,
     render_preview,
     set_stance,
     validate_output,
@@ -179,6 +180,7 @@ class Orchestrator:
             await analyze_avatar.run(context)
             if record.request.body_art_only:
                 await carry_look.run(context)  # BA6: the look's clothes, untouched
+                await recolour_foundation.run(context)  # FC2: only when foundationColor is asked
             else:
                 await generate_garment.plan(context)
                 engine = self._engine_for_outfit(engine, context)
@@ -231,7 +233,7 @@ class Orchestrator:
         """
         added = any(o.applied and not o.inherited for o in context.body_art)
         asked = set(context.record.request.body_art_remove)
-        if added or asked & set(context.body_art_removed):
+        if added or asked & set(context.body_art_removed) or context.foundation_recoloured:
             return
         refused = [o.sentence for o in context.body_art if not o.inherited and not o.applied]
         if asked and not refused:
@@ -321,7 +323,7 @@ class Orchestrator:
                 for o in context.body_art if o.applied]
         if worn:
             described["bodyArt"] = worn
-        if record.request.body_art_only:
+        if record.request.body_art_only and (record.request.body_art or record.request.body_art_remove):
             name = _tattooed_name(name, context)
         await self.store.put(
             context.key("look.json"),

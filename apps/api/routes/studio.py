@@ -251,7 +251,7 @@ class LibraryJobRequest(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    #: BA6. Absent only for a tattoo-only job, which must name the look it decorates.
+    #: BA6. Absent only for a tattoo-only or (FC2) foundation-recolour job, which names its look.
     outfit: OutfitRequest | None = None
     options: JobOptions = Field(default_factory=JobOptions)
     #: Build on a look already in this avatar's wardrobe — a top onto a skirt is a set.
@@ -266,10 +266,13 @@ class LibraryJobRequest(BaseModel):
         # validation error would be a 500 rather than the 422 it is.
         check_items(self.body_art, self.body_art_remove)
         if self.outfit is None:
-            if not (self.body_art or self.body_art_remove):
-                raise ValueError("outfit is required unless the job only adds or removes body art")
+            if not (self.body_art or self.body_art_remove or self.options.foundation_color):
+                raise ValueError(
+                    "outfit is required unless the job only adds or removes body art, or recolours "
+                    "her foundation (options.foundationColor)"
+                )
             if not self.base_look_id:
-                raise ValueError("a tattoo-only job names the finished look it goes on (baseLookId)")
+                raise ValueError("a job without an outfit names the finished look it changes (baseLookId)")
         return self
 
 

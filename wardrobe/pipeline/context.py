@@ -72,6 +72,8 @@ class PipelineContext:
     #: tagged on those garments so the next job keeps them, or replaces them in another colour.
     foundation_color: str | None = None
     foundation_templates: set[str] = field(default_factory=set)
+    #: FC2. A recolour-only job changed her foundation's colour on the carried-over look.
+    foundation_recoloured: bool = False
     #: Surface points of the layers already fitted: what the next layer must clear.
     collision_points: np.ndarray | None = None
 

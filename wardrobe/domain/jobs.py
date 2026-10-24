@@ -77,6 +77,9 @@ class FailureReason(StrEnum):
     BODY_ART_NEEDS_LOOK = "body_art_needs_a_finished_look"
     #: BA6. A tattoo-only job that changed nothing: every tattoo it asked for was refused.
     BODY_ART_NOT_APPLIED = "body_art_not_applied"
+    #: FC2. A recolour-only job that could not recolour: no Forge foundation on the look, a
+    #: patterned one, or one already in that colour.
+    FOUNDATION_NOT_RECOLOURED = "foundation_not_recoloured"
     #: BS1. A body-surface profile the server does not have (or could not verify).
     BODY_SURFACE_UNAVAILABLE = "body_surface_profile_unavailable"
     #: BS1. An adult body-surface profile refused: model terms, operator switch or declaration.
@@ -177,14 +180,27 @@ class CreateJobRequest(BaseModel):
     @model_validator(mode="after")
     def _body_art_list(self) -> CreateJobRequest:
         check_items(self.body_art, self.body_art_remove)
-        if self.outfit is None and not (self.body_art or self.body_art_remove):
-            raise ValueError("outfit is required: only a job that adds or removes body art may leave it out")
+        changes_a_look = self.body_art or self.body_art_remove or self.options.foundation_color
+        if self.outfit is None and not changes_a_look:
+            raise ValueError(
+                "outfit is required: only a job that adds or removes body art, or recolours her "
+                "foundation (options.foundationColor), may leave it out"
+            )
         return self
 
     @property
     def body_art_only(self) -> bool:
-        """BA6. Tattoos on a finished look, its clothes carried over untouched."""
+        """BA6. Tattoos on a finished look, its clothes carried over untouched.
+
+        FC2. Also a look whose foundation only changes colour: no outfit means the look's
+        clothes are carried over (``carry_look``), whatever the job then changes on them.
+        """
         return self.outfit is None
+
+    @property
+    def recolours_foundation(self) -> bool:
+        """FC2. A carried-over look whose foundation is rewritten in ``options.foundationColor``."""
+        return self.outfit is None and bool(self.options.foundation_color)
 
 
 class JobEvent(BaseModel):
@@ -284,6 +300,7 @@ _REJECTION_REASONS = frozenset(
         FailureReason.PAINTED_CLOTHING_SHOWS,
         FailureReason.BODY_ART_NEEDS_LOOK,
         FailureReason.BODY_ART_NOT_APPLIED,
+        FailureReason.FOUNDATION_NOT_RECOLOURED,
     }
 )
 
