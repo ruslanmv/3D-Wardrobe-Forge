@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "generatedAt": "2026-10-24T07:15:18+00:00",
+ "generatedAt": "2026-10-24T08:50:29+00:00",
  "avatar": "fem-vroid",
  "tolerances": {
   "coverage": 0.05,
@@ -84,18 +84,18 @@
     "lingerie: bodysuit.leg-positiveX.pressure.sit is 1.5598 kPa, expected 0.0\u20131.5 kPa"
    ],
    "fitted": {
-    "frontCoverage": 0.714,
-    "backCoverage": 0.647,
-    "sideHeightMm": 40.8,
-    "backWidthAboveSeamMm": 94.5,
-    "seamY": 0.8056
+    "frontCoverage": 0.751,
+    "backCoverage": 0.682,
+    "sideHeightMm": 44.0,
+    "backWidthAboveSeamMm": 108.7,
+    "seamY": 0.8156
    },
    "pattern": {
-    "frontCoverage": 0.709,
-    "backCoverage": 0.648,
-    "sideHeightMm": 40.8,
-    "backWidthAboveSeamMm": 90.0,
-    "seamY": 0.8056
+    "frontCoverage": 0.749,
+    "backCoverage": 0.683,
+    "sideHeightMm": 44.0,
+    "backWidthAboveSeamMm": 102.1,
+    "seamY": 0.8156
    },
    "geometrySha256": "71e7b9269f49a757fa3f0a9df8a9411afbd72ebd1c2b7575d6facc994a66f11a",
    "vertices": 2351,
@@ -209,36 +209,36 @@
     {
      "id": "fitted.sideHeightMm",
      "spec": 38.0,
-     "measured": 40.8,
+     "measured": 44.0,
      "tolerance": 9.5,
      "ok": true
     },
     {
      "id": "drift.frontCoverage",
-     "spec": 0.709,
-     "measured": 0.714,
+     "spec": 0.749,
+     "measured": 0.751,
      "tolerance": 0.05,
      "ok": true
     },
     {
      "id": "drift.backCoverage",
-     "spec": 0.648,
-     "measured": 0.647,
+     "spec": 0.683,
+     "measured": 0.682,
      "tolerance": 0.05,
      "ok": true
     },
     {
      "id": "drift.sideHeightMm",
-     "spec": 40.8,
-     "measured": 40.8,
-     "tolerance": 10.2,
+     "spec": 44.0,
+     "measured": 44.0,
+     "tolerance": 11.0,
      "ok": true
     },
     {
      "id": "drift.backWidthAboveSeamMm",
-     "spec": 90.0,
-     "measured": 94.5,
-     "tolerance": 22.5,
+     "spec": 102.1,
+     "measured": 108.7,
+     "tolerance": 25.5,
      "ok": true
     }
    ],
@@ -302,18 +302,18 @@
     "lingerie: brief.leg-positiveX.strain.stand is 0.1209, expected 0.03\u20130.12"
    ],
    "fitted": {
-    "frontCoverage": 0.954,
-    "backCoverage": 0.974,
-    "sideHeightMm": 135.4,
-    "backWidthAboveSeamMm": 261.6,
-    "seamY": 0.7756
+    "frontCoverage": 1.0,
+    "backCoverage": 1.0,
+    "sideHeightMm": 97.0,
+    "backWidthAboveSeamMm": 230.8,
+    "seamY": 0.8156
    },
    "pattern": {
-    "frontCoverage": 0.994,
-    "backCoverage": 0.993,
-    "sideHeightMm": 135.4,
-    "backWidthAboveSeamMm": 259.6,
-    "seamY": 0.7756
+    "frontCoverage": 1.0,
+    "backCoverage": 1.0,
+    "sideHeightMm": 97.0,
+    "backWidthAboveSeamMm": 216.9,
+    "seamY": 0.8156
    },
    "geometrySha256": "1d6366a608962a27f138f32bf1208ae48f43fcf99e87d0c9cb1e56d59fc0c5cb",
    "vertices": 959,
@@ -456,30 +456,30 @@
     },
     {
      "id": "drift.frontCoverage",
-     "spec": 0.994,
-     "measured": 0.954,
+     "spec": 1.0,
+     "measured": 1.0,
      "tolerance": 0.05,
      "ok": true
     },
     {
      "id": "drift.backCoverage",
-     "spec": 0.993,
-     "measured": 0.974,
+     "spec": 1.0,
+     "measured": 1.0,
      "tolerance": 0.05,
      "ok": true
     },
     {
      "id": "drift.sideHeightMm",
-     "spec": 135.4,
-     "measured": 135.4,
-     "tolerance": 33.9,
+     "spec": 97.0,
+     "measured": 97.0,
+     "tolerance": 24.2,
      "ok": true
     },
     {
      "id": "drift.backWidthAboveSeamMm",
-     "spec": 259.6,
-     "measured": 261.6,
-     "tolerance": 64.9,
+     "spec": 216.9,
+     "measured": 230.8,
+     "tolerance": 54.2,
      "ok": true
     }
    ],
@@ -532,11 +532,11 @@
     "lingerie: bra.underband.level is 12.5 mm, expected 0.0\u201310.0 mm"
    ],
    "fitted": {
-    "frontCoverage": 0.12,
-    "backCoverage": 0.09,
+    "frontCoverage": 0.124,
+    "backCoverage": 0.093,
     "sideHeightMm": 4.7,
     "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "seamY": 0.8156
    },
    "geometrySha256": "08e0383bbbed5eee4f593e996c6d7aef2fcea92f77fac9a711b7e00038e32d9c",
    "vertices": 700,
@@ -668,11 +668,11 @@
     "lingerie: bra.underband.level is 18.5 mm, expected 0.0\u201310.0 mm"
    ],
    "fitted": {
-    "frontCoverage": 0.142,
-    "backCoverage": 0.101,
+    "frontCoverage": 0.146,
+    "backCoverage": 0.104,
     "sideHeightMm": 4.0,
     "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "seamY": 0.8156
    },
    "geometrySha256": "d2861b8c69cf6d3aee2cc99b1100efa79fe194a5e103cfc0a233e67182127c40",
    "vertices": 668,
@@ -804,11 +804,11 @@
     "lingerie: bra.underband.level is 12.0075 mm, expected 0.0\u201310.0 mm"
    ],
    "fitted": {
-    "frontCoverage": 0.114,
-    "backCoverage": 0.086,
+    "frontCoverage": 0.117,
+    "backCoverage": 0.089,
     "sideHeightMm": 2.4,
     "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "seamY": 0.8156
    },
    "geometrySha256": "8cca5eef873e95a6df4932c9ca3f73afa650aec0f989b951ad471a20edf9a61e",
    "vertices": 684,
@@ -938,11 +938,11 @@
    "fitPassed": true,
    "warnings": [],
    "fitted": {
-    "frontCoverage": 0.117,
-    "backCoverage": 0.139,
+    "frontCoverage": 0.12,
+    "backCoverage": 0.142,
     "sideHeightMm": 15.7,
     "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "seamY": 0.8156
    },
    "geometrySha256": "5f843ccbbaf314ce62739c4fa2a2f354afe3ef83bf7612c9b4c7efb251a40640",
    "vertices": 380,
@@ -991,11 +991,11 @@
     "lingerie: bra.underband.strain.stand is 0.2659, expected 0.1\u20130.25"
    ],
    "fitted": {
-    "frontCoverage": 0.128,
-    "backCoverage": 0.07,
+    "frontCoverage": 0.132,
+    "backCoverage": 0.072,
     "sideHeightMm": 4.0,
     "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "seamY": 0.8156
    },
    "geometrySha256": "aa5f3560db958f73df75a74e6fbc12dc4149d1a5c88645da0a0cc89c9cf5d579",
    "vertices": 652,
@@ -1138,18 +1138,18 @@
     "lingerie: brief.leg-positiveX.pressure.sit is 1.5649 kPa, expected 0.0\u20131.5 kPa"
    ],
    "fitted": {
-    "frontCoverage": 0.66,
-    "backCoverage": 0.487,
+    "frontCoverage": 0.69,
+    "backCoverage": 0.511,
     "sideHeightMm": 26.0,
-    "backWidthAboveSeamMm": 58.9,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 71.0,
+    "seamY": 0.8156
    },
    "pattern": {
-    "frontCoverage": 0.66,
-    "backCoverage": 0.483,
+    "frontCoverage": 0.693,
+    "backCoverage": 0.509,
     "sideHeightMm": 26.0,
-    "backWidthAboveSeamMm": 56.6,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 69.3,
+    "seamY": 0.8156
    },
    "geometrySha256": "b6150f6e68c1c1da4025aa8af56794a43e3729655fd3a54e89996260c8537e5e",
    "vertices": 870,
@@ -1300,21 +1300,21 @@
     {
      "id": "fitted.backWidthMm",
      "spec": 60.0,
-     "measured": 58.9,
+     "measured": 71.0,
      "tolerance": 15.0,
      "ok": true
     },
     {
      "id": "drift.frontCoverage",
-     "spec": 0.66,
-     "measured": 0.66,
+     "spec": 0.693,
+     "measured": 0.69,
      "tolerance": 0.05,
      "ok": true
     },
     {
      "id": "drift.backCoverage",
-     "spec": 0.483,
-     "measured": 0.487,
+     "spec": 0.509,
+     "measured": 0.511,
      "tolerance": 0.05,
      "ok": true
     },
@@ -1327,9 +1327,9 @@
     },
     {
      "id": "drift.backWidthAboveSeamMm",
-     "spec": 56.6,
-     "measured": 58.9,
-     "tolerance": 14.2,
+     "spec": 69.3,
+     "measured": 71.0,
+     "tolerance": 17.3,
      "ok": true
     }
    ],
@@ -2631,11 +2631,11 @@
    "fitPassed": true,
    "warnings": [],
    "fitted": {
-    "frontCoverage": 0.252,
-    "backCoverage": 0.454,
+    "frontCoverage": 0.259,
+    "backCoverage": 0.459,
     "sideHeightMm": 15.7,
-    "backWidthAboveSeamMm": 230.5,
-    "seamY": 0.6956
+    "backWidthAboveSeamMm": 234.3,
+    "seamY": 0.8156
    },
    "geometrySha256": "3a26544203fd6a8858a457c08238b8aef0cf953e3db9e4d557fab34424392833",
    "vertices": 1139,
@@ -2694,18 +2694,18 @@
     "lingerie: brief.coverage.back is 0.0873, expected 0.01\u20130.05"
    ],
    "fitted": {
-    "frontCoverage": 0.567,
-    "backCoverage": 0.13,
+    "frontCoverage": 0.597,
+    "backCoverage": 0.14,
     "sideHeightMm": 4.0,
-    "backWidthAboveSeamMm": 15.1,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 11.3,
+    "seamY": 0.8156
    },
    "pattern": {
-    "frontCoverage": 0.569,
-    "backCoverage": 0.137,
+    "frontCoverage": 0.602,
+    "backCoverage": 0.144,
     "sideHeightMm": 3.7,
-    "backWidthAboveSeamMm": 4.7,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 8.1,
+    "seamY": 0.8156
    },
    "geometrySha256": "f107f15fbd53373eb19e48851d086450132e7e1f5d7d06f96d46924683d05e88",
    "vertices": 870,
@@ -2856,21 +2856,21 @@
     {
      "id": "fitted.backWidthMm",
      "spec": 5.0,
-     "measured": 15.1,
+     "measured": 11.3,
      "tolerance": 6.0,
      "ok": true
     },
     {
      "id": "drift.frontCoverage",
-     "spec": 0.569,
-     "measured": 0.567,
+     "spec": 0.602,
+     "measured": 0.597,
      "tolerance": 0.05,
      "ok": true
     },
     {
      "id": "drift.backCoverage",
-     "spec": 0.137,
-     "measured": 0.13,
+     "spec": 0.144,
+     "measured": 0.14,
      "tolerance": 0.05,
      "ok": true
     },
@@ -2883,10 +2883,10 @@
     },
     {
      "id": "drift.backWidthAboveSeamMm",
-     "spec": 4.7,
-     "measured": 15.1,
+     "spec": 8.1,
+     "measured": 11.3,
      "tolerance": 6.0,
-     "ok": false
+     "ok": true
     }
    ],
    "contact": {
@@ -2916,8 +2916,7 @@
     }
    },
    "hard": [
-    "pattern.backCoverage",
-    "drift.backWidthAboveSeamMm"
+    "pattern.backCoverage"
    ],
    "soft": [],
    "verdict": "deviates from spec"
@@ -2933,11 +2932,11 @@
    "fitPassed": true,
    "warnings": [],
    "fitted": {
-    "frontCoverage": 0.841,
-    "backCoverage": 0.84,
+    "frontCoverage": 0.904,
+    "backCoverage": 0.904,
     "sideHeightMm": 116.5,
-    "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 237.1,
+    "seamY": 0.8156
    },
    "geometrySha256": "dee3944b18914203dc5dc86e5950012f01755db44916cd3398e49916907a3733",
    "vertices": 381,
@@ -2990,11 +2989,11 @@
     "hosiery: RR (right-back) stretches 12.4% in sit, past the 10% limit"
    ],
    "fitted": {
-    "frontCoverage": 0.652,
-    "backCoverage": 0.716,
+    "frontCoverage": 0.674,
+    "backCoverage": 0.735,
     "sideHeightMm": 269.0,
     "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "seamY": 0.8156
    },
    "geometrySha256": "9ccbcfa7a9f1841f85ba8136d6acc2f78d08a630d65d9184a4d4be61aa7a1948",
    "vertices": 660,
@@ -3549,18 +3548,18 @@
     "lingerie: brief.leg-positiveX.pressure.sit is 1.6081 kPa, expected 0.0\u20131.5 kPa"
    ],
    "fitted": {
-    "frontCoverage": 0.855,
-    "backCoverage": 0.865,
+    "frontCoverage": 0.917,
+    "backCoverage": 0.927,
     "sideHeightMm": 67.9,
-    "backWidthAboveSeamMm": 187.5,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 229.5,
+    "seamY": 0.8156
    },
    "pattern": {
-    "frontCoverage": 0.848,
-    "backCoverage": 0.865,
+    "frontCoverage": 0.918,
+    "backCoverage": 0.927,
     "sideHeightMm": 68.2,
-    "backWidthAboveSeamMm": 169.3,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 217.5,
+    "seamY": 0.8156
    },
    "geometrySha256": "38d39d48cb1a82cca290c38036fde88a22525427a340b16040a1fc0bd6d4cfb4",
    "vertices": 687,
@@ -3710,15 +3709,15 @@
     },
     {
      "id": "drift.frontCoverage",
-     "spec": 0.848,
-     "measured": 0.855,
+     "spec": 0.918,
+     "measured": 0.917,
      "tolerance": 0.05,
      "ok": true
     },
     {
      "id": "drift.backCoverage",
-     "spec": 0.865,
-     "measured": 0.865,
+     "spec": 0.927,
+     "measured": 0.927,
      "tolerance": 0.05,
      "ok": true
     },
@@ -3731,9 +3730,9 @@
     },
     {
      "id": "drift.backWidthAboveSeamMm",
-     "spec": 169.3,
-     "measured": 187.5,
-     "tolerance": 42.3,
+     "spec": 217.5,
+     "measured": 229.5,
+     "tolerance": 54.4,
      "ok": true
     }
    ],
@@ -3786,11 +3785,11 @@
     "lingerie: brief.leg-positiveX.strain.stand is 0.129, expected 0.03\u20130.12"
    ],
    "fitted": {
-    "frontCoverage": 0.128,
-    "backCoverage": 0.07,
+    "frontCoverage": 0.132,
+    "backCoverage": 0.072,
     "sideHeightMm": 4.0,
-    "backWidthAboveSeamMm": 137.1,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 211.4,
+    "seamY": 0.8156
    },
    "geometrySha256": "28fe0f16fcd9d580e7bbdddb93e3fd8354ebce5a5d6d5aa155f3819354cbcec5",
    "vertices": 1583,
@@ -4047,11 +4046,11 @@
     "hosiery: FR (right-front) stretches 10.5% in walk, past the 10% limit"
    ],
    "fitted": {
-    "frontCoverage": 0.563,
-    "backCoverage": 0.563,
+    "frontCoverage": 0.591,
+    "backCoverage": 0.591,
     "sideHeightMm": 118.8,
     "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "seamY": 0.8156
    },
    "geometrySha256": "74e9d2f7f031a722341b82a78805feaed20bd8fd47877e4c8e81dc378d906971",
    "vertices": 297,
@@ -4101,11 +4100,11 @@
     "hosiery: FR (right-front) stretches 10.7% in walk, past the 10% limit"
    ],
    "fitted": {
-    "frontCoverage": 0.548,
-    "backCoverage": 0.548,
+    "frontCoverage": 0.585,
+    "backCoverage": 0.585,
     "sideHeightMm": 87.1,
     "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "seamY": 0.8156
    },
    "geometrySha256": "7499516928becab8fb647581419cad2469100305cf4912e428e06170a52c0ef7",
    "vertices": 231,
@@ -4165,18 +4164,18 @@
     "lingerie: brief.leg-positiveX.strain.stand is 0.139, expected 0.03\u20130.12"
    ],
    "fitted": {
-    "frontCoverage": 0.58,
-    "backCoverage": 0.415,
+    "frontCoverage": 0.67,
+    "backCoverage": 0.474,
     "sideHeightMm": 12.0,
-    "backWidthAboveSeamMm": 17.7,
-    "seamY": 0.7956
+    "backWidthAboveSeamMm": 62.5,
+    "seamY": 0.8156
    },
    "pattern": {
-    "frontCoverage": 0.58,
-    "backCoverage": 0.408,
+    "frontCoverage": 0.672,
+    "backCoverage": 0.473,
     "sideHeightMm": 12.0,
-    "backWidthAboveSeamMm": 14.1,
-    "seamY": 0.7956
+    "backWidthAboveSeamMm": 61.1,
+    "seamY": 0.8156
    },
    "geometrySha256": "68699f2bdf8247713d822862ee3c226939cb94c6c1f2e1f882e418c0f689855d",
    "vertices": 687,
@@ -4327,21 +4326,21 @@
     {
      "id": "fitted.backWidthMm",
      "spec": 45.0,
-     "measured": 17.7,
+     "measured": 62.5,
      "tolerance": 11.2,
-     "ok": false
+     "ok": true
     },
     {
      "id": "drift.frontCoverage",
-     "spec": 0.58,
-     "measured": 0.58,
+     "spec": 0.672,
+     "measured": 0.67,
      "tolerance": 0.05,
      "ok": true
     },
     {
      "id": "drift.backCoverage",
-     "spec": 0.408,
-     "measured": 0.415,
+     "spec": 0.473,
+     "measured": 0.474,
      "tolerance": 0.05,
      "ok": true
     },
@@ -4354,9 +4353,9 @@
     },
     {
      "id": "drift.backWidthAboveSeamMm",
-     "spec": 14.1,
-     "measured": 17.7,
-     "tolerance": 6.0,
+     "spec": 61.1,
+     "measured": 62.5,
+     "tolerance": 15.3,
      "ok": true
     }
    ],
@@ -4386,14 +4385,12 @@
      "stretchedPct": 0.0
     }
    },
-   "hard": [
-    "fitted.backWidthMm"
-   ],
+   "hard": [],
    "soft": [
     "brief.leg-negativeX.strain.stand",
     "brief.leg-positiveX.strain.stand"
    ],
-   "verdict": "deviates from spec"
+   "verdict": "matches spec"
   },
   {
    "id": "under-thong-v2",
@@ -4419,18 +4416,18 @@
     "lingerie: brief.leg-negativeX.strain.stand is 0.1213, expected 0.03\u20130.12"
    ],
    "fitted": {
-    "frontCoverage": 0.565,
-    "backCoverage": 0.224,
+    "frontCoverage": 0.594,
+    "backCoverage": 0.238,
     "sideHeightMm": 18.1,
-    "backWidthAboveSeamMm": 15.2,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 14.2,
+    "seamY": 0.8156
    },
    "pattern": {
-    "frontCoverage": 0.562,
-    "backCoverage": 0.253,
+    "frontCoverage": 0.594,
+    "backCoverage": 0.269,
     "sideHeightMm": 18.1,
-    "backWidthAboveSeamMm": 17.0,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 20.4,
+    "seamY": 0.8156
    },
    "geometrySha256": "19eb8133aeead934c268fbd2f5f330791fa1c0e71d7984ea2531ab5112239460",
    "vertices": 870,
@@ -4581,21 +4578,21 @@
     {
      "id": "fitted.backWidthMm",
      "spec": 18.0,
-     "measured": 15.2,
+     "measured": 14.2,
      "tolerance": 6.0,
      "ok": true
     },
     {
      "id": "drift.frontCoverage",
-     "spec": 0.562,
-     "measured": 0.565,
+     "spec": 0.594,
+     "measured": 0.594,
      "tolerance": 0.05,
      "ok": true
     },
     {
      "id": "drift.backCoverage",
-     "spec": 0.253,
-     "measured": 0.224,
+     "spec": 0.269,
+     "measured": 0.238,
      "tolerance": 0.05,
      "ok": true
     },
@@ -4608,10 +4605,10 @@
     },
     {
      "id": "drift.backWidthAboveSeamMm",
-     "spec": 17.0,
-     "measured": 15.2,
+     "spec": 20.4,
+     "measured": 14.2,
      "tolerance": 6.0,
-     "ok": true
+     "ok": false
     }
    ],
    "contact": {
@@ -4641,7 +4638,8 @@
     }
    },
    "hard": [
-    "pattern.backCoverage"
+    "pattern.backCoverage",
+    "drift.backWidthAboveSeamMm"
    ],
    "soft": [
     "brief.leg-negativeX.strain.stand"
@@ -4672,18 +4670,18 @@
     "lingerie: brief.leg-negativeX.strain.stand is 0.1259, expected 0.03\u20130.12"
    ],
    "fitted": {
-    "frontCoverage": 0.567,
-    "backCoverage": 0.125,
+    "frontCoverage": 0.597,
+    "backCoverage": 0.135,
     "sideHeightMm": 5.3,
-    "backWidthAboveSeamMm": 15.1,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 11.1,
+    "seamY": 0.8156
    },
    "pattern": {
-    "frontCoverage": 0.564,
-    "backCoverage": 0.119,
+    "frontCoverage": 0.596,
+    "backCoverage": 0.126,
     "sideHeightMm": 5.8,
-    "backWidthAboveSeamMm": 4.7,
-    "seamY": 0.8056
+    "backWidthAboveSeamMm": 7.7,
+    "seamY": 0.8156
    },
    "geometrySha256": "b38f91c9741af5e8a993b75e9270e191f455065b4fc05f45038930a90126b38f",
    "vertices": 748,
@@ -4834,21 +4832,21 @@
     {
      "id": "fitted.backWidthMm",
      "spec": 5.0,
-     "measured": 15.1,
+     "measured": 11.1,
      "tolerance": 6.0,
      "ok": true
     },
     {
      "id": "drift.frontCoverage",
-     "spec": 0.564,
-     "measured": 0.567,
+     "spec": 0.596,
+     "measured": 0.597,
      "tolerance": 0.05,
      "ok": true
     },
     {
      "id": "drift.backCoverage",
-     "spec": 0.119,
-     "measured": 0.125,
+     "spec": 0.126,
+     "measured": 0.135,
      "tolerance": 0.05,
      "ok": true
     },
@@ -4861,10 +4859,10 @@
     },
     {
      "id": "drift.backWidthAboveSeamMm",
-     "spec": 4.7,
-     "measured": 15.1,
+     "spec": 7.7,
+     "measured": 11.1,
      "tolerance": 6.0,
-     "ok": false
+     "ok": true
     }
    ],
    "contact": {
@@ -4893,13 +4891,11 @@
      "stretchedPct": 0.0
     }
    },
-   "hard": [
-    "drift.backWidthAboveSeamMm"
-   ],
+   "hard": [],
    "soft": [
     "brief.leg-negativeX.strain.stand"
    ],
-   "verdict": "deviates from spec"
+   "verdict": "matches spec"
   },
   {
    "id": "under-vday-cutout-bodysuit-v1",
@@ -5129,11 +5125,11 @@
     "lingerie: bra.underband.level is 12.0075 mm, expected 0.0\u201310.0 mm"
    ],
    "fitted": {
-    "frontCoverage": 0.115,
-    "backCoverage": 0.017,
+    "frontCoverage": 0.118,
+    "backCoverage": 0.018,
     "sideHeightMm": 3.3,
     "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "seamY": 0.8156
    },
    "geometrySha256": "9809199737a99aef73df917e7b79f58ac0201ef4d94fb9894a94b60a2a460ace",
    "vertices": 572,
@@ -5508,11 +5504,11 @@
    "fitPassed": true,
    "warnings": [],
    "fitted": {
-    "frontCoverage": 0.156,
-    "backCoverage": 0.103,
+    "frontCoverage": 0.16,
+    "backCoverage": 0.107,
     "sideHeightMm": 4.3,
     "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "seamY": 0.8156
    },
    "geometrySha256": "0156df1965edc540cf74406d72aceddd5bdc8b0b7f26c75f066710d10519f912",
    "vertices": 660,
@@ -6088,11 +6084,11 @@
     "hosiery: RR (right-back) stretches 12.5% in sit, past the 10% limit"
    ],
    "fitted": {
-    "frontCoverage": 0.628,
-    "backCoverage": 0.628,
+    "frontCoverage": 0.651,
+    "backCoverage": 0.651,
     "sideHeightMm": 182.2,
     "backWidthAboveSeamMm": 0.0,
-    "seamY": 0.8056
+    "seamY": 0.8156
    },
    "geometrySha256": "18e9aed9f69345f9aa002142cfddfa9161678eaeb052f05b77f35a844bdcacd3",
    "vertices": 462,

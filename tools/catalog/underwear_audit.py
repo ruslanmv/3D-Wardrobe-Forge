@@ -381,6 +381,10 @@ async def audit(out: Path, only: set[str]) -> dict:
         )
         await library.seed(store)
         base = None
+        # Her landmarks from the avatar as published, nothing on: a fitted look's own landmarks
+        # count its garments as her (geometry_checks.body_points does, for layering), so a gusset
+        # filling the gap between her thighs moved the crotch every piece is measured from.
+        marks = landmarks_for_document(GltfDocument.from_bytes(Path(entry.path).read_bytes()))
         drafts = _Drafts().__enter__()
         for t in sorted((t for t in catalog if t.category == "underwear"), key=lambda v: v.id):
             if only and t.id not in only:
@@ -442,7 +446,6 @@ async def audit(out: Path, only: set[str]) -> dict:
                     fitted = False
                     item["reason"] = f"no primitive named {names} in the fitted look"
                 else:
-                    marks = landmarks_for_document(document)
                     cap = waistline(spec, marks) if spec and t.procedural_kind == "bodysuit-block" else None
                     got = silhouette(points, tris, np.array([hips[0], hips[2]]), forward, marks, cap)
                     item["fitted"] = got

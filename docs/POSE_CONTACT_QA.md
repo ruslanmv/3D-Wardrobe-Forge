@@ -154,3 +154,35 @@ leggings sank 20 mm into the knee kneeling, which is why the smoothing fades out
 cross under a single vertex: no choice of weights lets one point follow two thighs that
 move apart. That, and the 10–17 mm at the seat creases, need the posed correction pass
 (defect 2), not skinning weights.
+
+## Known defect: a seated gusset is squeezed to a strip (GF1, parked)
+
+Found while proving RL4 (2026-10-24). A brief's gusset is drafted 55 mm wide across her
+crotch; seated by `wardrobe.lingerie.fit.seat_gusset` on a reference body whose thighs
+meet, its middle row is **16 mm of fabric and 10 mm across** (ref-f-median, Tailored
+Briefs): every brief, bodysuit and swimsuit gusset is a strip at its narrowest. The push
+out of each thigh points toward her midline and the relaxation, seams fixed, draws each
+row in; `_keep_width` acts only below 4 mm. The comment there calling a 10 mm row right
+measured the projection, not the fabric: the row's arc length collapses too.
+
+A fix is written and **not applied**: `docs/research/parked/GF1-gusset-cut-width.patch`
+(with its test, `test_gusset_width.py.txt`). It records each row's cut width, holds it
+between 95% and 115% (1 + FreeSewing Uma's 15% stretch allowance) and lets the existing
+up-and-forward pushes lift the sides onto her inner thighs. Measured:
+
+* the middle row keeps 95–103% of its cut width, its sides 10–22 mm up her inner thighs;
+* `test_second_skin_binding.py` passes (inner thigh 0.75 mm clear standing wide; at a 90%
+  floor it was 0.003 mm inside, at 85% 0.2 mm, which is why the floor is 95%);
+* the 35-piece audit: geometry changes for every brief-based piece; seated stretch falls
+  for the G-string (1.81x -> 1.39x) and the Tailored Bodysuit (1.68x -> 1.42x), within
+  0.05x elsewhere — except two:
+  * **V-string**: its string 12 mm above the back seam widens from 11.1 to 15.4 mm (pattern
+    7.7 mm) and the piece no longer matches its spec. The seam itself is already drafted
+    4.8 mm and fitted 12.7 mm without the patch (the string-widening defect); the wider
+    gusset rows beside it make it worse, apparently through `_unfold`.
+  * **Boyshort**: seated stretch 2.27x -> 2.89x; its gusset meets leg rings, and sides that
+    ride up her thighs meet them.
+
+To apply it: fix the string's seam widening first, then decide the boyshort (exempt
+leg-extension gussets, or seat the rings after the gusset), re-run
+`tools/catalog/underwear_audit.py --before`, and isolate the gallery hashes as PF2 did.
