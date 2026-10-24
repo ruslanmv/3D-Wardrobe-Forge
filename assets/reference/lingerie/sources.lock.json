@@ -1,0 +1,346 @@
+{
+ "schemaVersion": 1,
+ "about": "Lingerie reference sources: what each actually contains, under which licence, and what this repository keeps of it. Written by hand from inspection; file hashes are filled and checked by tools/data/fetch_lingerie_sources.py. 'use' is one of directly-usable, indirectly-useful, research-only, unsuitable.",
+ "verifiedOn": "2026-10-24",
+ "sources": [
+  {
+   "id": "bracuppattern",
+   "title": "Bra Cup Patterns (SewSphere/BraCupPattern)",
+   "authors": "SewSphere",
+   "url": "https://github.com/SewSphere/BraCupPattern",
+   "version": {
+    "commit": "d488c1a18623f3413718e41ffa0c5c369e17ae48",
+    "date": "2024-09-10"
+   },
+   "license": "Apache-2.0",
+   "redistribution": "Allowed with the licence text kept beside the copy and changes stated.",
+   "commercialUse": true,
+   "attribution": "Bra cup outline and size table from SewSphere/BraCupPattern (Apache-2.0), commit d488c1a.",
+   "format": "Python source holding the data (cubic Bezier control points, a grading rule, a size table)",
+   "units": "mm for the outline (the SVG's size and viewBox share one scale); cm for the size table's over-breast ranges",
+   "contents": "One cup panel outline: 7 points with cubic Bezier handles at a reference size 4. Grading: linear scale by the length of 'line 1', which the code computes as 115.7 mm + 10.7 mm per size above size 1 (147.8 mm at the reference size 4). The source's comment calls 115.7 mm size 4's; the code does not do that, and the outline is scaled by the code's ratio either way. 29 sizes keyed by over-breast measurement, 17 mm a size.",
+   "notContained": "No seams, darts, wire path, band, wings or straps; which edge 'line 1' is is not documented.",
+   "garmentCategories": [
+    "bra cup"
+   ],
+   "measurementFields": [
+    "overBreastMm"
+   ],
+   "use": "directly-usable",
+   "storage": "assets/reference/lingerie/patterns/bracuppattern/",
+   "conversion": "tools/data/convert_lingerie_patterns.py reads the vendored source with ast (never executes it) into bracuppattern-cup.json.",
+   "files": [
+    {
+     "url": "https://raw.githubusercontent.com/SewSphere/BraCupPattern/d488c1a18623f3413718e41ffa0c5c369e17ae48/generate_site.py",
+     "path": "assets/reference/lingerie/patterns/bracuppattern/generate_site.py",
+     "role": "data",
+     "sha256": "6c000a70b575108356ea2b91ad79836576c9d05f72f743e00c536e6137c6fbe8"
+    },
+    {
+     "url": "https://raw.githubusercontent.com/SewSphere/BraCupPattern/d488c1a18623f3413718e41ffa0c5c369e17ae48/LICENSE",
+     "path": "assets/reference/lingerie/patterns/bracuppattern/LICENSE",
+     "role": "licence",
+     "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    }
+   ]
+  },
+  {
+   "id": "freesewing-uma",
+   "title": "FreeSewing Uma undies (@freesewing/uma 4.0.0)",
+   "authors": "Joost De Cock and FreeSewing contributors",
+   "url": "https://freesewing.org/designs/uma",
+   "sourceRepository": "https://github.com/freesewing/freesewing (GitHub mirror; development continues at https://codeberg.org/freesewing/freesewing)",
+   "version": {
+    "commit": "8a8de5a271d9823bb393735a41dd3993cf5bcf4b",
+    "date": "2025-04-02",
+    "package": "@freesewing/uma 4.0.0"
+   },
+   "license": "MIT",
+   "redistribution": "Allowed with the copyright and licence notice.",
+   "commercialUse": true,
+   "attribution": "Gusset and stretch drafting rules from FreeSewing's Uma design by Joost De Cock (MIT).",
+   "format": "JavaScript ES module (the draft and its option table)",
+   "units": "mm (FreeSewing drafts in mm); options are fractions of body measurements",
+   "contents": "A brief draft from waist, seat, waistToSeat and waistToUpperLeg. Gusset length = seat x 12.7% (10-16%) x 1/(1+yStretch); gusset width = waistToUpperLeg x 15% (5-24%) x 2 x 1/(1+xStretch); gusset position 70%; xStretch 15% (0-30%), yStretch 5% (0-15%); rise, leg rise, front/back dip and exposure as style options.",
+   "notContained": "No measured fabric data: the stretch options are a designer's negative ease, not a test result. Defaults are one designer's, not a population norm.",
+   "garmentCategories": [
+    "brief"
+   ],
+   "measurementFields": [
+    "waist",
+    "seat",
+    "waistToSeat",
+    "waistToUpperLeg"
+   ],
+   "use": "directly-usable",
+   "storage": "assets/reference/lingerie/patterns/freesewing-uma/",
+   "conversion": "tools/data/convert_lingerie_patterns.py reads the option table from the vendored base.mjs into uma-draft.json.",
+   "files": [
+    {
+     "url": "https://raw.githubusercontent.com/freesewing/freesewing/8a8de5a271d9823bb393735a41dd3993cf5bcf4b/designs/uma/src/base.mjs",
+     "path": "assets/reference/lingerie/patterns/freesewing-uma/base.mjs",
+     "role": "data",
+     "sha256": "34c98853d7776d6517a9dfe9b64d8dc7a03a8d50d81292e232246877f1b3eb6f"
+    },
+    {
+     "url": "https://raw.githubusercontent.com/freesewing/freesewing/8a8de5a271d9823bb393735a41dd3993cf5bcf4b/designs/uma/package.json",
+     "path": "assets/reference/lingerie/patterns/freesewing-uma/package.json",
+     "role": "licence-declaration",
+     "sha256": "b20267b29f207c43ebed07d6e04bf29930d68ad2ed282c582ee6be3102249d7f"
+    },
+    {
+     "url": "https://raw.githubusercontent.com/freesewing/freesewing/8a8de5a271d9823bb393735a41dd3993cf5bcf4b/LICENSE",
+     "path": "assets/reference/lingerie/patterns/freesewing-uma/LICENSE",
+     "role": "licence",
+     "sha256": "851be3d2517b5f17640e0ce8b1eba36c3c2a699c104d3789cb50ab081fbcb212"
+    }
+   ]
+  },
+  {
+   "id": "garmentcode",
+   "title": "GarmentCode: Programming Parametric Sewing Patterns",
+   "authors": "Maria Korosteleva, Olga Sorkine-Hornung (ETH Zurich)",
+   "url": "https://github.com/maria-korosteleva/GarmentCode",
+   "version": {
+    "commit": "d449629979028123a5c4dc9e732a2ec19b7fce31",
+    "date": "2025-06-29"
+   },
+   "license": "MIT",
+   "redistribution": "Allowed with the copyright and licence notice. The bodies with 'smpl' in their names follow SMPL's terms and are not taken.",
+   "commercialUse": true,
+   "attribution": "Body measurements from GarmentCode's mean_female.yaml (MIT).",
+   "format": "Python library (panels, edges, stitches, interfaces); YAML body measurements; simulator configuration",
+   "units": "cm in the body YAML",
+   "contents": "Garment programs for tee, bodice, pants, skirts, sleeves, collars and bands. mean_female.yaml: 26 body measurements of an average female body from GarmentMeasurements' own model, including bust 97.4 cm, underbust 80.7 cm, bust_points 16.2 cm.",
+   "notContained": "No bra, brief or other lingerie program. Its simulator 'material' values (edge stiffness 1.0, density 1.0) are solver tuning for its own simulator, not measured fabric properties.",
+   "garmentCategories": [],
+   "measurementFields": [
+    "bust",
+    "underbust",
+    "bust_points",
+    "bust_line",
+    "vert_bust_line",
+    "waist",
+    "hips",
+    "crotch_hip_diff"
+   ],
+   "use": "indirectly-useful",
+   "storage": "assets/reference/lingerie/measurements/garmentcode/",
+   "conversion": "tools/data/convert_lingerie_patterns.py turns mean_female.yaml into mm (garmentcode-mean-female.json).",
+   "files": [
+    {
+     "url": "https://raw.githubusercontent.com/maria-korosteleva/GarmentCode/d449629979028123a5c4dc9e732a2ec19b7fce31/assets/bodies/mean_female.yaml",
+     "path": "assets/reference/lingerie/measurements/garmentcode/mean_female.yaml",
+     "role": "data",
+     "sha256": "f546774b3e2e5acb476766d8aeaca6880b107281a28cde73123b5212f88023f5"
+    },
+    {
+     "url": "https://raw.githubusercontent.com/maria-korosteleva/GarmentCode/d449629979028123a5c4dc9e732a2ec19b7fce31/LICENSE",
+     "path": "assets/reference/lingerie/measurements/garmentcode/LICENSE",
+     "role": "licence",
+     "sha256": "18da3e9ecad0bc2fc9ea28fb66b57913457da76b52d5236924588a64b1f2b7d3"
+    }
+   ]
+  },
+  {
+   "id": "garmentcodedata-v2",
+   "title": "GarmentCodeData (v2): A Dataset of 3D Made-to-Measure Garments With Sewing Patterns",
+   "authors": "Maria Korosteleva, Timur Levent Kesdogan, Fabian Kemper, Stephan Wenninger, Jasmin Koller, Yuhan Zhang, Mario Botsch, Olga Sorkine-Hornung",
+   "url": "https://igl.ethz.ch/projects/GarmentCodeData/",
+   "download": "https://doi.org/10.3929/ethz-b-000690432 (landing page; ETH Research Collection)",
+   "version": {
+    "doi": "10.3929/ethz-b-000690432",
+    "date": "2024-09-04"
+   },
+   "license": "unverified this session",
+   "redistribution": "Not decided: the ETH record could not be read (rate-limited, 2026-10-24). Nothing is downloaded or kept.",
+   "commercialUse": null,
+   "attribution": "Cite the ECCV 2024 paper (GarmentCode ReadMe).",
+   "format": "Sewing patterns (GarmentCode JSON), simulated meshes, body samples",
+   "units": "cm (GarmentCode)",
+   "contents": "Generated by GarmentCode's programs, so its garments are of the kinds those programs build.",
+   "notContained": "No lingerie: the generator has no bra or brief program (GarmentCode commit d449629).",
+   "garmentCategories": [
+    "tops",
+    "dresses",
+    "skirts",
+    "pants",
+    "jumpsuits"
+   ],
+   "measurementFields": [],
+   "use": "research-only",
+   "storage": null,
+   "conversion": null,
+   "files": [],
+   "authorsSource": "GarmentCode ReadMe citation block, commit d449629"
+  },
+  {
+   "id": "garmentmeasurements",
+   "title": "GarmentMeasurements",
+   "authors": "Repository owner mbotsch (Mario Botsch, per the GarmentCodeData citation) and contributors",
+   "url": "https://github.com/mbotsch/GarmentMeasurements",
+   "version": {
+    "commit": "04e9197c37197c5b05c1c86abf5ac503864e0d8f",
+    "date": "2025-10-08"
+   },
+   "license": "GPL-3.0",
+   "redistribution": "Not into this MIT repository. Its measurement definitions are described in our own words (docs/research/LINGERIE_MEASUREMENT_METHODS.md); no code or data is copied.",
+   "commercialUse": true,
+   "attribution": "Measurement methodology after GarmentMeasurements (GPL-3.0), described, not copied.",
+   "format": "C++; JSON measurement definitions (.mes); landmark lists",
+   "units": "mesh units",
+   "contents": "Definitions of 28 body measurements on a template mesh: e.g. bust_points is the distance between the two bust landmarks; underbust is a convex-hull girth on a horizontal plane through its selection.",
+   "notContained": "No garment patterns.",
+   "garmentCategories": [],
+   "measurementFields": [
+    "bust",
+    "underbust",
+    "bust_points",
+    "bust_line",
+    "vert_bust_line",
+    "waist",
+    "hips"
+   ],
+   "use": "indirectly-useful",
+   "storage": null,
+   "conversion": null,
+   "files": []
+  },
+  {
+   "id": "seamly2d",
+   "title": "Seamly2D",
+   "authors": "FashionFreedom",
+   "url": "https://github.com/FashionFreedom/Seamly2D",
+   "version": {
+    "commit": "00e2635eb28b41c8808cc90a4695e12a7cf0598f",
+    "date": "2026-10-23"
+   },
+   "license": "GPL-3.0",
+   "redistribution": "Not into this MIT repository; usable as an external tool.",
+   "commercialUse": true,
+   "attribution": "Seamly2D (GPL-3.0), external tool.",
+   "format": "Patterns .sm2d (XML), measurements .smis/.vit (XML, cm)",
+   "units": "cm",
+   "contents": "Parametric pattern CAD. Its test collection holds src/test/CollectionTest/share/bra/bra.sm2d with bra.smis.",
+   "notContained": "That 'bra' is a test fixture, not a pattern: 6 non-zero measurements of about 120 (gender recorded as male), 27 construction points, no pattern pieces.",
+   "garmentCategories": [],
+   "measurementFields": [],
+   "use": "unsuitable",
+   "storage": null,
+   "conversion": null,
+   "files": []
+  },
+  {
+   "id": "t2p",
+   "title": "Textile-to-Physics (image2garment/T2P)",
+   "authors": "image2garment",
+   "url": "https://huggingface.co/datasets/image2garment/T2P",
+   "version": {
+    "revision": "ac49d1275c9bc765bcfb1ad6548c996fb0fc2f3e",
+    "date": "2026-07-08"
+   },
+   "license": "other (dataset card: research only)",
+   "redistribution": "No. The dataset is gated (manual approval); nothing is requested, downloaded or kept.",
+   "commercialUse": false,
+   "attribution": null,
+   "format": "CSV (fabric_data_cleaned_100pct.csv, textura_data.csv)",
+   "units": "not inspected",
+   "contents": "Textile simulation parameters, per its card; the files were not opened.",
+   "notContained": "Not inspected.",
+   "garmentCategories": [],
+   "measurementFields": [],
+   "use": "research-only",
+   "storage": null,
+   "conversion": null,
+   "files": []
+  },
+  {
+   "id": "ansur-ii-female",
+   "title": "ANSUR II female public file (already in this repository)",
+   "authors": "Gordon CC et al., U.S. Army Natick",
+   "url": "https://www.openlab.psu.edu/ansur2/",
+   "version": {
+    "sha256": "ed7e800aa97a4d42f8286b988be2fe1883a2e789588169db959864b707d1757a"
+   },
+   "license": "Approved for public release; distribution is unlimited",
+   "redistribution": "Allowed.",
+   "commercialUse": true,
+   "attribution": "See assets/anatomy/reference-sizes.json (source block).",
+   "format": "CSV, normalized in assets/anatomy/reference-sizes.json",
+   "units": "mm",
+   "contents": "1,986 female subjects, 93 measurements; 1,728 adults used by the reference bodies.",
+   "notContained": "No breast surface geometry: the 3D scans were not released. A U.S. Army population, not consumers in general.",
+   "garmentCategories": [],
+   "measurementFields": [
+    "see assets/anatomy/reference-sizes.json"
+   ],
+   "use": "directly-usable",
+   "storage": "assets/anatomy/reference-sizes.json",
+   "conversion": "Existing (tools/anatomy).",
+   "files": []
+  },
+  {
+   "id": "iso-8559-6",
+   "title": "ISO/DIS 8559-6 (breast and contour-fit body measurements, draft)",
+   "authors": "ISO",
+   "url": "https://www.iso.org/standard/88996.html",
+   "version": {},
+   "license": "copyright (paid standard)",
+   "redistribution": "No. Definitions may be followed; the text is never copied in.",
+   "commercialUse": null,
+   "attribution": null,
+   "format": "standard",
+   "units": "n/a",
+   "contents": "Not verified this session: the publisher's page answered with a bot challenge (2026-10-24).",
+   "notContained": "Not inspected.",
+   "garmentCategories": [],
+   "measurementFields": [],
+   "use": "research-only",
+   "storage": null,
+   "conversion": null,
+   "files": []
+  },
+  {
+   "id": "astm-d4964",
+   "title": "ASTM D4964, tension and elongation of elastic fabrics",
+   "authors": "ASTM International",
+   "url": "https://store.astm.org/standards/d4964",
+   "version": {},
+   "license": "copyright (paid standard)",
+   "redistribution": "No. Definitions may be followed; the text is never copied in.",
+   "commercialUse": null,
+   "attribution": null,
+   "format": "standard",
+   "units": "n/a",
+   "contents": "Not verified this session: the publisher's page answered with a bot challenge (2026-10-24).",
+   "notContained": "Not inspected.",
+   "garmentCategories": [],
+   "measurementFields": [],
+   "use": "research-only",
+   "storage": null,
+   "conversion": null,
+   "files": []
+  },
+  {
+   "id": "astm-d2594",
+   "title": "ASTM D2594/D2594M, stretch properties of knitted fabrics having low power",
+   "authors": "ASTM International",
+   "url": "https://store.astm.org/d2594_d2594m-21.html",
+   "version": {},
+   "license": "copyright (paid standard)",
+   "redistribution": "No. Definitions may be followed; the text is never copied in.",
+   "commercialUse": null,
+   "attribution": null,
+   "format": "standard",
+   "units": "n/a",
+   "contents": "Not verified this session: the publisher's page answered with a bot challenge (2026-10-24).",
+   "notContained": "Not inspected.",
+   "garmentCategories": [],
+   "measurementFields": [],
+   "use": "research-only",
+   "storage": null,
+   "conversion": null,
+   "files": []
+  }
+ ]
+}
