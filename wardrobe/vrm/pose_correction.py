@@ -91,7 +91,12 @@ def _project(
         out[vertex] = out[vertex] + normal * (CLEARANCE_M - signed)
 
 
-def _relax(out: np.ndarray, edges: list[tuple[int, int, float]], lap: np.ndarray, gain: float = RELAX) -> None:
+def _relax(
+    out: np.ndarray,
+    edges: list[tuple[int, int, float]],
+    lap: np.ndarray,
+    gain: float = RELAX,
+) -> None:
     for a, b, length in edges:
         if not lap[a] and not lap[b]:
             continue
