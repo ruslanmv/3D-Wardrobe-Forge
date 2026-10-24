@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-23T23:35:38+00:00",
+  "generatedAt": "2026-10-24T06:24:37+00:00",
   "sampleAvatar": "avatar-sample-a",
   "profile": "public",
   "previewFormat": "image/webp",
@@ -1082,6 +1082,10 @@
     },
     {
       "id": "under-cheeky-v2",
+      "status": "restricted-skipped"
+    },
+    {
+      "id": "under-chemise-satin-v1",
       "status": "restricted-skipped"
     },
     {
