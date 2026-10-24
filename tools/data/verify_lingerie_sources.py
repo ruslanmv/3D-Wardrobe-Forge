@@ -54,6 +54,40 @@ def _converter():
     return module
 
 
+STATUSES = {"measured", "designer-convention", "class-typical", "unmeasured"}
+
+
+def _values(node, where: str):
+    """Every ``{value, unit, status}`` leaf of the fabric file, with where it is."""
+    if isinstance(node, dict) and "status" in node and "unit" in node:
+        yield where, node
+    elif isinstance(node, dict):
+        for key, child in node.items():
+            yield from _values(child, f"{where}.{key}")
+
+
+def _fabric_problems(path: Path, sources: set[str]) -> list[str]:
+    """A value is a number only with a source; an unmeasured one is null and says how to measure it."""
+    problems = []
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    for fabric in doc["classes"]:
+        for where, value in _values(fabric, fabric["id"]):
+            status = value["status"]
+            if status not in STATUSES:
+                problems.append(f"fabrics.json {where}: status {status!r}")
+            elif status == "unmeasured" and (value["value"] is not None or not value.get("calibrate")):
+                problems.append(f"fabrics.json {where}: unmeasured must be null with a calibration procedure")
+            elif status in {"measured", "designer-convention"} and (
+                value["value"] is None or not value.get("source")
+            ):
+                problems.append(f"fabrics.json {where}: {status} needs a value and a source")
+            elif value.get("source") and value["source"] not in sources:
+                problems.append(
+                    f"fabrics.json {where}: source {value['source']!r} is not in sources.lock.json"
+                )
+    return problems
+
+
 def verify() -> list[str]:
     problems: list[str] = []
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
@@ -90,6 +124,9 @@ def verify() -> list[str]:
                 problems.append(f"{sid}: {entry['path']} missing (tools/data/fetch_lingerie_sources.py)")
             elif hashlib.sha256(path.read_bytes()).hexdigest() != entry.get("sha256"):
                 problems.append(f"{sid}: {entry['path']} is not the pinned file")
+    for authored in lock.get("authored", []):
+        named.add(ROOT / authored["path"])
+        problems += _fabric_problems(ROOT / authored["path"], set(ids))
     converter = _converter()
     outputs = {BASE / relative for relative in converter.OUTPUTS}
     for path in sorted(p for p in BASE.rglob("*") if p.is_file()):

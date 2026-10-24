@@ -342,5 +342,12 @@
    "conversion": null,
    "files": []
   }
+ ],
+ "authored": [
+  {
+   "path": "assets/reference/lingerie/materials/fabrics.json",
+   "schema": "forge.reference.fabrics/1",
+   "what": "This repository's fabric classes: behaviour only, each value with its status and source."
+  }
  ]
 }
