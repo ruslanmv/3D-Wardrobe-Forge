@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-23T23:44:45+00:00",
+  "generatedAt": "2026-10-24T09:16:43+00:00",
   "sampleAvatar": "fem-vroid",
   "profile": "underwear",
   "previewFormat": "image/webp",
@@ -27,7 +27,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -44,7 +44,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -61,7 +62,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -82,7 +83,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -99,7 +101,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -121,7 +123,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -138,7 +141,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -157,7 +160,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -174,7 +178,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -193,7 +197,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -210,7 +215,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -229,7 +234,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -246,7 +252,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -263,7 +269,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -280,7 +287,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -299,7 +306,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -316,7 +324,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -336,7 +344,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -353,7 +362,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -373,7 +382,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -390,7 +400,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -407,7 +417,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -424,7 +435,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -444,7 +455,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -461,7 +473,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -478,7 +490,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -495,7 +508,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -514,7 +527,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -531,7 +545,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -551,7 +565,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -569,7 +584,7 @@
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
       "fabric": "satin",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -586,7 +601,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -603,7 +619,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -622,7 +638,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -639,7 +656,7 @@
       "profile": "underwear",
       "baseBody": "preserve",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -656,7 +673,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -674,7 +692,7 @@
       "baseBody": "preserve",
       "basePrompt": "nude bralette + nude briefs",
       "styledWith": "under-bralette-v2",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -712,6 +730,7 @@
         "back",
         "three-quarter",
         "garment-only",
+        "garment-only-back",
         "styled"
       ]
     },
@@ -729,7 +748,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -746,7 +765,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -763,7 +783,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -784,7 +804,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -801,7 +822,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -823,7 +844,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -840,7 +862,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -866,7 +888,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -883,7 +906,7 @@
       "profile": "underwear",
       "baseBody": "preserve",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -918,7 +941,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -935,7 +959,7 @@
       "profile": "underwear",
       "baseBody": "preserve",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -967,7 +991,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -984,7 +1009,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -1004,7 +1029,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -1021,7 +1047,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -1041,7 +1067,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -1058,7 +1085,7 @@
       "profile": "underwear",
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -1078,7 +1105,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -1096,7 +1124,7 @@
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
       "fabric": "satin",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -1116,7 +1144,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -1134,7 +1163,7 @@
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
       "fabric": "lace",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -1153,7 +1182,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -1171,7 +1201,7 @@
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
       "fabric": "lace",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -1191,7 +1221,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -1209,7 +1240,7 @@
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
       "fabric": "lace",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -1226,7 +1257,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -1244,7 +1276,7 @@
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
       "fabric": "satin",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -1263,7 +1295,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -1281,7 +1314,7 @@
       "baseBody": "replace-outer",
       "basePrompt": "nude bralette + nude briefs",
       "fabric": "lace",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -1300,7 +1333,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     },
     {
@@ -1317,7 +1351,7 @@
       "profile": "underwear",
       "baseBody": "preserve",
       "basePrompt": "nude bralette + nude briefs",
-      "presentation": "954c5f8e047c",
+      "presentation": "c65ea81a2c50",
       "rating": "intimate",
       "fitPassed": true,
       "garments": [
@@ -1352,7 +1386,8 @@
         "front",
         "back",
         "three-quarter",
-        "garment-only"
+        "garment-only",
+        "garment-only-back"
       ]
     }
   ]

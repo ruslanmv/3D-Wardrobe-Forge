@@ -1,0 +1,6 @@
+# UI-002. The next Studio's dependencies and test output never enter the build context: the image
+# builds the Studio in its own stage (Dockerfile, "studio"), and apps/ is otherwise served as is.
+apps/studio/web/node_modules
+apps/studio/web/test-results
+apps/studio/web/playwright-report
+apps/studio/next

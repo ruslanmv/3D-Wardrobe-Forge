@@ -317,6 +317,120 @@
    "number"
   ]
  },
+ "/v1/catalog/garments/dress-mini-bodycon-v1/parameters": {
+  "$": [
+   "object"
+  ],
+  "$.category": [
+   "string"
+  ],
+  "$.groups": [
+   "array"
+  ],
+  "$.groups[]": [
+   "object"
+  ],
+  "$.groups[].adjustable": [
+   "boolean"
+  ],
+  "$.groups[].id": [
+   "string"
+  ],
+  "$.groups[].label": [
+   "string"
+  ],
+  "$.groups[].parameters": [
+   "array"
+  ],
+  "$.groups[].parameters[]": [
+   "object"
+  ],
+  "$.groups[].parameters[].default": [
+   "null",
+   "number",
+   "string"
+  ],
+  "$.groups[].parameters[].description": [
+   "string"
+  ],
+  "$.groups[].parameters[].id": [
+   "string"
+  ],
+  "$.groups[].parameters[].label": [
+   "string"
+  ],
+  "$.groups[].parameters[].max": [
+   "number"
+  ],
+  "$.groups[].parameters[].min": [
+   "number"
+  ],
+  "$.groups[].parameters[].options": [
+   "array"
+  ],
+  "$.groups[].parameters[].options[]": [
+   "object"
+  ],
+  "$.groups[].parameters[].options[].hex": [
+   "string"
+  ],
+  "$.groups[].parameters[].options[].label": [
+   "string"
+  ],
+  "$.groups[].parameters[].options[].requiresAdultDeclaration": [
+   "boolean"
+  ],
+  "$.groups[].parameters[].options[].value": [
+   "string"
+  ],
+  "$.groups[].parameters[].requestField": [
+   "string"
+  ],
+  "$.groups[].parameters[].requiresAdultDeclarationBelow": [
+   "number"
+  ],
+  "$.groups[].parameters[].source": [
+   "string"
+  ],
+  "$.groups[].parameters[].step": [
+   "number"
+  ],
+  "$.groups[].parameters[].type": [
+   "string"
+  ],
+  "$.groups[].parameters[].unit": [
+   "string"
+  ],
+  "$.groups[].parameters[].value": [
+   "boolean",
+   "number",
+   "string"
+  ],
+  "$.name": [
+   "string"
+  ],
+  "$.notExposed": [
+   "array"
+  ],
+  "$.notExposed[]": [
+   "object"
+  ],
+  "$.notExposed[].field": [
+   "string"
+  ],
+  "$.notExposed[].reason": [
+   "string"
+  ],
+  "$.requiresAdult": [
+   "boolean"
+  ],
+  "$.schemaVersion": [
+   "number"
+  ],
+  "$.templateId": [
+   "string"
+  ]
+ },
  "/v1/library": {
   "$": [
    "object"

@@ -37,3 +37,6 @@ assets/library/vroid/*.part
 assets/library/imports/
 .vroid-token.json
 .vroid-pending.json
+
+# UI-002: the next Studio is built by the Docker image (and `npm run build`), never committed.
+apps/studio/next/

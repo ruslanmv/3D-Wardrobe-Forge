@@ -177,7 +177,7 @@
         "lingerie: brief.leg-positiveX.pressure.sit is 1.5649 kPa, expected 0.0–1.5 kPa"
       ],
       "reason": null,
-      "sha256": "5011fa5c97d5e9b9a0eccf67620882108918b09bd71bccebd9c85b6d8445cc6e",
+      "sha256": "0d5b61ed81cd3d8c3f23c4d0bb85f874e2b2ec1d07e2a460547f8c329e52f42c",
       "bytes": 5868,
       "preview": "under-brazilian-v2.webp",
       "width": 480,
@@ -422,8 +422,8 @@
         "lingerie: brief.leg-positiveX.pressure.sit is 1.6081 kPa, expected 0.0–1.5 kPa"
       ],
       "reason": null,
-      "sha256": "cc4bf32f553b016ae23f1dfc7c07ee4c0fe8537eaf57723083504659dd98bd11",
-      "bytes": 5894,
+      "sha256": "8927f86936899d12e3d861693651f60fba49c32395d70aa9a92d69813f705471",
+      "bytes": 5870,
       "preview": "under-hipster-v2.webp",
       "width": 480,
       "height": 640
@@ -604,8 +604,8 @@
         "lingerie: brief.leg-positiveX.strain.stand is 0.1224, expected 0.03–0.12"
       ],
       "reason": null,
-      "sha256": "04e0e4e931f068ab4e789ca9b694fd62f13a538ff5023cdc032907d511b086b8",
-      "bytes": 26114,
+      "sha256": "cec00843bc49e90f707a398aa7bf31dd8c029bdf48d6538f9e84236a2e5cdcb0",
+      "bytes": 26090,
       "preview": "under-vday-high-waist-cheeky-v1.webp",
       "width": 480,
       "height": 640
@@ -640,8 +640,8 @@
         "lingerie: bodysuit.leg-negativeX.strain.stand is 0.1212, expected 0.03–0.12"
       ],
       "reason": null,
-      "sha256": "ed95ea614b6964da5aa7b71ae8510ca6adc59d803085b68ee728fbbad2c863aa",
-      "bytes": 8464,
+      "sha256": "52d7cae1b0dd42d30c065dd0e957da41d4591571eef9510d1a3de3191ec55685",
+      "bytes": 8462,
       "preview": "under-vday-square-bodysuit-v1.webp",
       "width": 480,
       "height": 640

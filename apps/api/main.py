@@ -105,6 +105,13 @@ app.include_router(catalog_router, prefix="/v1", dependencies=api_dependencies)
 # The Studio is a static, build-free editor. It is served unauthenticated because
 # it is only markup and scripts; every call it makes goes through /v1, which is not.
 STUDIO_ROOT = Path(__file__).resolve().parent.parent / "studio"
+# UI-002. The next Studio, built from apps/studio/web into apps/studio/next (the image's own
+# build stage, or `npm run build`). Mounted first: Starlette matches mounts in order, and the
+# classic Studio's mount would otherwise answer /studio/next/ with its own directory. Absent
+# when nothing has built it, and then /studio/next/ is simply not there.
+NEXT_STUDIO_ROOT = STUDIO_ROOT / "next"
+if (NEXT_STUDIO_ROOT / "index.html").is_file():
+    app.mount("/studio/next", StaticFiles(directory=NEXT_STUDIO_ROOT, html=True), name="studio-next")
 if STUDIO_ROOT.is_dir():
     app.mount("/studio", StaticFiles(directory=STUDIO_ROOT, html=True), name="studio")
 
