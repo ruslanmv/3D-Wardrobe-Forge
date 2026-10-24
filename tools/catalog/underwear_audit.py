@@ -425,7 +425,11 @@ async def audit(out: Path, only: set[str]) -> dict:
                 warnings=[str(w)[:200] for w in (report.warnings if report else [])],
             )
             if fitted:
-                names = [g["name"] for g in render._rendered(result.plan) if g.get("templateId") == t.id]
+                garments = render._rendered(result.plan)
+                # A set (under-lingerie-set-v1) is planned as its parts, each its own template.
+                names = [g["name"] for g in garments if g.get("templateId") == t.id] or [
+                    g["name"] for g in garments
+                ]
                 data = await store.get(f"looks/{result.look.id}/look.vrm")
                 path = out / "vrm" / f"{t.id}.vrm"
                 path.write_bytes(data)
