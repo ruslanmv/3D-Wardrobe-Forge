@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "top-glam-blouse-v1",
+  "name": "Fitted V-Neck Blouse",
+  "category": "top",
+  "mesh": "procedural:fitted-blouse",
+  "coverage": [
+    "chest",
+    "waist",
+    "upperArms",
+    "lowerArms"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "upperArms",
+    "lowerArms"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "long",
+  "fit": {
+    "bodyClearanceMm": 4.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 0.9,
+    "neckline": "v"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "fitted v-neck blouse",
+    "glam blouse"
+  ],
+  "description": "A blouse cut close to her body on panels: a V neckline, a defined waist and slim long sleeves.",
+  "collection": "glamour",
+  "optIn": true
+}

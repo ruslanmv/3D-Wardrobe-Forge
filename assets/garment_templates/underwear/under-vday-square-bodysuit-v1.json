@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 2,
+  "id": "under-vday-square-bodysuit-v1",
+  "name": "Square-Neck Bodysuit",
+  "category": "underwear",
+  "mesh": "procedural:bodysuit-block",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 3.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true
+  },
+  "lingerie": {
+    "block": "bodysuit",
+    "brief": {
+      "preset": "high-leg"
+    },
+    "bodysuit": {
+      "neckline": "square",
+      "back": "scoop",
+      "strapOffset": 0.85,
+      "armhole": 0.75,
+      "sideEaseMm": 6.0
+    },
+    "straps": {
+      "profile": "ribbon",
+      "widthMm": 10,
+      "thicknessMm": 1.3,
+      "elastic": "strap-10",
+      "adjustable": true,
+      "style": "shoulder"
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "tags": [
+    "square neck bodysuit",
+    "square-neck bodysuit"
+  ],
+  "description": "A one-piece with a straight square neckline, a scoop back and a high-cut leg.",
+  "optIn": true,
+  "collection": "valentines"
+}

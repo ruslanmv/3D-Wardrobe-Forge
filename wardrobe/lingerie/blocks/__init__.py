@@ -36,6 +36,16 @@ def build_block(kind: str, params: FitParameters) -> Mesh:
 
         block = replace(block, brief=replace(block.brief, rise=float(rise)))
     frame = body_frame(params)
+    drafted = None
+    if block.brief is not None and block.brief.gusset_draft and kind in ("brief-block", "bodysuit-block"):
+        # RL4. The gusset drafted from a reference on her measured frame (references.uma_gusset).
+        from dataclasses import replace
+
+        from wardrobe.lingerie.references import uma_gusset
+
+        drafted = uma_gusset(frame, block.fabric)
+        block = replace(block, brief=replace(block.brief, gusset_width_mm=drafted["gussetWidthMm"],
+                                             gusset_length_mm=drafted["gussetLengthMm"]))
     if kind == "brief-block":
         from wardrobe.lingerie.blocks.brief import build_brief
 
@@ -53,6 +63,8 @@ def build_block(kind: str, params: FitParameters) -> Mesh:
     # What it was drafted on, for the fitting steps after the shell (wardrobe.lingerie.fit).
     meta = params.metadata
     mesh.metadata["lingerieFrame"] = {key: meta[key] for key in FRAME_KEYS if key in meta}
+    if drafted is not None:
+        mesh.metadata["lingerieReferences"] = [drafted]
     return mesh
 
 

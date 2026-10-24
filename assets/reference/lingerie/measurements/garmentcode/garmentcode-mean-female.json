@@ -1,0 +1,41 @@
+{
+ "schema": "forge.reference.body-measurements/1",
+ "units": "mm (angles in degrees)",
+ "what": "GarmentCode's average female body (GarmentMeasurements' own body model, not SMPL), centimetres converted to millimetres. Definitions: docs/research/LINGERIE_MEASUREMENT_METHODS.md.",
+ "measurements": {
+  "arm_length": 515.94,
+  "arm_pose_angle": 45.487,
+  "armscye_depth": 126.49,
+  "back_width": 461.65,
+  "bum_points": 176.71,
+  "bust": 974.08,
+  "bust_line": 255.66,
+  "bust_points": 162.12,
+  "crotch_hip_diff": 78.73,
+  "head_l": 255.33,
+  "height": 1661.94,
+  "hip_back_width": 556.79,
+  "hip_inclination": 12.6783,
+  "hips": 1040.91,
+  "hips_line": 226.31,
+  "leg_circ": 606.59,
+  "neck_w": 177.72,
+  "shoulder_incl": 20.905,
+  "shoulder_w": 347.13,
+  "underbust": 807.48,
+  "vert_bust_line": 207.69,
+  "waist": 803.44,
+  "waist_back_width": 377.75,
+  "waist_line": 357.55,
+  "waist_over_bust_line": 399.9,
+  "wrist": 158.64
+ },
+ "provenance": {
+  "source": "garmentcode",
+  "license": "MIT",
+  "commit": "d449629979028123a5c4dc9e732a2ec19b7fce31",
+  "file": "assets/reference/lingerie/measurements/garmentcode/mean_female.yaml",
+  "sha256": "f546774b3e2e5acb476766d8aeaca6880b107281a28cde73123b5212f88023f5",
+  "attribution": "Body measurements from GarmentCode's mean_female.yaml (MIT)."
+ }
+}

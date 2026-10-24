@@ -47,6 +47,7 @@ KIND_REGIONS: dict[str, frozenset[str]] = {
     "camisole": frozenset({"upper"}),
     "sports-bra": frozenset({"upper"}),
     "tee": frozenset({"upper"}),
+    "fitted-blouse": frozenset({"upper"}),
     "corset": frozenset({"upper"}),
     "tube-top": frozenset({"upper"}),
     "bra": frozenset({"upper"}),

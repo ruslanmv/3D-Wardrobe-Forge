@@ -1,0 +1,104 @@
+{
+ "schema": "forge.reference.brief-draft/1",
+ "units": "mm",
+ "what": "FreeSewing Uma's brief draft: options as fractions, and the gusset formulas the generator applies.",
+ "measurements": [
+  "waist",
+  "seat",
+  "waistToSeat",
+  "waistToUpperLeg"
+ ],
+ "options": {
+  "xStretch": {
+   "unit": "fraction",
+   "default": 0.15,
+   "min": 0.0,
+   "max": 0.3
+  },
+  "yStretch": {
+   "unit": "fraction",
+   "default": 0.05,
+   "min": 0.0,
+   "max": 0.15
+  },
+  "gussetWidth": {
+   "unit": "fraction",
+   "default": 0.15,
+   "min": 0.05,
+   "max": 0.24
+  },
+  "gussetLength": {
+   "unit": "fraction",
+   "default": 0.127,
+   "min": 0.1,
+   "max": 0.16
+  },
+  "gussetPosition": {
+   "unit": "fraction",
+   "default": 0.7,
+   "min": 0.05,
+   "max": 0.95
+  },
+  "bulge": {
+   "unit": "deg",
+   "default": 0.0,
+   "min": 0.0,
+   "max": 30.0
+  },
+  "rise": {
+   "unit": "fraction",
+   "default": 0.5,
+   "min": 0.3,
+   "max": 1.0
+  },
+  "legRise": {
+   "unit": "fraction",
+   "default": 0.54,
+   "min": 0.05,
+   "max": 0.95
+  },
+  "frontDip": {
+   "unit": "fraction",
+   "default": 0.1,
+   "min": 0.0,
+   "max": 0.25
+  },
+  "frontExposure": {
+   "unit": "fraction",
+   "default": 0.7,
+   "min": 0.05,
+   "max": 1.0
+  },
+  "backDip": {
+   "unit": "fraction",
+   "default": -0.05,
+   "min": -0.15,
+   "max": 0.1
+  },
+  "backExposure": {
+   "unit": "fraction",
+   "default": 0.3,
+   "min": 0.0,
+   "max": 1.15
+  }
+ },
+ "formulas": {
+  "stretchToScale": "1 / (1 + stretch)",
+  "gussetLengthMm": "seat * gussetLength * stretchToScale(yStretch)",
+  "gussetWidthMm": "waistToUpperLeg * gussetWidth * 2 * stretchToScale(xStretch)",
+  "sourceLines": {
+   "gussetLength": "const gussetLength = measurements.seat * options.gussetLength * stretch.y",
+   "gussetWidth": "measurements.waistToUpperLeg *\n        mergedOptions.gussetWidth *\n        2 *\n        stretchToScale(mergedOptions.xStretch),",
+   "stretch": "x: utils.stretchToScale(options.xStretch),"
+  }
+ },
+ "caveat": "Defaults are one designer's draft for stretch knit, not a population norm; the stretch options are negative ease chosen by the designer, not a fabric test result.",
+ "provenance": {
+  "source": "freesewing-uma",
+  "license": "MIT",
+  "commit": "8a8de5a271d9823bb393735a41dd3993cf5bcf4b",
+  "file": "assets/reference/lingerie/patterns/freesewing-uma/base.mjs",
+  "sha256": "34c98853d7776d6517a9dfe9b64d8dc7a03a8d50d81292e232246877f1b3eb6f",
+  "attribution": "Gusset and stretch drafting rules from FreeSewing's Uma design by Joost De Cock (MIT)."
+ }
+}

@@ -8,6 +8,67 @@ const q = new URLSearchParams(location.search);
 v.frame = () => place();
 await v.load('original', q.get('a'));
 v.setPose('relaxed');
+// PR1. ?present={"mode":"form"|"ghost","product":["Garment name", ...]}: the product view.
+// Fitting is untouched; this only decides what is drawn. A material whose name starts with a
+// product garment's name is the product, in its own material. VRoid marks her body by role
+// (_SKIN, _FACE, _EYE, _HAIR): on the form it is one matte grey, in ghost mode it is hidden.
+// Everything else (the nude base set the piece was fitted over, clothes of her own) is hidden.
+// Absent, every earlier render is unchanged.
+if (q.get('present')) {
+  const present = JSON.parse(q.get('present'));
+  const isProduct = (m) => present.product.some((g) => (m.name || '').startsWith(g));
+  const isBody = (m) => /_(SKIN|FACE|EYE|HAIR)\b|_(SKIN|FACE|EYE|HAIR) /.test(m.name || '');
+  const form = new THREE.MeshStandardMaterial({ color: present.formColor || 0xa9a5a1, roughness: 0.9 });
+  v.slots.original.vrm.scene.traverse((object) => {
+    if (!object.isMesh) return;
+    const list = Array.isArray(object.material) ? object.material : [object.material];
+    const kept = list.map((m) => {
+      if (isProduct(m)) {
+        // ?present.shading="standard": the same colour, texture and alpha on a lit PBR material,
+        // so studio light models the fabric (MToon is a toon shader and barely shows it).
+        let out = m;
+        if (present.shading === 'standard') {
+          out = new THREE.MeshStandardMaterial({
+            color: m.color ? m.color.clone() : 0xffffff, map: m.map || null,
+            transparent: Boolean(m.transparent), opacity: m.opacity ?? 1, alphaTest: m.alphaTest || 0,
+            roughness: present.roughness ?? 0.62, metalness: 0, side: m.side,
+          });
+          out.name = m.name;
+        }
+        // PR2. Engineering views of the product alone: its per-vertex colours (a measured
+        // clearance or strain written into COLOR_0 by tools/inspect/pose_contact.py), or its
+        // triangles as a wireframe. Absent, the product is drawn as above.
+        if (present.vertexColors) {
+          out = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, side: THREE.DoubleSide });
+          out.name = m.name;
+        }
+        if (present.wireframe) {
+          out = new THREE.MeshBasicMaterial({ color: 0x1b2633, wireframe: true });
+          out.name = m.name;
+        }
+        if (present.mode === 'ghost') out.side = THREE.DoubleSide;
+        return out;
+      }
+      if (isBody(m) && present.mode === 'form') return form;
+      return null;
+    });
+    if (kept.every((m) => m === null)) { object.visible = false; return; }
+    // A mesh holding several materials keeps its groups; a hidden one draws nothing.
+    const hidden = new THREE.MeshBasicMaterial({ visible: false });
+    const out = kept.map((m) => m || hidden);
+    object.material = Array.isArray(object.material) ? out : out[0];
+  });
+}
+// PR1. ?light=studio: a soft key, a fill from the other side and a rim, on a light neutral
+// background, so a black garment separates from it. Absent, the gallery's own lights.
+if (q.get('light') === 'studio') {
+  document.body.style.background = '#d6d1cc';
+  if (v.renderer) v.renderer.setClearColor(0xd6d1cc, 1);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.9); fill.position.set(-2.5, 1.6, 2.0);
+  const key = new THREE.DirectionalLight(0xfff4ec, 1.2); key.position.set(2.0, 2.4, 2.6);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.8); rim.position.set(0, 2.0, -3.0);
+  v.scene.add(fill, key, rim, new THREE.AmbientLight(0xffffff, 0.35));
+}
 // SA4. ?bones={"leftUpperArm":[x,y,z,w],...} poses normalized bones instead (the anatomy pose tests;
 // tools/anatomy/render_reference.py computes them); ?bones=rest is the bind pose. A bone it names
 // replaces the relaxed rotation. Absent: the relaxed pose, so every earlier render is unchanged.
