@@ -45,6 +45,8 @@ READS = (
     "/v1/catalog/garments",
     "/v1/body-art",
     "/v1/admin",
+    # UI-006: the next Studio's Design view reads this.
+    "/v1/catalog/garments/dress-mini-bodycon-v1/parameters",
 )
 RESTRICTED = "under-bralette-v1"
 

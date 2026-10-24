@@ -15,7 +15,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from apps.api.admin import AdminDep
@@ -26,6 +26,7 @@ from wardrobe.domain.avatars import AvatarInput
 from wardrobe.domain.garments import INTIMATE_CATEGORIES, GarmentTemplate
 from wardrobe.domain.jobs import CreateJobRequest, JobOptions
 from wardrobe.domain.looks import OutfitMode, OutfitRequest
+from wardrobe.domain.parameters import parameter_schema
 from wardrobe.pipeline.plan_outfit import COLORS
 
 router = APIRouter(tags=["garment catalog"])
@@ -167,6 +168,24 @@ def garment_preview(
         # Unversioned or outdated link (an old client, a hand-typed URL): still served, briefly.
         cache = "public, max-age=3600"
     return FileResponse(preview_path(template), media_type="image/webp", headers={"Cache-Control": cache})
+
+
+@router.get("/catalog/garments/{template_id}/parameters")
+def garment_parameters(template_id: str, catalog: CatalogDep, admin: AdminDep) -> JSONResponse:
+    """UI-006. What the Studio may change on this garment, and what it may only show.
+
+    Built from the template, its material policy and its pattern block
+    (wardrobe.domain.parameters): adjustable groups name the OutfitRequest field each value
+    is sent as; construction is read-only, each value with its unit and where it came from.
+    Gated as the garment's preview is: a restricted one is not there without an admin
+    session, and its answer is never cached shared.
+    """
+    template = catalog.get(template_id)
+    if template is None or (restricted(template) and admin is None):
+        raise HTTPException(status_code=404, detail="garment not available")
+    cache = "private, no-store" if restricted(template) else "public, max-age=300"
+    body = parameter_schema(template, restricted=restricted(template))
+    return JSONResponse(body, headers={"Cache-Control": cache})
 
 
 class CustomizeGarmentRequest(BaseModel):
