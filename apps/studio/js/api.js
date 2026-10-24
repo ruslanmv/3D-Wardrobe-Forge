@@ -187,6 +187,26 @@ export const api = {
     lookExposure: (slug, lookId) =>
         request(`/v1/library/${encodeURIComponent(slug)}/looks/${encodeURIComponent(lookId)}/exposure`),
 
+    /**
+     * UI-004. The product-facing garment catalogue: pre-rendered previews only, never a generation.
+     * Restricted pieces are listed only for an admin session (the server decides; asking without one
+     * is a 403), so the gallery asks for them only once the session exists.
+     */
+    catalogGarments: ({ category, includeRestricted = false } = {}) => {
+        const query = new URLSearchParams();
+        if (category) query.set('category', category);
+        if (includeRestricted) query.set('includeRestricted', 'true');
+        const suffix = query.toString();
+        return request(`/v1/catalog/garments${suffix ? `?${suffix}` : ''}`);
+    },
+
+    /**
+     * UI-006. What may be changed on a garment and what may only be shown, from the template itself:
+     * adjustable groups name the OutfitRequest field each value is sent as. Restricted garments answer
+     * only an admin session, as their previews do.
+     */
+    garmentParameters: (templateId) => request(`/v1/catalog/garments/${encodeURIComponent(templateId)}/parameters`),
+
     /** An object URL for a protected asset. The caller owns it and must revoke it. */
     async blobUrl(path) {
         const blob = await request(path, { expect: 'blob' });

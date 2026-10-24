@@ -214,6 +214,16 @@
         "light": "studio",
         "showUnrelatedFoundation": false,
         "enableGarmentIsolation": true,
+        "isolationViews": [
+          {
+            "name": "garment-only",
+            "yaw": -20
+          },
+          {
+            "name": "garment-only-back",
+            "yaw": 160
+          }
+        ],
         "views": [
           {
             "name": "front",

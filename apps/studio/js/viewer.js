@@ -196,6 +196,22 @@ export class Viewer {
         this.renderer.setAnimationLoop(() => this.tick());
     }
 
+    /**
+     * UI-003. Let go of everything this viewer holds: the render loop, the observer, both slots'
+     * models, the renderer's GPU resources and its canvas. A React Studio mounts and unmounts its
+     * viewport (twice in development); without this each mount kept a WebGL context and a loop.
+     * The vanilla Studio never calls it.
+     */
+    dispose() {
+        this.renderer.setAnimationLoop(null);
+        this.resizeObserver.disconnect();
+        for (const name of Object.keys(this.slots)) this.clear(name);
+        this.shadowTexture?.dispose?.();
+        this.controls.dispose();
+        this.renderer.dispose();
+        this.renderer.domElement.remove();
+    }
+
     resize() {
         const { clientWidth: width, clientHeight: height } = this.container;
         if (!width || !height) return;
