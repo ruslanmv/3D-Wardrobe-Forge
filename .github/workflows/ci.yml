@@ -46,6 +46,49 @@ jobs:
       - name: Garment library is valid
         run: python -m apps.cli templates
 
+  # UI-012. The next Studio (apps/studio/web): its own checks, then the built Studio served by
+  # Forge and driven in Chromium, desktop and phone, with axe. The Python jobs above are
+  # unchanged; nothing here replaces them.
+  studio-web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/studio/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/studio/web/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e "../../..[dev,preview]"
+      # The avatars the viewer loads: fetched and checked against their sha256 pins, as the
+      # image's own build does, and cached by those pins.
+      - uses: actions/cache@v4
+        with:
+          path: assets/library/*.vrm
+          key: library-${{ hashFiles('assets/library/models.json') }}
+      - name: Avatar library
+        working-directory: .
+        run: python tools/fetch_library.py
+      - run: npx playwright install --with-deps chromium
+      - name: Studio in a browser (desktop and phone, axe)
+        run: |
+          (cd ../../.. && WARDROBE_STORAGE_ROOT=/tmp/wardrobe python -m uvicorn apps.api.main:app --port 8781 &)
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8781/studio/next/ >/dev/null && break; sleep 1; done
+          npm run e2e
+
   cli:
     runs-on: ubuntu-latest
     steps:
