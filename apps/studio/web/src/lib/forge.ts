@@ -10,4 +10,10 @@ export type {
     CatalogGarment,
     Library,
     LibraryAvatar,
+    AdjustableChoice,
+    AdjustableNumber,
+    ParameterGroup,
+    ParameterSchema,
+    PlanReport,
+    ReadOnlyParameter,
 } from '../../../js/api.js';

@@ -75,7 +75,7 @@ export default function App() {
     const gallery = (
         <Gallery catalog={catalog.data} keyRequired={keyRequired} selected={garment?.id ?? null} onSelect={choose} />
     );
-    const inspector = <Inspector garment={garment} mode={mode} onModeChange={setMode} />;
+    const inspector = <Inspector garment={garment} avatar={avatar} mode={mode} onModeChange={setMode} />;
 
     return (
         <div className="flex h-dvh flex-col overflow-hidden">

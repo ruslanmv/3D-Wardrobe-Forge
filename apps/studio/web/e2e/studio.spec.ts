@@ -34,8 +34,36 @@ test('choosing a garment shows what Forge says about it, and nothing invented', 
     else await expect(first).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('heading', { name, level: 3 })).toBeVisible();
     await page.getByRole('tab', { name: 'Design' }).click();
-    await expect(page.getByText(/parameter schema/)).toBeVisible();
-    await expect(page.getByRole('slider')).toHaveCount(0); // no control Forge would ignore
+    // UI-006. Controls come from the garment's parameter schema; construction is shown, not offered.
+    await expect(page.getByRole('heading', { name: 'What you can change' })).toBeVisible();
+    await expect(page.getByRole('radiogroup', { name: 'Colour' })).toBeVisible();
+    await expect(page.getByText('Not offered yet, and why')).toBeVisible();
+});
+
+test('a see-through setting waits for an avatar declared adult, and Forge confirms what it would build', async ({
+    page,
+}) => {
+    await open(page);
+    await page.getByRole('list').first().getByRole('button').first().click(); // the tee
+    if (await page.getByRole('button', { name: 'Garment' }).isVisible()) {
+        await page.getByRole('button', { name: 'Garment' }).click();
+    }
+    await page.getByRole('tab', { name: 'Design' }).click();
+    const opacity = page.getByRole('spinbutton', { name: /Opacity/ });
+    // The startup avatar is not declared adult: opacity stays at 1 and says why.
+    await expect(opacity).toBeDisabled();
+    await expect(page.getByText(/See-through needs the avatar declared adult/)).toBeVisible();
+
+    await page.getByRole('combobox', { name: 'Avatar' }).selectOption('fem-vroid');
+    await expect(opacity).toBeEnabled();
+    // Typed exactly, and the slider follows: never a slider alone.
+    await opacity.fill('0.6');
+    await expect(page.getByRole('slider', { name: /Opacity/ })).toHaveAttribute('aria-valuenow', '0.6');
+    await page.getByRole('button', { name: 'Check with Forge' }).click();
+    const result = page.getByTestId('check-result');
+    await expect(result).toBeVisible({ timeout: 30_000 });
+    await expect(result).toContainText('Forge would build this.');
+    await expect(result).toContainText('0.6');
 });
 
 test('the viewer loads an avatar and every camera action has a button', async ({ page }) => {

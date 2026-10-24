@@ -200,6 +200,13 @@ export const api = {
         return request(`/v1/catalog/garments${suffix ? `?${suffix}` : ''}`);
     },
 
+    /**
+     * UI-006. What may be changed on a garment and what may only be shown, from the template itself:
+     * adjustable groups name the OutfitRequest field each value is sent as. Restricted garments answer
+     * only an admin session, as their previews do.
+     */
+    garmentParameters: (templateId) => request(`/v1/catalog/garments/${encodeURIComponent(templateId)}/parameters`),
+
     /** An object URL for a protected asset. The caller owns it and must revoke it. */
     async blobUrl(path) {
         const blob = await request(path, { expect: 'blob' });

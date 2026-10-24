@@ -1,7 +1,8 @@
 import * as Tabs from '@radix-ui/react-tabs';
 import { ExternalLink, Info } from 'lucide-react';
 
-import type { CatalogGarment } from '@/lib/forge';
+import type { CatalogGarment, LibraryAvatar } from '@/lib/forge';
+import { DesignPanel } from './design/DesignPanel';
 
 export type StudioMode = 'explore' | 'design' | 'inspect';
 
@@ -14,16 +15,18 @@ const MODES: { id: StudioMode; label: string; hint: string }[] = [
 /**
  * UI-005 (first part). One inspector, three depths: Explore, Design, Inspect.
  *
- * It shows only what Forge actually says about the garment. Design has no controls until the
- * server publishes a typed parameter schema (UI-006): sliders the backend would ignore look
- * technical and are not, which is the opposite of what this Studio is for.
+ * It shows only what Forge actually says about the garment. Design's controls come from the
+ * garment's parameter schema (UI-006, DesignPanel): each is a request field Forge reads, and
+ * the construction a request cannot change is shown, never offered.
  */
 export function Inspector({
     garment,
+    avatar,
     mode,
     onModeChange,
 }: {
     garment: CatalogGarment | null;
+    avatar: LibraryAvatar | null;
     mode: StudioMode;
     onModeChange: (mode: StudioMode) => void;
 }) {
@@ -109,18 +112,7 @@ export function Inspector({
                 </Tabs.Content>
 
                 <Tabs.Content value="design" className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-                    {!garment ? (
-                        <Empty />
-                    ) : (
-                        <>
-                            <h3 className="text-base font-semibold">Construction</h3>
-                            <Note>
-                                Exact construction values — coverage, rise, gusset, cups, band — appear here once Forge
-                                publishes this garment's parameter schema, each with its unit, range and where it came
-                                from. Nothing is shown before then: a control Forge would ignore is worse than none.
-                            </Note>
-                        </>
-                    )}
+                    {!garment ? <Empty /> : <DesignPanel garment={garment} avatar={avatar} />}
                 </Tabs.Content>
 
                 <Tabs.Content value="inspect" className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
