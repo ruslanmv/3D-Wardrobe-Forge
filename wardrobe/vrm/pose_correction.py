@@ -31,6 +31,8 @@ def correct(
     lap = np.asarray(lap, dtype=bool)
     body_pos = np.asarray(body_pos, dtype=np.float64).reshape(-1, 3)
     body_nrm = np.asarray(body_nrm, dtype=np.float64).reshape(-1, 3)
+    lap_rows = np.flatnonzero(lap)
+    center_x = float(rest[lap_rows, 0].mean()) if lap_rows.size else 0.0
     edges: list[tuple[int, int, float]] = []
     seen: set[tuple[int, int]] = set()
     for tri in indices:
@@ -58,16 +60,28 @@ def correct(
                     continue
                 signed = float(np.dot(out[vertex] - body_pos[j], body_nrm[j]))
                 if signed < CLEARANCE_M:
-                    out[vertex] = out[vertex] + body_nrm[j] * (CLEARANCE_M - signed)
-        for a, b, length in edges:
-            if not lap[a] or not lap[b]:
-                continue
-            edge = out[b] - out[a]
-            current = float(np.linalg.norm(edge))
-            limit = length * STRETCH_LIMIT
-            if current <= limit or current < 1e-8:
-                continue
-            step = edge / current * ((current - limit) * RELAX * 0.5)
-            out[a] = out[a] + step
-            out[b] = out[b] - step
+                    normal = body_nrm[j]
+                    away = (float(out[vertex, 0]) - center_x) * float(normal[0])
+                    if away > 0 and abs(normal[0]) >= abs(normal[1]) and abs(normal[0]) >= abs(normal[2]):
+                        continue
+                    out[vertex] = out[vertex] + normal * (CLEARANCE_M - signed)
+        _relax(out, edges, lap)
+    for _ in range(32):
+        _relax(out, edges, lap, 1.0)
     return out
+
+
+def _relax(out: np.ndarray, edges: list[tuple[int, int, float]], lap: np.ndarray, gain: float = RELAX) -> None:
+    for a, b, length in edges:
+        if not lap[a] and not lap[b]:
+            continue
+        edge = out[b] - out[a]
+        current = float(np.linalg.norm(edge))
+        limit = length * STRETCH_LIMIT
+        if current <= limit or current < 1e-8:
+            continue
+        share_a = 0.5 if lap[a] and lap[b] else (1.0 if lap[a] else 0.0)
+        share_b = 0.5 if lap[a] and lap[b] else (1.0 if lap[b] else 0.0)
+        step = edge / current * ((current - limit) * gain)
+        out[a] = out[a] + step * share_a
+        out[b] = out[b] - step * share_b

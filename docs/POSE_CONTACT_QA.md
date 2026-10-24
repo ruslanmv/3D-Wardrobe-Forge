@@ -160,12 +160,18 @@ move apart. That, and the 10–17 mm at the seat creases, need the posed correct
 `src/wardrobe/PoseGarmentCorrection.js` in HomePilot, run from `VRPoseSystem` when a
 preset finishes blending (and when it is applied instantly, which is how a new look
 keeps the pose she was already in). It starts from the bind pose skinned by the
-current bones, pushes lap vertices out along the posed body normal to 1.5 mm, and
-shortens edges stretched past 1.45×. The body mesh is not moved and not hidden, so
-the pelvic surface in the file stays the one on screen. A sibling mesh carries the
-corrected cloth in the same scene; there is no second renderer. The same numbers
-are in `wardrobe/vrm/pose_correction.py` for a measurement that does not depend on
-a browser. Weight smoothing (PF2) stays; this pass is what it could not do.
+current bones. The lap of the garment — the lower half, near the midline — is then
+re-skinned without the thigh, knee, foot and toe bones, so one sheet is not asked to
+follow both legs. Vertices are pushed out along the posed body normal to 1.5 mm,
+except a normal that points away from the midline (an inner thigh), which would pin
+the hem open. Edges stretched past 1.45× are shortened; a vertex outside the lap
+stays put, so the hem is pulled back up to the skirt. The body mesh is not moved
+and not hidden. A mesh is the body only when its name is a body token
+(`Body`, `Body_(merged)baked`), never because the letters "body" occur inside
+"bodycon". A sibling mesh carries the corrected cloth in the same scene; there is
+no second renderer. `wardrobe/vrm/pose_correction.py` is the same push and shorten,
+without the thigh re-skin (that step needs the skeleton, which the viewer has).
+Weight smoothing (PF2) stays; this pass is what it could not do.
 
 ## Known defect: a seated gusset is squeezed to a strip (GF1, parked)
 
