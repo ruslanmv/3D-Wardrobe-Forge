@@ -104,6 +104,12 @@ def seat_gusset(positions: np.ndarray, grid: list[list[int]], points: np.ndarray
 #: A gusset row narrower than this has collapsed: a reference body's narrows to about 10 mm between
 #: her thighs, as it should, and AvatarSample A's micro thong's rows went to nothing.
 COLLAPSED_M = 0.004
+#: The panel that sits on the mound. A brief's gusset is drafted wider than this and the seat
+#: lets the middle rows fall to a few millimetres, which is a string with the mound bare on
+#: both sides. Rows under this, between seams that are still a gusset's seams, are opened back
+#: out to it. A string (seams narrower than ``GUSSET_SEAM_M``) is not a brief and is left.
+GUSSET_ON_MOUND_M = 0.024
+GUSSET_SEAM_M = 0.040
 
 
 def _keep_width(positions: np.ndarray, rows: list[list[int]]) -> None:
@@ -142,6 +148,41 @@ def _keep_width(positions: np.ndarray, rows: list[list[int]]) -> None:
             positions[row, 0] = centre + across * (np.arange(len(row)) / (len(row) - 1) - 0.5) * target
         else:
             positions[row, 0] = centre + (xs - centre) * (target / have)
+
+
+def restore_gusset_width(positions: np.ndarray, grid: list[list[int]], *,
+                         floor_m: float = GUSSET_ON_MOUND_M) -> bool:
+    """Open a brief's pinched gusset back to the panel that sits on the mound. In place.
+
+    ``_keep_width`` only repairs a row that has collapsed to nothing. A row that
+    narrowed to 5 mm is still a string, and the mound on either side of it is
+    bare. Interior rows between that and ``floor_m`` are scaled about their own
+    centre, up to ``floor_m`` and never wider than the narrower seam, so the
+    seam still meets the panel. The seams themselves are not moved. A gusset
+    whose seams are under ``GUSSET_SEAM_M`` was drafted as a string and is left
+    alone. Returns whether a row was opened.
+    """
+    rows = [list(row) for row in grid]
+    if len(rows) < 3:
+        return False
+
+    def width(row: list[int]) -> float:
+        return float(np.ptp(positions[np.asarray(row, dtype=np.int64), 0]))
+
+    first, last = width(rows[0]), width(rows[-1])
+    if min(first, last) < GUSSET_SEAM_M:
+        return False
+    cap = min(first, last, floor_m)
+    moved = False
+    for row in rows[1:-1]:
+        have = width(row)
+        if have < COLLAPSED_M or have >= cap:
+            continue
+        ids = np.asarray(row, dtype=np.int64)
+        centre = float(positions[ids, 0].mean())
+        positions[ids, 0] = centre + (positions[ids, 0] - centre) * (cap / have)
+        moved = True
+    return moved
 
 
 #: A vertex is judged against this many of its nearest surface samples.
@@ -215,6 +256,22 @@ def after_shell(context, mesh, clearance: float) -> None:
             if push.max() < 1e-5:
                 break
             positions[index] = p + normal * push[:, None]
+    # After the clearance push, so a later shove out of the thighs cannot pinch it shut again.
+    # Across stays: the push that follows is up and along, which is the same rule as the last
+    # pass of ``seat_gusset``. A thong's string is not a mound panel and is not opened.
+    if (record and float((record.get("measures") or {}).get("backCoverage", 1.0)) >= THONG_BACK_BELOW
+            and record.get("gusset") and restore_gusset_width(positions, record["gusset"])):
+        interior = np.asarray([v for row in record["gusset"][1:-1] for v in row], dtype=np.int64)
+        if points.shape[0] and interior.size:
+            for _ in range(ITERATIONS):
+                p = positions[interior]
+                signed, normal = _depth(p, points, normals)
+                push = np.clip(clearance - signed, 0.0, None)
+                if float(push.max()) < 1e-5:
+                    break
+                along = normal * np.array([0.0, 1.0, 1.0])
+                along /= np.maximum(np.linalg.norm(along, axis=1, keepdims=True), 1e-9)
+                positions[interior] = p + along * push[:, None]
     mesh.positions = positions.astype(np.float32)
     if record:
         _sew_gusset(mesh, record)
@@ -509,4 +566,5 @@ def _frame_metadata(mesh) -> dict:
     return mesh.metadata.get("lingerieFrame") or {}
 
 
-__all__ = ["GUSSET_COLUMNS", "after_shell", "crotch_surface", "seat_gusset"]
+__all__ = ["GUSSET_COLUMNS", "GUSSET_ON_MOUND_M", "after_shell", "crotch_surface",
+           "restore_gusset_width", "seat_gusset"]
