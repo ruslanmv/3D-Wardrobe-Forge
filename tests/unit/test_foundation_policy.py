@@ -19,3 +19,11 @@ def test_none_and_preserve_existing_do_not_add_a_layer():
 
 def test_auto_compatible_adds_where_she_has_none():
     assert JobOptions(foundationPolicy="auto-compatible").requests_added_foundation is True
+
+
+def test_an_explicit_refusal_also_blocks_the_skirt_liner_and_underwear_base():
+    assert JobOptions(foundationPolicy="none").refuses_added_underwear is True
+    assert JobOptions(foundationPolicy="preserve-existing", ensureFoundation=True).refuses_added_underwear is True
+    assert JobOptions().refuses_added_underwear is False
+    assert JobOptions(ensureFoundation=True).refuses_added_underwear is False
+    assert JobOptions(foundationPolicy="auto-compatible").refuses_added_underwear is False

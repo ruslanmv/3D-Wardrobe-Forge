@@ -43,13 +43,16 @@ async def plan(context: PipelineContext) -> None:
     mode = context.record.request.options.base_body_mode
     # PB1. Read before any foundation is added: underwear she asked for, not one put under clothes.
     context.requested_foundation = any(g.role in FOUNDATION_ROLES for g in outfit_plan.garments)
+    # none / preserve-existing also cover the skirt liner and underwear-base.
+    # Absent, those two paths stay as they were before the policy existed.
+    refuses_underwear = context.record.request.options.refuses_added_underwear
     if context.record.request.options.requests_added_foundation and mode != "preserve":
         founded, added = ensure_foundation(outfit_plan, request, context.catalog, _worn(context),
                                            depicts_adult=context.record.request.avatar.depicts_adult)
         if added:
             context.warn(f"added {' and '.join(added)} underneath: the foundation her clothes go over")
         outfit_plan = founded
-    elif mode == "underwear-base":
+    elif mode == "underwear-base" and not refuses_underwear:
         outfit_plan = with_foundation(outfit_plan, request, context.catalog)
         completed = complete_foundation(outfit_plan, request, context.catalog, _worn(context))
         if completed is not outfit_plan:
@@ -57,7 +60,7 @@ async def plan(context: PipelineContext) -> None:
                                                                          - len(outfit_plan.garments)])
             context.warn(f"added {added} so her own clothes can come off under the underwear")
         outfit_plan = completed
-    elif mode == "replace-outer" and wears_her_own_bottoms(context):
+    elif mode == "replace-outer" and not refuses_underwear and wears_her_own_bottoms(context):
         lined = with_skirt_liner(
             outfit_plan, request, context.catalog, depicts_adult=context.record.request.avatar.depicts_adult
         )

@@ -158,6 +158,16 @@ class JobOptions(BaseModel):
             return True
         return self.ensure_foundation
 
+    @property
+    def refuses_added_underwear(self) -> bool:
+        """Skirt liners and the underwear-base pair are automatic additions too.
+
+        ``none`` and ``preserve-existing`` refuse them. When the policy is
+        absent they stay exactly as they were, including a job that never
+        set ``ensureFoundation``.
+        """
+        return self.foundation_policy in ("none", "preserve-existing")
+
 
 class CreateJobRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)

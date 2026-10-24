@@ -26,6 +26,36 @@ def test_inner_thigh_normals_do_not_pin_the_hem_open():
     assert stretched <= STRETCH_LIMIT + 0.2
 
 
+def test_contact_and_stretch_both_hold_when_the_push_is_across_the_cloth():
+    rest = np.array([[0.0, 0.0, 0.0], [0.04, 0.0, 0.0], [0.02, 0.0, 0.01]])
+    posed = np.array([[0.0, -0.02, 0.0], [0.10, -0.02, 0.0], [0.02, -0.02, 0.01]])
+    body = np.array([[0.0, 0.0, 0.0], [0.10, 0.0, 0.0], [0.02, 0.0, 0.01]])
+    normals = np.tile([0.0, 1.0, 0.0], (3, 1))
+    out = correct(posed, rest, np.array([0, 1, 2]), np.ones(3, dtype=bool), body, normals)
+    assert out[:, 1].min() >= 0.0015 - 1e-4
+    stretched = float(np.linalg.norm(out[0] - out[1]) / 0.04)
+    assert stretched <= STRETCH_LIMIT + 0.2
+
+
+def test_shortening_a_chord_does_not_leave_the_cloth_inside_a_curved_surface():
+    angles = np.array([0.0, 2 * np.pi / 3, 4 * np.pi / 3])
+    radius = 0.030
+    normals = np.stack([np.cos(angles), np.sin(angles), np.zeros(3)], axis=1)
+    body = normals * radius
+    posed = normals * (radius + 0.0015)
+    rest = normals * 0.010
+    out = correct(posed, rest, np.array([0, 1, 2]), np.ones(3, dtype=bool), body, normals)
+    # Clearance is against the nearest supplied body point, which is how the
+    # pass decides "inside". A vertex pulled across the circle is no longer
+    # next to the point it started on.
+    dist = np.linalg.norm(out[:, None, :] - body[None, :, :], axis=2)
+    nearest = np.argmin(dist, axis=1)
+    signed = np.sum((out - body[nearest]) * normals[nearest], axis=1)
+    assert signed.min() >= 0.0015 - 1e-4
+    stretch = float(np.linalg.norm(out[0] - out[1]) / np.linalg.norm(rest[0] - rest[1]))
+    assert np.isfinite(stretch)
+
+
 def test_a_hem_vertex_is_pulled_back_to_a_pinned_skirt_vertex():
     rest = np.array([[0.0, 0.0, 0.0], [0.0, 0.04, 0.0], [0.01, 0.02, 0.0]])
     posed = np.array([[0.0, -0.12, 0.0], [0.0, 0.04, 0.0], [0.01, -0.04, 0.0]])

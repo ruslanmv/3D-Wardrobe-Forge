@@ -165,7 +165,9 @@ re-skinned without the thigh, knee, foot and toe bones, so one sheet is not aske
 follow both legs. Vertices are pushed out along the posed body normal to 1.5 mm,
 except a normal that points away from the midline (an inner thigh), which would pin
 the hem open. Edges stretched past 1.45× are shortened; a vertex outside the lap
-stays put, so the hem is pulled back up to the skirt. The body mesh is not moved
+stays put, so the hem is pulled back up to the skirt. The last step projects the
+cloth out again, because shortening a chord of a curved surface pulls it inside.
+The body mesh is not moved
 and not hidden. A mesh is the body only when its name is a body token
 (`Body`, `Body_(merged)baked`), never because the letters "body" occur inside
 "bodycon". A sibling mesh carries the corrected cloth in the same scene; there is

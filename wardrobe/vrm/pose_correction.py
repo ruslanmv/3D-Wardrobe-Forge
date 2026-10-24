@@ -49,26 +49,46 @@ def correct(
             if length > 1e-6:
                 edges.append((a, b, length))
     for _ in range(ITERATIONS):
-        if body_pos.size:
-            delta = out[lap][:, None, :] - body_pos[None, :, :]
-            dist = np.linalg.norm(delta, axis=2)
-            nearest = np.argmin(dist, axis=1)
-            row = np.flatnonzero(lap)
-            for local, vertex in enumerate(row):
-                j = int(nearest[local])
-                if dist[local, j] > SEARCH_M:
-                    continue
-                signed = float(np.dot(out[vertex] - body_pos[j], body_nrm[j]))
-                if signed < CLEARANCE_M:
-                    normal = body_nrm[j]
-                    away = (float(out[vertex, 0]) - center_x) * float(normal[0])
-                    if away > 0 and abs(normal[0]) >= abs(normal[1]) and abs(normal[0]) >= abs(normal[2]):
-                        continue
-                    out[vertex] = out[vertex] + normal * (CLEARANCE_M - signed)
+        _project(out, lap, body_pos, body_nrm, allow_lateral=False, center_x=center_x)
         _relax(out, edges, lap)
     for _ in range(32):
         _relax(out, edges, lap, 1.0)
+    # Shortening a chord of a curved surface pulls the cloth back inside.
+    # The last step is contact, including a normal that points away from
+    # the midline: clearance outranks the hem-spread guard once the edges
+    # have already been shortened.
+    _project(out, lap, body_pos, body_nrm, allow_lateral=True)
     return out
+
+
+def _project(
+    out: np.ndarray,
+    lap: np.ndarray,
+    body_pos: np.ndarray,
+    body_nrm: np.ndarray,
+    *,
+    allow_lateral: bool,
+    center_x: float = 0.0,
+) -> None:
+    if not body_pos.size:
+        return
+    delta = out[lap][:, None, :] - body_pos[None, :, :]
+    dist = np.linalg.norm(delta, axis=2)
+    nearest = np.argmin(dist, axis=1)
+    row = np.flatnonzero(lap)
+    for local, vertex in enumerate(row):
+        j = int(nearest[local])
+        if dist[local, j] > SEARCH_M:
+            continue
+        normal = body_nrm[j]
+        signed = float(np.dot(out[vertex] - body_pos[j], normal))
+        if signed >= CLEARANCE_M:
+            continue
+        away = (float(out[vertex, 0]) - center_x) * float(normal[0])
+        lateral = away > 0 and abs(normal[0]) >= abs(normal[1]) and abs(normal[0]) >= abs(normal[2])
+        if lateral and not allow_lateral:
+            continue
+        out[vertex] = out[vertex] + normal * (CLEARANCE_M - signed)
 
 
 def _relax(out: np.ndarray, edges: list[tuple[int, int, float]], lap: np.ndarray, gain: float = RELAX) -> None:
