@@ -5,6 +5,19 @@
 # Blender worker image (Dockerfile.blender).
 #
 # The same image serves Wardrobe Studio at /studio/ (the root redirects there).
+
+# UI-002. The next Studio (apps/studio/web) is a React + TypeScript build. It is compiled here,
+# in its own stage, and only its static output is copied into the image: no Node at run time.
+# The build needs nothing but npm's registry (no GPU, no Forge); the viewer and API client it
+# imports are the vanilla Studio's own files (apps/studio/js), copied beside it.
+FROM node:22-slim AS studio
+WORKDIR /studio/web
+COPY apps/studio/web/package.json apps/studio/web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY apps/studio/js /studio/js
+COPY apps/studio/web ./
+RUN npm run build
+
 FROM python:3.11-slim AS base
 
 ENV PYTHONUNBUFFERED=1 \
@@ -24,6 +37,7 @@ RUN apt-get update \
 
 COPY pyproject.toml README.md ./
 COPY apps ./apps
+COPY --from=studio /studio/next ./apps/studio/next
 COPY wardrobe ./wardrobe
 COPY worker ./worker
 COPY tools ./tools
