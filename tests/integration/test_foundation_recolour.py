@@ -76,6 +76,10 @@ async def test_black_underneath_changes_only_the_foundation(orchestrator, store,
     for index, material in enumerate(after.materials):
         if index not in under:
             assert material == before.materials[index], material.get("name")  # the dress, the boots
+        else:
+            # Named for what it is now, its Forge marker kept: "Black Tailored Briefs [Forge_…]".
+            assert material["name"].startswith("Black "), material["name"]
+            assert material["name"].split(" [")[1:] == before.materials[index]["name"].split(" [")[1:]
     black_linear = hex_to_linear_rgba(COLORS["black"])[:3]
     for index, tag in under.items():
         assert tag["foundationColor"] == "black"

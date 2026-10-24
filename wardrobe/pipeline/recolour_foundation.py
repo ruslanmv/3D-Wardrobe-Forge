@@ -67,6 +67,19 @@ def _ratio(lit: list[float], shade: list[float] | None) -> float:
     return sum(ratios) / len(ratios) if ratios else _SHADE_FACTOR
 
 
+def _renamed(name: str, colour_name: str) -> str:
+    """"White Tailored Briefs [Forge_Bottoms_01_CLOTH]" in black: "Black Tailored Briefs [Forge_…]".
+
+    Only a leading colour word is replaced (the longest that matches, so "dark grey" is one);
+    the ``[Forge_…]`` marker a later job detects the garment by is kept as it is.
+    """
+    lower = name.lower()
+    for known in sorted(COLORS, key=len, reverse=True):
+        if lower.startswith(known + " "):
+            return colour_name.title() + name[len(known):]
+    return name
+
+
 def recolour(document: GltfDocument, index: int, colour: tuple[float, float, float]) -> bool:
     """Rewrite one material's colour (linear RGB); its alpha, finish and shade ratio stay.
 
@@ -117,6 +130,13 @@ async def run(context: PipelineContext) -> None:
     changed = [recolour(document, index, colour) for index, _tag in found]
     for _index, tag in found:
         tag["foundationColor"] = name  # FC1: the next look keeps it while she keeps this colour
+    block = document.extension(VRM0_EXTENSION)
+    properties = (block or {}).get("materialProperties")
+    for index, _tag in found:
+        material = document.materials[index]
+        material["name"] = _renamed(str(material.get("name") or ""), name)
+        if isinstance(properties, list) and index < len(properties) and "name" in properties[index]:
+            properties[index]["name"] = material["name"]
     if not any(changed):
         raise FoundationNotRecoloured(f"Her foundation is already {name}.")
     context.foundation_color = name
