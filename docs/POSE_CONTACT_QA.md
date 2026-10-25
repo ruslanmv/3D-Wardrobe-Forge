@@ -198,6 +198,15 @@ triangles, the knee fold) and two here:
   15.2× → 1.07×, sole 1.66× → 1.01×, deepest inside 23.2 → 16.8 mm. Her knee's own skin
   collapses at 90° (15 of her triangles invert); the shaft now follows it there, and
   inverted triangles rose 2 → 88 at the front of her knee. That is the open item.
+- **SW4: the skin weights crossed between her legs** (2026-10-25, found in production). Her
+  skin knows no sides: on AvatarSample_A, who stands with her legs together, the nearest skin
+  to a boot's inner shaft is partly the other leg, and 514 boot vertices took up to half their
+  weight from it. Seated wide they were pulled across the gap between her shins in jagged
+  strips (worst edge 53.6x, the sole 46.7x, 611 inverted triangles), which no posed correction
+  can repair. A boot's transferred weights now pass through `bind_mesh`'s own lateral mask (a
+  piece on one side never takes the other side's bones): 2.48x, sole 1.01x, 65 inverted
+  triangles on the same look. `test_a_boot_never_takes_the_other_legs_weights` holds it on two
+  bodies. Looks made before it keep their weights: make them again.
 - **The briefs' crotch was 5.8 mm of fabric** — GF1, below, measured by cutting the strip
   plane by plane (a band of vertices read a sparse mesh's two nearest vertices as its
   width). GF1 is now applied to the foundation Auto Foundation adds under clothes: 32–35 mm.
