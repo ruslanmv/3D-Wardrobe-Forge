@@ -207,6 +207,12 @@ triangles, the knee fold) and two here:
   piece on one side never takes the other side's bones): 2.48x, sole 1.01x, 65 inverted
   triangles on the same look. `test_a_boot_never_takes_the_other_legs_weights` holds it on two
   bodies. Looks made before it keep their weights: make them again.
+
+  ![SW4 before and after: boots alone from the front, and the whole look from the side](images/sw4-boots-sitting-wide.webp)
+
+  The production look (`job_7c5ce7c7…`, left) beside the same outfit refitted with SW4
+  (right), in HomePilot's own viewer after Pose Studio ▸ Sitting (Wide) and its cloth
+  correction. The viewer's own figures: boot 59.3× → 3.07×, sole 54.9× → 1.09×.
 - **The briefs' crotch was 5.8 mm of fabric** — GF1, below, measured by cutting the strip
   plane by plane (a band of vertices read a sparse mesh's two nearest vertices as its
   width). GF1 is now applied to the foundation Auto Foundation adds under clothes: 32–35 mm.
