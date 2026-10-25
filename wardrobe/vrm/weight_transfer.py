@@ -83,6 +83,28 @@ GRID_ABOVE = 50_000
 GRID_CELL_M = 0.02
 
 
+def _k_smallest(d2: np.ndarray, count: int) -> np.ndarray:
+    """Per row, the columns of the ``count`` smallest values, nearest first, ties by column. BA1.
+
+    ``np.argpartition`` is free to pick any of several equal distances at the cut, and which it
+    picks depends on the CPU's SIMD path: a symmetric body has many skin points exactly as far
+    from a garment vertex (and every UV seam two at one spot), so CI's runners blended different
+    neighbours than a laptop did, and the bodycon's weights came out different. Here the cut's
+    value is found (a value is the same on every machine), everything strictly nearer is kept,
+    the rest of the slots go to the tied columns in column order, and the chosen are ordered by
+    (distance, column) so the blend sums in the same order too.
+    """
+    count = min(count, d2.shape[1])
+    kth = np.partition(d2, count - 1, axis=1)[:, count - 1:count]
+    nearer = d2 < kth
+    need = count - nearer.sum(axis=1, keepdims=True)
+    tied = d2 == kth
+    chosen = nearer | (tied & (np.cumsum(tied, axis=1) <= need))
+    columns = np.argsort(~chosen, axis=1, kind="stable")[:, :count]
+    order = np.argsort(np.take_along_axis(d2, columns, axis=1), axis=1, kind="stable")
+    return np.take_along_axis(columns, order, axis=1)
+
+
 def _nearest(points: np.ndarray, cloud: np.ndarray, count: int) -> tuple[np.ndarray, np.ndarray]:
     if cloud.shape[0] > GRID_ABOVE:
         return _nearest_by_cell(points, cloud, count)
@@ -91,7 +113,7 @@ def _nearest(points: np.ndarray, cloud: np.ndarray, count: int) -> tuple[np.ndar
     for start in range(0, points.shape[0], 512):
         block = points[start:start + 512]
         d2 = ((block[:, None, :] - cloud[None, :, :]) ** 2).sum(axis=2)
-        nearest = np.argpartition(d2, count, axis=1)[:, :count]
+        nearest = _k_smallest(d2, count)
         index[start:start + 512] = nearest
         distance[start:start + 512] = np.sqrt(np.take_along_axis(d2, nearest, axis=1))
     return index, distance
@@ -116,7 +138,7 @@ def _nearest_by_cell(points: np.ndarray, cloud: np.ndarray, count: int) -> tuple
             near = np.flatnonzero(np.all((cloud > lo - margin) & (cloud < hi + margin), axis=1))
             if near.size >= count:
                 d2 = ((points[rows][:, None, :] - cloud[near][None, :, :]) ** 2).sum(axis=2)
-                pick = np.argpartition(d2, count - 1, axis=1)[:, :count]
+                pick = _k_smallest(d2, count)
                 found = np.sqrt(np.take_along_axis(d2, pick, axis=1))
                 if found.max() <= margin or near.size == cloud.shape[0]:
                     index[rows], distance[rows] = near[pick], found
@@ -283,6 +305,12 @@ def transfer_weights(mesh: Mesh, segments: list[BoneSegment], document: GltfDocu
         dense[:, legs] *= (1.0 - behind)[:, None]
         dense[:, hips] += moved
 
+    # BA1. Ranked on weights rounded to 1e-9, stable, so a tie is broken by bone index the same way
+    # on every machine. Between her legs a vertex is half one thigh, half the other: equal in
+    # substance, but in float64 they differed by ~1e-16 depending on the order the CPU summed
+    # them, and on some CI runners the right thigh ranked first — JOINTS_0 and WEIGHTS_0 came out
+    # permuted for 104 of a bodycon's 957 vertices (same skinning, different bytes).
+    dense = np.round(dense, 9)
     order = np.argsort(-dense, axis=1, kind="stable")
     keep = min(INFLUENCES, count)
     joints = order[:, :keep]

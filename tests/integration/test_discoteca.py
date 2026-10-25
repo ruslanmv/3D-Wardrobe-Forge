@@ -202,3 +202,31 @@ async def test_a_dress_on_a_look_with_boots_keeps_her_on_her_heels(orchestrator,
     before, after = GltfDocument.from_bytes(look_a), GltfDocument.from_bytes(look_b)
     assert stance.read(after, inspect_document(after)) == stance.read(before, inspect_document(before))
     assert "shoes-combat-boots-v1" in garment_nodes(look_b)
+
+
+async def test_an_over_knee_shaft_bends_with_her_skin_not_her_shin(orchestrator, store):
+    """SW3. Bound by distance to her bones, the rim of an over-the-knee boot, well above her knee,
+    carried a fifth of its weight on her shin (her skin there: 2%), and seated it went 22 mm into
+    her thigh. The shaft takes her skin's weights, on a body with skin there: a coarse one (the
+    calibration bodies, nothing for 20 cm above the knee) keeps the bone binding."""
+    from wardrobe.anatomy.vrm import build_reference_vrm
+
+    template = BOOTS["discoteca_over_knee"][0]
+    dense = build_reference_vrm("ref-f-median", correctives=False)
+    _record, output = await run(orchestrator, store, dense, "discoteca_over_knee", preset="discoteca_over_knee")
+    document = GltfDocument.from_bytes(output)
+    info = inspect_document(document)
+    node = garment_nodes(output)[template][0]
+    joints = np.array(document.gltf["skins"][node["skin"]]["joints"])
+    knee = float(document.world_matrices()[info.humanoid_bones["leftLowerLeg"]][1, 3])
+    shins = {info.humanoid_bones[f"{side}LowerLeg"] for side in ("left", "right")}
+    rim_shin = []
+    for primitive in document.meshes[node["mesh"]]["primitives"]:
+        attributes = primitive["attributes"]
+        p = document.read_accessor(attributes["POSITION"])
+        j = joints[document.read_accessor(attributes["JOINTS_0"]).astype(int)]
+        w = document.read_accessor(attributes["WEIGHTS_0"])
+        high = p[:, 1] > knee + 0.1
+        rim_shin.extend((w * np.isin(j, list(shins)))[high].sum(axis=1).tolist())
+    assert rim_shin, "the shaft does not reach 10 cm above her knee"
+    assert max(rim_shin) < 0.1, max(rim_shin)

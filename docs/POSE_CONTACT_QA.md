@@ -21,6 +21,9 @@ Studio, and keep the numbers beside the change.
 | `tools/inspect/pose_contact.py`             | Measures every garment of a VRM in each pose: clearance, depth inside, share inside, stretch |
 | `tools/inspect/contact_sheet.py`            | Builds the QA sheet for one look and one pose, with an optional before/after comparison     |
 | `tools/inspect/fit_inspect.py`              | Garment-on-a-grey-dress-form frames for fit inspection (see its docstring)                  |
+| `tools/inspect/bake_pose_correction.py`     | Runs HomePilot's posed cloth correction on a look in one pose and bakes it into a VRM        |
+| `tools/inspect/fit_checks.py`               | The six engineering checks: gusset, leg openings, sections, topology, contact, layers       |
+| `tools/inspect/engineering_sheet.py`        | Assembles those checks and a contact sheet into one six-panel sheet, three columns           |
 
 Output always goes to a directory **outside the repository**; the tools refuse a path
 inside it, so no inspection file can be committed by accident.
@@ -155,7 +158,57 @@ cross under a single vertex: no choice of weights lets one point follow two thig
 move apart. That, and the 10–17 mm at the seat creases, need the posed correction pass
 (defect 2), not skinning weights.
 
-## Known defect: a seated gusset is squeezed to a strip (GF1, parked)
+## SW3: the six engineering checks, Sitting (Wide), 2026-10-24
+
+HomePilot pushes cloth out of her once a pose settles (its `PoseClothCorrection.js`). To
+judge that by measurement, not by a full-body screenshot, one look is followed through the
+same pose, camera and measurement three ways:
+
+```bash
+S=/tmp/sw; mkdir -p $S
+node tools/inspect/export_homepilot_poses.mjs ../3D-Avatar-Chatbot > $S/poses.json
+python tools/inspect/fit_look.py --avatar fem-vroid --foundation-color white \
+    --prompt "black matte strapless bodycon mini dress + black stretch leather over-the-knee boots" \
+    --out $S/look.vrm
+python tools/inspect/bake_pose_correction.py $S/look.vrm --homepilot ../3D-Avatar-Chatbot \
+    --pose sittingWide --poses $S/poses.json --out $S/look-corrected.vrm
+python tools/inspect/fit_checks.py $S/look-corrected.vrm --before $S/look.vrm --baked \
+    --pose sittingWide --poses $S/poses.json --out $S/checks
+python tools/inspect/contact_sheet.py $S/look-corrected.vrm --before $S/old-look.vrm \
+    --pose sittingWide --poses $S/poses.json --garment "White Tailored Briefs" \
+    --garment "Black Bodycon Mini Dress" --garment "Black Over-The-Knee Boots" --out $S/sheet
+python tools/inspect/engineering_sheet.py --baseline $S/checks-old --fixed $S/checks \
+    --sheet $S/sheet --out $S/engineering-sheet.png
+```
+
+`--baked` matters: a baked correction rewrites the bind geometry, so the corrected file is
+measured against the uncorrected file's rest shape. Without it, every rest-based figure
+(stretch, seams, gusset, openings) compares each file with a different ruler — the first
+run here reported regressions that were that, and nothing else.
+
+The checks found five defects in the correction (HomePilot's `docs/SITTING_WIDE.md`: torn
+UV seams, a boot's lining pushed through its shell, over-pushing in creases, folded
+triangles, the knee fold) and two here:
+
+- **A boot's shaft was bound by distance to her bones.** Its rim, 20 cm above her knee,
+  carried a fifth of its weight on her shin where her skin there carries 2 %: seated, the
+  rim went 22 mm into her thigh. A boot (`bootMeasure` on the mesh) now takes her skin's
+  weights everywhere, as leggings do, with its heel, sole and platform kept on the foot
+  (`rigidFoot`, DC2). Skinned only, Sitting (Wide): shell worst edge 6.66× → 2.73×, lining
+  15.2× → 1.07×, sole 1.66× → 1.01×, deepest inside 23.2 → 16.8 mm. Her knee's own skin
+  collapses at 90° (15 of her triangles invert); the shaft now follows it there, and
+  inverted triangles rose 2 → 88 at the front of her knee. That is the open item.
+- **The briefs' crotch was 5.8 mm of fabric** — GF1, below, measured by cutting the strip
+  plane by plane (a band of vertices read a sparse mesh's two nearest vertices as its
+  width). GF1 is now applied to the foundation Auto Foundation adds under clothes: 32–35 mm.
+
+Result, A (as first reported, skinned) → C (as fitted now, corrected): briefs inside her
+14.2 → 0 mm; dress 23.2 → 0 mm, 16 → 1 sample inside the briefs (3.0 mm); leg openings
+8.8 / 6.1 → 0 mm; seams closed; worst edges briefs 3.55 → 3.80×, dress 4.40 → 1.37×, boot
+6.66 → 5.23×; boot 13.2 mm inside on 0.68 % of its vertices, behind her knee, where calf
+and thigh skin intersect.
+
+## GF1: a seated gusset was squeezed to a strip — applied under clothes
 
 Found while proving RL4 (2026-10-24). A brief's gusset is drafted 55 mm wide across her
 crotch; seated by `wardrobe.lingerie.fit.seat_gusset` on a reference body whose thighs
@@ -165,8 +218,8 @@ out of each thigh points toward her midline and the relaxation, seams fixed, dra
 row in; `_keep_width` acts only below 4 mm. The comment there calling a 10 mm row right
 measured the projection, not the fabric: the row's arc length collapses too.
 
-A fix is written and **not applied**: `docs/research/parked/GF1-gusset-cut-width.patch`
-(with its test, `test_gusset_width.py.txt`). It records each row's cut width, holds it
+The fix (`wardrobe.lingerie.fit`, tested by `tests/integration/test_gusset_width.py`)
+records each row's cut width, holds it
 between 95% and 115% (1 + FreeSewing Uma's 15% stretch allowance) and lets the existing
 up-and-forward pushes lift the sides onto her inner thighs. Measured:
 
@@ -183,6 +236,14 @@ up-and-forward pushes lift the sides onto her inner thighs. Measured:
   * **Boyshort**: seated stretch 2.27x -> 2.89x; its gusset meets leg rings, and sides that
     ride up her thighs meet them.
 
-To apply it: fix the string's seam widening first, then decide the boyshort (exempt
-leg-extension gussets, or seat the rings after the gusset), re-run
-`tools/catalog/underwear_audit.py --before`, and isolate the gallery hashes as PF2 did.
+**Applied (SW3, 2026-10-24) to the foundation put under her clothes only** — Auto
+Foundation's briefs, `requested_foundation` false — and to no thong back and no boyshort.
+Re-measured on the full audit with it on every brief, the three regressions above came
+back, and a fourth: the radial index centres a layer on the median of every point beneath
+it, so a guêpière fitted over the widened briefs moved up to 1.31 mm across her torso, and
+the guêpière's geometry is fixed. Scoped, the 35-piece audit is **byte-identical, 35 of
+35**, every verdict unchanged, while the bodycon look's foundation briefs keep 32–35 mm
+across their crotch (5.8 mm before). To extend it to the catalogue: fix the string's seam
+widening, decide the boyshort (seat the rings after the gusset), centre the radial index on
+her body rather than the layers on it (a change to every layered piece, so its own
+audit), then re-run `tools/catalog/underwear_audit.py --before`.

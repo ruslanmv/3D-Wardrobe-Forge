@@ -46,14 +46,25 @@ def crotch_surface(context, centre: np.ndarray, reach: float = 0.16) -> tuple[np
                       spacing=0.006, region=(lo, hi))
 
 
+def _arc(positions: np.ndarray, row: list[int]) -> float:
+    return float(np.linalg.norm(np.diff(positions[row], axis=0), axis=1).sum())
+
+
 def seat_gusset(positions: np.ndarray, grid: list[list[int]], points: np.ndarray, normals: np.ndarray,
-                clearance: float, *, initial: dict[int, np.ndarray] | None = None) -> np.ndarray:
-    """Seat the gusset's interior rows on her surface; the first and last rows (the seams) stay. In place."""
+                clearance: float, *, initial: dict[int, np.ndarray] | None = None,
+                hold_cut: bool = True) -> np.ndarray:
+    """Seat the gusset's interior rows on her surface; the first and last rows (the seams) stay. In place.
+
+    ``hold_cut`` (GF1) keeps each row near the width it was cut to; see ``_seat_brief_gusset`` for
+    the constructions that are seated without it.
+    """
     rows = [list(row) for row in grid]
     interior = [v for row in rows[1:-1] for v in row]
     if initial:
         for v, p in initial.items():
             positions[v] = p
+    # GF1. Each row's width as cut: seating may curve a row onto her, never squeeze its fabric.
+    cut = [_arc(positions, row) for row in rows]
     if points.shape[0] == 0 or not interior:
         return positions
     pts, nrm = points, normals
@@ -79,9 +90,27 @@ def seat_gusset(positions: np.ndarray, grid: list[list[int]], points: np.ndarray
                 relaxed[v] = positions[v] * 0.5 + positions[around].mean(axis=0) * 0.5
         positions[index] = relaxed[index]
     _keep_width(positions, rows)
+    for _ in range(WIDEN_ROUNDS if hold_cut else 0):
+        if not _keep_cut(positions, rows, cut):
+            break
+        _push_out_not_sideways(positions, index, pts, nrm, clearance)
     # Last, pushes only, until nothing is inside: relaxing must never leave a vertex in her. Not
     # sideways: where her thighs meet, each side's push out of one thigh is toward her midline,
     # and the rows met there too (zero-width slivers, a row of dark teeth from below).
+    _push_out_not_sideways(positions, index, pts, nrm, clearance)
+    for _ in range(ITERATIONS):  # whatever that could not clear, out along her own normal
+        p = positions[index]
+        signed, normal = _depth(p, pts, nrm)
+        push = np.clip(clearance - signed, 0.0, None)
+        if push.max() < 1e-5:
+            break
+        positions[index] = p + normal * push[:, None]
+    return positions
+
+
+def _push_out_not_sideways(positions: np.ndarray, index: np.ndarray, pts: np.ndarray, nrm: np.ndarray,
+                           clearance: float) -> None:
+    """Out of her, up and forward only, until nothing is inside. In place."""
     for _ in range(ITERATIONS):
         p = positions[index]
         signed, normal = _depth(p, pts, nrm)
@@ -91,14 +120,46 @@ def seat_gusset(positions: np.ndarray, grid: list[list[int]], points: np.ndarray
         along = normal * [0.0, 1.0, 1.0]
         along /= np.maximum(np.linalg.norm(along, axis=1, keepdims=True), 1e-9)
         positions[index] = p + along * push[:, None]
-    for _ in range(ITERATIONS):  # whatever that could not clear, out along her own normal
-        p = positions[index]
-        signed, normal = _depth(p, pts, nrm)
-        push = np.clip(clearance - signed, 0.0, None)
-        if push.max() < 1e-5:
-            break
-        positions[index] = p + normal * push[:, None]
-    return positions
+
+
+#: GF1. The least of its cut width a gusset row may keep across: a knit barely compresses in its own
+#: plane. Seated on a reference body whose thighs meet, a 55 mm brief gusset's middle row was 16 mm
+#: of fabric and 10 mm across; held to this, its sides ride up her inner thighs, as a gusset's do.
+#: Not less: at 90% and 85% the sides stopped in the crease between thigh and trunk, where her skin
+#: moves most when she stands wide, and went 0.003 and 0.2 mm into her there
+#: (tests/integration/test_second_skin_binding.py); at 95% they sit 0.75 mm clear.
+MIN_CUT_SHARE = 0.95
+#: And the most: lifted up her thighs after widening, a row gained length the widening did not
+#: count, and overshot to half as long again as cut. Held to 1 + the stretch a knit brief is
+#: drafted to take across her: FreeSewing Uma's xStretch default, 15% (a designer's allowance,
+#: assets/reference/lingerie/patterns/freesewing-uma/uma-draft.json). The pushes that end the
+#: seat, so nothing is left inside her, can add a little: ref-f-full's middle row settles at 112%.
+MAX_CUT_SHARE = 1.15
+#: Widen-then-push rounds: each change is pushed back out of her thighs, up and forward.
+WIDEN_ROUNDS = 16
+
+
+def _keep_cut(positions: np.ndarray, rows: list[list[int]], cut: list[float]) -> bool:
+    """Bring each interior row within MIN_CUT_SHARE..MAX_CUT_SHARE of its cut width. In place.
+
+    True when a row was changed. Only across (x), about the row's centre: the pushes after it
+    lift the sides out of her thighs up and forward, so a row too wide for the gap between them
+    climbs her inner thighs rather than going into them. A share of the way each round (damped):
+    the lift adds length, and a full correction overshoots.
+    """
+    changed = False
+    for r in range(1, len(rows) - 1):
+        row = rows[r]
+        have = _arc(positions, row)
+        want = min(max(have, MIN_CUT_SHARE * cut[r]), MAX_CUT_SHARE * cut[r])
+        if abs(have - want) < 1e-4 or have < 1e-6:
+            continue
+        xs = positions[row][:, 0]
+        centre = float(xs.mean())
+        factor = 1.0 + 0.5 * (want / have - 1.0)
+        positions[row, 0] = centre + (xs - centre) * factor
+        changed = True
+    return changed
 
 
 #: A gusset row narrower than this has collapsed: a reference body's narrows to about 10 mm between
@@ -491,7 +552,20 @@ def _seat_brief_gusset(context, mesh, positions: np.ndarray, record: dict, clear
     centre = seams.mean(axis=0)
     centre[1] = frame.marks.crotch_y
     points, normals = crotch_surface(context, centre)
-    seat_gusset(positions, grid, points, normals, clearance, initial=initial)
+    # GF1. A gusset keeps its cut width — for now, the foundation put under her clothes (Auto
+    # Foundation, which Try-On asks for on every look; PB1's ``requested_foundation`` is false for
+    # it): Sitting (Wide) in a bodycon, its 5.8 mm strip of a crotch became 32-35 mm of fabric.
+    # Underwear she asks for is seated as before, byte for byte, until three things are settled,
+    # each measured on the 35-piece audit (docs/POSE_CONTACT_QA.md): a boyshort's leg rings hang
+    # from its gusset edge, and sides riding up her thighs met them (seated stretch 2.27x ->
+    # 2.89x); a thong's string rises from its back seam, and wider rows beside it widened the string
+    # through the unfolding after (the V-string's 11.1 -> 15.4 mm: off its spec; the thong's stretch
+    # 1.34x -> 1.43x); and the radial index centres a layer over the briefs on the median of every
+    # point beneath it, so a guêpière over wider briefs moved 1.3 mm, and its geometry is fixed.
+    thong = float((record.get("measures") or {}).get("backCoverage", 1.0)) < THONG_BACK_BELOW
+    under_clothes = not getattr(context, "requested_foundation", True)
+    hold = under_clothes and not record.get("legExtension") and not thong
+    seat_gusset(positions, grid, points, normals, clearance, initial=initial, hold_cut=hold)
 
 
 def _surface(context, lo: np.ndarray, hi: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

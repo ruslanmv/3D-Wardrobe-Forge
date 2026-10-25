@@ -74,6 +74,12 @@ class BodyArtNotApplied(WardrobeError):
     reason = FailureReason.BODY_ART_NOT_APPLIED
 
 
+class FoundationNotRecoloured(WardrobeError):
+    """FC2. A recolour-only job that could not recolour: no new look, and the reason why."""
+
+    reason = FailureReason.FOUNDATION_NOT_RECOLOURED
+
+
 class BodySurfaceUnavailable(WardrobeError):
     """BS1. The job named a body-surface profile this server does not have, or could not verify."""
 
@@ -116,6 +122,7 @@ __all__ = [
     "BodyIncomplete",
     "FoundationOverClothing",
     "BodyArtNeedsLook",
+    "FoundationNotRecoloured",
     "BodyArtNotApplied",
     "NotHumanoid",
     "PlanningError",

@@ -265,7 +265,11 @@ def bind_mesh(
             strength[np.ix_(torso, arm)] = 0.0
 
     influences = min(max_influences, len(segments))
-    order = np.argsort(-strength, axis=1)[:, :influences]
+    # BA1. Ranked on each row's strengths relative to its strongest, rounded, with a stable sort: an
+    # unstable argsort (numpy's SIMD sort on some CPUs) and last-bit differences ordered a vertex
+    # equally near two bones differently from one machine to the next.
+    peak = np.maximum(strength.max(axis=1, keepdims=True), 1e-300)
+    order = np.argsort(-np.round(strength / peak, 9), axis=1, kind="stable")[:, :influences]
     rows = np.arange(points.shape[0])[:, None]
     top = strength[rows, order]
 
