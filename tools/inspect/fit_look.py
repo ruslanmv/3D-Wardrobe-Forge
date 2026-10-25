@@ -34,7 +34,14 @@ from wardrobe.storage.database import InMemoryJobRepository, InMemoryWardrobeRep
 from wardrobe.storage.object_store import LocalObjectStore  # noqa: E402
 
 
-async def fit(avatar: str, prompt: str, template: str | None, out: Path, base_body: str) -> int:
+async def fit(
+    avatar: str,
+    prompt: str,
+    template: str | None,
+    out: Path,
+    base_body: str,
+    foundation_color: str | None = None,
+) -> int:
     catalog = TemplateCatalog.from_directory(ROOT / "assets" / "garment_templates")
     library = AvatarLibrary.from_directory(ROOT / "assets" / "library")
     entry = library.get(avatar)
@@ -70,6 +77,8 @@ async def fit(avatar: str, prompt: str, template: str | None, out: Path, base_bo
                         "engine": "native",
                         "baseBody": base_body,
                         "ensureFoundation": True,
+                        # FC1. The colour underneath, as Try-On sends it once she has chosen one.
+                        **({"foundationColor": foundation_color} if foundation_color else {}),
                     },
                 }
             )
@@ -106,8 +115,11 @@ def main() -> int:
     parser.add_argument("--template", default=None)
     parser.add_argument("--base-body", default="replace-outer")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--foundation-color", default=None, help="FC1: the colour underneath, e.g. white")
     args = parser.parse_args()
-    return asyncio.run(fit(args.avatar, args.prompt, args.template, args.out, args.base_body))
+    return asyncio.run(
+        fit(args.avatar, args.prompt, args.template, args.out, args.base_body, args.foundation_color)
+    )
 
 
 if __name__ == "__main__":

@@ -56,6 +56,9 @@ class DetectedGarment:
     regions: frozenset[str] = field(default_factory=frozenset)
     #: MG2. A source Tops that is drawn to dress length: it covers her lower half too.
     dress_length: bool = False
+    #: FC1. The colour a foundation Forge added was asked to be in (``foundationColor``); None for
+    #: anything else, including a foundation made before FC1 or with no colour asked.
+    foundation_color: str | None = None
 
     @property
     def generated(self) -> bool:
@@ -107,6 +110,8 @@ def garment_inventory(document: GltfDocument) -> list[DetectedGarment]:
                     role=role,
                     regions=regions,
                     dress_length=long,
+                    foundation_color=(str(tag["foundationColor"]) if detector == "forge-tag"
+                                      and tag.get("foundationColor") else None),
                 )
             )
     return found

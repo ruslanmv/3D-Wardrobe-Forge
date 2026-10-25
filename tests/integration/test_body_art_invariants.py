@@ -1,6 +1,6 @@
 """BA1. Invariant I1: a job that asks for no body art produces what it produced before body art existed.
 
-The hashes in ``tests/fixtures/body_art_golden.json`` were taken on the pipeline as it
+The fingerprints in ``tests/fixtures/body_art_golden.json`` (``tests.body_art_support``) were taken on the pipeline as it
 was before any body-art code ran in it, for three outfits on the dressed declared-adult
 body: separates, underwear and a one-piece. A later change that moves them for a reason
 of its own re-baselines them with ``BODY_ART_GOLDEN=write pytest <this file>``, and
@@ -13,9 +13,10 @@ import json
 import os
 from pathlib import Path
 
+import numpy as np
 import pytest
 
-from tests.body_art_support import fingerprint, run
+from tests.body_art_support import differences, fingerprint, run
 from wardrobe.body_art.catalog import BodyArtCatalog
 from wardrobe.body_art.contract import PLACEMENTS
 from wardrobe.body_art.raster import artwork_polygons, coverage
@@ -47,7 +48,7 @@ async def test_no_body_art_means_the_same_output(orchestrator, store, prompt):
         golden = json.loads(GOLDEN.read_text()) if GOLDEN.exists() else {}
         golden[prompt] = got
         GOLDEN.write_text(json.dumps(golden, indent=2, sort_keys=True) + "\n")
-    assert got == json.loads(GOLDEN.read_text())[prompt]
+    assert not differences(got, json.loads(GOLDEN.read_text())[prompt])
     assert "bodyArt" not in json.dumps(record.fit_report.model_dump(by_alias=True))
 
 
@@ -122,3 +123,42 @@ def test_the_api_lists_the_catalogue_and_refuses_an_unknown_design(client):
     assert refused.status_code == 422 and "no-such-design" in refused.text
     job["bodyArt"] = [{"design": "tribal-wings-01", "placement": "lower-back"}]  # not drawn for it
     assert client.post("/v1/jobs", json=job).status_code == 422
+
+
+def test_the_fingerprint_forgives_rounding_and_nothing_else():
+    """Another CPU's last bit passes; a vertex moved a millimetre, or two values swapped, does not."""
+    from tests.body_art_support import BODY
+    from wardrobe.vrm.build import build_vrm
+    from wardrobe.vrm.document import GltfDocument
+
+    source = build_vrm(BODY, spec="VRM1")
+    document = GltfDocument.from_bytes(source)
+    index = next(i for i, a in enumerate(document.gltf["accessors"]) if a.get("type") == "VEC3"
+                 and int(a["componentType"]) == 5126)
+    view = document.gltf["bufferViews"][document.gltf["accessors"][index]["bufferView"]]
+    start = int(view.get("byteOffset", 0)) + int(document.gltf["accessors"][index].get("byteOffset", 0))
+    count = int(document.gltf["accessors"][index]["count"]) * 3
+    assert int(view.get("byteStride", 12)) == 12
+
+    def edited(change) -> bytes:
+        copy = GltfDocument.from_bytes(source)
+        values = np.frombuffer(bytes(copy.binary[start:start + count * 4]), dtype="<f4").copy()
+        change(values)
+        copy.binary[start:start + count * 4] = values.tobytes()
+        return copy.to_bytes()
+
+    want = fingerprint(source)
+    rng = np.random.default_rng(1)
+
+    def rounding(values):  # every value one float32 step either way
+        values[:] = np.nextafter(values, np.where(rng.random(values.size) < 0.5, -np.inf, np.inf).astype("<f4"))
+
+    def nudged(values):
+        values[30] += 0.001
+
+    def swapped(values):
+        values[[30, 33]] = values[[33, 30]]
+
+    assert not differences(fingerprint(edited(rounding)), want)
+    assert differences(fingerprint(edited(nudged)), want)
+    assert differences(fingerprint(edited(swapped)), want)

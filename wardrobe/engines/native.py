@@ -68,6 +68,9 @@ def fitted_short(template, plan) -> bool:
 #: PS1. Shapes with a separate tube round each leg (see the skin binding below).
 LEG_TUBE_KINDS = frozenset({"trousers", "leggings", "seamless-leggings", "shorts", "slip-shorts",
                             "catsuit", "jumpsuit"})
+#: SW3. A boot vertex takes her skin's weights only with skin this close: a shaft stands 8-15 mm
+#: off a dense avatar's leg; farther, the nearest skin is somewhere else on her.
+BOOT_SKIN_REACH_M = 0.03
 
 
 class NativeEngine(FittingEngine):
@@ -133,7 +136,13 @@ class NativeEngine(FittingEngine):
         bind_mesh(mesh, segments, torso=torso)
         template = context.catalog.get(artifact.template_id) if artifact.template_id else None
         second_skin = bool(artifact.metadata.get("secondSkin")) or fitted_short(template, context.plan)
-        if mesh.metadata.get("panelBuilt") or second_skin:
+        # SW3. A boot's shaft is a tube on her leg, as leggings are, and takes her skin's weights
+        # as they do. Bound by distance to her bones, an over-the-knee shaft's top, 20 cm above
+        # her knee, carried a fifth of its weight on her shin where her skin there carries 2%:
+        # seated, that fifth of a 90-degree knee drove the rim 22 mm into her thigh (HomePilot's
+        # Sitting (Wide)). Its heel, sole and platform stay on the foot alone (DC2, below).
+        boot = "bootMeasure" in mesh.metadata
+        if mesh.metadata.get("panelBuilt") or second_skin or boot:
             # G5. A garment cut on her (wardrobe.geometry.panels) takes her own skin weights
             # above her hips, so its set-in sleeves bend at her shoulder as she does.
             # AN-A5. A second-skin garment takes them everywhere. Bound to her pelvis by the
@@ -144,11 +153,25 @@ class NativeEngine(FittingEngine):
             from wardrobe.vrm.weight_transfer import transfer_weights
 
             hip = context.measurements.bone_positions.get("hips")
+            rigid = np.asarray(mesh.metadata.get("rigidFoot", np.zeros(mesh.vertex_count, bool)), dtype=bool)
+            bound = (mesh.joints.copy(), mesh.weights.copy())
             transfer_weights(mesh, segments, context.document, context.info.humanoid_bones,
                              hip_y=float(hip[1]) if hip is not None else float(mesh.positions[:, 1].min()),
                              forward=-1.0 if context.info.spec is VrmSpec.VRM0 else 1.0,
                              axis_z=float(hip[2]) if hip is not None else 0.0,
-                             whole=second_skin)
+                             whole=second_skin or boot)
+            if boot:
+                # Only where her skin is: a coarse body (the calibration bodies) has no vertex for
+                # 20 cm above her knee, and the nearest it has is the knee itself, half shin. Copied,
+                # that put half the rim on her shin; the bone binding is the better guess there.
+                from wardrobe.vrm.weight_transfer import _nearest, skin_bone_weights
+
+                keep = rigid if rigid.shape[0] == mesh.vertex_count else np.zeros(mesh.vertex_count, bool)
+                found = skin_bone_weights(context.document, context.info.humanoid_bones)
+                if found is not None:
+                    _index, distance = _nearest(mesh.positions.astype(np.float64), found[0], 1)
+                    keep = keep | (distance.reshape(-1) > BOOT_SKIN_REACH_M)
+                mesh.joints[keep], mesh.weights[keep] = bound[0][keep], bound[1][keep]
         hosiery_fit.after_bind(context, mesh, segments)
 
         issues = mesh.validate()
@@ -280,6 +303,11 @@ class NativeEngine(FittingEngine):
             if layer.plan.hosiery is not None:  # its part in a hosiery design, for posed previews
                 forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
                 forge["hosiery"] = layer.artifact.metadata.get("hosieryRole", layer.plan.role)
+            if context.foundation_color and layer.plan.role == "foundation" \
+                    and layer.plan.template_id in context.foundation_templates:
+                # FC1. Only on a coloured foundation, so no other garment's extras change.
+                forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
+                forge["foundationColor"] = context.foundation_color
             if layer.plan.set_id:  # a coordinated set: only then, so no other garment's extras change
                 forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
                 forge["setId"] = layer.plan.set_id

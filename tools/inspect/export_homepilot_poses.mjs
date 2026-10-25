@@ -30,10 +30,12 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'poses-'));
 const copy = path.join(tmp, 'VRPoseSystem.mjs');
 fs.writeFileSync(
     copy,
-    fs.readFileSync(source, 'utf8').replace(
-        "'../../vendor/three-0.147.0/build/three.module.js'",
-        JSON.stringify(pathToFileURL(three).href)
-    )
+    fs
+        .readFileSync(source, 'utf8')
+        .replace("'../../vendor/three-0.147.0/build/three.module.js'", JSON.stringify(pathToFileURL(three).href))
+        // Its own siblings (PoseClothCorrector.js, SW1) are imported from the checkout, where their
+        // relative imports resolve: the copy lives in a temporary folder that has none of them.
+        .replace(/from '\.\/([^']+)'/g, (_m, file) => `from ${JSON.stringify(pathToFileURL(path.join(path.dirname(source), file)).href)}`)
 );
 try {
     const m = await import(pathToFileURL(copy).href);

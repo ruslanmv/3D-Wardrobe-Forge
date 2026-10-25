@@ -77,6 +77,9 @@ class FailureReason(StrEnum):
     BODY_ART_NEEDS_LOOK = "body_art_needs_a_finished_look"
     #: BA6. A tattoo-only job that changed nothing: every tattoo it asked for was refused.
     BODY_ART_NOT_APPLIED = "body_art_not_applied"
+    #: FC2. A recolour-only job that could not recolour: no Forge foundation on the look, a
+    #: patterned one, or one already in that colour.
+    FOUNDATION_NOT_RECOLOURED = "foundation_not_recoloured"
     #: BS1. A body-surface profile the server does not have (or could not verify).
     BODY_SURFACE_UNAVAILABLE = "body_surface_profile_unavailable"
     #: BS1. An adult body-surface profile refused: model terms, operator switch or declaration.
@@ -116,6 +119,11 @@ class JobOptions(BaseModel):
     #: tube top and slip shorts on any other: no avatar needs a declaration to get dressed.
     #: Off by default, so a job that never asked is planned exactly as before.
     ensure_foundation: bool = Field(default=False, alias="ensureFoundation")
+    #: FC1. The colour of the foundation ``ensureFoundation`` adds — any colour in the vocabulary
+    #: (``GET /v1/vocabulary``). Try-On lets her choose it once and keeps it under every look of
+    #: the haul. A foundation she already wears in another colour is replaced by one in this
+    #: colour; one in this colour is kept. Unset, it is beige and the job plans exactly as before.
+    foundation_color: str | None = Field(default=None, alias="foundationColor", max_length=32)
     #: BS5. Relax each fitted garment with XPBD against the collision body (stretch, bending,
     #: contact). Runs only when the job also has a ``bodySurface``; "none" — the default — fits
     #: exactly as before.
@@ -134,6 +142,20 @@ class JobOptions(BaseModel):
         if self.base_body is not None:
             return self.base_body
         return "replace-outer" if self.replace_garments else "preserve"
+
+    @model_validator(mode="after")
+    def _foundation_color_is_a_colour(self) -> JobOptions:
+        """FC1. A name the planner reads as a colour, or nothing: a prompt fragment is not a colour."""
+        if self.foundation_color is not None:
+            from wardrobe.pipeline.plan_outfit import COLORS
+
+            name = self.foundation_color.strip().lower()
+            if name not in COLORS:
+                raise ValueError(
+                    f"foundationColor must be a colour from GET /v1/vocabulary, not {self.foundation_color!r}"
+                )
+            self.foundation_color = name
+        return self
 
 
 class CreateJobRequest(BaseModel):
@@ -158,14 +180,27 @@ class CreateJobRequest(BaseModel):
     @model_validator(mode="after")
     def _body_art_list(self) -> CreateJobRequest:
         check_items(self.body_art, self.body_art_remove)
-        if self.outfit is None and not (self.body_art or self.body_art_remove):
-            raise ValueError("outfit is required: only a job that adds or removes body art may leave it out")
+        changes_a_look = self.body_art or self.body_art_remove or self.options.foundation_color
+        if self.outfit is None and not changes_a_look:
+            raise ValueError(
+                "outfit is required: only a job that adds or removes body art, or recolours her "
+                "foundation (options.foundationColor), may leave it out"
+            )
         return self
 
     @property
     def body_art_only(self) -> bool:
-        """BA6. Tattoos on a finished look, its clothes carried over untouched."""
+        """BA6. Tattoos on a finished look, its clothes carried over untouched.
+
+        FC2. Also a look whose foundation only changes colour: no outfit means the look's
+        clothes are carried over (``carry_look``), whatever the job then changes on them.
+        """
         return self.outfit is None
+
+    @property
+    def recolours_foundation(self) -> bool:
+        """FC2. A carried-over look whose foundation is rewritten in ``options.foundationColor``."""
+        return self.outfit is None and bool(self.options.foundation_color)
 
 
 class JobEvent(BaseModel):
@@ -265,6 +300,7 @@ _REJECTION_REASONS = frozenset(
         FailureReason.PAINTED_CLOTHING_SHOWS,
         FailureReason.BODY_ART_NEEDS_LOOK,
         FailureReason.BODY_ART_NOT_APPLIED,
+        FailureReason.FOUNDATION_NOT_RECOLOURED,
     }
 )
 
