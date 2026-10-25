@@ -201,6 +201,11 @@ Without `foundationColor` nothing is tagged and every job plans exactly as befor
 upper body (`style.straps: "none"` — a strapless bodycon, a bandeau top), the upper
 half is the seamless tube top on any avatar: a full-cup bra's straps showed on her
 shoulders above a strapless dress.
+FC4 extends it to every outfit that leaves a bra's straps or band in sight:
+spaghetti straps (`straps: "shoulder"`), a halter, and an open back (`back: "low"`).
+Seen from the front, a white full-cup bra's straps sat beside a black spaghetti-strap
+dress's on both shoulders. An outfit that names no straps and no back keeps the
+full-cup bra.
 
 **Only the colour, on the look she has on (FC2).** A job with no `outfit`, a
 `baseLookId` and `options.foundationColor` recolours the foundation of that look

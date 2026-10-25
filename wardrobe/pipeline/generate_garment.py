@@ -221,8 +221,9 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
     halves = dict(NEUTRAL_HALF if depicts_adult else GENERAL_FOUNDATION)
     # FC3. Under a strapless outfit, a strapless foundation: the full-cup bra's straps showed on
     # her shoulders above a strapless bodycon. The seamless tube top is strapless and is already
-    # every other avatar's upper half.
-    if _strapless(outfit_plan.garments):
+    # every other avatar's upper half. FC4: and under any outfit that leaves a bra's straps or
+    # band in sight — see ``_bra_would_show``.
+    if _bra_would_show(outfit_plan.garments):
         halves["upper"] = GENERAL_FOUNDATION["upper"]
     # CR1. Never higher than the outfit's own waistband: under a low-rise skirt or low-rise jeans
     # slip shorts at their usual rise showed as a beige band across the bare waist the look is for.
@@ -250,10 +251,26 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
     return stacked.model_copy(update={"layers": [*base, *rest], "name": outfit_plan.name}), prompts
 
 
-def _strapless(garments) -> bool:
-    """FC3. Whether the outfit has a strapless garment over her upper body (``straps: none``)."""
-    return any(getattr(g.style, "straps", "") == "none" and g.role not in ("foundation",)
-               and g.category in ("top", "dress", "one-piece", "jumpsuit") for g in garments)
+#: FC4. Strap styles under which a full-cup bra's straps are in sight. Strapless (FC3); a
+#: spaghetti strap ("shoulder"), narrower than the bra's own and not where it runs, so a white
+#: bra's straps sat beside a black dress's on both shoulders, seen from the front; a halter, which
+#: leaves the outside of her shoulders bare.
+STRAPS_SHOWING_A_BRA = frozenset({"none", "shoulder", "halter"})
+#: FC4. Backs that leave a bra's band in sight: an open back is cut below where it runs.
+BACKS_SHOWING_A_BRA = frozenset({"low"})
+
+
+def _bra_would_show(garments) -> bool:
+    """FC3/FC4. Whether a garment over her upper body leaves a full-cup bra's straps or band in sight.
+
+    Only the outfit's own garments count, never a foundation, and only those over her upper
+    body. Read from the planned style, so an outfit that names no straps and no back (the
+    template's own) keeps the full-cup bra, as it always has.
+    """
+    return any(g.role not in ("foundation",) and g.category in ("top", "dress", "one-piece", "jumpsuit")
+               and (getattr(g.style, "straps", "") in STRAPS_SHOWING_A_BRA
+                    or getattr(g.style, "back", "") in BACKS_SHOWING_A_BRA)
+               for g in garments)
 
 
 #: Rises lower than a garment's ordinary waist, lowest first, as the planner names them.

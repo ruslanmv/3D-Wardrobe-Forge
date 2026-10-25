@@ -91,3 +91,29 @@ def test_a_strapless_outfit_gets_a_strapless_foundation_on_any_avatar(template_c
         plan = plan_outfit_stack(request, template_catalog)
         _, added = ensure_foundation(plan, request, template_catalog, [], depicts_adult=True, color="white")
         assert added[0] == upper, (prompt, added)
+
+
+def test_spaghetti_straps_halters_and_open_backs_get_a_strapless_foundation(template_catalog):
+    """FC4. A white full-cup bra's straps sat beside a spaghetti-strap dress's, seen from the front.
+
+    Every outfit that leaves a bra's straps or band in sight takes the tube top, on any avatar;
+    one that names no straps and no back keeps the full-cup bra.
+    """
+    from wardrobe.domain.looks import OutfitRequest
+    from wardrobe.pipeline.generate_garment import ensure_foundation
+    from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
+
+    for prompt, upper in (
+        ("black satin spaghetti strap open back bodycon mini dress", "white seamless tube top"),
+        ("black spaghetti strap bodycon mini dress", "white seamless tube top"),
+        ("black open back bodycon mini dress", "white seamless tube top"),
+        ("black halter bodycon mini dress", "white seamless tube top"),
+        ("black bodycon mini dress", "white seamless full-cup bra"),
+        ("white crop top + blue straight jeans", "white seamless full-cup bra"),
+    ):
+        request = OutfitRequest(prompt=prompt)
+        plan = plan_outfit_stack(request, template_catalog)
+        for adult in (True, False):
+            _, added = ensure_foundation(plan, request, template_catalog, [], depicts_adult=adult, color="white")
+            expected = upper if adult else "white seamless tube top"
+            assert added[0] == expected, (prompt, adult, added)
