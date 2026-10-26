@@ -11,8 +11,8 @@ front, side and back head to toe, the waistband, pleats and hem on the right, an
 details along the bottom. The numbers in the points are measured on the generated shell,
 not written in.
 
-There is no view from under the skirt. The fit is judged from in front, beside and behind;
-where the reference sheet had an underside view, this one has a three-quarter view.
+The review includes a low-angle under-hem close-up. A skirt that looks correct
+from the front may still have an open crotch in its underlayer.
 
 The renderer loads three.js from a CDN; offline, set ``PLAYWRIGHT_CHROMIUM`` and
 ``GALLERY_CDN_ROUTE`` as for ``tools/gallery/render.mjs``.
@@ -56,13 +56,12 @@ DETAILS = [
     ("Proportional hem", "(turned, with thickness)", 60, [0.62, 0.78]),
 ]
 DETAIL_W, DETAIL_H = 236, 160
-#: The bottom row: (title, caption, yaw, focus). A three-quarter view where the reference had
-#: one from underneath.
+#: The bottom row: (title, caption, yaw, focus), including the under-hem camera.
 STRIP = [
     ("Front Detail", "Fitted at waist, clean transition", 0, [0.64, 1.0]),
     ("Side Detail", "Follows hips naturally", 90, [0.64, 1.0]),
     ("Back Detail", "Even pleats, smooth fit", 180, [0.64, 1.0]),
-    ("Three-quarter", "Flare from the full hip", 35, [0.62, 1.0]),
+    ("Under-hem", "Check liner and inside hem", 35, [0.72, 0.92]),
     ("Fabric Look", "Matte, pressed knife pleats", 10, [0.72, 0.8]),
 ]
 STRIP_W, STRIP_H = 252, 170
@@ -157,8 +156,9 @@ def compose(out: Path, built: dict) -> Image.Image:
             for yaw, _ in VIEWS]
     jobs += [{"name": f"d{i}", "vrm": vrm, "yaw": yaw, "focus": focus, "size": (DETAIL_W, DETAIL_H)}
              for i, (_, _, yaw, focus) in enumerate(DETAILS)]
-    jobs += [{"name": f"s{i}", "vrm": vrm, "yaw": yaw, "focus": focus, "size": (STRIP_W, STRIP_H)}
-             for i, (_, _, yaw, focus) in enumerate(STRIP)]
+    jobs += [{"name": f"s{i}", "vrm": vrm, "yaw": yaw, "focus": focus,
+              "elev": -70 if name == "Under-hem" else 0, "size": (STRIP_W, STRIP_H)}
+             for i, (name, _, yaw, focus) in enumerate(STRIP)]
     pictures = {k: Image.open(io.BytesIO(v)).convert("RGB") for k, v in render_web(jobs).items()}
     from showcase import font
 
