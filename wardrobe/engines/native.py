@@ -159,7 +159,7 @@ class NativeEngine(FittingEngine):
                              hip_y=float(hip[1]) if hip is not None else float(mesh.positions[:, 1].min()),
                              forward=-1.0 if context.info.spec is VrmSpec.VRM0 else 1.0,
                              axis_z=float(hip[2]) if hip is not None else 0.0,
-                             whole=second_skin or boot)
+                             whole=second_skin or boot, lateral=boot)
             if boot:
                 # Only where her skin is: a coarse body (the calibration bodies) has no vertex for
                 # 20 cm above her knee, and the nearest it has is the knee itself, half shin. Copied,

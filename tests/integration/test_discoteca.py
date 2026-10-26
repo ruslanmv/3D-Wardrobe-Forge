@@ -230,3 +230,29 @@ async def test_an_over_knee_shaft_bends_with_her_skin_not_her_shin(orchestrator,
         rim_shin.extend((w * np.isin(j, list(shins)))[high].sum(axis=1).tolist())
     assert rim_shin, "the shaft does not reach 10 cm above her knee"
     assert max(rim_shin) < 0.1, max(rim_shin)
+
+
+async def test_a_boot_never_takes_the_other_legs_weights(orchestrator, store, source):
+    """SW4. A boot is one leg's: on AvatarSample_A, who stands with her legs together, 514 boot
+    vertices took up to half their weight from the other leg's skin, and seated wide they were
+    pulled across the gap in jagged strips (worst edge 53.6x). Checked on two bodies."""
+    for body in (source, dense_body()):
+        _record, output = await run(orchestrator, store, body, "discoteca_over_knee", preset="discoteca_over_knee")
+        document = GltfDocument.from_bytes(output)
+        info = inspect_document(document)
+        node = garment_nodes(output)[BOOTS["discoteca_over_knee"][0]][0]
+        joints = np.array(document.gltf["skins"][node["skin"]]["joints"])
+        left = {n for b, n in info.humanoid_bones.items() if b.startswith("left")}
+        right = {n for b, n in info.humanoid_bones.items() if b.startswith("right")}
+        for primitive in document.meshes[node["mesh"]]["primitives"]:
+            attributes = primitive["attributes"]
+            j = joints[document.read_accessor(attributes["JOINTS_0"]).astype(int)]
+            w = document.read_accessor(attributes["WEIGHTS_0"]).astype(float)
+            both = ((w * np.isin(j, list(left))).sum(axis=1) > 0.01) & ((w * np.isin(j, list(right))).sum(axis=1) > 0.01)
+            assert not both.any(), f"{int(both.sum())} boot vertices weighted to both legs"
+
+
+def dense_body() -> bytes:
+    from wardrobe.anatomy.vrm import build_reference_vrm
+
+    return build_reference_vrm("ref-f-median", correctives=False)
