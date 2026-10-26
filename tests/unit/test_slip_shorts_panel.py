@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 from wardrobe.engines.geometry_checks import body_points, lower_body_profile
-from wardrobe.geometry.procedural import FitParameters, build_garment, crotch_y
+from wardrobe.geometry.procedural import FitParameters, build_garment
 from wardrobe.vrm.build import CALIBRATION_BODIES, build_vrm
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.inspect import inspect_document
