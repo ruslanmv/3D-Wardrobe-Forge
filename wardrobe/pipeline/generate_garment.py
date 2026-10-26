@@ -25,9 +25,7 @@ NEUTRAL_FOUNDATION = ("beige seamless full-cup bra", "beige seamless briefs")
 #: underwear, so no avatar needs a declaration to wear a skirt — and briefs instead
 #: where the avatar is declared adult, which is what the Studio's private mode does.
 SKIRT_LINER = "black slip shorts"
-# A skirt-only look uses opaque safety shorts on every avatar; explicitly
-# requested briefs remain untouched and are still available to adult avatars.
-SKIRT_LINER_ADULT = SKIRT_LINER
+SKIRT_LINER_ADULT = "beige seamless briefs"
 #: Outfits whose lower half is a skirt.
 SKIRTED = frozenset({"skirt", "dress"})
 #: Anything already on her hips under the skirt makes a liner redundant.
@@ -223,7 +221,7 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
     halves = dict(NEUTRAL_HALF if depicts_adult else GENERAL_FOUNDATION)
     # Under a skirt the automatic foundation is safety shorts, not briefs.
     # White/other foundation colours and expressly requested underwear still work.
-    if any(g.category in SKIRTED for g in outfit_plan.garments):
+    if any(g.category == "skirt" for g in outfit_plan.garments):
         halves["lower"] = GENERAL_FOUNDATION["lower"]
     # FC3. Under a strapless outfit, a strapless foundation: the full-cup bra's straps showed on
     # her shoulders above a strapless bodycon. The seamless tube top is strapless and is already
@@ -312,7 +310,11 @@ def with_skirt_liner(outfit_plan, request, catalog, *, depicts_adult: bool):
     """
     if not needs_skirt_liner(outfit_plan, catalog):
         return outfit_plan
-    liner = OutfitRequest(prompt=SKIRT_LINER_ADULT if depicts_adult else SKIRT_LINER)
+    # For skirt interiors, safety shorts have a crotch seam and two leg holes.
+    # Dresses keep their existing adult foundation choice; explicit lingerie is never replaced.
+    has_skirt = any(garment.category == "skirt" for garment in outfit_plan.garments)
+    liner_prompt = SKIRT_LINER_ADULT if depicts_adult and not has_skirt else SKIRT_LINER
+    liner = OutfitRequest(prompt=liner_prompt)
     lined = plan_outfit_stack(request, catalog, beneath=[liner])
     # A liner the pipeline added is a liner, briefs included: as a "foundation"
     # it would make a job fail where there is no body under her clothes, and an
