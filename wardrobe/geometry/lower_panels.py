@@ -113,12 +113,13 @@ def _lower_hull(z: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 class _Leg:
     """One leg's outline below her crotch: per slab, the hull's centre and its radius by angle."""
 
-    def __init__(self, points: np.ndarray, ys: np.ndarray):
+    def __init__(self, points: np.ndarray, ys: np.ndarray, *, slab_halfwidth: float | None = None):
         self.ys = ys
+        radius_y = float(slab_halfwidth) if slab_halfwidth is not None else SLAB_M * 0.75
         self.centres: list[np.ndarray | None] = []
         self.hulls: list[np.ndarray | None] = []
         for y in ys:
-            slab = points[np.abs(points[:, 1] - y) < SLAB_M * 0.75]
+            slab = points[np.abs(points[:, 1] - y) < radius_y]
             if slab.shape[0] < 12:
                 self.centres.append(None)
                 self.hulls.append(None)
@@ -127,8 +128,8 @@ class _Leg:
             self.hulls.append(hull)
             self.centres.append(hull.mean(axis=0))
 
-    def ok(self) -> bool:
-        return sum(c is not None for c in self.centres) >= 3
+    def ok(self, minimum: int = 3) -> bool:
+        return sum(c is not None for c in self.centres) >= minimum
 
     def ring(self, k: int, phi: np.ndarray, ease: float) -> np.ndarray | None:
         if self.hulls[k] is None:
@@ -308,8 +309,13 @@ def build_leggings_panel(params, *, plain: bool = False, hem_y: float | None = N
     pieces_ok = True
     for sign in (1.0, -1.0):
         mine = legs[(legs[:, 0] - centre_x) * sign > 0]
-        leg = _Leg(mine, ring_ys)
-        if not leg.ok():
+        # A 4 cm safety-short inseam has only a few stations. Its slabs need a
+        # wider vertical neighborhood than ankle-length leggings, whose many
+        # stations supply three independent slices. Otherwise every short
+        # liner silently falls back to a separate yoke and flat gusset.
+        short = hem_y is not None
+        leg = _Leg(mine, ring_ys, slab_halfwidth=0.03 if short else None)
+        if not leg.ok(minimum=2 if short else 3):
             pieces_ok = False
             break
         # The top loop: half the crotch row round this side, front to back, then the crotch
