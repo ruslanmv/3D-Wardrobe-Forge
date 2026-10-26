@@ -1,0 +1,81 @@
+name: HomePilot skirt underside proof
+on:
+  push:
+    branches:
+      - qa/homepilot-skirt-shots-20261026
+  workflow_dispatch:
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Wardrobe Forge at the tested change
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install Forge and Playwright
+        run: |
+          python -m pip install -e ".[dev,preview]"
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Fetch pinned avatar files
+        run: python tools/fetch_library.py
+      - name: Generate a black pleated skirt and white safety shorts
+        run: |
+          python tools/inspect/fit_look.py \
+            --avatar fem-vroid \
+            --prompt "black pleated mini skirt" \
+            --template skirt-pleated-mini-v1 \
+            --foundation-color white \
+            --out /tmp/LOOK.vrm | tee /tmp/fit-report.log
+          test -s /tmp/LOOK.vrm
+          cp /tmp/LOOK.vrm LOOK.vrm
+      - name: Checkout HomePilot / 3D-Avatar-Chatbot
+        uses: actions/checkout@v4
+        with:
+          repository: ruslanmv/3D-Avatar-Chatbot
+          ref: master
+          path: homepilot
+      - name: Start the real HomePilot app
+        run: |
+          npm ci --prefix homepilot --no-audit --no-fund
+          (PORT=8090 npm start --prefix homepilot > /tmp/homepilot.log 2>&1 &)
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8090/ >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/homepilot.log
+          exit 1
+      - name: Run requested HomePilot pose snapshots
+        run: node tools/inspect/homepilot_shots.mjs LOOK.vrm /tmp/shots
+      - name: Run requested pose comparison grid
+        run: |
+          python tools/inspect/shot_board.py /tmp/grid.png --grid /tmp/shots
+          test -s /tmp/grid.png
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          files = list(Path("/tmp/shots").glob("*.png"))
+          print(f"HomePilot screenshots: {len(files)}")
+          assert len(files) == 16, "Expected 4 poses x 4 views"
+          with Image.open("/tmp/grid.png") as im:
+              print(f"Grid: {im.width}x{im.height}")
+          PY
+      - name: Always save evidence and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: homepilot-skirt-underlayer-proof
+          path: |
+            /tmp/grid.png
+            /tmp/shots/
+            /tmp/fit-report.log
+            /tmp/homepilot.log
+            /tmp/LOOK.vrm
+          if-no-files-found: warn
+          retention-days: 7
