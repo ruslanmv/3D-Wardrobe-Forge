@@ -302,7 +302,7 @@ def build_leggings_panel(params, *, plain: bool = False, hem_y: float | None = N
            min(float(f[1]) for f in feet) + HEM_ABOVE_ANKLE_M * scale)
     # A short hem must still leave enough leg slabs to form an actual opening.
     # Never silently construct a zero-length or inverted leg tube.
-    if hem >= leg_top - 2.0 * LEG_ROW_M:
+    if hem >= leg_top - LEG_ROW_M:
         return None
     ring_ys = np.linspace(leg_top, hem, max(int(math.ceil((leg_top - hem) / LEG_ROW_M)), 3) + 1)
     pieces_ok = True
