@@ -140,13 +140,14 @@ class _Leg:
                          centre[1] + r * np.cos(phi)], axis=1)
 
 
-def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
+def build_leggings_panel(params, *, plain: bool = False, hem_y: float | None = None,
+                         top_y: float | None = None) -> list[Mesh] | None:
     """High-waist seamless leggings, one surface waist to ankle hems, on her measured outline.
 
-    ``plain``: a plain pair (``leggings``): its top at her natural waist and a level band, no V
-    crossover. The plain pair was a band, a gusset and two tubes fitted one by one, and showed
-    what the seamless pair showed before SL2: a gusset patch at her crotch, a line across her
-    hips where band met tubes, and the slip shorts under them through both.
+    ``plain``: a plain pair (``leggings``): a level band, no V crossover.
+    ``hem_y`` and ``top_y`` optionally cut this same continuous pattern into short
+    under-skirt safety shorts. Unlike separate yoke/leg tubes, the crotch is sewn
+    into both legs: there is no flat disc or open gap visible from underneath.
     """
     cover = params.metadata.get("coverPoints")
     legs = params.metadata.get("legPoints")
@@ -165,7 +166,8 @@ def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
 
     # A plain pair sits at her natural waist unless it was asked for high ("high-waist").
     high = not plain or str(params.metadata.get("rise") or "") == "high"
-    top = float(params.waist_y) + (TOP_ABOVE_WAIST_M if high else 0.0) * scale
+    top = (float(top_y) if top_y is not None else
+           float(params.waist_y) + (TOP_ABOVE_WAIST_M if high else 0.0) * scale)
     bottom = crotch + CROTCH_ROW_ABOVE_M
     sections = Sections.measure(cover, forward, bottom, top)
     if sections is None:
@@ -295,8 +297,13 @@ def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
         p = np.array([centre_x, float(y), float(z)])
         curve.append(builder.add(p, (0.0, float(y)), "crotch", p + np.array([0.0, 0.05, 0.0])))
 
-    hem = min(float(f[1]) for f in feet) + HEM_ABOVE_ANKLE_M * scale
     leg_top = crotch - LEG_TOP_BELOW_M
+    hem = (float(hem_y) if hem_y is not None else
+           min(float(f[1]) for f in feet) + HEM_ABOVE_ANKLE_M * scale)
+    # A short hem must still leave enough leg slabs to form an actual opening.
+    # Never silently construct a zero-length or inverted leg tube.
+    if hem >= leg_top - 2.0 * LEG_ROW_M:
+        return None
     ring_ys = np.linspace(leg_top, hem, max(int(math.ceil((leg_top - hem) / LEG_ROW_M)), 3) + 1)
     pieces_ok = True
     for sign in (1.0, -1.0):
