@@ -22,7 +22,8 @@ jobs:
         run: |
           python -m pip install -e ".[dev,preview]"
           npm install --no-save --no-package-lock playwright@1.56.1
-          npx playwright install --with-deps chromium
+          command -v google-chrome
+          google-chrome --version
       - name: Fetch pinned avatar files
         run: python tools/fetch_library.py
       - name: Generate a black pleated skirt and white safety shorts
@@ -52,6 +53,8 @@ jobs:
           cat /tmp/homepilot.log
           exit 1
       - name: Run requested HomePilot pose snapshots
+        env:
+          PLAYWRIGHT_CHROMIUM: /usr/bin/google-chrome
         run: node tools/inspect/homepilot_shots.mjs LOOK.vrm /tmp/shots
       - name: Run requested pose comparison grid
         run: |
