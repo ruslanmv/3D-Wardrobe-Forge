@@ -24,6 +24,8 @@ Studio, and keep the numbers beside the change.
 | `tools/inspect/bake_pose_correction.py`     | Runs HomePilot's posed cloth correction on a look in one pose and bakes it into a VRM        |
 | `tools/inspect/fit_checks.py`               | The six engineering checks: gusset, leg openings, sections, topology, contact, layers       |
 | `tools/inspect/engineering_sheet.py`        | Assembles those checks and a contact sheet into one six-panel sheet, three columns           |
+| `tools/inspect/homepilot_shots.mjs`         | A look in HomePilot's own viewer: Pose Studio poses, its cloth correction, front/¾/side/back |
+| `tools/inspect/shot_board.py`               | Assembles those shots: looks side by side, or one look as a pose × view grid                 |
 
 Output always goes to a directory **outside the repository**; the tools refuse a path
 inside it, so no inspection file can be committed by accident.
@@ -66,6 +68,30 @@ python tools/inspect/contact_sheet.py $OUT/bodycon.vrm --before $OUT/bodycon-bef
 
 To compare two versions of the code, run step 2 on each (for instance in a
 `git worktree` of the older commit), then pass the older file as `--before`.
+
+## In HomePilot's own viewer
+
+The tools above pose the file in Forge's own code. What a person sees is HomePilot's
+viewer, which skins on the GPU and then corrects cloth (`PoseClothCorrection.js`), and the
+torn boots of SW4 and the bra straps of FC4 were both seen there first, on a phone. So every
+look worth keeping is also shot there:
+
+```bash
+# HomePilot running: in a 3D-Avatar-Chatbot checkout, `npm ci && PORT=8090 npm start`.
+OUT=/tmp/pose-qa
+node tools/inspect/homepilot_shots.mjs $OUT/bodycon.vrm $OUT/shots \
+    --poses standing,sittingWide,sittingDesk,sittingCrossed --views front,threequarter,side,back
+node tools/inspect/homepilot_shots.mjs $OUT/bodycon.vrm $OUT/shots-foundation --only 'Briefs|Bra'
+python tools/inspect/shot_board.py $OUT/grid.png --grid $OUT/shots          # pose × view
+python tools/inspect/shot_board.py $OUT/cmp.png --title "Before / after" \
+    --column "Before=$OUT/shots-before" --column "After=$OUT/shots" --row sittingWide-front
+```
+
+`--only` draws only the meshes whose material matches (a garment alone, the foundation
+alone); `--skinned` adds each view with the correction released. `report.json` beside the
+shots has the viewer's own before/after numbers per garment and pose. The views turn the
+avatar, never the camera: every frame has the viewer's own framing and distance. Which
+bra Auto Foundation chooses is pinned by `tests/integration/test_foundation_bra_choice.py`.
 
 ## Reading the numbers
 
@@ -198,6 +224,21 @@ triangles, the knee fold) and two here:
   15.2× → 1.07×, sole 1.66× → 1.01×, deepest inside 23.2 → 16.8 mm. Her knee's own skin
   collapses at 90° (15 of her triangles invert); the shaft now follows it there, and
   inverted triangles rose 2 → 88 at the front of her knee. That is the open item.
+- **SW4: the skin weights crossed between her legs** (2026-10-25, found in production). Her
+  skin knows no sides: on AvatarSample_A, who stands with her legs together, the nearest skin
+  to a boot's inner shaft is partly the other leg, and 514 boot vertices took up to half their
+  weight from it. Seated wide they were pulled across the gap between her shins in jagged
+  strips (worst edge 53.6x, the sole 46.7x, 611 inverted triangles), which no posed correction
+  can repair. A boot's transferred weights now pass through `bind_mesh`'s own lateral mask (a
+  piece on one side never takes the other side's bones): 2.48x, sole 1.01x, 65 inverted
+  triangles on the same look. `test_a_boot_never_takes_the_other_legs_weights` holds it on two
+  bodies. Looks made before it keep their weights: make them again.
+
+  ![SW4 before and after: boots alone from the front, and the whole look from the side](images/sw4-boots-sitting-wide.webp)
+
+  The production look (`job_7c5ce7c7…`, left) beside the same outfit refitted with SW4
+  (right), in HomePilot's own viewer after Pose Studio ▸ Sitting (Wide) and its cloth
+  correction. The viewer's own figures: boot 59.3× → 3.07×, sole 54.9× → 1.09×.
 - **The briefs' crotch was 5.8 mm of fabric** — GF1, below, measured by cutting the strip
   plane by plane (a band of vertices read a sparse mesh's two nearest vertices as its
   width). GF1 is now applied to the foundation Auto Foundation adds under clothes: 32–35 mm.

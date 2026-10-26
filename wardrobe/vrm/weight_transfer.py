@@ -241,7 +241,7 @@ def smooth_below_hips(mesh: Mesh, dense: np.ndarray, *, hip_y: float) -> np.ndar
 
 def transfer_weights(mesh: Mesh, segments: list[BoneSegment], document: GltfDocument,
                      humanoid: dict[str, int], *, hip_y: float, forward: float = 1.0,
-                     axis_z: float = 0.0, whole: bool = False) -> bool:
+                     axis_z: float = 0.0, whole: bool = False, lateral: bool = False) -> bool:
     """Rebind ``mesh`` (already bound by ``bind_mesh``) from her skin above her hips; True when done.
 
     Below her hips, behind her, a hanging panel is held by her hips alone: a coat's back hangs
@@ -250,6 +250,13 @@ def transfer_weights(mesh: Mesh, segments: list[BoneSegment], document: GltfDocu
 
     ``whole`` (AN-A5) takes her skin's weights everywhere, below her hips too: for a garment on
     her skin — briefs, a swimsuit, leggings — which has no hem to hang and must move as she does.
+
+    ``lateral`` (SW4) keeps a piece that sits on one side off the other side's bones, as
+    ``bind_mesh`` does (``_apply_lateral_mask``): a boot is two shells, one per leg. Her skin
+    knows no sides, and on an avatar who stands with her legs together (AvatarSample_A) the
+    nearest skin to a boot's inner shaft is partly the other leg: 514 boot vertices took up to
+    half their weight from it, and seated wide they were pulled across the gap between her
+    shins in jagged strips (worst edge 53.6x, the sole's 46.7x).
     """
     if mesh.joints is None or mesh.weights is None or not segments:
         return False
@@ -310,6 +317,11 @@ def transfer_weights(mesh: Mesh, segments: list[BoneSegment], document: GltfDocu
     # substance, but in float64 they differed by ~1e-16 depending on the order the CPU summed
     # them, and on some CI runners the right thigh ranked first — JOINTS_0 and WEIGHTS_0 came out
     # permuted for 104 of a bodycon's 957 vertices (same skinning, different bytes).
+    if lateral:
+        from wardrobe.vrm.skinning import _apply_lateral_mask
+
+        _apply_lateral_mask(dense, points, segments, mesh)
+        dense /= np.maximum(dense.sum(axis=1, keepdims=True), 1e-12)
     dense = np.round(dense, 9)
     order = np.argsort(-dense, axis=1, kind="stable")
     keep = min(INFLUENCES, count)
