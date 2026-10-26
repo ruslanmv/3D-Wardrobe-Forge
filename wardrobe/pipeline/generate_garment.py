@@ -25,7 +25,9 @@ NEUTRAL_FOUNDATION = ("beige seamless full-cup bra", "beige seamless briefs")
 #: underwear, so no avatar needs a declaration to wear a skirt — and briefs instead
 #: where the avatar is declared adult, which is what the Studio's private mode does.
 SKIRT_LINER = "black slip shorts"
-SKIRT_LINER_ADULT = "beige seamless briefs"
+# A skirt-only look uses opaque safety shorts on every avatar; explicitly
+# requested briefs remain untouched and are still available to adult avatars.
+SKIRT_LINER_ADULT = SKIRT_LINER
 #: Outfits whose lower half is a skirt.
 SKIRTED = frozenset({"skirt", "dress"})
 #: Anything already on her hips under the skirt makes a liner redundant.
@@ -219,6 +221,10 @@ def ensure_foundation(outfit_plan, request, catalog, worn, *, depicts_adult: boo
     if kinds & NEXT_TO_SKIN_UPPER:
         needed -= {"upper"}
     halves = dict(NEUTRAL_HALF if depicts_adult else GENERAL_FOUNDATION)
+    # Under a skirt the automatic foundation is safety shorts, not briefs.
+    # White/other foundation colours and expressly requested underwear still work.
+    if any(g.category in SKIRTED for g in outfit_plan.garments):
+        halves["lower"] = GENERAL_FOUNDATION["lower"]
     # FC3. Under a strapless outfit, a strapless foundation: the full-cup bra's straps showed on
     # her shoulders above a strapless bodycon. The seamless tube top is strapless and is already
     # every other avatar's upper half.
