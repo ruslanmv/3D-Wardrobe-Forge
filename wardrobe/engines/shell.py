@@ -469,7 +469,7 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
 
 
 #: G6. Shapes cut as panels on her measured outline (wardrobe.geometry.panels).
-LEGGINGS_PANEL_KINDS = frozenset({"seamless-leggings", "leggings"})
+LEGGINGS_PANEL_KINDS = frozenset({"seamless-leggings", "leggings", "slip-shorts"})
 PANEL_KINDS = frozenset({"camisole", "open-cardigan", "tee", "sports-bra",
                          "fitted-blouse", "fitted-jacket"}) | LEGGINGS_PANEL_KINDS
 
