@@ -2,8 +2,8 @@
 
 A VRoid body under its shorts carries the old outfit's tights and undershorts in
 its skin texture, so a skirt over the removed shorts showed them. The liner is
-slip shorts for every avatar — never underwear, so no declaration is needed to
-wear a skirt — and briefs only where the avatar is declared adult.
+slip shorts for every skirt, including adult avatars; this cannot require an
+adult declaration. Adult dress looks retain their original briefs foundation.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from tests.vroid_support import dress_like_vroid
 from wardrobe.domain.garments import TemplateCatalog
 from wardrobe.domain.jobs import CreateJobRequest
 from wardrobe.domain.looks import OutfitRequest
-from wardrobe.pipeline.generate_garment import with_foundation, with_skirt_liner
+from wardrobe.pipeline.generate_garment import ensure_foundation, with_foundation, with_skirt_liner
 from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -43,9 +43,31 @@ def test_every_skirt_is_worn_over_slip_shorts(catalog, prompt):
     assert garments[-1].category in {"skirt", "dress"}
 
 
-def test_a_declared_adult_avatar_gets_briefs_instead(catalog):
+def test_adult_skirt_uses_the_same_crotch_closed_shorts(catalog):
     liner = lined(catalog, "red skater skirt", adult=True)[0]
-    assert liner.category == "underwear" and liner.role == "liner"  # briefs, but never a job-failing foundation
+    assert (liner.category, liner.template_id, liner.role) == ("shorts", "shorts-slip-v1", "liner")
+
+
+def test_adult_dress_preserves_its_briefs_liner(catalog):
+    liner = lined(catalog, "red mini dress", adult=True)[0]
+    assert liner.category == "underwear" and liner.role == "liner"
+
+
+def test_auto_foundation_uses_shorts_under_adult_skirts_and_keeps_white(catalog):
+    request = OutfitRequest(prompt="black pleated mini skirt", mode="template")
+    plan = plan_outfit_stack(request, catalog)
+    founded, added = ensure_foundation(plan, request, catalog, [], depicts_adult=True, color="white")
+    assert added == ["white slip shorts"]
+    assert founded.garments[0].template_id == "shorts-slip-v1"
+    assert founded.garments[0].material.color_name == "white"
+
+
+def test_explicit_underwear_is_not_replaced_by_auto_shorts(catalog):
+    request = OutfitRequest(prompt="white tailored briefs + black pleated mini skirt", mode="template")
+    plan = plan_outfit_stack(request, catalog)
+    founded, added = ensure_foundation(plan, request, catalog, [], depicts_adult=True)
+    assert not added
+    assert [g.template_id for g in founded.garments] == [g.template_id for g in plan.garments]
 
 
 def test_the_request_keeps_its_garments_and_its_choices(catalog):

@@ -2024,7 +2024,20 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         # skirt's (with_skirt_liner passes the skirt's rise down as "ultra-low").
         liner_rise = "ultra-low" if meta.get("rise") == "ultra-low" else "low"
         low = replace(params, metadata={**params.metadata, "rise": liner_rise})
-        return build_trousers(low, hem_y=crotch - thigh * 0.12, flare=1.0, name="slip-shorts", shaped=False)
+        hem_y = crotch - thigh * 0.12
+        # An open yoke with separate leg tubes leaves a hole at the crotch: from
+        # beneath a mini skirt, the underlying body/briefs show as a triangle.
+        # Cut the liner from the continuous two-leg pattern when her body surface
+        # is available. Its crotch seam is part of the leg mesh, not a flat cap.
+        from wardrobe.geometry.lower_panels import build_leggings_panel
+
+        panel = build_leggings_panel(low, plain=True, hem_y=hem_y,
+                                     top_y=trouser_top(low, liner_rise))
+        if panel is not None:
+            return panel
+        # An unmeasured avatar still needs its crotch covered. Do not regress
+        # to shaped=False, which deliberately omits that surface entirely.
+        return build_trousers(low, hem_y=hem_y, flare=1.0, name="slip-shorts", shaped=True)
     if kind == "shorts":
         inseam = min(0.55 * scale, 0.55) if scale < 1.0 else 0.55
         return build_trousers(params, hem_y=max(hem_y, params.hip_y - thigh * max(inseam, 0.2)), flare=flare)
