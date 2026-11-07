@@ -27,6 +27,7 @@ sys.path.insert(0, str(ROOT))
 from wardrobe.config import Settings  # noqa: E402
 from wardrobe.domain.garments import TemplateCatalog  # noqa: E402
 from wardrobe.domain.jobs import CreateJobRequest  # noqa: E402
+from wardrobe.domain.looks import fit_failure_detail  # noqa: E402
 from wardrobe.library import AvatarLibrary  # noqa: E402
 from wardrobe.pipeline.orchestrator import Orchestrator  # noqa: E402
 from wardrobe.queue.jobs import AsyncioJobQueue  # noqa: E402
@@ -84,13 +85,19 @@ async def fit(
             )
         )
         report = record.fit_report
+        detail = fit_failure_detail(report)
         print(
             json.dumps(
                 {
                     "state": str(record.state),
                     "error": record.error,
+                    "reason": str(record.reason) if record.reason else None,
                     "garments": [g.name for g in record.plan.garments] if record.plan else None,
                     "fitPassed": bool(report and report.passed),
+                    "clippingCheck": detail["clippingCheck"],
+                    "checks": detail["checks"],
+                    "errors": detail["errors"],
+                    "unplanned": detail["unplanned"],
                     "poseTests": report.pose_tests if report else None,
                     "warnings": list(report.warnings)[:8] if report else [],
                 },

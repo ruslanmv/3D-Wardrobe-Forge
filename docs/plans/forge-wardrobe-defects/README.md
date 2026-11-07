@@ -14,7 +14,7 @@ On 2026-11-07 the public catalog at `https://ruslanmv-3d-wardrobe-forge.hf.space
 | WARDROBE-UI-0523 | `trousers-leggings-highwaist-v1` | `procedural:leggings` |
 | WARDROBE-UI-CC4A | `trousers-leggings-seamless-v1` | `procedural:seamless-leggings` |
 
-`assets/catalog/build-report.json` shows the batch did run them. Each job reached `completed` and was refused because `fitPassed` is false. The recorded reason is the fallback string `fit not verified`. No WebP was written. `avatar-sample-a.vrm` is not in this checkout; the manifest in `assets/library/models.json` is.
+The catalog path (reference base, then the template) refused all three because the front groin sat inside the radial hull that bridges the thighs. Those rows are marked and left out of that check. This checkout now has a generated 480×640 WebP for each, with `fitPassed: true` in `assets/catalog/build-report.json`. The live Space does not update until that build is deployed. `avatar-sample-a.vrm` stays out of git; fetch it with `make library` or `python tools/catalog/fetch_reference_avatar.py --avatar avatar-sample-a`.
 
 `WARDROBE-DEFORM-002` is the seated straight jeans. HomePilot showed the hips open after penetration had already gone to 0 mm. Forge has not yet measured that pose. The issue stays open until `pose_contact` says whether the opening is in this repository.
 

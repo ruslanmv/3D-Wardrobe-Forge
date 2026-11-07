@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-25T20:21:02+00:00",
+  "generatedAt": "2026-11-07T22:32:18+00:00",
   "sampleAvatar": "avatar-sample-a",
   "profile": "public",
   "previewFormat": "image/webp",
@@ -236,6 +236,30 @@
       ],
       "styleVersion": 2,
       "templateSha256": "a8bd37d2dd0621390d3c77d4c0ce5fe1283e7de94248b10d15a55819940606fa",
+      "sampleAvatar": "avatar-sample-a"
+    },
+    {
+      "id": "jeans-baggy-v1",
+      "status": "cached",
+      "color": "blue",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "212351ac4d192d13ecfd22437ffbeb682e6c269f921c02d9bea3adf58ebf57bd",
+      "sampleAvatar": "avatar-sample-a"
+    },
+    {
+      "id": "jeans-straight-v1",
+      "status": "cached",
+      "color": "blue",
+      "framing": [
+        0.0,
+        0.7
+      ],
+      "styleVersion": 2,
+      "templateSha256": "a68750e31198eb621e3ee28099995b5d4092bdd69dbeed99f6100fa788dcab81",
       "sampleAvatar": "avatar-sample-a"
     },
     {
@@ -908,30 +932,6 @@
       ]
     },
     {
-      "id": "jeans-baggy-v1",
-      "status": "cached",
-      "color": "blue",
-      "framing": [
-        0.0,
-        0.7
-      ],
-      "styleVersion": 2,
-      "templateSha256": "212351ac4d192d13ecfd22437ffbeb682e6c269f921c02d9bea3adf58ebf57bd",
-      "sampleAvatar": "avatar-sample-a"
-    },
-    {
-      "id": "jeans-straight-v1",
-      "status": "cached",
-      "color": "blue",
-      "framing": [
-        0.0,
-        0.7
-      ],
-      "styleVersion": 2,
-      "templateSha256": "a68750e31198eb621e3ee28099995b5d4092bdd69dbeed99f6100fa788dcab81",
-      "sampleAvatar": "avatar-sample-a"
-    },
-    {
       "id": "trousers-balloon-v1",
       "status": "cached",
       "color": "black",
@@ -945,7 +945,7 @@
     },
     {
       "id": "trousers-leggings-highwaist-v1",
-      "status": "failed-or-ineligible",
+      "status": "generated",
       "color": "black",
       "framing": [
         0.0,
@@ -954,13 +954,27 @@
       "styleVersion": 2,
       "templateSha256": "e052b34de882d828d4b27efdacc0bf856a1324edd57cfd1052453ba85501e6e9",
       "sampleAvatar": "avatar-sample-a",
-      "jobState": "completed",
-      "fitPassed": false,
-      "reason": "fit not verified"
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black High-Waist Leggings",
+          "templateId": "trousers-leggings-highwaist-v1",
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest (7% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
       "id": "trousers-leggings-seamless-v1",
-      "status": "failed-or-ineligible",
+      "status": "generated",
       "color": "black",
       "framing": [
         0.0,
@@ -969,13 +983,27 @@
       "styleVersion": 2,
       "templateSha256": "9d62eb786f7636ca949d885e166d91a1e07b3e9a84821ecb4d18e68107137b3f",
       "sampleAvatar": "avatar-sample-a",
-      "jobState": "completed",
-      "fitPassed": false,
-      "reason": "fit not verified"
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Seamless Scrunch Leggings",
+          "templateId": "trousers-leggings-seamless-v1",
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest (7% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
       "id": "trousers-leggings-v1",
-      "status": "failed-or-ineligible",
+      "status": "generated",
       "color": "black",
       "framing": [
         0.0,
@@ -984,9 +1012,23 @@
       "styleVersion": 2,
       "templateSha256": "37e44811ffcbab71e23a843a6f765e6fad7acc38b60b3fc107fffd6be39de0d5",
       "sampleAvatar": "avatar-sample-a",
-      "jobState": "completed",
-      "fitPassed": false,
-      "reason": "fit not verified"
+      "rating": "general",
+      "fitPassed": true,
+      "garments": [
+        {
+          "name": "Black Leggings",
+          "templateId": "trousers-leggings-v1",
+          "color": "black",
+          "fabric": null
+        }
+      ],
+      "clippingCheck": "passed",
+      "warnings": [
+        "clothing painted on her skin shows at a top across her chest (9% of her torso)"
+      ],
+      "views": [
+        "front"
+      ]
     },
     {
       "id": "trousers-slim-v1",

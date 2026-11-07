@@ -22,7 +22,7 @@
       "id": "FORGE-REPORT-001",
       "order": 1,
       "severity": "P2",
-      "status": "open",
+      "status": "fixed",
       "title": "A failed catalog fit is recorded only as 'fit not verified'",
       "owner": "3D-Wardrobe-Forge",
       "component": "tools/catalog/render_templates.py",
@@ -48,9 +48,40 @@
         "Do not change FitReport.passed."
       ],
       "diagnosis": {
-        "trousers-leggings-v1": null,
-        "trousers-leggings-highwaist-v1": null,
-        "trousers-leggings-seamless-v1": null
+        "trousers-leggings-v1": {
+          "clippingCheck": "failed",
+          "checks": {
+            "structure": "passed",
+            "bodyPreparation": "passed",
+            "layerOrder": "passed",
+            "skin": "painted-clothing-shows",
+            "clearance": "failed"
+          },
+          "errors": [],
+          "measured": "Catalog path on the reference base, avatar-sample-a, 2026-11-07. 41 front-groin vertices of the seamless panel, y 0.817-0.846, gap -12.54 mm to -3.48 mm against the radial hull, 2.85% of the measured shell. verticesPushedOut 0 because a panel is not moved by that index. The same three records in the build report had clippingCheck failed and clearance failed before the groin rows were left out of the hull check."
+        },
+        "trousers-leggings-highwaist-v1": {
+          "clippingCheck": "failed",
+          "checks": {
+            "structure": "passed",
+            "bodyPreparation": "passed",
+            "layerOrder": "passed",
+            "skin": "painted-clothing-shows",
+            "clearance": "failed"
+          },
+          "errors": []
+        },
+        "trousers-leggings-seamless-v1": {
+          "clippingCheck": "failed",
+          "checks": {
+            "structure": "passed",
+            "bodyPreparation": "passed",
+            "layerOrder": "passed",
+            "skin": "painted-clothing-shows",
+            "clearance": "failed"
+          },
+          "errors": []
+        }
       },
       "verify": {
         "kind": "failure-detail",
@@ -69,7 +100,7 @@
       "id": "WARDROBE-UI-F181",
       "order": 2,
       "severity": "P3",
-      "status": "open",
+      "status": "fixed",
       "title": "Catalog preview missing for Leggings",
       "owner": "3D-Wardrobe-Forge",
       "component": "assets/garment_templates/trousers/trousers-leggings-v1.json",
@@ -117,7 +148,7 @@
       "id": "WARDROBE-UI-0523",
       "order": 3,
       "severity": "P3",
-      "status": "open",
+      "status": "fixed",
       "title": "Catalog preview missing for High-Waist Leggings",
       "owner": "3D-Wardrobe-Forge",
       "component": "assets/garment_templates/trousers/trousers-leggings-highwaist-v1.json",
@@ -160,7 +191,7 @@
       "id": "WARDROBE-UI-CC4A",
       "order": 4,
       "severity": "P3",
-      "status": "open",
+      "status": "fixed",
       "title": "Catalog preview missing for Seamless Scrunch Leggings",
       "owner": "3D-Wardrobe-Forge",
       "component": "assets/garment_templates/trousers/trousers-leggings-seamless-v1.json",

@@ -298,7 +298,11 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # SL2. Nor a one-piece legging's legs: measured out from her vertical axis, the inner side
         # of each leg ring read as inside the other leg (55 % of Model Girl's leggings "intersected"
         # her). They are each leg's own hull carried out by the clearance (lower_panels).
-        for key in ("sleeve", "yoke", "legPiece"):
+        # Nor the front groin of those leggings. The radial hull bridges from thigh to thigh, so a
+        # knit that follows her groove (12 mm inside that bridge, 2.5 mm outside her skin on
+        # AvatarSample A) was scored as an intersection and the catalog withheld the preview.
+        # The rows are placed on her measured ray plus the garment's ease; the hull is the wrong ruler.
+        for key in ("sleeve", "yoke", "legPiece", "groin"):
             if mesh.metadata.get(key) is not None:
                 axis_mask = axis_mask & ~np.asarray(mesh.metadata[key], dtype=bool)
 
