@@ -774,6 +774,7 @@ Stated plainly, because the gallery shows them:
 | [LICENSING](docs/LICENSING.md) | usage terms as a pipeline stage |
 | [3D_AVATAR_CHATBOT_INTEGRATION](docs/3D_AVATAR_CHATBOT_INTEGRATION.md) | client integration |
 | [IMPLEMENTATION_PLAN](docs/IMPLEMENTATION_PLAN.md) | milestones, the bugs the acceptance matrix caught, and **what is left** across every plan |
+| [Forge wardrobe defects](docs/plans/forge-wardrobe-defects/README.md) | the three missing leggings previews and the seated jeans opening: issue file, fix order, and `tools/catalog/check_forge_defects.py` |
 | [YOURFRIEND_ASSET_BUNDLE](docs/YOURFRIEND_ASSET_BUNDLE.md) | static product bundle contract |
 | [HUGGING FACE](deploy/huggingface/README.md) | Docker Space, the Studio, and production profiles |
 
