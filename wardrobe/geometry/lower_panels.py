@@ -237,6 +237,17 @@ def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
 
     # The trunk, top down: band rows to the V, then hip rows to the crotch row. A row is one
     # height per column; the band's last row and the hip's first are the same vertices.
+    # Front columns below the groin line follow her groove, inside the slab hull. The radial
+    # clearance index is that hull, so those vertices are marked and left out of it.
+    groin_column = np.cos(theta) > math.cos(GROIN_HALF_ANGLE)
+    groin_ids: set[int] = set()
+
+    def place(j: int, y: float, p: np.ndarray, tag: str) -> int:
+        index = builder.add(p, (theta[j] * 0.15, y), tag, inside_of(p))
+        if y < groin_top and groin_column[j]:
+            groin_ids.add(index)
+        return index
+
     band: list[list[int]] = []
     for i in range(BAND_ROWS + 1):
         t = i / BAND_ROWS
@@ -244,8 +255,7 @@ def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
         for j in range(columns):
             y = top + (float(vee[j]) - top) * t
             proud = BAND_PROUD_M if 0 < i < BAND_ROWS else 0.0
-            p = trunk_point(j, y, proud)
-            row.append(builder.add(p, (theta[j] * 0.15, y), "band", inside_of(p)))
+            row.append(place(j, y, trunk_point(j, y, proud), "band"))
         band.append(row)
     hip: list[list[int]] = [band[-1]]
     for i in range(1, hip_rows + 1):
@@ -253,8 +263,7 @@ def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
         row = []
         for j in range(columns):
             y = float(vee[j]) + (bottom - float(vee[j])) * t
-            p = trunk_point(j, y)
-            row.append(builder.add(p, (theta[j] * 0.15, y), "hip", inside_of(p)))
+            row.append(place(j, y, trunk_point(j, y), "hip"))
         hip.append(row)
     crotch_row = hip[-1]
 
@@ -355,6 +364,10 @@ def build_leggings_panel(params, *, plain: bool = False) -> list[Mesh] | None:
         mesh.metadata["placed"] = np.ones(used.size, dtype=bool)
         # Below her crotch row the surface is legs, cut round each leg (see the shell's clearance).
         mesh.metadata["legPiece"] = mesh.positions[:, 1] < bottom - 1e-4
+        groin_of = np.zeros(len(builder.points), dtype=bool)
+        if groin_ids:
+            groin_of[np.fromiter(groin_ids, dtype=np.int64, count=len(groin_ids))] = True
+        mesh.metadata["groin"] = groin_of[used]
         pieces.append(mesh)
     return pieces
 

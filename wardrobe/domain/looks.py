@@ -465,6 +465,19 @@ class FitReport(BaseModel):
         return "passed"
 
 
+def fit_failure_detail(report: FitReport | None) -> dict:
+    """The fields a catalog failure must keep. ``passed`` can be false with no job error."""
+    if report is None:
+        return {"clippingCheck": None, "checks": None, "errors": [], "unplanned": []}
+    check = report.clipping_check
+    return {
+        "clippingCheck": str(check.value if hasattr(check, "value") else check),
+        "checks": report.checks,
+        "errors": list(report.errors),
+        "unplanned": list(report.unplanned or []),
+    }
+
+
 __all__ = [
     "OutfitMode",
     "OutfitRequest",
@@ -473,6 +486,7 @@ __all__ = [
     "LookResult",
     "ClippingCheck",
     "FitReport",
+    "fit_failure_detail",
 ]
 
 

@@ -3,7 +3,7 @@
   "source": "Forge template catalog with verified preview images",
   "sampleAvatar": "avatar-sample-a",
   "styleVersion": 2,
-  "count": 59,
+  "count": 62,
   "items": [
     {
       "id": "dress-a-line-v1",
@@ -563,6 +563,36 @@
       "width": 480,
       "height": 640,
       "preview": "trousers-balloon-v1.webp",
+      "color": "black"
+    },
+    {
+      "id": "trousers-leggings-highwaist-v1",
+      "category": "trousers",
+      "sha256": "11595510dd74a26ffd7483011143a4368571ebd4623caa21fbbd97777734ccab",
+      "bytes": 7084,
+      "width": 480,
+      "height": 640,
+      "preview": "trousers-leggings-highwaist-v1.webp",
+      "color": "black"
+    },
+    {
+      "id": "trousers-leggings-seamless-v1",
+      "category": "trousers",
+      "sha256": "1f6fdeff9c125d82fdc2400c6abf04bae74ad2189a31068c745291b47a23a27a",
+      "bytes": 7120,
+      "width": 480,
+      "height": 640,
+      "preview": "trousers-leggings-seamless-v1.webp",
+      "color": "black"
+    },
+    {
+      "id": "trousers-leggings-v1",
+      "category": "trousers",
+      "sha256": "9d461430a8785e9a84b009de6a598f6df7ff5434a1f8aafcb89e385756af9c0b",
+      "bytes": 7176,
+      "width": 480,
+      "height": 640,
+      "preview": "trousers-leggings-v1.webp",
       "color": "black"
     },
     {

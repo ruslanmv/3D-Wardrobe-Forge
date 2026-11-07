@@ -86,7 +86,7 @@ def section_ranges(mesh: Mesh) -> list[tuple[str, int, int]]:
 
 
 #: Metadata entries that are one boolean per vertex, merged per vertex by ``concatenate``.
-VERTEX_MASKS = ("placed", "gusset", "rigidFoot", "sleeve", "yoke", "legPiece")
+VERTEX_MASKS = ("placed", "gusset", "rigidFoot", "sleeve", "yoke", "legPiece", "groin")
 
 
 def concatenate(meshes: list[Mesh]) -> Mesh:

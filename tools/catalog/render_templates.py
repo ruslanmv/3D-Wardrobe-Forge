@@ -43,6 +43,7 @@ sys.path.insert(0, str(ROOT))
 from wardrobe.config import Settings  # noqa: E402
 from wardrobe.domain.garments import INTIMATE_CATEGORIES, TemplateCatalog  # noqa: E402
 from wardrobe.domain.jobs import CreateJobRequest  # noqa: E402
+from wardrobe.domain.looks import fit_failure_detail  # noqa: E402
 from wardrobe.library import AvatarLibrary  # noqa: E402
 from wardrobe.pipeline.orchestrator import Orchestrator  # noqa: E402
 from wardrobe.pipeline.plan_outfit_stack import SET_PARTS  # noqa: E402
@@ -261,11 +262,18 @@ async def build(avatar_slug: str, ids: set[str], destination: Path, color_overri
                     and _planned_from(t.id, result.plan)
                 )
                 if not ok:
+                    report = result.fit_report
+                    detail = fit_failure_detail(report)
                     records.append({
                         "id": t.id, "status": "failed-or-ineligible", **key,
                         "jobState": str(result.state),
-                        "fitPassed": bool(result.fit_report and result.fit_report.passed),
+                        "fitPassed": bool(report and report.passed),
                         "reason": str(result.reason or result.error or "fit not verified"),
+                        # fit_report.checks names the gate. A completed job has no error string.
+                        "clippingCheck": detail["clippingCheck"],
+                        "checks": detail["checks"],
+                        "errors": detail["errors"],
+                        "unplanned": detail["unplanned"],
                     })
                     continue
                 garments = _rendered(result.plan)

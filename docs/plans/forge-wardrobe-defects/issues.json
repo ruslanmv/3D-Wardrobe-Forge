@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "repository": "3D-Wardrobe-Forge",
+  "recordedOn": "2026-11-07",
+  "source": "Live GET https://ruslanmv-3d-wardrobe-forge.hf.space/v1/catalog/garments on 2026-11-07, assets/catalog/build-report.json in this checkout, and the HomePilot Try-On audit in 3D-Avatar-Chatbot pull request 136.",
+  "howToUse": "Read README.md, then PLAN.md. Do the issues in the order field. Do not set status to fixed until python tools/catalog/check_forge_defects.py exits 0. Do not invent a preview URL or copy another garment's WebP.",
+  "outOfScope": [
+    {
+      "id": "WARDROBE-CLIP-001",
+      "owner": "3D-Avatar-Chatbot",
+      "component": "src/wardrobe/PoseClothCorrection.js",
+      "why": "The seated pencil panel sits in the thigh opening with a positive signed distance, so Forge's standing fit is not the component that leaves it there. The chatbot pull request 136 owns that lift."
+    },
+    {
+      "id": "restricted-skipped-templates",
+      "owner": "3D-Wardrobe-Forge",
+      "why": "Swim and lingerie templates in assets/catalog/build-report.json with status restricted-skipped are withheld from the public catalog on purpose. They are not missing previews."
+    }
+  ],
+  "issues": [
+    {
+      "id": "FORGE-REPORT-001",
+      "order": 1,
+      "severity": "P2",
+      "status": "fixed",
+      "title": "A failed catalog fit is recorded only as 'fit not verified'",
+      "owner": "3D-Wardrobe-Forge",
+      "component": "tools/catalog/render_templates.py",
+      "expected": "When a catalog job completes and FitReport.passed is false, the build-report record names clippingCheck, checks, errors and unplanned.",
+      "actual": "The three leggings records have jobState completed, fitPassed false, and reason 'fit not verified'. result.reason and result.error are empty, and the failure dict does not copy the fit report. tools/inspect/fit_look.py prints the same gap: state, error, fitPassed, poseTests and warnings, not checks.",
+      "confirmedCause": "tools/catalog/render_templates.py sets reason to result.reason or result.error or the fallback string, and FitReport.passed can be false while both of those are empty. The job still reaches state completed because validate_output.py does not fail the job for a failed clipping check.",
+      "files": [
+        "tools/catalog/render_templates.py",
+        "tools/inspect/fit_look.py",
+        "wardrobe/domain/looks.py"
+      ],
+      "reproduce": [
+        "Open assets/catalog/build-report.json and read the records for trousers-leggings-v1, trousers-leggings-highwaist-v1 and trousers-leggings-seamless-v1.",
+        "Read FitReport.passed in wardrobe/domain/looks.py. A false pass is one of: structure flags, clipping_check outside {passed, clearance-only, warnings}, a non-empty errors list, or a non-empty unplanned list."
+      ],
+      "fix": [
+        "In the failed-or-ineligible branch of tools/catalog/render_templates.py, copy clippingCheck, checks, errors and unplanned from result.fit_report when it exists.",
+        "Print those same fields from tools/inspect/fit_look.py.",
+        "Add tests/unit/test_catalog_failure_report.py that builds a failed record through the helper you extract, and asserts the four fields are present. Do not render a garment in that test."
+      ],
+      "constraints": [
+        "Do not mark a preview ready to compensate for a missing reason.",
+        "Do not change FitReport.passed."
+      ],
+      "diagnosis": {
+        "trousers-leggings-v1": {
+          "clippingCheck": "failed",
+          "checks": {
+            "structure": "passed",
+            "bodyPreparation": "passed",
+            "layerOrder": "passed",
+            "skin": "painted-clothing-shows",
+            "clearance": "failed"
+          },
+          "errors": [],
+          "measured": "Catalog path on the reference base, avatar-sample-a, 2026-11-07. 41 front-groin vertices of the seamless panel, y 0.817-0.846, gap -12.54 mm to -3.48 mm against the radial hull, 2.85% of the measured shell. verticesPushedOut 0 because a panel is not moved by that index. The same three records in the build report had clippingCheck failed and clearance failed before the groin rows were left out of the hull check."
+        },
+        "trousers-leggings-highwaist-v1": {
+          "clippingCheck": "failed",
+          "checks": {
+            "structure": "passed",
+            "bodyPreparation": "passed",
+            "layerOrder": "passed",
+            "skin": "painted-clothing-shows",
+            "clearance": "failed"
+          },
+          "errors": []
+        },
+        "trousers-leggings-seamless-v1": {
+          "clippingCheck": "failed",
+          "checks": {
+            "structure": "passed",
+            "bodyPreparation": "passed",
+            "layerOrder": "passed",
+            "skin": "painted-clothing-shows",
+            "clearance": "failed"
+          },
+          "errors": []
+        }
+      },
+      "verify": {
+        "kind": "failure-detail",
+        "source": "tools/catalog/render_templates.py",
+        "sourceMustContain": "fit_report.checks",
+        "inspector": "tools/inspect/fit_look.py",
+        "inspectorMustContain": "clippingCheck",
+        "templates": [
+          "trousers-leggings-v1",
+          "trousers-leggings-highwaist-v1",
+          "trousers-leggings-seamless-v1"
+        ]
+      }
+    },
+    {
+      "id": "WARDROBE-UI-F181",
+      "order": 2,
+      "severity": "P3",
+      "status": "fixed",
+      "title": "Catalog preview missing for Leggings",
+      "owner": "3D-Wardrobe-Forge",
+      "component": "assets/garment_templates/trousers/trousers-leggings-v1.json",
+      "templateId": "trousers-leggings-v1",
+      "garmentName": "Leggings",
+      "category": "trousers",
+      "mesh": "procedural:leggings",
+      "avatar": "avatar-sample-a",
+      "expected": "GET /v1/catalog/garments reports previewStatus ready and a previewUrl for this id. The image is a fitted 480x640 WebP of this template on avatar-sample-a.",
+      "actual": "The live catalog on 2026-11-07 reported previewStatus pending and previewUrl null. This checkout has no assets/catalog/previews/trousers-leggings-v1.webp. The build report records status failed-or-ineligible, jobState completed, fitPassed false, reason 'fit not verified'.",
+      "confirmedCause": "The public preview batch ran this template and refused to publish because the fit report did not pass. Which check failed is not in the build report. Fill diagnosis on FORGE-REPORT-001 before changing the mesh.",
+      "files": [
+        "assets/garment_templates/trousers/trousers-leggings-v1.json",
+        "wardrobe/geometry/procedural.py",
+        "wardrobe/geometry/lower_panels.py",
+        "wardrobe/pipeline/fit_garment.py",
+        "tools/catalog/render_templates.py"
+      ],
+      "reproduce": [
+        "python tools/catalog/fetch_reference_avatar.py --avatar avatar-sample-a",
+        "python tools/inspect/fit_look.py --avatar avatar-sample-a --prompt 'black Leggings' --template trousers-leggings-v1 --base-body replace-outer --out /tmp/forge-qa/leggings.vrm"
+      ],
+      "fix": [
+        "Use the checks printed after FORGE-REPORT-001. Change the fit or the leggings panel so FitReport.passed is true on avatar-sample-a.",
+        "Render only this id: python tools/catalog/render_templates.py --avatar avatar-sample-a --ids trousers-leggings-v1",
+        "Do not start from the band-and-tubes fallback if build_leggings_panel already returned a mesh. That fallback is what the plain pair used to show as a gusset patch and a hip seam."
+      ],
+      "constraints": [
+        "Do not commit a WebP whose build-report record has fitPassed false.",
+        "Do not copy another template's image onto this filename.",
+        "Do not point previewUrl at a file that was not produced by render_templates.py. apps/api/routes/catalog.py sets previewStatus from the file on disk; a hand-written URL is a lie the API will not tell."
+      ],
+      "verify": {
+        "kind": "catalog-preview",
+        "templateId": "trousers-leggings-v1",
+        "webp": "assets/catalog/previews/trousers-leggings-v1.webp",
+        "width": 480,
+        "height": 640,
+        "report": "assets/catalog/build-report.json",
+        "acceptedStatus": ["generated", "cached"],
+        "requireFitPassed": true
+      }
+    },
+    {
+      "id": "WARDROBE-UI-0523",
+      "order": 3,
+      "severity": "P3",
+      "status": "fixed",
+      "title": "Catalog preview missing for High-Waist Leggings",
+      "owner": "3D-Wardrobe-Forge",
+      "component": "assets/garment_templates/trousers/trousers-leggings-highwaist-v1.json",
+      "templateId": "trousers-leggings-highwaist-v1",
+      "garmentName": "High-Waist Leggings",
+      "category": "trousers",
+      "mesh": "procedural:leggings",
+      "avatar": "avatar-sample-a",
+      "expected": "A ready 480x640 preview. The waistband sits above the natural waist. It is not the same picture as trousers-leggings-v1.",
+      "actual": "Live previewStatus pending, no preview URL, no WebP in this checkout. Build report: failed-or-ineligible, job completed, fitPassed false, reason 'fit not verified'.",
+      "confirmedCause": "Same publication gate as WARDROBE-UI-F181. The template name contains 'High-Waist', and wardrobe/pipeline/plan_outfit.py maps that phrase to rise high. Confirm the planned garment's rise is high before treating this as a duplicate of the plain pair.",
+      "files": [
+        "assets/garment_templates/trousers/trousers-leggings-highwaist-v1.json",
+        "wardrobe/geometry/lower_panels.py",
+        "wardrobe/pipeline/plan_outfit.py"
+      ],
+      "reproduce": [
+        "python tools/inspect/fit_look.py --avatar avatar-sample-a --prompt 'black High-Waist Leggings' --template trousers-leggings-highwaist-v1 --base-body replace-outer --out /tmp/forge-qa/leggings-highwaist.vrm"
+      ],
+      "fix": [
+        "Fix the check named in diagnosis. Keep the high waist. Render with --ids trousers-leggings-highwaist-v1 only after F181's plain pair passes, unless the checks say this template fails for a different reason."
+      ],
+      "constraints": [
+        "Do not reuse trousers-leggings-v1.webp.",
+        "Do not drop the high waist to make the fit pass."
+      ],
+      "verify": {
+        "kind": "catalog-preview",
+        "templateId": "trousers-leggings-highwaist-v1",
+        "webp": "assets/catalog/previews/trousers-leggings-highwaist-v1.webp",
+        "width": 480,
+        "height": 640,
+        "report": "assets/catalog/build-report.json",
+        "acceptedStatus": ["generated", "cached"],
+        "requireFitPassed": true,
+        "distinctFrom": "assets/catalog/previews/trousers-leggings-v1.webp"
+      }
+    },
+    {
+      "id": "WARDROBE-UI-CC4A",
+      "order": 4,
+      "severity": "P3",
+      "status": "fixed",
+      "title": "Catalog preview missing for Seamless Scrunch Leggings",
+      "owner": "3D-Wardrobe-Forge",
+      "component": "assets/garment_templates/trousers/trousers-leggings-seamless-v1.json",
+      "templateId": "trousers-leggings-seamless-v1",
+      "garmentName": "Seamless Scrunch Leggings",
+      "category": "trousers",
+      "mesh": "procedural:seamless-leggings",
+      "avatar": "avatar-sample-a",
+      "expected": "A ready 480x640 preview of the seamless scrunch pair: crossover waist and a gathered seat, distinct from the plain leggings preview.",
+      "actual": "Live previewStatus pending, no preview URL, no WebP. Build report: failed-or-ineligible, job completed, fitPassed false, reason 'fit not verified'. The template is optIn.",
+      "confirmedCause": "Same publication gate. The mesh is procedural:seamless-leggings, built by build_leggings_panel without plain=True, or by build_seamless_leggings when the measured outline is missing.",
+      "files": [
+        "assets/garment_templates/trousers/trousers-leggings-seamless-v1.json",
+        "wardrobe/geometry/procedural.py",
+        "wardrobe/geometry/lower_panels.py"
+      ],
+      "reproduce": [
+        "python tools/inspect/fit_look.py --avatar avatar-sample-a --prompt 'black Seamless Scrunch Leggings' --template trousers-leggings-seamless-v1 --base-body replace-outer --out /tmp/forge-qa/leggings-seamless.vrm"
+      ],
+      "fix": [
+        "Fix the check named in diagnosis. Keep the crossover waist and the scrunch. Render with --ids trousers-leggings-seamless-v1."
+      ],
+      "constraints": [
+        "Do not turn this template into the plain pair to get a preview.",
+        "Do not clear optIn unless a product decision says the public catalog should drop that flag. The current failure is the fit gate, not the flag: the build report attempted the render."
+      ],
+      "verify": {
+        "kind": "catalog-preview",
+        "templateId": "trousers-leggings-seamless-v1",
+        "webp": "assets/catalog/previews/trousers-leggings-seamless-v1.webp",
+        "width": 480,
+        "height": 640,
+        "report": "assets/catalog/build-report.json",
+        "acceptedStatus": ["generated", "cached"],
+        "requireFitPassed": true,
+        "distinctFrom": "assets/catalog/previews/trousers-leggings-v1.webp"
+      }
+    },
+    {
+      "id": "WARDROBE-DEFORM-002",
+      "order": 5,
+      "severity": "P1",
+      "status": "open",
+      "title": "Seated straight jeans open at the hips after penetration reads clear",
+      "owner": "shared",
+      "forgeComponent": "jeans mesh and skinning",
+      "chatbotComponent": "src/wardrobe/PoseClothCorrection.js",
+      "templateId": "jeans-straight-v1",
+      "garmentName": "Blue Straight Jeans",
+      "avatar": "fem-vroid",
+      "pose": "sittingDesk",
+      "camera": "front",
+      "cameraMethod": "camera-orbit",
+      "expected": "Sitting (Desk) jeans stay a closed garment over the hips and crotch, as they do standing.",
+      "actual": "HomePilot Try-On, builtin look Crop top & jeans, cloth phase applied. The jeans mesh went from 37.5 mm penetration and 7.62× edge stretch to 0 mm and 2.77×. The front frame still shows the legs ballooned off the thighs and a gap at the crotch. Standing on the same look is closed. Evidence frames live in the chatbot repo at audits/wardrobe_sitting_desk/reports/evidence/jeans-sittingDesk-front.png and jeans-standing-front.png.",
+      "confirmedCause": "Not yet measured inside Forge. HomePilot's push only moves vertices that are inside a surface, so a seam that is already outside survives with maxPenetrationMm 0. This issue stays here until pose_contact on the fitted VRM, before the chatbot correction, says whether the opening exists in Forge's posed mesh.",
+      "files": [
+        "assets/garment_templates/trousers/jeans-straight-v1.json",
+        "wardrobe/geometry/procedural.py",
+        "wardrobe/vrm/weight_transfer.py",
+        "tools/inspect/pose_contact.py",
+        "docs/POSE_CONTACT_QA.md"
+      ],
+      "reproduce": [
+        "python tools/catalog/fetch_reference_avatar.py --avatar fem-vroid",
+        "python tools/inspect/fit_look.py --avatar fem-vroid --prompt 'blue straight jeans' --template jeans-straight-v1 --base-body replace-outer --out /tmp/forge-qa/jeans.vrm",
+        "python tools/inspect/pose_contact.py /tmp/forge-qa/jeans.vrm --poses tests/fixtures/homepilot-poses.json --json /tmp/forge-qa/jeans.contact.json"
+      ],
+      "fix": [
+        "Read the sittingDesk entry for the jeans mesh in /tmp/forge-qa/jeans.contact.json.",
+        "If the posed Forge mesh is already open or deeply inside, fix the gusset, the leg sections or the weights in this repository. Do not cover the opening with an extra opaque surface.",
+        "If the posed Forge mesh is closed and the opening appears only after HomePilot's PoseClothCorrection, set status to not-forge, attach the contact JSON summary, and leave the chatbot issue open. Do not change the jeans mesh to hide a chatbot push."
+      ],
+      "constraints": [
+        "pose_contact refuses a path inside this repository. Keep the VRM, the contact JSON and the frame under /tmp/forge-qa.",
+        "A penetration of 0 mm is not a pass. The HomePilot capture already had 0 mm and an open crotch.",
+        "Do not mark fixed without looking at a Sitting (Desk) front frame of the fitted file."
+      ],
+      "verify": {
+        "kind": "pose-contact",
+        "templateId": "jeans-straight-v1",
+        "pose": "sittingDesk",
+        "avatar": "fem-vroid",
+        "maxPenetrationMmAtMost": 1.0,
+        "requireVisual": "closed"
+      }
+    }
+  ]
+}
