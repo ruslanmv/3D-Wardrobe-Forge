@@ -446,7 +446,8 @@ def classify_boundaries(positions: np.ndarray, indices: np.ndarray, binding: np.
                         partner = min(other, key=lambda o: float(np.linalg.norm(points[corner] - points[o])))
                         distance = float(np.linalg.norm(points[corner] - points[partner]))
                         if distance <= SHELL_BRIDGE_M:
-                            bridged[(min(int(corner), int(partner)), max(int(corner), int(partner)))] = distance
+                            pair = (min(int(corner), int(partner)), max(int(corner), int(partner)))
+                            bridged[pair] = distance
                 else:
                     missing += 1
                 continue

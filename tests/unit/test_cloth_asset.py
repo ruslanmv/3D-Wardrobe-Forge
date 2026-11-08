@@ -281,7 +281,7 @@ def test_a_hem_folding_back_on_itself_is_a_fold_not_a_seam():
     path = [(0.0, 0.0), (0.03, 0.0), (0.03, 0.003), (0.01, 0.003), (0.01, 0.006), (0.04, 0.006),
             (0.04, 0.009), (0.02, 0.009), (0.02, 0.012), (0.05, 0.012)]
     dense = []
-    for (x0, z0), (x1, z1) in zip(path[:-1], path[1:]):
+    for (x0, z0), (x1, z1) in zip(path[:-1], path[1:], strict=True):
         steps = max(1, int(round(np.hypot(x1 - x0, z1 - z0) / 0.005)))
         dense += [(x0 + (x1 - x0) * k / steps, z0 + (z1 - z0) * k / steps) for k in range(steps)]
     dense.append(path[-1])
