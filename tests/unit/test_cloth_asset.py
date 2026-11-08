@@ -299,3 +299,18 @@ def test_a_hem_folding_back_on_itself_is_a_fold_not_a_seam():
     assert asset.missing_seams == 0
     assert asset.shell_bridges == 0  # a fold is left free to open; it is never bridged
     assert asset.simulation == "xpbd"
+
+
+def test_a_dress_pins_its_bodice_not_its_neckline(measurements):
+    """PA1. The A-line has no waistband: the bodice section is the attachment, so the skirt hangs from the hip."""
+    mesh = build_garment("dress", _params(measurements), silhouette="a-line", hem="knee")
+    asset = compile_cloth_asset(mesh, kind="dress", category="dress", name="Black A-line Dress")
+    assert asset.attachment_source == "section"
+    assert asset.simulation == "xpbd" and asset.missing_seams == 0 and asset.shell_bridges > 0
+    indices = np.asarray(mesh.indices, np.int64)
+    from wardrobe.geometry.mesh import section_ranges
+    spans = {name: np.unique(indices[first * 3:(first + count) * 3]) for name, first, count in section_ranges(mesh)}
+    weights = np.asarray(asset.attachment)
+    assert np.all(weights[spans["dress-bodice"]] == 1.0)
+    skirt_only = np.setdiff1d(spans["dress-skirt"], spans["dress-bodice"])
+    assert np.all(weights[skirt_only] == 0.0)  # the whole skirt is free, down from the hip join
