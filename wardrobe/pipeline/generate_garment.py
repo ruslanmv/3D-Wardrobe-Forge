@@ -66,11 +66,13 @@ async def plan(context: PipelineContext) -> None:
         outfit_plan = completed
     elif mode == "replace-outer" and wears_her_own_bottoms(context):
         lined = with_skirt_liner(
-            outfit_plan, request, context.catalog, depicts_adult=context.record.request.avatar.depicts_adult
+            outfit_plan, request, context.catalog,
+            depicts_adult=context.record.request.avatar.depicts_adult,
+            color=context.record.request.options.foundation_color,
         )
         if lined is not outfit_plan:
-            liner = lined.garments[0].name.lower()
-            context.warn(f"added {liner} under the skirt, in place of her own bottoms")
+            added = next(g.name.lower() for g in lined.garments if g.role == "liner")
+            context.warn(f"added {added} under the skirt, in place of her own bottoms")
         outfit_plan = lined
 
     context.plan = outfit_plan
@@ -282,46 +284,94 @@ def wears_her_own_bottoms(context: PipelineContext) -> bool:
     return any(garment.role == "source" and "lower" in garment.regions for garment in worn)
 
 
+def panty_color(garments) -> str | None:
+    """The colour of the briefs in this outfit, when it names one."""
+    for garment in garments:
+        if garment.category != "underwear":
+            continue
+        name = garment.material.color_name if garment.material is not None else None
+        if name:
+            return name
+    return None
+
+
 def needs_skirt_liner(outfit_plan, catalog) -> bool:
-    """A skirt, with nothing of the new outfit on her hips beneath it."""
+    """A skirt, with no slip, shorts or trousers already under it.
+
+    Briefs do not replace the underskirt. A skirt is worn over them, and the
+    underskirt is what shows, in the briefs' own colour.
+    """
     garments = outfit_plan.garments
     if not any(garment.category in SKIRTED for garment in garments):
         return False
     for garment in garments:
+        if garment.role == "liner":
+            return False
         template = catalog.get(garment.template_id) if garment.template_id else None
         kind = template.procedural_kind if template is not None else garment.category
-        covering = garment.category in HIP_COVERING or kind in HIP_COVERING_KINDS
-        if covering or garment.role in {"foundation", "liner"}:
+        if kind in HIP_COVERING_KINDS:
+            return False
+        if garment.category in HIP_COVERING - {"underwear"}:
             return False
     return True
 
 
-def with_skirt_liner(outfit_plan, request, catalog, *, depicts_adult: bool):
+def _liner_prompt(outfit_plan, *, depicts_adult: bool, color: str | None) -> str:
+    """The underskirt, in the panty colour. White briefs make a white underskirt.
+
+    A panty colour wins over a foundation colour. The foundation colour is what
+    the underskirt takes only when the outfit names no briefs.
+    """
+    tint = panty_color(outfit_plan.garments) or color
+    has_briefs = any(garment.category == "underwear" for garment in outfit_plan.garments)
+    if depicts_adult and not has_briefs:
+        return f"{tint or 'beige'} seamless briefs"
+    return f"{tint or 'black'} slip shorts"
+
+
+def with_skirt_liner(outfit_plan, request, catalog, *, depicts_adult: bool, color: str | None = None):
     """S2. Put a liner under a skirt that replaces her bottoms; the plan unchanged when none is needed.
 
     Only in ``replace-outer``, and only when she wears bottoms of her own
     (``wears_her_own_bottoms``) — ``preserve`` keeps them under it and
     ``underwear-base`` brings its own briefs. The liner is the innermost layer
     and the request's overrides (colour, hem, ...) stay on the skirt.
+
+    The underskirt takes the panty colour (``color``, or the briefs already in the
+    outfit). It is cut to the skirt's hem and a little past it, so it shows.
     """
     if not needs_skirt_liner(outfit_plan, catalog):
         return outfit_plan
-    liner = OutfitRequest(prompt=SKIRT_LINER_ADULT if depicts_adult else SKIRT_LINER)
+    has_briefs = any(garment.category == "underwear" for garment in outfit_plan.garments)
+    liner = OutfitRequest(prompt=_liner_prompt(outfit_plan, depicts_adult=depicts_adult, color=color))
     lined = plan_outfit_stack(request, catalog, beneath=[liner])
     # A liner the pipeline added is a liner, briefs included: as a "foundation"
     # it would make a job fail where there is no body under her clothes, and an
     # automatic addition must never turn a skirt that worked into a refusal.
+    skirt = next((p for p in lined.layers if p.category in SKIRTED), None)
     liner_plan = lined.layers[0].model_copy(update={"role": "liner"})
-    skirt_rise = next((p.style.rise for p in lined.layers[1:] if p.category in {"skirt", "dress"}), "")
+    # Briefs stay next to her. The underskirt goes over them and under the skirt.
+    if has_briefs:
+        liner_plan = liner_plan.model_copy(update={"layer": 2})
+    style = liner_plan.style
+    skirt_rise = skirt.style.rise if skirt is not None else ""
     if skirt_rise in {"low", "ultra-low"}:
         # P1. Under a low-rise skirt the liner is cut lower still: slip shorts sit at a low
         # rise already, and a low-rise skirt starts below it, so the liner's band showed.
-        lower = liner_plan.style.model_copy(update={"rise": "ultra-low"})
-        liner_plan = liner_plan.model_copy(update={"style": lower})
-    layers = [liner_plan, *lined.layers[1:]]
-    # The look keeps the name of what was asked for. The liner is invisible under the skirt
-    # and nobody asked for it, so "Black Slip Shorts + Burgundy Evening" in a wardrobe was
-    # a name describing a garment no one will ever see.
+        style = style.model_copy(update={"rise": "ultra-low"})
+    if liner_plan.category == "shorts":
+        # The slip shows below the skirt. Its hem is the skirt's, and the builder
+        # continues a little past that.
+        design = dict(style.design or {})
+        design["visibleUnderskirt"] = True
+        style = style.model_copy(update={"design": design})
+        if skirt is not None:
+            liner_plan = liner_plan.model_copy(update={"hem": skirt.hem})
+    liner_plan = liner_plan.model_copy(update={"style": style})
+    layers = [liner_plan if layer is lined.layers[0] else layer for layer in lined.layers]
+    layers.sort(key=lambda garment: garment.layer)
+    # The look keeps the name of what was asked for. The underskirt was not in the
+    # prompt, so it does not rename "Burgundy Evening" to include it.
     return lined.model_copy(update={"layers": layers, "name": outfit_plan.name})
 
 

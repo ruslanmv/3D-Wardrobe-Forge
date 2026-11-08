@@ -2013,10 +2013,9 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         held = top_straps(params, top_y=bust_top, style=straps or "shoulder", underbust_y=underbust)
         return [bodice, skirt, *held]
     if kind == "slip-shorts":
-        # S2. A skirt liner: fitted, opaque, and short on purpose. It ends a little
-        # below her crotch whatever the template's hem says, because it must stay
-        # hidden under the shortest skirt it is put under; a mini skirt's hem is
-        # a third of her thigh down, this is an eighth.
+        # S2. A skirt liner: fitted and opaque. Asked for on its own, it stays short
+        # enough to hide under the shortest skirt. Worn as the underskirt, it takes
+        # the skirt's hem and continues past it, so the panty colour shows.
         # Low-rise, too: trousers rise above the natural waist and a skirt starts at
         # it, so a liner cut like trousers showed a band above every skirt's waist.
         crotch = crotch_y(params, params.hip_y - thigh * 0.12)
@@ -2024,7 +2023,12 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         # skirt's (with_skirt_liner passes the skirt's rise down as "ultra-low").
         liner_rise = "ultra-low" if meta.get("rise") == "ultra-low" else "low"
         low = replace(params, metadata={**params.metadata, "rise": liner_rise})
-        return build_trousers(low, hem_y=crotch - thigh * 0.12, flare=1.0, name="slip-shorts", shaped=False)
+        show = bool((meta.get("design") or {}).get("visibleUnderskirt"))
+        # Four centimetres past the skirt, and never through the floor.
+        hem = hem_y - 0.04 if show else crotch - thigh * 0.12
+        if show:
+            hem = max(hem, params.ankle_y + params.height * 0.01)
+        return build_trousers(low, hem_y=hem, flare=1.0, name="slip-shorts", shaped=False)
     if kind == "shorts":
         inseam = min(0.55 * scale, 0.55) if scale < 1.0 else 0.55
         return build_trousers(params, hem_y=max(hem_y, params.hip_y - thigh * max(inseam, 0.2)), flare=flare)
