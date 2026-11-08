@@ -206,3 +206,96 @@ def test_the_gallery_geometry_hash_ignores_cloth_metadata():
     plain = {"kind": "garment", "slot": "top", "lookId": "one"}
     tagged = {**plain, "lookId": "two", "clothAsset": {"schema": "wardrobe.cloth/1", "particles": 3}}
     assert geometry_hashes.garment_hashes(build(plain)) == geometry_hashes.garment_hashes(build(tagged))
+
+
+# ----------------------------------------------------------------------
+# SB1. shell bridges, boundary folds, and gaps that stay missing seams
+# ----------------------------------------------------------------------
+def _band(radius, y_top, y_bottom, segments=24, rows=2, closed=True, open_degrees=0.0):
+    """A ring of quads (or an unsewn wrap when ``closed`` is False) between two heights."""
+    sweep = 2 * np.pi - np.radians(open_degrees)
+    columns = segments if closed else segments + 1
+    positions = []
+    for row in range(rows + 1):
+        y = y_top + (y_bottom - y_top) * row / rows
+        for column in range(columns):
+            angle = sweep * column / segments
+            positions.append([radius * np.cos(angle), y, radius * np.sin(angle)])
+    triangles = []
+    for row in range(rows):
+        for column in range(segments):
+            nxt = (column + 1) % columns if closed else column + 1
+            a, b = row * columns + column, row * columns + nxt
+            c, d = a + columns, b + columns
+            triangles += [a, c, b, b, c, d]
+    return np.array(positions, np.float32), np.array(triangles, np.uint32)
+
+
+def _join(*parts):
+    positions, indices, offset = [], [], 0
+    for points, tris in parts:
+        positions.append(points)
+        indices.append(tris + offset)
+        offset += len(points)
+    return Mesh(np.vstack(positions), np.concatenate(indices).astype(np.uint32))
+
+
+def test_a_one_millimetre_shell_offset_is_a_bridge_not_a_missing_seam():
+    """The A-line bodice ends at hip_y and its skirt starts 1 mm below: two loops, one dress."""
+    mesh = _join(_band(0.15, 1.10, 0.90), _band(0.15, 0.899, 0.60))
+    before = mesh.positions.copy()
+    asset = compile_cloth_asset(mesh, kind="dress", category="dress", name="Black A-line Dress")
+    assert np.array_equal(mesh.positions, before)  # nothing moved
+    assert asset.missing_seams == 0
+    assert asset.simulation == "xpbd"
+    assert asset.shell_bridges == 24
+    assert asset.summary()["shellBridges"] == 24
+    decoded = decode_asset(asset.blob)
+    bridges = [(a, b, rest) for a, b, rest in decoded["stretch"] if rest < 0.0015]
+    assert len(bridges) == 24
+    for a, b, rest in bridges:
+        assert abs(rest - 0.001) < 2e-5
+        assert abs(np.linalg.norm(decoded["positions"][a] - decoded["positions"][b]) - rest) < 2e-5
+
+
+def test_a_gap_between_two_loops_wider_than_a_shell_offset_is_still_missing():
+    mesh = _join(_band(0.15, 1.10, 0.90), _band(0.15, 0.895, 0.60))  # 5 mm
+    asset = compile_cloth_asset(mesh, kind="dress", category="dress", name="Two Piece")
+    assert asset.shell_bridges == 0
+    assert asset.missing_seams > 0
+    assert asset.simulation == "fallback-skinning"
+
+
+def test_an_unsewn_wrap_is_one_loop_and_still_a_missing_seam():
+    """Both sides of a panel wrapped into a tube are on one loop. The walk between them is the whole hem."""
+    points, tris = _band(0.15, 0.95, 0.60, segments=48, closed=False, open_degrees=0.8)  # ~2 mm apart
+    asset = compile_cloth_asset(Mesh(points, tris), kind="skirt", category="skirt", name="Unsewn Wrap")
+    assert asset.boundary_folds == 0
+    assert asset.missing_seams > 0
+    assert asset.simulation == "fallback-skinning"
+
+
+def test_a_hem_folding_back_on_itself_is_a_fold_not_a_seam():
+    """A knife pleat turns the hem under: the same loop passes 3 mm from itself after a short walk."""
+    # Accordion strip: 30 mm forward, 20 mm back, 30 mm forward, each pass 3 mm deeper.
+    path = [(0.0, 0.0), (0.03, 0.0), (0.03, 0.003), (0.01, 0.003), (0.01, 0.006), (0.04, 0.006),
+            (0.04, 0.009), (0.02, 0.009), (0.02, 0.012), (0.05, 0.012)]
+    dense = []
+    for (x0, z0), (x1, z1) in zip(path[:-1], path[1:]):
+        steps = max(1, int(round(np.hypot(x1 - x0, z1 - z0) / 0.005)))
+        dense += [(x0 + (x1 - x0) * k / steps, z0 + (z1 - z0) * k / steps) for k in range(steps)]
+    dense.append(path[-1])
+    rows = [0.10, 0.07, 0.04]
+    positions = np.array([[x, y, z] for y in rows for x, z in dense], np.float32)
+    n = len(dense)
+    tris = []
+    for r in range(len(rows) - 1):
+        for k in range(n - 1):
+            a, b = r * n + k, r * n + k + 1
+            tris += [a, a + n, b, b, a + n, b + n]
+    asset = compile_cloth_asset(Mesh(positions, np.array(tris, np.uint32)), kind="skirt", category="skirt",
+                                name="Pleat Strip")
+    assert asset.boundary_folds > 0
+    assert asset.missing_seams == 0
+    assert asset.shell_bridges == 0  # a fold is left free to open; it is never bridged
+    assert asset.simulation == "xpbd"
