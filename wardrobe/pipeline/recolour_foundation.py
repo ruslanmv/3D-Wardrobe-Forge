@@ -45,7 +45,9 @@ def foundation_materials(document: GltfDocument) -> list[tuple[int, dict]]:
         tag = (node.get("extras") or {}).get("wardrobeForge")
         if not isinstance(tag, dict) or tag.get("kind") != "garment" or "mesh" not in node:
             continue
-        if tag.get("role") not in FOUNDATION_ROLES:
+        # The underskirt is the liner under a skirt. It is the panty colour too:
+        # white briefs, a white underskirt.
+        if tag.get("role") not in FOUNDATION_ROLES and tag.get("role") != "liner":
             continue
         for primitive in document.meshes[node["mesh"]].get("primitives", []):
             index = primitive.get("material")

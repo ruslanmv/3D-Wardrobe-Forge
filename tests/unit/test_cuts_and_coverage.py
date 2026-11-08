@@ -25,6 +25,16 @@ def measurements():
     return measure_body(document, inspect_document(document))
 
 
+def test_the_underskirt_shows_below_the_skirt(measurements):
+    """A skirt's underskirt continues past the skirt hem, so the panty colour is visible."""
+    _, skirt = build(measurements, "skirt", hem="mini")
+    _, hidden = build(measurements, "slip-shorts", hem="mini")
+    _, shown = build(measurements, "slip-shorts", hem="mini", design={"visibleUnderskirt": True})
+    skirt_hem = float(skirt.positions[:, 1].min())
+    assert float(shown.positions[:, 1].min()) < skirt_hem - 0.02
+    assert float(shown.positions[:, 1].min()) < float(hidden.positions[:, 1].min()) - 0.05
+
+
 def build(measurements, kind: str, *, hem: str = "mini", sleeve: str = "none", **style):
     params = FitParameters(measurements=measurements, metadata=dict(style), sleeve_length=sleeve)
     return params, build_garment(kind, params, silhouette="slim", hem=hem)

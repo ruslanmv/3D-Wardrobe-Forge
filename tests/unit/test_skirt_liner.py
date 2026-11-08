@@ -28,9 +28,12 @@ def catalog() -> TemplateCatalog:
     return TemplateCatalog.from_directory(ROOT / "assets" / "garment_templates")
 
 
-def lined(catalog, prompt: str, *, adult: bool = False, **overrides):
+def lined(catalog, prompt: str, *, adult: bool = False, foundation_color: str | None = None, **overrides):
     request = OutfitRequest(prompt=prompt, mode="template", **overrides)
-    return with_skirt_liner(plan_outfit_stack(request, catalog), request, catalog, depicts_adult=adult).garments
+    return with_skirt_liner(
+        plan_outfit_stack(request, catalog), request, catalog,
+        depicts_adult=adult, color=foundation_color,
+    ).garments
 
 
 @pytest.mark.parametrize("prompt", ["red skater skirt", "navy pleated mini skirt", "black pencil skirt",
@@ -46,6 +49,35 @@ def test_every_skirt_is_worn_over_slip_shorts(catalog, prompt):
 def test_a_declared_adult_avatar_gets_briefs_instead(catalog):
     liner = lined(catalog, "red skater skirt", adult=True)[0]
     assert liner.category == "underwear" and liner.role == "liner"  # briefs, but never a job-failing foundation
+
+
+def test_white_panties_make_a_white_underskirt(catalog):
+    """The underskirt is the panty colour, and it is there to be seen under the skirt."""
+    garments = lined(catalog, "white seamless briefs + red skater skirt")
+    briefs = next(g for g in garments if g.category == "underwear")
+    slip = next(g for g in garments if g.role == "liner")
+    skirt = next(g for g in garments if g.category == "skirt")
+    assert briefs.material.color_name == "white"
+    assert slip.material.color_name == "white"
+    assert slip.template_id == "shorts-slip-v1"
+    assert slip.hem == skirt.hem
+    assert (slip.style.design or {}).get("visibleUnderskirt") is True
+    # Briefs next to her, the underskirt over them, the skirt over that.
+    assert [g.role for g in garments] == ["foundation", "liner", "main"]
+
+
+def test_a_chosen_foundation_colour_is_the_underskirt_colour(catalog):
+    slip = lined(catalog, "red skater skirt", foundation_color="white")[0]
+    assert slip.material.color_name == "white" and slip.template_id == "shorts-slip-v1"
+    adult = lined(catalog, "red skater skirt", adult=True, foundation_color="white")[0]
+    assert adult.material.color_name == "white" and adult.category == "underwear"
+
+
+def test_white_panties_keep_the_underskirt_white(catalog):
+    """A foundation colour does not repaint an underskirt that already has white briefs."""
+    garments = lined(catalog, "white seamless briefs + red skater skirt", foundation_color="navy")
+    slip = next(g for g in garments if g.role == "liner")
+    assert slip.material.color_name == "white"
 
 
 def test_the_request_keeps_its_garments_and_its_choices(catalog):
