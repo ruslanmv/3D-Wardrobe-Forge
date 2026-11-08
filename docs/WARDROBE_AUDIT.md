@@ -1,5 +1,8 @@
 # Wardrobe visual audit
 
+Read `docs/CLOTH_FAILED_ATTEMPTS.md` first: what was tried, why it failed, and
+the open-source physics projects we tested.
+
 How a Forge change is proved before it ships: the garments it produces are
 photographed in the real viewer, beside the same garments from Forge `main`,
 and a pose that looks worse than `main` is a regression whatever any number
