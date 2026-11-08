@@ -77,3 +77,6 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501"]
+# The wardrobe audit embeds the page's JavaScript and Markdown table rows in
+# strings; wrapping those makes them harder to read than the long line.
+"tools/audit/*" = ["E501"]
