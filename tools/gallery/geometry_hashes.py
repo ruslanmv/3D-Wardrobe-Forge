@@ -45,6 +45,8 @@ REAL_AVATARS = ("AvatarSample_A", "AvatarSample_B", "AvatarSample_C", "fem_vroid
 
 def garment_hashes(data: bytes) -> dict[str, str]:
     """One sha256 per garment node: its geometry, skin and material, nothing run-specific."""
+    from wardrobe.cloth.fingerprint import geometry_forge_tag
+
     document = GltfDocument.from_bytes(data)
     out: dict[str, str] = {}
     for node in document.nodes:
@@ -52,7 +54,8 @@ def garment_hashes(data: bytes) -> dict[str, str]:
         if forge.get("kind") != "garment" or "mesh" not in node:
             continue
         digest = hashlib.sha256()
-        digest.update(json.dumps({k: v for k, v in forge.items() if k != "lookId"}, sort_keys=True).encode())
+        # clothAsset is metadata. Positions, skinning, and the material are the geometry.
+        digest.update(json.dumps(geometry_forge_tag(forge), sort_keys=True).encode())
         for primitive in document.meshes[node["mesh"]]["primitives"]:
             for name in sorted(primitive["attributes"]):
                 digest.update(name.encode())

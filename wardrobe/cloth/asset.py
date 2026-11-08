@@ -16,6 +16,15 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from wardrobe.cloth.binary import SCHEMA, encode_asset
+from wardrobe.cloth.topology import (
+    LOD_BUDGETS,
+    attachment_weights,
+    bend_constraints,
+    shear_constraints,
+    simplify_particles,
+    stretch_constraints,
+)
 from wardrobe.geometry.mesh import Mesh
 
 #: Copies closer than this are one simulation particle. The same tolerance the
@@ -25,18 +34,51 @@ WELD_M = 1e-4
 GAP_M = 0.015
 #: A face flatter than this is not a cloth panel.
 MIN_AREA_M2 = 1e-10
-#: Waist attachment: full weight over the top 4 cm, gone 8 cm below the top.
-WAIST_FULL_M = 0.04
-WAIST_FADE_M = 0.08
 
-#: Stretch and bend compliance (m/N). Woven cloth drapes. A pencil holds its
-#: shape. Knit gives. Skinning and rigid meshes are not a cloth material.
-_COMPLIANCE = {
-    "cloth": (1e-6, 1e-4),
-    "hybrid-skirt": (1e-7, 1e-5),
-    "corrective": (1e-5, 1e-4),
-    "skinning": (0.0, 0.0),
-    "rigid": (0.0, 0.0),
+#: Compliance is metres per newton. Density is kilograms per square metre.
+#: A skinning or rigid garment records zeros: it is not a cloth material.
+_FABRIC = {
+    "cloth": {
+        "stretch": 1e-6, "shear": 1e-6, "bend": 1e-4, "density": 0.15, "damping": 0.02, "friction": 0.3,
+    },
+    "hybrid-skirt": {
+        "stretch": 1e-7, "shear": 1e-7, "bend": 1e-5, "density": 0.25, "damping": 0.03, "friction": 0.45,
+    },
+    "corrective": {
+        "stretch": 1e-8, "shear": 1e-8, "bend": 1e-6, "density": 0.4, "damping": 0.05, "friction": 0.6,
+    },
+    "skinning": {"stretch": 0.0, "shear": 0.0, "bend": 0.0, "density": 0.0, "damping": 0.0, "friction": 0.0},
+    "rigid": {"stretch": 0.0, "shear": 0.0, "bend": 0.0, "density": 0.0, "damping": 0.0, "friction": 0.5},
+}
+
+_BY_CATEGORY = {
+    "shoes": "rigid",
+    "trousers": "corrective",
+    "legwear": "corrective",
+    "shorts": "corrective",
+    "jumpsuit": "corrective",
+    "skirt": "cloth",
+    "dress": "cloth",
+    "jacket": "cloth",
+    "nightwear": "cloth",
+    "top": "skinning",
+    "underwear": "skinning",
+    "swimwear": "skinning",
+}
+_KIND_ALIAS = {
+    "boot": "shoes",
+    "boots": "shoes",
+    "shoe": "shoes",
+    "legging": "legwear",
+    "leggings": "legwear",
+    "tight": "legwear",
+    "tights": "legwear",
+    "jean": "trousers",
+    "jeans": "trousers",
+    "trouser": "trousers",
+    "gown": "dress",
+    "cape": "jacket",
+    "coat": "jacket",
 }
 
 
@@ -65,10 +107,21 @@ class ClothAsset:
     bend_compliance: float
     layer: int
     role: str
+    schema: str = SCHEMA
+    shear_compliance: float = 0.0
+    density: float = 0.0
+    damping: float = 0.0
+    friction: float = 0.0
+    attachment_source: str = ""
+    collision_group: str = "garment"
+    lods: tuple = ()
+    #: Little-endian ``WCL1`` payload. Empty only when encoding was skipped.
+    blob: bytes = b""
 
     def summary(self) -> dict:
-        """The fields a glTF extra can carry. The meshes stay in the asset."""
+        """The fields a glTF extra can carry. Particle arrays stay in ``blob``."""
         return {
+            "schema": self.schema,
             "profile": self.profile,
             "simulation": self.simulation,
             "reason": self.reason,
@@ -77,25 +130,52 @@ class ClothAsset:
             "seamPairs": len(self.seam_pairs),
             "missingSeams": self.missing_seams,
             "attached": sum(1 for weight in self.attachment if weight >= 0.5),
+            "attachmentSource": self.attachment_source,
             "stretchCompliance": self.stretch_compliance,
+            "shearCompliance": self.shear_compliance,
             "bendCompliance": self.bend_compliance,
+            "density": self.density,
+            "damping": self.damping,
+            "friction": self.friction,
             "layer": self.layer,
             "role": self.role,
+            "collisionGroup": self.collision_group,
+            "lods": [dict(entry) for entry in self.lods],
         }
 
 
-def deformation_for(*, kind: str, category: str = "", silhouette: str = "", name: str = "") -> str:
-    """Which production path a garment is on. The name is only a hint."""
-    text = " ".join((kind, category, silhouette, name)).lower()
-    if any(word in text for word in ("shoe", "boot")):
-        return "rigid"
-    if any(word in text for word in ("legging", "tight", "jean", "trouser")):
-        return "corrective"
-    if "pencil" in text:
+def deformation_for(
+    *,
+    kind: str,
+    category: str = "",
+    silhouette: str = "",
+    name: str = "",
+    template_id: str = "",
+) -> str:
+    """Which production path a garment is on.
+
+    Category, kind, and silhouette decide. The display name is used only when
+    those fields are empty, so a top named like a boot does not become a shoe.
+    """
+    key = (category or kind or "").strip().lower()
+    if not key:
+        key = _kind_from_name(name)
+    key = _KIND_ALIAS.get(key, key)
+    profile = _BY_CATEGORY.get(key, "skinning")
+    if profile == "cloth" and "pencil" in (silhouette or "").lower():
         return "hybrid-skirt"
-    if any(word in text for word in ("skirt", "dress", "gown", "cape", "coat")):
-        return "cloth"
-    return "skinning"
+    if not (category or kind) and "pencil" in (name or "").lower():
+        return "hybrid-skirt"
+    return profile
+
+
+def _kind_from_name(name: str) -> str:
+    text = (name or "").lower()
+    words = ("boot", "shoe", "legging", "jean", "trouser", "pencil", "skirt", "dress", "gown", "cape", "coat")
+    for word in words:
+        if word in text:
+            return word
+    return ""
 
 
 def compile_cloth_asset(
@@ -107,6 +187,7 @@ def compile_cloth_asset(
     name: str = "",
     role: str = "main",
     layer: int = 1,
+    template_id: str = "",
 ) -> ClothAsset:
     """The asset for ``mesh``. Raises when the topology cannot be trusted."""
     issues = _structural(mesh)
@@ -119,22 +200,46 @@ def compile_cloth_asset(
     particles = int(binding.max()) + 1 if binding.size else 0
     pairs = _seam_pairs(binding)
     missing = _missing_seams(positions, indices, binding)
-    profile = deformation_for(kind=kind, category=category, silhouette=silhouette, name=name)
-    stretch, bend = _COMPLIANCE[profile]
+    profile = deformation_for(
+        kind=kind, category=category, silhouette=silhouette, name=name, template_id=template_id,
+    )
+    fabric = _FABRIC[profile]
+    particle_positions = _particle_positions(positions, binding, particles)
+    particle_triangles = _particle_triangles(indices, binding)
+    stretch_pairs, stretch_rest = stretch_constraints(particle_positions, particle_triangles)
+    shear = shear_constraints(particle_positions, particle_triangles)
+    bend_pairs, bend_rest = bend_constraints(particle_positions, particle_triangles)
+    vertex_attachment, particle_attachment, attachment_source = attachment_weights(mesh, binding)
 
     if profile == "rigid":
         simulation, reason = "rigid", ""
-        attachment = np.ones(mesh.vertex_count, dtype=np.float64)
+        vertex_attachment = np.ones(mesh.vertex_count, dtype=np.float64)
+        particle_attachment = np.ones(particles, dtype=np.float64)
+        attachment_source = "rigid"
     elif profile in {"cloth", "hybrid-skirt"} and missing:
         simulation, reason = "fallback-skinning", "open boundary has no authored seam"
-        attachment = _waist(positions)
     elif profile in {"cloth", "hybrid-skirt"}:
         simulation, reason = "xpbd", ""
-        attachment = _waist(positions)
     else:
         simulation, reason = "skinning", ""
-        attachment = np.ones(mesh.vertex_count, dtype=np.float64)
+        vertex_attachment = np.ones(mesh.vertex_count, dtype=np.float64)
+        particle_attachment = np.ones(particles, dtype=np.float64)
+        attachment_source = "skinning"
 
+    group = "underwear" if role == "foundation" else "outer" if role == "outer" else "garment"
+    lod_meshes, lod_summary = _lods(particle_positions, particle_triangles, particle_attachment, simulation)
+    blob = encode_asset(
+        positions=particle_positions,
+        triangles=particle_triangles,
+        stretch=(stretch_pairs, stretch_rest),
+        shear=shear,
+        bend=(bend_pairs, bend_rest),
+        seams=pairs,
+        attachment=particle_attachment,
+        binding=binding,
+        lods=lod_meshes,
+        height_fallback=attachment_source == "height-fallback",
+    )
     return ClothAsset(
         profile=profile,
         simulation=simulation,
@@ -144,12 +249,72 @@ def compile_cloth_asset(
         binding=tuple(int(v) for v in binding),
         seam_pairs=pairs,
         missing_seams=missing,
-        attachment=tuple(float(v) for v in attachment),
-        stretch_compliance=stretch,
-        bend_compliance=bend,
+        attachment=tuple(float(v) for v in vertex_attachment),
+        stretch_compliance=fabric["stretch"],
+        bend_compliance=fabric["bend"],
         layer=layer,
         role=role,
+        shear_compliance=fabric["shear"],
+        density=fabric["density"],
+        damping=fabric["damping"],
+        friction=fabric["friction"],
+        attachment_source=attachment_source,
+        collision_group=group,
+        lods=tuple(lod_summary),
+        blob=blob,
     )
+
+
+def _particle_positions(positions: np.ndarray, binding: np.ndarray, count: int) -> np.ndarray:
+    out = np.zeros((count, 3), np.float64)
+    if count == 0:
+        return out
+    seen = np.zeros(count, dtype=bool)
+    for index, particle in enumerate(binding.tolist()):
+        if not seen[particle]:
+            out[particle] = positions[index]
+            seen[particle] = True
+    return out
+
+
+def _particle_triangles(indices: np.ndarray, binding: np.ndarray) -> np.ndarray:
+    tris = binding[np.asarray(indices, dtype=np.int64).reshape(-1, 3)]
+    keep = (tris[:, 0] != tris[:, 1]) & (tris[:, 1] != tris[:, 2]) & (tris[:, 0] != tris[:, 2])
+    return tris[keep]
+
+
+def _lods(positions, triangles, attachment, simulation) -> tuple[list[dict], list[dict]]:
+    """Reduced meshes plus the summary a glTF extra can carry without the bytes."""
+    summary = [{"name": "mobile-low", "particles": 0, "simulation": "skinning", "mesh": "none"}]
+    meshes: list[dict] = []
+    if simulation != "xpbd":
+        for name, _budget in LOD_BUDGETS:
+            summary.append({"name": name, "particles": 0, "simulation": simulation, "mesh": "none"})
+        return meshes, summary
+    locked = attachment >= 0.999
+    full = len(positions)
+    for name, budget in LOD_BUDGETS:
+        if full <= budget:
+            summary.append({"name": name, "particles": full, "simulation": "xpbd", "mesh": "full"})
+            continue
+        coarse, coarse_tris, mapping = simplify_particles(positions, triangles, locked, budget)
+        if len(coarse) >= full:
+            summary.append({"name": name, "particles": full, "simulation": "xpbd", "mesh": "full"})
+            continue
+        meshes.append({
+            "name": name,
+            "positions": coarse,
+            "triangles": coarse_tris,
+            "particle_map": mapping,
+        })
+        summary.append({
+            "name": name,
+            "particles": int(len(coarse)),
+            "simulation": "xpbd",
+            "mesh": "lod",
+            "lodIndex": len(meshes) - 1,
+        })
+    return meshes, summary
 
 
 def _structural(mesh: Mesh) -> list[str]:
@@ -222,8 +387,3 @@ def _representatives(binding: np.ndarray) -> np.ndarray:
     return first
 
 
-def _waist(positions: np.ndarray) -> np.ndarray:
-    top = float(positions[:, 1].max())
-    above = top - positions[:, 1]
-    weight = np.clip((WAIST_FADE_M - above) / (WAIST_FADE_M - WAIST_FULL_M), 0.0, 1.0)
-    return weight

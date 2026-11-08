@@ -340,6 +340,11 @@ class NativeEngine(FittingEngine):
             },
         )
 
+        for node_index, blob in getattr(context, "cloth_payloads", ()) or ():
+            view = context.document.add_buffer_view(blob)
+            forge = context.document.nodes[node_index]["extras"]["wardrobeForge"]["clothAsset"]
+            forge["bufferView"] = view
+        context.cloth_payloads = []
         context.output_bytes = context.document.to_bytes()
 
     # ------------------------------------------------------------------
@@ -493,11 +498,21 @@ def _tag_cloth_asset(context: PipelineContext, node_index: int, layer, kind: str
             name=layer.plan.name,
             role=layer.plan.role,
             layer=layer.plan.layer,
+            template_id=layer.plan.template_id or "",
         )
     except ClothAssetRejected as rejected:
         context.warn(f"{layer.plan.name}: cloth asset rejected ({rejected})")
         return
-    context.document.nodes[node_index]["extras"]["wardrobeForge"]["clothAsset"] = asset.summary()
+    summary = asset.summary()
+    context.document.nodes[node_index]["extras"]["wardrobeForge"]["clothAsset"] = summary
+    # The bytes are appended after every other garment view, so geometry buffer
+    # indices stay what they were. A fingerprint can then drop the suffix.
+    if asset.blob:
+        payloads = getattr(context, "cloth_payloads", None)
+        if payloads is None:
+            payloads = []
+            context.cloth_payloads = payloads
+        payloads.append((node_index, asset.blob))
 
 
 __all__ = ["NativeEngine", "GENERATOR"]
