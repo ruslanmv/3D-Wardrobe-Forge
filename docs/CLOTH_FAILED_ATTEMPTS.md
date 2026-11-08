@@ -148,6 +148,21 @@ Gate limits throughout: penetration ≤ 1 mm, edge stretch ≤ 6x, span drop ≤
   discarded and re-run.
 - **Do not:** edit the served tree during a capture. Use a separate checkout.
 
+### F13. Rapier as an offline bake solver (round 3, `develop/cloth_bake/`)
+
+- **What:** pose `fem_vroid` outside the browser exactly as the viewer does,
+  settle the A-line with Rapier 0.21 against her posed body as a triangle-mesh
+  collider, then fit skin weights (py-dem-bones) and serve re-weighted looks.
+- **Result:** the settle is **worse than plain skinning in every pose**
+  (Sitting Wide: inside 8.3 % → 9.2 %, stretch 3.0 → 4.0x; the deepest point
+  never improves), 43–123 s per pose. The weight fit, proxy and audit run were
+  not built: there was no better target to fit.
+- **Why:** cloth that starts inside her is not pushed out by contacts against
+  an open triangle mesh, and half the seated penetration is in pinned bodice
+  vertices no solver may move.
+- **Do not:** keep tuning Rapier on this setup. Details and the next two
+  things to try: `develop/cloth_bake/README.md`.
+
 ## Rules that come out of this
 
 1. Compare with the reference first: viewer `master` + Forge `main`.
@@ -165,7 +180,7 @@ running it, not from documentation. Full data: `audit/ADDON_ADOPTION_MATRIX.md`.
 | Project | Version | Licence | What we measured | Recommendation |
 | --- | --- | --- | --- | --- |
 | **meshoptimizer** | 1.3.0 | MIT | Pleated mini, 7495 particles: 1200 at **4.2 mm** max deviation (p95 2.0 mm), every open-boundary vertex kept, 59 ms. Floors at 749 (57 mm, a damaged skirt). | **Adopt in Forge**, build time only, to replace `simplify_particles` (F9). Its index buffer keeps the original vertex array, so particle identity is never renumbered (F3). 200 and 500 budgets are not reachable while all 1734 waistband pins are locked; stop counting pinned particles against the budget. |
-| **Rapier** (`@dimforge/rapier3d-compat`) | 0.21.0 | Apache-2.0 | The soft-body API is real: built our A-line from raw positions + WCL1 edges (1536 particles, 8864 edges); `setParticleKinematicTarget` pins followed exactly; `init()` 83 ms, step 3.6–6.6 ms, first step 70–91 ms. Default material: **34x** strain; 120 Hz softness 2.7x, stiffer 7–8x. | **Prototype only after** the data and a full-body collider exist. It does not fix F3–F8, and its colliders still have to come from the avatar's real body. 1.66 MB gzip; never on the default page. |
+| **Rapier** (`@dimforge/rapier3d-compat`) | 0.21.0 | Apache-2.0 | The soft-body API is real: built our A-line from raw positions + WCL1 edges (1536 particles, 8864 edges); `setParticleKinematicTarget` pins followed exactly; `init()` 83 ms, step 3.6–6.6 ms, first step 70–91 ms. Default material: **34x** strain; 120 Hz softness 2.7x, stiffer 7–8x. | **Prototype only after** the data and a full-body collider exist. Tried offline as a bake solver with her real body as collider (F13): worse than plain skinning in all four poses. It does not fix F3–F8, and its colliders still have to come from the avatar's real body. 1.66 MB gzip; never on the default page. |
 | **three-mesh-bvh** | 0.9.18 latest; **0.5.23 usable** | MIT | 0.9.x needs three ≥ 0.159; the viewer runs r147. 0.5.23 accepts r147 but has no `SkinnedMeshBVH`. Not run on a garment. | **Diagnostics first**: build it over the posed body positions the corrector already computes, to show where F5's 75 mm points are. Not a cloth model. |
 | **JoltPhysics.js** | 1.1.1 | MIT (npm field) | Not run. 12.7 MB package; every object needs manual `destroy`. | **Reference only** until Rapier fails a criterion it was meant to win. |
 | **PositionBasedDynamics** | — | MIT | Not installed; C++ reference. | **Reference only** for XPBD constraint formulas. |
