@@ -90,8 +90,17 @@ def bend_constraints(positions: np.ndarray, triangles: np.ndarray) -> tuple[np.n
 
 
 def _attachment_section(name: str) -> bool:
+    """Sections that ride on the body: the runtime pins them to the skin.
+
+    PA1. A dress has no waistband section, so before this it fell to the
+    height fallback and pinned its top 4 cm: the neckline. The whole bodice
+    then hung free from the shoulders, and the hip join, where the skirt
+    really hangs from, was a free edge (CURRENT_STATE_AUDIT 3.5). A bodice is
+    fitted to the torso by construction; it is skinned, and the skirt below
+    it is the part that simulates, held at the hip by its shell bridge.
+    """
     text = name.lower()
-    return "waist" in text or text in {"band", "yoke"}
+    return "waist" in text or "bodice" in text or text in {"band", "yoke"}
 
 
 def attachment_weights(mesh: Mesh, binding: np.ndarray) -> tuple[np.ndarray, np.ndarray, str]:
