@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 from wardrobe.config import Settings
 from wardrobe.policy.file_safety import validate_storage_key
+
+logger = logging.getLogger(__name__)
 
 CONTENT_TYPES = {
     ".vrm": "model/gltf-binary",
@@ -168,12 +171,90 @@ class S3ObjectStore(ObjectStore):
         )
 
 
+class HfDatasetObjectStore(LocalObjectStore):
+    """PB4. Local storage that falls back to a Hugging Face dataset for what it does not have.
+
+    The prebuilt wardrobe (docs/PREBUILT_WARDROBE.md) is ~11.5 GB of looks: too big for git,
+    comfortable in a private dataset repository. CI uploads the whole build in one batch; the
+    Space reads a file from the dataset the first time it is asked for and keeps it on local
+    disk after that. Writes stay local — a look made on demand is there until the Space
+    restarts, and the next prebuild makes it permanent. Committing every file from the Space
+    would be thousands of commits for one build.
+
+    ``exists`` answers from a listing of the dataset, refreshed every ``LIST_TTL_S`` seconds,
+    so a miss costs no request per key. The token is ``HF_TOKEN``; a private dataset needs it.
+    """
+
+    LIST_TTL_S = 600.0
+
+    def __init__(self, root: str | Path, settings: Settings) -> None:
+        super().__init__(root, settings)
+        try:
+            from huggingface_hub import HfApi  # noqa: F401
+        except ImportError as exc:  # pragma: no cover - depends on installed extras
+            raise RuntimeError(
+                "Hugging Face storage requires huggingface_hub; "
+                "install with: pip install '3d-wardrobe-forge[hf]'"
+            ) from exc
+        if not settings.wardrobe_hf_dataset:
+            raise RuntimeError("WARDROBE_HF_DATASET must be set when WARDROBE_STORAGE_BACKEND=hf")
+        self.repo_id = settings.wardrobe_hf_dataset
+        self._remote: set[str] | None = None
+        self._listed_at = 0.0
+        self._lock = asyncio.Lock()
+
+    async def _remote_files(self) -> set[str]:
+        import time
+
+        async with self._lock:
+            if self._remote is None or time.monotonic() - self._listed_at > self.LIST_TTL_S:
+                from huggingface_hub import HfApi
+
+                def _list() -> set[str]:
+                    return set(HfApi().list_repo_files(self.repo_id, repo_type="dataset"))
+
+                try:
+                    self._remote = await asyncio.to_thread(_list)
+                except Exception as exc:  # an unreachable dataset is an empty one, not a dead Forge
+                    logger.warning("dataset %s could not be listed: %s", self.repo_id, exc)
+                    self._remote = self._remote or set()
+                self._listed_at = time.monotonic()
+            return self._remote
+
+    async def _fetch(self, key: str) -> bool:
+        if key not in await self._remote_files():
+            return False
+        from huggingface_hub import hf_hub_download
+
+        def _download() -> None:
+            hf_hub_download(self.repo_id, filename=key, repo_type="dataset", local_dir=str(self.root))
+
+        try:
+            await asyncio.to_thread(_download)
+        except Exception as exc:
+            logger.warning("dataset file %s could not be downloaded: %s", key, exc)
+            return False
+        return await super().exists(key)
+
+    async def get(self, key: str) -> bytes:
+        if not await super().exists(key):
+            await self._fetch(key)
+        return await super().get(key)
+
+    async def exists(self, key: str) -> bool:
+        if await super().exists(key):
+            return True
+        return key in await self._remote_files()
+
+
 def create_object_store(settings: Settings) -> ObjectStore:
     backend = settings.wardrobe_storage_backend.lower()
     if backend == "local":
         return LocalObjectStore(settings.storage_root_path, settings)
     if backend == "s3":
         return S3ObjectStore(settings)
+    if backend == "hf":
+        return HfDatasetObjectStore(settings.storage_root_path, settings)
     raise ValueError(f"unknown storage backend: {backend!r}")
 
 
@@ -181,6 +262,7 @@ __all__ = [
     "ObjectStore",
     "LocalObjectStore",
     "S3ObjectStore",
+    "HfDatasetObjectStore",
     "create_object_store",
     "content_type_for",
 ]

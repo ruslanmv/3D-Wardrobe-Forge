@@ -43,7 +43,7 @@ COPY worker ./worker
 COPY tools ./tools
 COPY assets ./assets
 
-RUN pip install --no-cache-dir ".[preview,s3,redis]"
+RUN pip install --no-cache-dir ".[preview,s3,redis,hf]"
 
 # The Studio's avatar library: yourfriend.online's five CC0 avatars, fetched and
 # checked against the sha256 pins in assets/library/models.json. They are not in

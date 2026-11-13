@@ -67,6 +67,8 @@ class Settings(BaseSettings):
     #: native | web | auto — how hosiery looks' previews are rendered (wardrobe.hosiery.previews).
     #: Every other look keeps the native preview it always had.
     wardrobe_preview_backend: str = "native"
+    #: PB1. Answer a catalog request already made once from storage (wardrobe.pipeline.prebuilt).
+    wardrobe_prebuilt: bool = True
 
     # -- storage ---------------------------------------------------------
     wardrobe_storage_backend: str = "local"
@@ -74,6 +76,9 @@ class Settings(BaseSettings):
     # users. Container deployments override this with /data/wardrobe.
     wardrobe_storage_root: str = str(REPO_ROOT / ".wardrobe")
     wardrobe_database_url: str = ""
+    #: PB4. With WARDROBE_STORAGE_BACKEND=hf: the dataset repository the prebuilt looks are read
+    #: from, e.g. "ruslanmv/3d-wardrobe-forge-looks". Private; read with HF_TOKEN.
+    wardrobe_hf_dataset: str = ""
 
     s3_endpoint: str = ""
     s3_bucket: str = ""

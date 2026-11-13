@@ -1,6 +1,7 @@
 # Prebuilt wardrobe: every garment, every character, ready before she is asked
 
-Design, 2026-11-13. Not implemented yet. Batch prefix `PB`.
+Design, 2026-11-13. Batch prefix `PB`. PB1–PB3 and the PB4 storage are implemented (see
+"Status" at the end); switching the Space over is a settings change.
 
 ## The problem, measured
 
@@ -37,6 +38,13 @@ each template in its **default colour** only; another colour is the existing
 FC2 recolour, made on request and then stored like any other look (below).
 
 ## Where the looks live
+
+**Decision (2026-11-13): a private Hugging Face dataset.** Measured: a look is 12.2–15.4 MB
+(average 13.7 MB, ~90% of it her body), so 105 × 8 is ~11.5 GB. Git and Git LFS are out (LFS's
+free quota is about 1 GB of storage and 1 GB of download a month). A dataset is private, reads
+with the Space's existing `HF_TOKEN`, and needs no new account; `WARDROBE_STORAGE_BACKEND=hf`
+(`HfDatasetObjectStore`) reads a file from it once and keeps it on local disk. The S3 option
+below still works unchanged for anyone who prefers a bucket.
 
 **Not in either git repository.** Neither `3D-Avatar-Chatbot` nor this repo
 holds look files. They live in Forge's object store, which already has an S3
@@ -149,3 +157,21 @@ Each look stores the whole character (~10 MB of the 12–15 MB is her body).
 Storing garment-only meshes per character and assembling them in the browser
 would cut storage about tenfold and make every colour cheap. That changes the
 app's loader and the cloth contract, so it waits until PB1–PB5 are in use.
+
+## Status (2026-11-13)
+
+| Phase | State | Where |
+| ----- | ----- | ----- |
+| PB1 cache key, hit/miss in `submit`, remember on completion | done, tested | `wardrobe/pipeline/prebuilt.py`, `Orchestrator.submit` |
+| PB2 per-character ready list, `GET /v1/library/{slug}/prebuilt`, `tools/prebuild.py` | done, tested | `apps/api/routes/studio.py`, `tools/prebuild.py` |
+| PB3 CI on push to `main` | written; needs `vars.WARDROBE_HF_DATASET` | `.github/workflows/prebuild-wardrobe.yml` |
+| PB4 dataset store; her wardrobe lists prebuilt looks after a restart | done, tested; Space needs `WARDROBE_STORAGE_BACKEND=hf` and `WARDROBE_HF_DATASET` | `HfDatasetObjectStore`, `GET /v1/wardrobes/{id}` |
+| PB5 Private names every kind she has ready | done (3D-Avatar-Chatbot `ac44d59`) | `PrivateActionBridge.closetSummary` |
+
+The app needs no change to see prebuilt looks: it already reads her library wardrobe, and that
+wardrobe now includes them.
+
+To turn it on: create the dataset (or let the workflow create it, private), set the repository
+variable `WARDROBE_HF_DATASET`, run "Prebuild wardrobe" once from the Actions tab, then set the
+same two values on the Space (`WARDROBE_STORAGE_BACKEND=hf`, `WARDROBE_HF_DATASET=...`; its
+`HF_TOKEN` secret needs read access to the dataset).

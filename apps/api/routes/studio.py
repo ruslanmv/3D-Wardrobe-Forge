@@ -41,6 +41,7 @@ from wardrobe.domain.looks import OutfitRequest
 from wardrobe.errors import WardrobeError
 from wardrobe.library import AvatarLibrary, LibraryAvatar
 from wardrobe.materials.finishes import FINISHES, OPACITY_LEVELS, PATTERNS
+from wardrobe.pipeline import prebuilt
 from wardrobe.pipeline.generate_garment import complete_foundation, with_foundation
 from wardrobe.pipeline.plan_outfit import (
     CATEGORY_KEYWORDS,
@@ -479,6 +480,21 @@ async def look_exposure(
         "reason": None if eligible else "No suitable exposed placement for this outfit.",
         "tattoos": tattoos,
     }
+
+
+@router.get("/library/{slug}/prebuilt")
+async def list_prebuilt(slug: str, request: Request, admin: AdminDep, store: StoreDep) -> dict:
+    """PB2. The looks already made for her, fresh on her own body: worn at once, no job.
+
+    What the app reads to know what she has ready, so "lingerie" finds a lingerie look instead
+    of her saying she has none. A look an admin session's declaration made is private and
+    listed only to an admin session, exactly as its job and files are.
+    """
+    avatar = _library(request).get(slug)
+    if avatar is None or not avatar.available:
+        raise HTTPException(status_code=404, detail="avatar not in the library")
+    looks = await prebuilt.ready_looks(store, slug, include_private=admin is not None)
+    return {"slug": slug, "pipelineVersion": prebuilt.PIPELINE_VERSION, "count": len(looks), "looks": looks}
 
 
 @router.get("/library/{slug}/avatar.vrm")

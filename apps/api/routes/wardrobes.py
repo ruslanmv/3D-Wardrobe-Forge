@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Query
 from apps.api.admin import AdminDep
 from apps.api.dependencies import OrchestratorDep, SettingsDep
 from wardrobe.domain.manifests import WardrobeManifest
+from wardrobe.pipeline import prebuilt
 
 router = APIRouter(tags=["wardrobes"])
 
@@ -24,6 +25,10 @@ async def list_wardrobes(orchestrator: OrchestratorDep) -> list[str]:
 @router.get("/wardrobes/{avatar_id}", response_model=WardrobeManifest)
 async def get_wardrobe(avatar_id: str, orchestrator: OrchestratorDep, admin: AdminDep) -> WardrobeManifest:
     manifest = await orchestrator.wardrobes.get(avatar_id)
+    # PB4. With every prebuilt look in it, so she has the whole catalog after a restart.
+    manifest = await prebuilt.with_prebuilt(
+        orchestrator.store, avatar_id, manifest, include_private=admin is not None
+    )
     if manifest is None:
         raise HTTPException(status_code=404, detail="wardrobe not found")
     return manifest if admin is not None else manifest.public()
@@ -39,6 +44,9 @@ async def get_wardrobe_as_avatar_manifest(
 ) -> dict:
     """The wardrobe as a 3D-Avatar-Chatbot avatar manifest."""
     manifest = await orchestrator.wardrobes.get(avatar_id)
+    manifest = await prebuilt.with_prebuilt(
+        orchestrator.store, avatar_id, manifest, include_private=admin is not None
+    )
     if manifest is None:
         raise HTTPException(status_code=404, detail="wardrobe not found")
     if admin is None:

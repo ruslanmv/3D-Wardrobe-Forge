@@ -1,0 +1,161 @@
+name: Prebuild wardrobe
+
+# PB3 (docs/PREBUILT_WARDROBE.md). Every catalog garment for every library character, made
+# before anyone asks, into the private bucket the Space reads. A conversation then wears a
+# look from storage on the first poll instead of waiting for a job.
+#
+# Only missing looks are built: Forge remembers each finished look under a key of everything
+# that shapes it (wardrobe.pipeline.prebuilt), so a push that edits one template rebuilds that
+# template's looks and a push that touches nothing they depend on builds nothing. Bump
+# PIPELINE_VERSION in wardrobe/pipeline/prebuilt.py to rebuild everything.
+#
+# Storage: a private Hugging Face dataset (~11.5 GB for 105 garments x 8 characters; too big
+# for git). Forge runs with WARDROBE_STORAGE_BACKEND=hf, so it reads what the dataset already
+# has and writes new looks locally; the last step uploads them in one batch.
+#
+# Settings: the secret HF_TOKEN (already used by deploy-space.yml; needs write access to the
+# dataset) and the repository variable WARDROBE_HF_DATASET, e.g. ruslanmv/3d-wardrobe-forge-looks.
+# Without either the workflow warns and builds nothing; it never writes looks into the repository.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - wardrobe/**
+      - assets/garment_templates/**
+      - assets/library/**
+      - apps/api/**
+      - tools/prebuild.py
+      - .github/workflows/prebuild-wardrobe.yml
+  workflow_dispatch:
+    inputs:
+      only:
+        description: Only templates whose name or id contains this text (empty = all)
+        required: false
+        default: ""
+
+concurrency:
+  group: prebuild-wardrobe
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      slugs: ${{ steps.slugs.outputs.slugs }}
+      enabled: ${{ steps.secrets.outputs.enabled }}
+    steps:
+      - id: secrets
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          DATASET: ${{ vars.WARDROBE_HF_DATASET }}
+        run: |
+          if [ -z "$HF_TOKEN" ] || [ -z "$DATASET" ]; then
+            echo "::warning::HF_TOKEN or the variable WARDROBE_HF_DATASET is not set; no looks were prebuilt (docs/PREBUILT_WARDROBE.md)."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.secrets.outputs.enabled == 'true'
+      - uses: actions/setup-python@v5
+        if: steps.secrets.outputs.enabled == 'true'
+        with:
+          python-version: "3.11"
+          cache: pip
+      - if: steps.secrets.outputs.enabled == 'true'
+        run: python -m pip install -e .
+      - id: slugs
+        if: steps.secrets.outputs.enabled == 'true'
+        run: |
+          python tools/fetch_library.py
+          python - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json
+          from wardrobe.config import get_settings
+          from wardrobe.library import AvatarLibrary
+          library = AvatarLibrary.from_directory(get_settings().wardrobe_library_root)
+          print("slugs=" + json.dumps(sorted(a.slug for a in library.available())))
+          EOF
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        slug: ${{ fromJson(needs.plan.outputs.slugs) }}
+    env:
+      WARDROBE_STORAGE_BACKEND: hf
+      WARDROBE_HF_DATASET: ${{ vars.WARDROBE_HF_DATASET }}
+      WARDROBE_STORAGE_ROOT: ${{ github.workspace }}/.prebuilt
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e ".[hf,preview]"
+      - name: The dataset exists and is private
+        run: |
+          python -c "from huggingface_hub import create_repo; import os; create_repo(os.environ['WARDROBE_HF_DATASET'], repo_type='dataset', private=True, exist_ok=True)"
+      - run: python tools/fetch_library.py
+      - name: Forge, signed in as the operator for the full catalog
+        run: |
+          # A throwaway admin password for this runner only: it lists the adult templates
+          # and lives as long as the job. Never printed.
+          export WARDROBE_ADMIN_PASSWORD="$(python -c 'import secrets;print(secrets.token_urlsafe(24))')"
+          echo "::add-mask::$WARDROBE_ADMIN_PASSWORD"
+          (python -m uvicorn apps.api.main:app --port 8090 > forge.log 2>&1 &)
+          for i in $(seq 1 90); do curl -sf http://127.0.0.1:8090/health >/dev/null && break; sleep 1; done
+          curl -sf -X POST http://127.0.0.1:8090/v1/admin/session -H 'content-type: application/json' \
+            -d "{\"password\":\"$WARDROBE_ADMIN_PASSWORD\"}" \
+            | python -c 'import json,sys;print(json.load(sys.stdin)["token"])' > "$RUNNER_TEMP/forge-token"
+      - name: Prebuild ${{ matrix.slug }}
+        run: |
+          python tools/prebuild.py --forge http://127.0.0.1:8090 \
+            --admin-token-file "$RUNNER_TEMP/forge-token" \
+            --slugs "${{ matrix.slug }}" ${{ inputs.only && format('--only "{0}"', inputs.only) || '' }} \
+            --report "prebuild-${{ matrix.slug }}.json"
+      - name: Upload the new looks
+        if: always()
+        run: |
+          python - <<'EOF'
+          import os
+          from pathlib import Path
+          from huggingface_hub import HfApi
+          root = Path(os.environ["WARDROBE_STORAGE_ROOT"])
+          if (root / "prebuilt").exists():
+              # Only looks and the prebuilt index: never the library sources or job records.
+              # One commit per character; files the dataset already holds are not sent again.
+              HfApi().upload_folder(
+                  repo_id=os.environ["WARDROBE_HF_DATASET"], repo_type="dataset", folder_path=str(root),
+                  allow_patterns=["looks/**", "prebuilt/**"],
+                  commit_message="prebuild: ${{ matrix.slug }} at ${{ github.sha }}",
+              )
+          EOF
+      - name: Summary
+        if: always()
+        run: |
+          python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          for path in pathlib.Path(".").glob("prebuild-*.json"):
+              r = json.loads(path.read_text())
+              print(f"### {path.stem}\n\nplanned {r['planned']}, built {r['built']}, already there "
+                    f"{r['present']}, skipped {r['skipped']}, failed {r['failed']}\n")
+              for item in r["results"]:
+                  if item["result"] == "failed":
+                      print(f"- {item['templateId']}: {item.get('reason', '')}")
+          EOF
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prebuild-${{ matrix.slug }}
+          path: |
+            prebuild-*.json
+            forge.log
