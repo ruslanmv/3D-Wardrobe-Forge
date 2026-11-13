@@ -43,6 +43,18 @@ test('choosing a garment shows what Forge says about it, and nothing invented', 
 test('a see-through setting waits for an avatar declared adult, and Forge confirms what it would build', async ({
     page,
 }) => {
+    // Every library avatar is now declared adult (operator, 2026-11-13), so no real avatar can show
+    // the gate. Forge's own answer is kept and only the startup avatar is marked undeclared here, so
+    // the disabled control and its reason are still exercised; fem-vroid stays declared, which keeps
+    // the 'Check with Forge' half running against the real backend.
+    await page.route(/\/v1\/library(\?.*)?$/, async (route) => {
+        if (route.request().method() !== 'GET') return route.fallback();
+        const response = await route.fetch();
+        const body = await response.json();
+        const startup = (body.avatars ?? []).find((a: { available?: boolean }) => a.available);
+        if (startup && startup.slug !== 'fem-vroid') startup.depictsAdult = false;
+        await route.fulfill({ response, json: body });
+    });
     await open(page);
     await page.getByRole('list').first().getByRole('button').first().click(); // the tee
     if (await page.getByRole('button', { name: 'Garment' }).isVisible()) {
@@ -50,7 +62,7 @@ test('a see-through setting waits for an avatar declared adult, and Forge confir
     }
     await page.getByRole('tab', { name: 'Design' }).click();
     const opacity = page.getByRole('spinbutton', { name: /Opacity/ });
-    // The startup avatar is not declared adult: opacity stays at 1 and says why.
+    // The startup avatar (stubbed undeclared above): opacity stays at 1 and says why.
     await expect(opacity).toBeDisabled();
     await expect(page.getByText(/See-through needs the avatar declared adult/)).toBeVisible();
 
