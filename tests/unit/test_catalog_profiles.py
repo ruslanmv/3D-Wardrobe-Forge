@@ -105,9 +105,14 @@ def test_the_operator_declared_the_profile_avatar_through_policy_json():
 
     library = AvatarLibrary.from_directory(ROOT / "assets/library")
     assert library.get(STYLE["profiles"]["underwear"]["avatar"]).depicts_adult is True
-    # Every library avatar is a public built-in avatar of the chatbot, all declared adult by
-    # the operator (2026-11-07); the declaration is still per slug, never a default.
-    for slug in ("avatar-sample-a", "avatar-sample-b", "avatar-sample-c", "fem-vroid", "masc-vroid"):
+    # Every avatar in this library is declared adult by the operator: the chatbot's public
+    # built-in avatars (2026-11-07) and the three VRoid Hub models (2026-11-13). The declaration
+    # is still per slug in policy.json, never a default: a new library avatar without an entry
+    # fails here until the operator decides about it.
+    assert library.avatars, "the library manifest lists no avatars"
+    for avatar in library.avatars:
+        assert avatar.depicts_adult is True, avatar.slug
+    for slug in ("vroid-avatar-sample-o", "vroid-model-girl", "vroid-rinna"):
         assert library.get(slug).depicts_adult is True, slug
 
 

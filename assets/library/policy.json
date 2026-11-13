@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "about": "Operator declarations about library avatars that their files cannot carry. depictsAdult: true allows swimwear and underwear for that avatar (wardrobe/policy/intimate.py). Set it only for an avatar the operator has decided depicts an adult; the model's own sexual-usage terms are still checked first. Every avatar in this library is one of the public built-in avatars of 3D-Avatar-Chatbot (vendor/avatars/avatars.json), all declared adult by the operator on 2026-11-07.",
+  "about": "Operator declarations about library avatars that their files cannot carry. depictsAdult: true allows swimwear and underwear for that avatar (wardrobe/policy/intimate.py). Set it only for an avatar the operator has decided depicts an adult; the model's own sexual-usage terms are still checked first. Every avatar in this library is declared adult by the operator: the public built-in avatars of 3D-Avatar-Chatbot (vendor/avatars/avatars.json) on 2026-11-07, and the three VRoid Hub models (AvatarSample_O, Model Girl, Rinna) on 2026-11-13.",
   "avatars": {
     "avatar-sample-a": {
       "depictsAdult": true,
@@ -31,6 +31,24 @@
       "declaredBy": "operator (ruslanmv)",
       "declared": "2026-11-07",
       "why": "VRoid Male: Declared by the operator: every public built-in avatar of 3D-Avatar-Chatbot is an adult character. The VRM's own terms allow sexual usage (sexualUssageName: Allow)."
+    },
+    "vroid-avatar-sample-o": {
+      "depictsAdult": true,
+      "declaredBy": "operator (ruslanmv)",
+      "declared": "2026-11-13",
+      "why": "AvatarSample_O: Declared by the operator (confirmed 2026-11-13): every avatar in this library is an adult character. The VRM's own terms allow sexual usage (licenses/vroid-avatar-sample-o.json)."
+    },
+    "vroid-model-girl": {
+      "depictsAdult": true,
+      "declaredBy": "operator (ruslanmv)",
+      "declared": "2026-11-13",
+      "why": "Model Girl: Declared by the operator (confirmed 2026-11-13): every avatar in this library is an adult character. The VRM's own terms allow sexual usage (licenses/vroid-model-girl.json)."
+    },
+    "vroid-rinna": {
+      "depictsAdult": true,
+      "declaredBy": "operator (ruslanmv)",
+      "declared": "2026-11-13",
+      "why": "Rinna: Declared by the operator (confirmed 2026-11-13): every avatar in this library is an adult character. The VRM's own terms allow sexual usage (licenses/vroid-rinna.json)."
     }
   }
 }
