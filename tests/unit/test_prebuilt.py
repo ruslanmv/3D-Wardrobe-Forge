@@ -36,14 +36,19 @@ def test_only_a_catalog_request_has_a_key(template_catalog):
     assert prebuilt.cache_key(_request(template_id="no-such-template"), template_catalog) is None
 
 
-def test_the_key_ignores_the_words_and_keeps_everything_that_shapes_the_look(template_catalog):
+def test_the_key_keeps_everything_that_shapes_the_look(template_catalog, monkeypatch):
     base = prebuilt.cache_key(_request(), template_catalog)
-    assert prebuilt.cache_key(_request(prompt="the fitted tee please"), template_catalog) == base
+    assert prebuilt.cache_key(_request(), template_catalog) == base
+    # The words can carry the colour ("red tee"): without one the planner falls back to grey.
+    assert prebuilt.cache_key(_request(prompt="a red tee"), template_catalog) != base
     assert prebuilt.cache_key(_request(private=True), template_catalog) != base
     assert prebuilt.cache_key(_request(wardrobeId="someone-else"), template_catalog) != base
     red = _request()
     red.outfit.color = "red"
-    assert prebuilt.cache_key(red, template_catalog) != base
+    red_key = prebuilt.cache_key(red, template_catalog)
+    assert red_key != base
+    monkeypatch.setitem(prebuilt.COLORS, "red", "#ff0000")  # a retuned colour is a different look
+    assert prebuilt.cache_key(red, template_catalog) != red_key
 
 
 def test_editing_a_template_or_the_pipeline_is_a_miss(template_catalog, monkeypatch):
@@ -60,7 +65,7 @@ async def test_a_second_identical_request_is_answered_at_once(orchestrator, stor
     first = await orchestrator.run_now(_request())
     assert first.state == JobState.COMPLETED
 
-    again = await orchestrator.submit(_request(prompt="same tee, other words"))
+    again = await orchestrator.submit(_request())
     assert again.state == JobState.COMPLETED
     assert orchestrator.queue.ids == []
     assert again.id != first.id

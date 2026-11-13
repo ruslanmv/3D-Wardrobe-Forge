@@ -13,7 +13,7 @@ def test_the_second_request_is_answered_on_its_first_poll(client: TestClient):  
     first = dress(client, templateId=TEE, prompt="fitted tee")
     assert first["state"] == "completed", first.get("error")
 
-    body = {"outfit": {"prompt": "the tee again", "mode": "template", "templateId": TEE},
+    body = {"outfit": {"prompt": "fitted tee", "mode": "template", "templateId": TEE},
             "options": {"renderPreview": False, "engine": "native"}}
     accepted = client.post("/v1/library/mira/jobs", json=body)
     assert accepted.status_code == 202, accepted.text

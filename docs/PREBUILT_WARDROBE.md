@@ -158,6 +158,50 @@ Storing garment-only meshes per character and assembling them in the browser
 would cut storage about tenfold and make every colour cheap. That changes the
 app's loader and the cloth contract, so it waits until PB1–PB5 are in use.
 
+## Three colours per garment (PB6)
+
+The try-on haul is for intimate, mature moments, so each garment is prebuilt in up to three
+colours chosen for that mood — not every colour Forge knows. `assets/catalog/palettes.json`
+holds the palettes (first colour is the default) and assigns one per category, with named
+garments overriding their category:
+
+| Palette | Colours | Used for |
+| ------- | ------- | -------- |
+| lingerie | black, burgundy, champagne | underwear (default) |
+| bras-and-sets | black, wine, champagne | bras, bralettes, lingerie and garter sets |
+| bodysuits | black, crimson, ivory | bodysuits, the catsuit |
+| corsets | black, burgundy, champagne | corsets, guêpière, waspie |
+| nightwear | black, burgundy, champagne | nightwear, satin chemise |
+| mini-dresses | black, wine, white | bodycon, skater, cocktail |
+| evening-dresses | black, burgundy, champagne | other dresses (default) |
+| day-dresses | black, white, blush | sundress, shirt dress |
+| skirts | black, wine, ivory | skirts |
+| hosiery | black, nude, white | stockings, tights |
+| heels | black, red, nude | heels and flats (default for shoes) |
+| boots | black, burgundy, brown | boots |
+| jeans | black, navy, sky | jeans, denim shorts |
+| casual-tops | black, white, blush | tops |
+| jackets | black, cream, burgundy | jackets |
+| swimwear | black, red, ivory | swimwear |
+| trousers | black, navy, beige | trousers, shorts |
+
+Every name is a colour in Forge's vocabulary (`GET /v1/vocabulary`), checked when the file is
+loaded. Forge's `burgundy` is `#6d1a2d`, a little deeper than the proposed `#8E1630`; black
+(`#15151a`) and champagne (`#e6d2ae`) match the proposal. Changing a vocabulary hex changes every
+look in that colour, and the cache key holds the hex, so those looks are rebuilt.
+
+`GET /v1/catalog/garments` reports each garment's `prebuiltColors`. `tools/prebuild.py` makes
+each colour (`--colours 1` for the default only) and builds the intimate categories first —
+underwear, bodysuits, swimwear, nightwear, hosiery, dresses — so a partial build already holds
+what the haul is for.
+
+| Configuration | Looks | Storage (13.7 MB each) |
+| ------------- | ----: | ---------------------: |
+| 105 garments × 8 characters × 1 colour | 840 | 11.5 GB |
+| 105 garments × 8 characters × 3 colours | **2,520** | **34.5 GB** |
+
+Plan the dataset for 40–45 GB.
+
 ## Status (2026-11-13)
 
 | Phase | State | Where |
@@ -167,6 +211,7 @@ app's loader and the cloth contract, so it waits until PB1–PB5 are in use.
 | PB3 CI on push to `main` | written; needs `vars.WARDROBE_HF_DATASET` | `.github/workflows/prebuild-wardrobe.yml` |
 | PB4 dataset store; her wardrobe lists prebuilt looks after a restart | done, tested; Space needs `WARDROBE_STORAGE_BACKEND=hf` and `WARDROBE_HF_DATASET` | `HfDatasetObjectStore`, `GET /v1/wardrobes/{id}` |
 | PB5 Private names every kind she has ready | done (3D-Avatar-Chatbot `ac44d59`) | `PrivateActionBridge.closetSummary` |
+| PB6 three colours per garment, intimate first | done, tested | `assets/catalog/palettes.json`, `wardrobe/pipeline/palettes.py` |
 
 The app needs no change to see prebuilt looks: it already reads her library wardrobe, and that
 wardrobe now includes them.

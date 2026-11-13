@@ -7,9 +7,10 @@ completed job record is kept under a key of everything that shapes the look's by
 identical request returns a completed record pointing at the same look, on its first poll.
 
 Only a request for one named template is cached: no tattoos, no layers. That is what Try-On,
-the catalog and the prebuild ask for. With ``mode: template`` the prompt is left out of the key
-(the template decides); with ``mode: auto`` and a template it stays in, because the planner may
-read a colour or finish from the words. A free prompt with no template is never cached.
+the catalog and the prebuild ask for. The prompt is part of the key even with a template:
+without an explicit colour the planner reads the colour (and finish, sheerness) from the words,
+and falls back to grey — "red tee" and "tee" are different looks. A free prompt with no template
+is never cached. The colour's hex is in the key too, so retuning a colour is a miss.
 
 Each wardrobe also gets a list of its *fresh* prebuilt looks — made on her own body, not on top
 of another look — at ``prebuilt/wardrobes/<wardrobe>.json``. That list is what the app reads to
@@ -47,7 +48,7 @@ from uuid import uuid4
 
 from wardrobe.domain.garments import TemplateCatalog
 from wardrobe.domain.jobs import CreateJobRequest, JobEvent, JobRecord, JobState
-from wardrobe.domain.looks import OutfitMode
+from wardrobe.pipeline.plan_outfit import COLORS
 from wardrobe.storage.object_store import ObjectStore
 
 logger = logging.getLogger(__name__)
@@ -70,13 +71,15 @@ def cache_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None
     if template is None:
         return None
     payload = request.model_dump(mode="json", by_alias=True, exclude_none=True)
-    if outfit.mode == OutfitMode.TEMPLATE:
-        payload.get("outfit", {}).pop("prompt", None)
     material = {
         "pipelineVersion": PIPELINE_VERSION,
         "template": hashlib.sha256(template.model_dump_json(by_alias=True).encode("utf-8")).hexdigest(),
         "request": payload,
     }
+    named = (outfit.color, request.options.foundation_color)
+    hexes = {name: COLORS.get(name.lower()) for name in named if name}
+    if hexes:
+        material["colorHex"] = hexes
     canonical = json.dumps(material, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 

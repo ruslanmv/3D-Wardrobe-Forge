@@ -8,6 +8,10 @@ each finished look (``wardrobe.pipeline.prebuilt``); a rerun finds them and buil
 
     python tools/prebuild.py --forge http://127.0.0.1:8090 --admin-token-file ~/.forge-token
     python tools/prebuild.py --forge ... --slugs fem-vroid --only lingerie --report out.json
+    python tools/prebuild.py --forge ... --colours 1          # default colour only
+
+Each garment is made in its prebuilt colours (assets/catalog/palettes.json, at most three,
+default first), intimate categories first.
 
 Without an admin token only the public catalog is listed (62 of 105 on 2026-11-13). A
 restricted template is asked for only on a character declared adult; Forge refuses it on any
@@ -52,7 +56,14 @@ class Forge:
             return json.loads(response.read().decode("utf-8"))
 
 
-def plan(forge: Forge, slugs: list[str] | None, only: str | None) -> list[dict]:
+#: Build order by catalog category: the intimate collection first, everyday clothes last.
+FIRST = {name: i for i, name in enumerate(
+    ["underwear", "jumpsuit", "swimwear", "nightwear", "legwear", "dress", "skirt", "shoes", "top",
+     "shorts", "trousers", "jacket"]
+)}
+
+
+def plan(forge: Forge, slugs: list[str] | None, only: str | None, colours: int = 3) -> list[dict]:
     """Every (character, template) pair worth asking for."""
     avatars = [a for a in forge.call("/v1/library").get("avatars", []) if a.get("available")]
     if slugs:
@@ -62,20 +73,30 @@ def plan(forge: Forge, slugs: list[str] | None, only: str | None) -> list[dict]:
     templates = [g for c in catalog.get("categories", []) for g in c.get("garments", [])]
     if only:
         templates = [t for t in templates if only.lower() in (t["name"] + " " + t["id"]).lower()]
+    # PB6. The try-on haul is for intimate, mature moments: those garments are made first, so a
+    # partial build (or a slow first run) already has her lingerie, bodysuits and corsets.
+    templates.sort(key=lambda t: (FIRST.get(t.get("category"), len(FIRST)), t["name"].lower()))
     pairs = []
-    for avatar in avatars:
-        for template in templates:
-            pair = {"slug": avatar["slug"], "templateId": template["id"], "name": template["name"]}
-            if template.get("requiresAdult") and not avatar.get("depictsAdult"):
-                pair["skip"] = "the template needs a character declared adult"
-            pairs.append(pair)
+    for template in templates:
+        for colour in (template.get("prebuiltColors") or [None])[: colours or None]:
+            for avatar in avatars:
+                pair = {"slug": avatar["slug"], "templateId": template["id"], "name": template["name"],
+                        "color": colour}
+                if template.get("requiresAdult") and not avatar.get("depictsAdult"):
+                    pair["skip"] = "the template needs a character declared adult"
+                pairs.append(pair)
     return pairs
 
 
 def job_body(pair: dict) -> dict:
     """What Try-On sends for a fresh garment: the template, over a foundation, previewed."""
+    colour = pair.get("color")
+    outfit = {"prompt": f"{colour} {pair['name']}" if colour else pair["name"], "mode": "template",
+              "templateId": pair["templateId"]}
+    if colour:
+        outfit["color"] = colour
     return {
-        "outfit": {"prompt": pair["name"], "mode": "template", "templateId": pair["templateId"]},
+        "outfit": outfit,
         "options": {"renderPreview": True, "engine": "auto", "ensureFoundation": True},
     }
 
@@ -124,6 +145,7 @@ def main(argv=None) -> int:
     parser.add_argument("--slugs", help="Comma-separated library characters; default all available")
     parser.add_argument("--only", help="Only templates whose name or id contains this text")
     parser.add_argument("--limit", type=int, default=0, help="Stop after this many pairs (0 = all)")
+    parser.add_argument("--colours", type=int, default=3, help="Colours per garment, 1-3")
     parser.add_argument("--workers", type=int, default=2, help="Jobs in flight (Forge's concurrency)")
     parser.add_argument("--job-timeout", type=float, default=900.0, help="Seconds per look")
     parser.add_argument("--report", type=Path, help="Write the per-look results here as JSON")
@@ -133,7 +155,7 @@ def main(argv=None) -> int:
     token = Path(opts.admin_token_file).expanduser().read_text().strip() if opts.admin_token_file else None
     forge = Forge(opts.forge, token)
     try:
-        pairs = plan(forge, opts.slugs.split(",") if opts.slugs else None, opts.only)
+        pairs = plan(forge, opts.slugs.split(",") if opts.slugs else None, opts.only, opts.colours)
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
         print(f"Forge unreachable at {opts.forge}: {exc}", file=sys.stderr)
         return 2
@@ -142,7 +164,8 @@ def main(argv=None) -> int:
     print(f"{len(pairs)} looks planned across {len({p['slug'] for p in pairs})} characters", flush=True)
     if opts.plan_only:
         for pair in pairs:
-            print(f"  {pair['slug']:<24} {pair['templateId']:<36} {pair.get('skip', '')}")
+            colour = pair.get("color") or ""
+            print(f"  {pair['slug']:<24} {pair['templateId']:<36} {colour:<10} {pair.get('skip', '')}")
         return 0
 
     results = []
@@ -150,7 +173,8 @@ def main(argv=None) -> int:
         for done in pool.map(lambda p: build(forge, p, opts.job_timeout), pairs):
             results.append(done)
             mark = {"built": "+", "present": "=", "skipped": "-", "failed": "!"}[done["result"]]
-            print(f"{mark} {done['slug']:<24} {done['templateId']:<36} {done.get('seconds', '')} "
+            print(f"{mark} {done['slug']:<24} {done['templateId']:<36} {done.get('color') or '':<10} "
+                  f"{done.get('seconds', '')} "
                   f"{done.get('reason', '')}", flush=True)
 
     counts = {k: sum(r["result"] == k for r in results) for k in ("built", "present", "skipped", "failed")}

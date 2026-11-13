@@ -27,6 +27,7 @@ from wardrobe.domain.garments import INTIMATE_CATEGORIES, GarmentTemplate
 from wardrobe.domain.jobs import CreateJobRequest, JobOptions
 from wardrobe.domain.looks import OutfitMode, OutfitRequest
 from wardrobe.domain.parameters import parameter_schema
+from wardrobe.pipeline import palettes
 from wardrobe.pipeline.plan_outfit import COLORS
 
 router = APIRouter(tags=["garment catalog"])
@@ -105,6 +106,8 @@ def garment_item(template: GarmentTemplate) -> dict:
         # Forge's colour vocabulary is what the planner reads; a template that takes no base
         # colour takes none of it. Never a list made up per garment.
         "availableColors": sorted(COLORS) if template.materials.supports_base_color else [],
+        # PB6. The colours this garment is prebuilt in, default first (assets/catalog/palettes.json).
+        "prebuiltColors": palettes.colours_for(template),
         "supportedMaterials": [name for flag, name in MATERIAL_OPTIONS.items()
                                if getattr(template.materials, flag)],
     }
