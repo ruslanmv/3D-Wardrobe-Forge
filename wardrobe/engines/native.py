@@ -13,6 +13,7 @@ import logging
 
 import numpy as np
 
+from wardrobe.cloth.asset import ClothAssetRejected, compile_cloth_asset
 from wardrobe.config import Settings
 from wardrobe.domain.looks import ClippingCheck
 from wardrobe.engines.base import FittingEngine
@@ -311,6 +312,7 @@ class NativeEngine(FittingEngine):
             if layer.plan.set_id:  # a coordinated set: only then, so no other garment's extras change
                 forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
                 forge["setId"] = layer.plan.set_id
+            _tag_cloth_asset(context, attached.node_index, layer, kind)
             components = component_table(layer.mesh)
             if components:  # LC2: a collection piece names its parts (bra_left_cup, bow_L, …)
                 forge = context.document.nodes[attached.node_index]["extras"]["wardrobeForge"]
@@ -338,6 +340,11 @@ class NativeEngine(FittingEngine):
             },
         )
 
+        for node_index, blob in getattr(context, "cloth_payloads", ()) or ():
+            view = context.document.add_buffer_view(blob)
+            forge = context.document.nodes[node_index]["extras"]["wardrobeForge"]["clothAsset"]
+            forge["bufferView"] = view
+        context.cloth_payloads = []
         context.output_bytes = context.document.to_bytes()
 
     # ------------------------------------------------------------------
@@ -478,6 +485,34 @@ def _material_colour(document, mesh: dict) -> tuple[float, float, float] | None:
         if factor and len(factor) >= 3:
             return tuple(float(c) for c in factor[:3])
     return None
+
+
+def _tag_cloth_asset(context: PipelineContext, node_index: int, layer, kind: str) -> None:
+    """Record the cloth asset. A mesh that cannot be one is warned and still exported."""
+    try:
+        asset = compile_cloth_asset(
+            layer.mesh,
+            kind=kind,
+            category=layer.plan.category,
+            silhouette=layer.plan.silhouette,
+            name=layer.plan.name,
+            role=layer.plan.role,
+            layer=layer.plan.layer,
+            template_id=layer.plan.template_id or "",
+        )
+    except ClothAssetRejected as rejected:
+        context.warn(f"{layer.plan.name}: cloth asset rejected ({rejected})")
+        return
+    summary = asset.summary()
+    context.document.nodes[node_index]["extras"]["wardrobeForge"]["clothAsset"] = summary
+    # The bytes are appended after every other garment view, so geometry buffer
+    # indices stay what they were. A fingerprint can then drop the suffix.
+    if asset.blob:
+        payloads = getattr(context, "cloth_payloads", None)
+        if payloads is None:
+            payloads = []
+            context.cloth_payloads = payloads
+        payloads.append((node_index, asset.blob))
 
 
 __all__ = ["NativeEngine", "GENERATOR"]
