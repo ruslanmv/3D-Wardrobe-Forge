@@ -13,6 +13,7 @@ A tattoo-only job (BA6) carries its look's outfit over in place of plan … expo
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import shutil
@@ -99,6 +100,10 @@ class Orchestrator:
         )
         self.broker = broker or default_broker
         self._started = False
+        # One wardrobe update at a time: read, add the look, write. Two jobs for the same
+        # character finishing together otherwise both read the old list and the second write
+        # drops the first look (the prebuild runs two jobs at once for one character).
+        self._wardrobe_lock = asyncio.Lock()
 
     # ------------------------------------------------------------------
     async def start(self) -> None:
@@ -407,6 +412,10 @@ class Orchestrator:
         return {**described, "name": name or "Look", "prompt": prompt}
 
     async def _update_wardrobe(self, context: PipelineContext, look: LookResult) -> None:
+        async with self._wardrobe_lock:
+            await self._update_wardrobe_locked(context, look)
+
+    async def _update_wardrobe_locked(self, context: PipelineContext, look: LookResult) -> None:
         record = context.record
         avatar = record.request.avatar
         avatar_id = self._wardrobe_id(context)

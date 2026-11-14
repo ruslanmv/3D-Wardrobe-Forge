@@ -134,3 +134,24 @@ async def test_the_dataset_store_reads_through_once_and_writes_locally(tmp_path,
     await store.put("looks/look_c/look.vrm", b"made here")
     assert await store.get("looks/look_c/look.vrm") == b"made here"
     assert "looks/look_c/look.vrm" not in remote  # never written back to the dataset
+
+
+async def test_simultaneous_writes_of_one_key_never_fail(store):
+    import asyncio
+
+    payloads = [f"version {i}".encode() for i in range(20)]
+    await asyncio.gather(*(store.put("wardrobes/mira/wardrobe.json", p) for p in payloads))
+    assert await store.get("wardrobes/mira/wardrobe.json") in payloads
+    leftovers = list((store.root / "wardrobes" / "mira").glob("*.part"))
+    assert leftovers == []
+
+
+async def test_two_looks_finishing_together_are_both_in_her_wardrobe(orchestrator, stored_avatar):
+    import asyncio
+
+    tee, cami = await asyncio.gather(
+        orchestrator.run_now(_request()), orchestrator.run_now(_request(template_id="top-camisole-v1"))
+    )
+    manifest = await orchestrator.wardrobes.get("test-avatar")
+    ids = {look.id for look in manifest.looks}
+    assert tee.look.id in ids and cami.look.id in ids

@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     wardrobe_storage_root: str = str(REPO_ROOT / ".wardrobe")
     wardrobe_database_url: str = ""
     #: PB4. With WARDROBE_STORAGE_BACKEND=hf: the dataset repository the prebuilt looks are read
-    #: from, e.g. "ruslanmv/3d-wardrobe-forge-looks". Private; read with HF_TOKEN.
+    #: from, e.g. "ruslanmv/3d-wardrobe-garments". Private; read with HF_TOKEN.
     wardrobe_hf_dataset: str = ""
 
     s3_endpoint: str = ""

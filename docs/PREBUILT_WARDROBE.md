@@ -216,7 +216,9 @@ Plan the dataset for 40–45 GB.
 The app needs no change to see prebuilt looks: it already reads her library wardrobe, and that
 wardrobe now includes them.
 
-To turn it on: create the dataset (or let the workflow create it, private), set the repository
-variable `WARDROBE_HF_DATASET`, run "Prebuild wardrobe" once from the Actions tab, then set the
-same two values on the Space (`WARDROBE_STORAGE_BACKEND=hf`, `WARDROBE_HF_DATASET=...`; its
-`HF_TOKEN` secret needs read access to the dataset).
+The dataset is **`ruslanmv/3d-wardrobe-garments`** (private, created 2026-11-14). The workflow
+uses it by default (`vars.WARDROBE_HF_DATASET` overrides), so it needs only the `HF_TOKEN`
+secret `deploy-space.yml` already uses, with write access to the dataset. On the Space set
+`WARDROBE_STORAGE_BACKEND=hf` and `WARDROBE_HF_DATASET=ruslanmv/3d-wardrobe-garments`; its
+`HF_TOKEN` needs read access. The first `fem-vroid` looks were built locally and uploaded on
+2026-11-14 with `tools/prebuild.py` and `HfApi.upload_folder`.

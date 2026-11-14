@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import shutil
+import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -69,9 +70,15 @@ class LocalObjectStore(ObjectStore):
 
         def _write() -> None:
             path.parent.mkdir(parents=True, exist_ok=True)
-            temporary = path.with_suffix(path.suffix + ".part")
-            temporary.write_bytes(data)
-            temporary.replace(path)  # atomic publish
+            # Unique per write: two jobs finishing together both write wardrobe.json, and a
+            # shared "<name>.part" let one rename the other's temporary away (FileNotFoundError,
+            # the look's job failed). The last complete write wins, never a half one.
+            temporary = path.with_name(f"{path.name}.{uuid.uuid4().hex}.part")
+            try:
+                temporary.write_bytes(data)
+                temporary.replace(path)  # atomic publish
+            finally:
+                temporary.unlink(missing_ok=True)
 
         await asyncio.to_thread(_write)
         return self.url_for(key)

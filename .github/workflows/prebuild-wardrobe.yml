@@ -14,7 +14,7 @@ name: Prebuild wardrobe
 # has and writes new looks locally; the last step uploads them in one batch.
 #
 # Settings: the secret HF_TOKEN (already used by deploy-space.yml; needs write access to the
-# dataset) and the repository variable WARDROBE_HF_DATASET, e.g. ruslanmv/3d-wardrobe-forge-looks.
+# dataset) and the repository variable WARDROBE_HF_DATASET, e.g. ruslanmv/3d-wardrobe-garments.
 # Without either the workflow warns and builds nothing; it never writes looks into the repository.
 
 on:
@@ -51,10 +51,10 @@ jobs:
       - id: secrets
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          DATASET: ${{ vars.WARDROBE_HF_DATASET }}
+          DATASET: ${{ vars.WARDROBE_HF_DATASET || 'ruslanmv/3d-wardrobe-garments' }}
         run: |
-          if [ -z "$HF_TOKEN" ] || [ -z "$DATASET" ]; then
-            echo "::warning::HF_TOKEN or the variable WARDROBE_HF_DATASET is not set; no looks were prebuilt (docs/PREBUILT_WARDROBE.md)."
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::warning::HF_TOKEN is not set; no looks were prebuilt (docs/PREBUILT_WARDROBE.md)."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=true" >> "$GITHUB_OUTPUT"
@@ -91,7 +91,7 @@ jobs:
         slug: ${{ fromJson(needs.plan.outputs.slugs) }}
     env:
       WARDROBE_STORAGE_BACKEND: hf
-      WARDROBE_HF_DATASET: ${{ vars.WARDROBE_HF_DATASET }}
+      WARDROBE_HF_DATASET: ${{ vars.WARDROBE_HF_DATASET || 'ruslanmv/3d-wardrobe-garments' }}
       WARDROBE_STORAGE_ROOT: ${{ github.workspace }}/.prebuilt
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
