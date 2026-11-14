@@ -67,7 +67,11 @@ async def test_every_template_completes_and_passes(orchestrator, store, template
     failures = []
     for template in template_catalog.all():
         payload = job_request("sources/haul.vrm", template.name, template_id=template.id)
-        payload["avatar"]["depictsAdult"] = template.category in INTIMATE_CATEGORIES
+        # Swimwear and underwear are gated by category. A see-through card in
+        # another category is gated by requiresAdult (a sheer dress, a mesh top).
+        payload["avatar"]["depictsAdult"] = (
+            template.category in INTIMATE_CATEGORIES or bool(template.requires_adult)
+        )
         record = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
         if record.state != "completed" or not record.fit_report.passed:
             failures.append((template.id, record.state, record.error, record.fit_report.clipping_check))

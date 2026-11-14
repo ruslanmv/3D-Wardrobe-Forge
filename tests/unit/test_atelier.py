@@ -82,6 +82,8 @@ def test_a_card_keeps_its_cut_when_the_prompt_is_only_a_colour(template_catalog,
         ("black platform boots", "shoes-platform-boots-v1"),
         ("black fishnet catsuit", "jumpsuit-catsuit-v1"),
         ("black strappy sandals", "shoes-flats-v1"),
+        # Gallery look 19 already says this. It stays the skater.
+        ("red sheer mini dress", "dress-mini-skater-v1"),
     ],
 )
 def test_words_that_already_meant_something_still_do(template_catalog, prompt, template_id):

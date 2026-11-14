@@ -68,7 +68,7 @@ ORDERS: tuple[Order, ...] = (
         (("style.slit", "high"), ("hem", "floor")),
     ),
     _built(
-        "aa-sheer-mini", "Sheer mini", "black sheer mini dress", "atelier",
+        "aa-sheer-mini", "Sheer mini", "black mesh mini dress", "atelier",
         "dress-sheer-mini-v1", "complete",
         (("material.opacity", 0.55), ("hem", "mini")),
         adult=True, tags=("atelier", "sheer"),

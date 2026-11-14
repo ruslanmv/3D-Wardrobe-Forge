@@ -97,6 +97,7 @@ CHANGED_LATER = {
     "tops/top-cropped-cami-v1.json": "G1/G6: answers to 'cropped camisole'; cut as panels with flat straps",
     "tops/top-camisole-v1.json": "G6: a camisole cut as panels with straps, not a strapless tube",
     "jackets/jacket-long-cardigan-v1.json": "G6: open fronts to the knee, a yoke, set-in sleeves; bound to her hips",
+    "shorts/shorts-denim-v1.json": "AA: 'hot pants' is the booty short; denim keeps 'denim shorts'",
 }
 
 

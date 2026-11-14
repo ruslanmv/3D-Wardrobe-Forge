@@ -38,7 +38,9 @@ Every new card is `optIn`. Its tags are phrases the old prompts do not
 contain, so "micro bikini" is still a coverage on the triangle set, "backless
 dress" is still the A-line, "hot pants" is the new short (denim kept
 "denim shorts"), and "stiletto boots" is still the ankle boot. "Stiletto
-pumps" is the pump.
+pumps" is the pump. "Sheer mini dress" stays the skater the gallery already
+built; the sheer card answers to "mesh mini dress", and a colour picked on
+the card keeps it sheer.
 
 The shell is one that already builds:
 
