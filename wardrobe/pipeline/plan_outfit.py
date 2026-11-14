@@ -686,7 +686,7 @@ def resolve_material(
     # AA. A sheer card stays sheer when the prompt is only a colour.
     if request.opacity is not None:
         opacity = request.opacity
-    elif parsed.opacity is not None:
+    elif parsed.opacity:  # truthy, as the old `parsed.opacity or 1.0` read it
         opacity = parsed.opacity
     elif template.fit.opacity is not None:
         opacity = template.fit.opacity

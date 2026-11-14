@@ -984,11 +984,14 @@ def build_boots(params, *, name: str = "boot") -> list[Mesh]:
         points = bodies.get(side)
         if points is None or len(points) < 32:
             points = _stand_in_foot(params, side)
-        elif _is_a_stump(params, side, points):
+        elif spec.get("shaft") == "pump" and _is_a_stump(params, side, points):
             # VQ. A leg tube is not a foot. The pump was wrapped around the shin and the heel
             # post was skipped (its seat was under 16 mm). The measured leg stays: replacing
             # it with a fixed-radius shin lets a tall shaft close in on the calf. Only the
             # missing foot is added. A real foot, which reaches past the ankle, is unchanged.
+            # AA. Pumps only (the "pump" and "platform-heel" styles). Every boot that existed
+            # before the atelier is built exactly as it was, so the looks already made for it
+            # in the dataset stay the looks a new build would make.
             points = np.vstack([
                 np.asarray(points, dtype=np.float64),
                 _foot_last(params, side),

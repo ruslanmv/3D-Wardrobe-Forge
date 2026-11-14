@@ -17,8 +17,8 @@ from wardrobe.pipeline.plan_outfit import plan_outfit
 from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
 from wardrobe.pipeline.prepare_base_body import layer_kinds_of, replaces_clothing
 from wardrobe.vrm.build import CALIBRATION_BODIES, build_vrm
-from wardrobe.vrm.garment_inventory import DetectedGarment, build_strip_plan, garment_inventory
 from wardrobe.vrm.document import GltfDocument
+from wardrobe.vrm.garment_inventory import DetectedGarment, build_strip_plan, garment_inventory
 from wardrobe.vrm.inspect import inspect_document
 from wardrobe.vrm.measure import measure_body
 
@@ -230,7 +230,7 @@ def test_a_pump_on_a_shin_grows_a_needle_that_meets_the_floor():
 
     document = GltfDocument.from_bytes(build_vrm(CALIBRATION_BODIES[2], spec="VRM1"))
     info = inspect_document(document)
-    target = stance.stance_for(document, info, heel_m=0.100, platform_m=0.004, forward=1.0)
+    target = stance.stance_for(document, info, heel_m=0.100, platform_m=0.004, forward=1.0, pump=True)
     assert target is not None and target.pitch_deg > 0
     stance.apply(document, info, target, forward=1.0)
     posed = measure_body(document, inspect_document(document))

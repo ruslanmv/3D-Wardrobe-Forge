@@ -524,9 +524,14 @@ def _samples_span_a_foot(samples: list, ankle: np.ndarray, forward: float) -> bo
 
 
 def stance_for(
-    document: GltfDocument, info, *, heel_m: float, platform_m: float, forward: float
+    document: GltfDocument, info, *, heel_m: float, platform_m: float, forward: float, pump: bool = False
 ) -> Stance | None:
-    """The stance a pair of shoes asks for on this avatar, or None when it has no feet to stand on."""
+    """The stance a pair of shoes asks for on this avatar, or None when it has no feet to stand on.
+
+    ``pump`` (AA): the shoe has no shaft above the ankle, so a rig whose mesh ends at the ankle
+    is stood on its toe joint (see below). Off, the stance is exactly what it was before the
+    atelier, so every existing boot keeps the pose its dataset looks were made in.
+    """
     if heel_m <= 0.0 and platform_m <= 0.0:
         return FLAT
     feet = flat_feet(document, info, forward)
@@ -543,7 +548,7 @@ def stance_for(
     # foot, and a 55° pitch leaves the ankle ~30 mm up, so a pump never grows a heel. A real
     # foot reaches well past the ankle. Only then do her vertices decide the lift. Otherwise
     # the toe joint is the foot she does not have a surface for, and it is what meets the sole.
-    on_a_foot = _samples_span_a_foot(samples, ankle, forward)
+    on_a_foot = _samples_span_a_foot(samples, ankle, forward) if pump else True
 
     def lowest(pitch: float) -> float:
         after = _stance_map(document, info, flat, Stance(pitch_deg=math.degrees(pitch), lift_m=1e-9), forward)
@@ -562,7 +567,10 @@ def stance_for(
         turned = _about(ankle, forward * pitch) @ np.array([*ball, 1.0])
         return min(low, float(turned[1]))
 
-    return solve(ankle, ball, heel_m=heel_m, platform_m=platform_m, forward=forward, lowest=lowest)
+    return solve(
+        ankle, ball, heel_m=heel_m, platform_m=platform_m, forward=forward,
+        lowest=lowest if (samples or pump) else None,
+    )
 
 
 __all__ = [

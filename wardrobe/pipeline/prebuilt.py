@@ -60,6 +60,35 @@ PIPELINE_VERSION = 1
 
 PREFIX = "prebuilt"
 
+#: AA. Template fields added after the dataset's keys were written, with the value every
+#: template had before they existed. The key hashes the template's JSON, so a new field
+#: (even one left at its default) would change the key of EVERY existing look: ~1900 looks
+#: already in the dataset would stop being found, and a prebuild would make them all again.
+#: A field here is left out of the hash while it holds this value, so an existing template
+#: hashes byte-for-byte as before and a new card that sets it still hashes it. Add to this
+#: list in the same commit as any new GarmentTemplate or FitPolicy field;
+#: tests/unit/test_cache_key_stability.py fails until you do.
+ADDED_TEMPLATE_FIELDS: dict[str, object] = {"replaces_clothing": False}
+ADDED_FIT_FIELDS: dict[str, object] = {"slit": "", "finish": "", "pattern": "", "opacity": None}
+
+
+def template_fingerprint(template) -> str:
+    """sha256 of the template as the cache key sees it (see ADDED_TEMPLATE_FIELDS)."""
+    exclude: dict = {
+        name: True
+        for name, default in ADDED_TEMPLATE_FIELDS.items()
+        if getattr(template, name, default) == default
+    }
+    fit = {
+        name: True
+        for name, default in ADDED_FIT_FIELDS.items()
+        if getattr(template.fit, name, default) == default
+    }
+    if fit:
+        exclude["fit"] = fit
+    dumped = template.model_dump_json(by_alias=True, exclude=exclude)
+    return hashlib.sha256(dumped.encode("utf-8")).hexdigest()
+
 
 def cache_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None:
     """The key a request's look is stored under, or None when it is not cacheable."""
@@ -74,7 +103,7 @@ def cache_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None
     payload = request.model_dump(mode="json", by_alias=True, exclude_none=True)
     material = {
         "pipelineVersion": PIPELINE_VERSION,
-        "template": hashlib.sha256(template.model_dump_json(by_alias=True).encode("utf-8")).hexdigest(),
+        "template": template_fingerprint(template),
         "request": payload,
     }
     named = (outfit.color, request.options.foundation_color)

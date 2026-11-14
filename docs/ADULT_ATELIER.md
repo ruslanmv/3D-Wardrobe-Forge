@@ -98,4 +98,25 @@ The pump is rigid, like every boot. The atelier does not invent seams.
    second card.
 3. If it needs a new shape, add a `shape` row and do not add a template.
 4. `pytest tests/unit/test_atelier.py tests/unit/test_outfit_dictionary.py
-   tests/unit/test_templates.py tests/unit/test_palettes.py`
+   tests/unit/test_templates.py tests/unit/test_palettes.py
+   tests/unit/test_cache_key_stability.py`
+
+## Additive only: existing looks keep their keys and their geometry
+
+The prebuilt dataset holds the looks already made, each under a key that hashes
+its template. A card is added; nothing that existed changes.
+
+- **A new template field** goes in `ADDED_TEMPLATE_FIELDS` / `ADDED_FIT_FIELDS`
+  in `wardrobe/pipeline/prebuilt.py` with the value every older template has.
+  It is left out of the hash while it holds that value, so all 105 pre-atelier
+  templates hash exactly as on ultimate@0902b34.
+  `tests/unit/test_cache_key_stability.py` checks this against a frozen fixture
+  (`tests/fixtures/prebuilt_key_baseline.json`). Never regenerate the fixture.
+- **New geometry behaviour is opt-in by the new card.** The pump's foot repair
+  and toe-joint stance run only for the `pump` shaft (`stance_for(pump=True)`,
+  set by `set_stance` for that shaft); the fishnet sleeves only for a card that
+  owns `fit.pattern` (the bodystocking). Every existing boot, and a "fishnet
+  catsuit" asked of the existing catsuit, builds exactly as before.
+- **Existing tests are not loosened** to fit a new card: a new expectation is a
+  new test.
+- Never edit an existing file under `assets/garment_templates/`.

@@ -210,8 +210,11 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # cloth's margin: the profile's close-fit clearance (≈1–1.5 mm) in place of the template's.
         clearance = body_surface.close_fit_clearance_m
     # VQ. The bodystocking's sleeves read this. A copy of the plan, not a new exported field.
+    # AA. Only for a card that owns its pattern (fit.pattern, which no template had before the
+    # atelier). A "fishnet catsuit" asked of the existing catsuit card builds exactly as it did,
+    # so the looks already made for it stay the looks a new build would make.
     pattern = str(getattr(context.plan.material, "pattern", "") or "")
-    if pattern and pattern != "none":
+    if pattern and pattern != "none" and template is not None and template.fit.pattern:
         metadata["pattern"] = pattern
     params = FitParameters(
         measurements=context.measurements,

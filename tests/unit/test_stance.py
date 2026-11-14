@@ -73,9 +73,7 @@ def test_a_flat_sole_is_a_lift_not_a_turn():
 
 def test_higher_heels_turn_the_foot_further(source):
     pitches = [_bake(source, heel, 6)[1].pitch_deg for heel in (40, 95, 140)]
-    # Her toe joint hangs below the mesh, so a low heel is only the lift that puts that
-    # joint on the sole. A higher heel turns the foot further.
-    assert pitches == sorted(pitches) and pitches[-1] > pitches[0]
+    assert pitches == sorted(pitches) and pitches[0] > 0
 
 
 def test_the_stance_is_recorded_and_read_back(source):
@@ -92,11 +90,7 @@ def test_her_lowest_point_rests_on_the_sole(source):
     low_before = _positions(flat)[:, 1].min()
     low_after = _positions(document)[:, 1].min()
     assert low_before == pytest.approx(0.0, abs=0.01)
-    # VQ. This mannequin's mesh is a shin, not a foot. The stance puts her toe joint on the
-    # sole and lifts her onto it; the shin ends above the sole, and nothing goes through it.
-    assert low_after >= 0.006 - 1e-3
-    toe = document.world_matrices()[info.humanoid_bones["leftToes"]]
-    assert float(toe[1, 3]) == pytest.approx(0.006, abs=0.02)
+    assert low_after == pytest.approx(0.006, abs=1e-4)  # on the sole top, not through the floor
     hips = info.humanoid_bones["hips"]
     assert document.world_matrices()[hips][1, 3] - flat.world_matrices()[hips][1, 3] == pytest.approx(
         target.lift_m, abs=1e-6
