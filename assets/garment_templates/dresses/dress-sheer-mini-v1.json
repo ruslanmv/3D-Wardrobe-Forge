@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "dress-sheer-mini-v1",
+  "name": "Sheer Mini Dress",
+  "category": "dress",
+  "mesh": "procedural:dress",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "sheath",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 4.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 0.95,
+    "conformBelowHips": true,
+    "opacity": 0.55
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": true
+  },
+  "optIn": true,
+  "requiresAdult": true,
+  "tags": [
+    "sheer mini dress",
+    "mesh dress",
+    "mesh mini dress"
+  ],
+  "description": "A bodycon mini in sheer fabric. The card is adult because the body shows through."
+}

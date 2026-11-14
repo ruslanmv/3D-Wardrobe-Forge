@@ -130,12 +130,14 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
         # P1: the boned top (top-corset-v1). The lingerie foundations keep their own words
         # (guêpière, waspie); a sheer or lace corset is still gated by its material.
         "corset", "corset top", "bustier", "bustier top",
+        # AA. Longer than "bralette" and "top", so a bralette worn as a top is a top.
+        "bralette top", "mesh top",
         # A sports bra is a top (top-sports-bra-v1), not underwear: the longer phrase wins over
         # "bra", which planned it as the full-cup bra.
         "sports bra", "sport bra", "athletic bra", "gym bra", "training bra", "workout bra",
         "bra top",
     ),
-    "shoes": ("shoes", "boots", "heels", "sneakers", "trainers", "sandals"),
+    "shoes": ("shoes", "boots", "heels", "sneakers", "trainers", "sandals", "pumps"),
     # try-on haul. The planner takes the longest phrase that matches, so a word
     # must never sit in two categories: "bandeau" is a template tag, not a
     # keyword, or "bandeau bikini" would plan a top.
@@ -151,10 +153,13 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
         # hosiery foundations: words no other category claims (see wardrobe.hosiery)
         "waspie", "waist cincher", "guêpière", "guepiere",
     ),
-    "jumpsuit": ("jumpsuit", "catsuit", "unitard", "boilersuit"),
+    "jumpsuit": ("jumpsuit", "catsuit", "unitard", "boilersuit", "bodystocking"),
     "nightwear": (
         "nightwear", "nightgown", "nightdress", "nightie", "chemise", "pajamas", "pyjamas", "pajama",
         "pyjama", "sleepwear",
+        # AA. A babydoll and a short robe are nightwear. "kimono" is the same robe
+        # until a wrap collar exists (docs/ADULT_ATELIER.md).
+        "babydoll", "short robe", "kimono",
     ),
     "legwear": (
         "stockings", "thigh highs", "thigh-highs", "thigh-high socks", "over-the-knee socks",
@@ -660,11 +665,18 @@ def resolve_material(
     base_color = _colour(parsed.color_hex, text, "#6b6f76")
     policy = template.materials
 
-    finish = request.finish or parsed.finish or FABRIC_FINISH.get(parsed.fabric or "") or "matte"
+    # AA. The template's own finish is the card. A word in the prompt still wins.
+    finish = (
+        request.finish or parsed.finish or FABRIC_FINISH.get(parsed.fabric or "")
+        or template.fit.finish or "matte"
+    )
     if finish not in FINISHES or not policy.supports_finish:
         finish = "matte"
 
-    pattern = request.pattern or parsed.pattern or ("sequin" if finish == "sequin" else "none")
+    pattern = (
+        request.pattern or parsed.pattern or template.fit.pattern
+        or ("sequin" if finish == "sequin" else "none")
+    )
     if pattern not in PATTERNS or not policy.supports_pattern:
         pattern = "none"
     pattern_color = None
@@ -673,7 +685,15 @@ def resolve_material(
         fallback = "#f3f2ee" if _luminance(base_color) < 0.45 else "#15151a"
         pattern_color = _colour(parsed.pattern_color_hex, "", fallback)
 
-    opacity = request.opacity if request.opacity is not None else (parsed.opacity or 1.0)
+    # AA. A sheer card stays sheer when the prompt is only a colour.
+    if request.opacity is not None:
+        opacity = request.opacity
+    elif parsed.opacity is not None:
+        opacity = parsed.opacity
+    elif template.fit.opacity is not None:
+        opacity = template.fit.opacity
+    else:
+        opacity = 1.0
     if opacity < MIN_OPACITY:
         notes.append(f"opacity {opacity:g} is below the renderer's minimum; clamped to {MIN_OPACITY:g}")
         opacity = MIN_OPACITY
@@ -739,7 +759,7 @@ def resolve_style(parsed: ParsedPrompt, request: OutfitRequest, template: Garmen
         back=parsed.back or fit.back,
         legCut=parsed.leg_cut or fit.leg_cut,
         rise=parsed.rise or "",
-        slit=parsed.slit or "",
+        slit=parsed.slit or fit.slit,
         front=parsed.front or "",
     )
 

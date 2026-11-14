@@ -72,6 +72,8 @@ NECKLINES = ("v", "plunge", "sweetheart", "triangle", "demi", "balconette")
 RISES = ("high", "low", "ultra-low")
 BACKS = ("low",)
 LEG_CUTS = ("high",)
+#: AA. A template may own a thigh slit. Empty means the prompt decides, as before.
+SLITS = ("high",)
 FLARE_STARTS = ("waist", "high-hip", "hip", "below-hip")
 
 
@@ -119,6 +121,14 @@ class FitPolicy(BaseModel):
     back: str = ""
     leg_cut: str = Field(default="", alias="legCut")
     coverage: str = "standard"
+    #: AA. "" | high. A card can be a slit gown without the prompt repeating "slit".
+    slit: str = ""
+    #: AA. The card's own finish and pattern, used when the prompt names neither.
+    #: Empty keeps the old rule: matte, and no pattern unless the finish is sequin.
+    finish: str = ""
+    pattern: str = ""
+    #: AA. None keeps opacity at 1 unless the prompt says sheer. A sheer card sets it.
+    opacity: float | None = Field(default=None, ge=0.2, le=1.0)
 
 
 class MaterialPolicy(BaseModel):
@@ -198,9 +208,17 @@ class GarmentTemplate(BaseModel):
             ("neckline", self.fit.neckline, NECKLINES),
             ("back", self.fit.back, BACKS),
             ("legCut", self.fit.leg_cut, LEG_CUTS),
+            ("slit", self.fit.slit, SLITS),
         ):
             if value and value not in allowed:
                 issues.append(f"{self.id}: unknown {field} {value!r}")
+        if self.fit.finish or self.fit.pattern:
+            from wardrobe.materials.finishes import FINISHES, PATTERNS
+
+            if self.fit.finish and self.fit.finish not in FINISHES:
+                issues.append(f"{self.id}: unknown finish {self.fit.finish!r}")
+            if self.fit.pattern and self.fit.pattern not in PATTERNS:
+                issues.append(f"{self.id}: unknown pattern {self.fit.pattern!r}")
         if self.fit.coverage not in COVERAGE_PRESETS:
             issues.append(f"{self.id}: unknown coverage {self.fit.coverage!r}")
         # Sleeves are skinned to the bones the anchors name. Anchor a sleeved garment

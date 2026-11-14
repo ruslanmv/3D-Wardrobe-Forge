@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "swim-micro-bikini-v1",
+  "name": "Micro Bikini",
+  "category": "swimwear",
+  "mesh": "procedural:bikini",
+  "coverage": [
+    "chest",
+    "hips"
+  ],
+  "anchors": [
+    "chest",
+    "hips"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 3.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true,
+    "straps": "string",
+    "neckline": "triangle",
+    "coverage": "micro"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "optIn": true,
+  "tags": [
+    "micro bikini set"
+  ],
+  "description": "A triangle bikini at micro coverage with string sides. The words 'micro bikini' stay a coverage on the triangle set; this card is the one the catalogue lists."
+}

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 2,
+  "id": "swim-cutout-monokini-v1",
+  "name": "Cut-Out Monokini",
+  "category": "swimwear",
+  "mesh": "procedural:bodysuit-block",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true
+  },
+  "lingerie": {
+    "block": "bodysuit",
+    "brief": {
+      "preset": "high-leg",
+      "waistElastic": "swim-8",
+      "legElastic": "swim-8"
+    },
+    "bodysuit": {
+      "neckline": "plunge",
+      "back": "low",
+      "cutouts": "waist-sides",
+      "strapOffset": 0.85,
+      "armhole": 0.75
+    },
+    "straps": {
+      "profile": "ribbon",
+      "widthMm": 8,
+      "style": "halter"
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "optIn": true,
+  "tags": [
+    "cut-out monokini",
+    "cutout monokini"
+  ],
+  "description": "A plunge one-piece open at each side of the waist. The word monokini alone stays the plain one-piece."
+}

@@ -120,10 +120,44 @@ STYLES: dict[str, dict] = {
         "heelLeanMm": 4,
         "soleOutMm": 1.5,
     },
+    # AA. A pump ends at the ankle: the same foot and heel as the ankle boot, no calf.
+    "pump": {
+        "heel": "stiletto",
+        "toe": "pointed",
+        "shaft": "pump",
+        "sole": "thin",
+        "closure": "none",
+        "collar": "plain",
+        "toeExtensionMm": 28,
+        "toeBoxMm": 18,
+        "footEaseMm": 3.0,
+        "shaftEaseMm": 3.0,
+        "heelTopMm": [22, 26],
+        "heelTipMm": [8, 8],
+        "heelLeanMm": 8,
+        "soleOutMm": 1.5,
+    },
+    # AA. A platform heel is that pump on a platform and a block, not a boot.
+    "platform-heel": {
+        "heel": "block",
+        "toe": "almond",
+        "shaft": "pump",
+        "sole": "platform",
+        "closure": "none",
+        "collar": "plain",
+        "toeExtensionMm": 16,
+        "toeBoxMm": 28,
+        "footEaseMm": 3.5,
+        "shaftEaseMm": 3.5,
+        "heelTopMm": [42, 48],
+        "heelTipMm": [38, 44],
+        "heelLeanMm": 2,
+        "soleOutMm": 3.0,
+    },
 }
 
 #: How far up her shin a shaft ends, ankle to knee (over-knee: knee to hip, above the knee).
-SHAFT_TOPS = {"ankle": 0.22, "mid-calf": 0.58, "below-knee": 0.84}
+SHAFT_TOPS = {"ankle": 0.22, "mid-calf": 0.58, "below-knee": 0.84, "pump": 0.04}
 OVER_KNEE_TOP = 0.32
 #: Plan-view point at the toe (how much the ring narrows toward its front), and profile:
 #: the exponent of the nose's curve from the sole up (1 a straight slope, 3 a blunt front).

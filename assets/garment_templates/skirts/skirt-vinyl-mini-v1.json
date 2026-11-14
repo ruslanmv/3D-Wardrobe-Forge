@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "skirt-vinyl-mini-v1",
+  "name": "Vinyl Mini Skirt",
+  "category": "skirt",
+  "mesh": "procedural:skirt",
+  "coverage": [
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "anchors": [
+    "waist",
+    "hips"
+  ],
+  "silhouette": "pencil",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 3.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 0.92,
+    "finish": "latex",
+    "hemFlareRatio": 0.95,
+    "flareStart": "below-hip",
+    "waistEaseMm": 2.0
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "optIn": true,
+  "tags": [
+    "vinyl mini skirt",
+    "pvc mini skirt"
+  ],
+  "description": "A pencil mini in vinyl. Vinyl and pvc are the latex finish; the card arrives in it."
+}
