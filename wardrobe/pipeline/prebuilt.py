@@ -146,9 +146,21 @@ async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, inclu
     from wardrobe.domain.manifests import WardrobeLook, WardrobeManifest
 
     looks = await ready_looks(store, wardrobe_id, include_private=include_private)
-    if not looks:
-        return manifest
+    if manifest is None and not looks:
+        return None
     merged = manifest.model_copy(deep=True) if manifest is not None else WardrobeManifest.empty(wardrobe_id)
+    # Legacy local manifests may still advertise preview paths that were never
+    # uploaded to HF. Correct those alongside fresh prebuilt index entries.
+    for look in merged.looks:
+        preview = look.preview_url
+        if preview and urlsplit(preview).path.endswith(f"/v1/assets/looks/{look.id}/preview.webp"):
+            try:
+                present = await store.exists(f"looks/{look.id}/preview.webp")
+            except Exception as exc:
+                logger.warning("could not check preview for %s: %s", look.id, exc)
+                continue
+            if not present:
+                look.preview_url = None
     have = {look.id for look in merged.looks}
     for item in looks:
         if item.get("lookId") in have or not item.get("vrmUrl"):
