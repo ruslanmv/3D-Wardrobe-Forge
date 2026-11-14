@@ -52,7 +52,7 @@ from wardrobe.pipeline.plan_outfit import (
     SLEEVE_KEYWORDS,
 )
 from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
-from wardrobe.pipeline.prepare_base_body import foundation_conflicts
+from wardrobe.pipeline.prepare_base_body import foundation_conflicts, layer_kinds_of, replaces_clothing
 from wardrobe.policy import file_safety, intimate, licensing
 from wardrobe.targets.bundle import LookFiles, build_wardrobe_bundle, select_looks
 from wardrobe.targets.pack import RATINGS, PackAvatar, PackLook, build_pack, pack_slug, spdx_for, zip_pack
@@ -366,11 +366,11 @@ def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, dep
         garments.append({**garment.design_sheet(template, inner=inner), "allowed": decision.allowed,
                          "refusal": decision.message if not decision.allowed else None})
 
-    kinds = []
-    for garment in plan.garments:
-        template = catalog.get(garment.template_id) if garment.template_id else None
-        kinds.append((template.procedural_kind if template is not None else garment.category, garment.role))
-    strip = build_strip_plan(inventory, kinds) if mode != "preserve" else build_strip_plan(inventory, [])
+    kinds = layer_kinds_of(catalog, plan.garments)
+    strip = (
+        build_strip_plan(inventory, kinds, replace_all=replaces_clothing(catalog, plan.garments))
+        if mode != "preserve" else build_strip_plan(inventory, [])
+    )
     integrity = (
         check_body(document, measurements, set().union(*(g.regions for g in strip.remove)),
                    without={(g.mesh, g.primitive) for g in strip.remove},

@@ -84,6 +84,9 @@ template.
 | `fit.drapeFolds` / `fit.hemDrape` | 0–24 / 0–0.08 | a soft zero-mean hem drape; both must be set |
 | `boot` | object | `procedural:boots` only (`wardrobe/geometry/boots.py`): `style` (`stiletto-ankle` `platform` `combat` `over-knee`) plus any of its fields — `heelMm`, `platformMm` (these two decide how she stands: `wardrobe/vrm/stance.py`), `heel` (`stiletto` `block` `stack`), `toe` (`pointed` `almond` `round`), `toeExtensionMm`, `toeBoxMm`, `shaft` (`ankle` `mid-calf` `below-knee` `over-knee`), `shaftTop`, `footEaseMm`, `shaftEaseMm`, `heelTopMm` / `heelTipMm` ([width, depth]), `heelLeanMm`, `sole` (`thin` `platform` `lug`), `soleOutMm`, `lugMm`, `closure` (`none` `laces` `zip`), `collar` (`plain` `padded`) |
 | `fit.bodyClearanceMm` | 0–40 | fabric-to-body spacing; 5–8 fitted, 12–18 outerwear |
+| `fit.slit` | `high` or empty | AA. A thigh slit the card owns. Empty leaves it to the prompt |
+| `fit.finish` / `fit.pattern` | a finish or pattern name, or empty | AA. Used when the prompt names neither. Empty stays matte and unpatterned |
+| `fit.opacity` | 0.2–1, or absent | AA. Absent stays opaque unless the prompt says sheer |
 | `materials.supportsMetallic` | bool | when false, a "metallic" prompt is ignored for this template |
 | `tags` | free text | matched against the prompt during selection |
 | `defaultForCategory` | bool | the category's answer to a prompt that names nothing else ("skirt", "navy skirt", the Studio's "Planner chooses"); exactly one per category with a choice, never an opt-in template |
@@ -154,7 +157,10 @@ beside it because fitting would press it back into the skirt.
 4. Only if you need a *new shape* (not a new look): add a builder in
    `wardrobe/geometry/procedural.py`.
 
-Most new garments are step 1 alone.
+Most new garments are step 1 alone. A card that has to own its cut — a plunge, a
+slit, a finish, a sheer opacity — sets those on `fit` (see above). The adult
+atelier (`docs/ADULT_ATELIER.md`) is the order book for doing that, and for
+refusing a card when the shell does not exist.
 
 ## Binary mesh templates
 

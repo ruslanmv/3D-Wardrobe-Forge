@@ -120,10 +120,44 @@ STYLES: dict[str, dict] = {
         "heelLeanMm": 4,
         "soleOutMm": 1.5,
     },
+    # AA. A pump ends at the ankle: the same foot and heel as the ankle boot, no calf.
+    "pump": {
+        "heel": "stiletto",
+        "toe": "pointed",
+        "shaft": "pump",
+        "sole": "thin",
+        "closure": "none",
+        "collar": "plain",
+        "toeExtensionMm": 28,
+        "toeBoxMm": 18,
+        "footEaseMm": 3.0,
+        "shaftEaseMm": 3.0,
+        "heelTopMm": [22, 26],
+        "heelTipMm": [8, 8],
+        "heelLeanMm": 8,
+        "soleOutMm": 1.5,
+    },
+    # AA. A platform heel is that pump on a platform and a block, not a boot.
+    "platform-heel": {
+        "heel": "block",
+        "toe": "almond",
+        "shaft": "pump",
+        "sole": "platform",
+        "closure": "none",
+        "collar": "plain",
+        "toeExtensionMm": 16,
+        "toeBoxMm": 28,
+        "footEaseMm": 3.5,
+        "shaftEaseMm": 3.5,
+        "heelTopMm": [42, 48],
+        "heelTipMm": [38, 44],
+        "heelLeanMm": 2,
+        "soleOutMm": 3.0,
+    },
 }
 
 #: How far up her shin a shaft ends, ankle to knee (over-knee: knee to hip, above the knee).
-SHAFT_TOPS = {"ankle": 0.22, "mid-calf": 0.58, "below-knee": 0.84}
+SHAFT_TOPS = {"ankle": 0.22, "mid-calf": 0.58, "below-knee": 0.84, "pump": 0.04}
 OVER_KNEE_TOP = 0.32
 #: Plan-view point at the toe (how much the ring narrows toward its front), and profile:
 #: the exponent of the nose's curve from the sole up (1 a straight slope, 3 a blunt front).
@@ -950,6 +984,18 @@ def build_boots(params, *, name: str = "boot") -> list[Mesh]:
         points = bodies.get(side)
         if points is None or len(points) < 32:
             points = _stand_in_foot(params, side)
+        elif spec.get("shaft") == "pump" and _is_a_stump(params, side, points):
+            # VQ. A leg tube is not a foot. The pump was wrapped around the shin and the heel
+            # post was skipped (its seat was under 16 mm). The measured leg stays: replacing
+            # it with a fixed-radius shin lets a tall shaft close in on the calf. Only the
+            # missing foot is added. A real foot, which reaches past the ankle, is unchanged.
+            # AA. Pumps only (the "pump" and "platform-heel" styles). Every boot that existed
+            # before the atelier is built exactly as it was, so the looks already made for it
+            # in the dataset stay the looks a new build would make.
+            points = np.vstack([
+                np.asarray(points, dtype=np.float64),
+                _foot_last(params, side),
+            ])
         meshes += build_boot(params, side, np.asarray(points, dtype=np.float64), spec, name=name)
     # Each boot measured itself; the pair carries both (concatenate keeps one metadata dict).
     measure = {k: v for mesh in meshes for k, v in mesh.metadata.get("bootMeasure", {}).items()}
@@ -957,6 +1003,61 @@ def build_boots(params, *, name: str = "boot") -> list[Mesh]:
         mesh.metadata["bootMeasure"] = measure
         mesh.metadata["bootStyle"] = spec["style"]
     return meshes
+
+
+#: How far past the ankle a cloud has to reach before it is her foot. Matches stance._FOOT_SPAN_M.
+_STUMP_SPAN_M = 0.07
+
+
+def _is_a_stump(params, side: str, points: np.ndarray) -> bool:
+    """True when ``points`` are a shin: nothing a foot's length forward of the ankle."""
+    ankle = params.measurements.bone_positions.get(f"{side}Foot")
+    if ankle is None or len(points) == 0:
+        return False
+    ahead = (np.asarray(points)[:, 2] - float(ankle[2])) * params.forward
+    return float(np.percentile(ahead, 95)) < _STUMP_SPAN_M
+
+
+def _foot_last(params, side: str) -> np.ndarray:
+    """A pitched foot on the posed ankle and toes, for a rig whose mesh has no foot.
+
+    The heel pad sits just under the ankle, so the heel post can stand in the gap the
+    stance opened. The leg itself is not invented: the caller's cloud already has it.
+    Points stay on or above the floor.
+    """
+    bones = params.measurements.bone_positions
+    ankle = np.asarray(bones[f"{side}Foot"], dtype=np.float64)
+    toes = bones.get(f"{side}Toes")
+    f = float(params.forward)
+    if toes is not None:
+        ball = np.asarray(toes, dtype=np.float64)
+    else:
+        ball = ankle + np.array([0.0, -0.04, f * 0.12])
+    if ball[1] < 0.0:
+        ball = np.array([ball[0], 0.0, ball[2]])
+    reach = (ball[2] - ankle[2]) * f
+    if reach < 0.11:
+        ball = np.array([ankle[0], max(float(ball[1]), 0.0), ankle[2] + f * 0.13])
+    out = []
+    for t in np.linspace(0.0, 1.0, 36):
+        centre = ankle + (ball - ankle) * t
+        centre = centre + np.array([0.0, -0.012 * (1.0 - t), 0.0])
+        width = 0.032 + 0.010 * math.sin(math.pi * t)
+        height = 0.016 + 0.008 * (1.0 - t)
+        for a in np.linspace(0.0, 2 * math.pi, 14, endpoint=False):
+            out.append(centre + np.array([width * math.cos(a), height * math.sin(a), 0.0]))
+    # The heel cup: behind the ankle, its underside a little below the joint.
+    heel = ankle + np.array([0.0, -0.006, -f * 0.032])
+    for a in np.linspace(0.0, 2 * math.pi, 14, endpoint=False):
+        for b in np.linspace(0.0, math.pi, 6, endpoint=False):
+            out.append(
+                heel + np.array([0.020 * math.cos(a) * math.sin(b),
+                                 0.012 * math.cos(b),
+                                 0.018 * math.sin(a) * math.sin(b)])
+            )
+    cloud = np.array(out, dtype=np.float64)
+    cloud[:, 1] = np.maximum(cloud[:, 1], 0.0)
+    return cloud
 
 
 def _stand_in_foot(params, side: str) -> np.ndarray:

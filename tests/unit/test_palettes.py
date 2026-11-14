@@ -24,10 +24,13 @@ def test_the_intimate_collection_is_black_burgundy_and_champagne(template_catalo
     assert palettes.colours_for(template_catalog.get("jeans-straight-v1")) == ["black", "navy", "sky"]
 
 
-def test_the_full_collection_is_2520_looks_for_eight_characters(template_catalog):
+def test_the_full_collection_counts_every_garment_in_three_colours(template_catalog):
+    """PB6, plus the atelier cards. Every garment is still three colours."""
+    from wardrobe.atelier.orders import CATALOG_BEFORE_ATELIER, built_orders
+
     per_character = sum(len(palettes.colours_for(t)) for t in template_catalog.all())
-    assert len(template_catalog) == 105
-    assert per_character * 8 == 2520
+    assert len(template_catalog) == CATALOG_BEFORE_ATELIER + len(built_orders())
+    assert per_character == len(template_catalog) * palettes.MAX_COLOURS
 
 
 def test_every_override_names_a_real_garment(template_catalog):

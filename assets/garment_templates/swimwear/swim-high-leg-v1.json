@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 2,
+  "id": "swim-high-leg-v1",
+  "name": "High-Leg Swimsuit",
+  "category": "swimwear",
+  "mesh": "procedural:bodysuit-block",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true,
+    "legCut": "high"
+  },
+  "lingerie": {
+    "block": "bodysuit",
+    "brief": {
+      "preset": "french-cut",
+      "waistElastic": "swim-8",
+      "legElastic": "swim-8"
+    },
+    "bodysuit": {
+      "neckline": "scoop",
+      "back": "scoop"
+    },
+    "straps": {
+      "widthMm": 10
+    }
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "optIn": true,
+  "tags": [
+    "high-leg swimsuit",
+    "french-cut swimsuit"
+  ],
+  "description": "A one-piece on a french-cut leg, higher than the tailored one-piece. 'High-cut one-piece' stays that one-piece."
+}

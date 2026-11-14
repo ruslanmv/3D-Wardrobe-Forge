@@ -210,7 +210,8 @@ what the haul is for.
 | Configuration | Looks | Storage (13.7 MB each) |
 | ------------- | ----: | ---------------------: |
 | 105 garments × 8 characters × 1 colour | 840 | 11.5 GB |
-| 105 garments × 8 characters × 3 colours | **2,520** | **34.5 GB** |
+| 105 garments × 8 characters × 3 colours | 2,520 | 34.5 GB |
+| 117 garments × 8 characters × 3 colours (after AA) | **2,808** | **about 38 GB** |
 
 Plan the dataset for 40–45 GB.
 

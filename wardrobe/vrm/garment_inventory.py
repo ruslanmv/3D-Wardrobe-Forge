@@ -160,17 +160,26 @@ class StripPlan:
         return list(dict.fromkeys(garment.slot for garment in self.remove))
 
 
-def build_strip_plan(inventory: list[DetectedGarment], layers: list[tuple[str, str]]) -> StripPlan:
+def build_strip_plan(
+    inventory: list[DetectedGarment], layers: list[tuple[str, str]], *, replace_all: bool = False,
+) -> StripPlan:
     """Decide what comes off for a new outfit of ``layers`` — (shape kind, role) pairs.
 
     A garment comes off when the new outfit, taken together, covers every region
     it covered. A Forge foundation (underwear made earlier) comes off only when
     the new outfit's own foundations cover it: a dress over it is not a reason.
+
+    ``replace_all`` is the short robe. An open cardigan covers no slot, so it
+    would go on over the dress. That card takes off every recognised garment,
+    underwear included, and then the robe is what she wears.
     """
-    covered = frozenset().union(*(KIND_REGIONS.get(kind, frozenset()) for kind, _ in layers))
-    foundation = frozenset().union(
-        *(KIND_REGIONS.get(kind, frozenset()) for kind, role in layers if role in FOUNDATION_ROLES)
-    )
+    if replace_all:
+        covered = foundation = frozenset().union(*SLOT_REGIONS.values())
+    else:
+        covered = frozenset().union(*(KIND_REGIONS.get(kind, frozenset()) for kind, _ in layers))
+        foundation = frozenset().union(
+            *(KIND_REGIONS.get(kind, frozenset()) for kind, role in layers if role in FOUNDATION_ROLES)
+        )
     remove, retain = [], []
     for garment in inventory:
         scope = foundation if garment.role in FOUNDATION_ROLES else covered

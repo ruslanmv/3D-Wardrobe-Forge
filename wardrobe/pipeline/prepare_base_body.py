@@ -78,13 +78,31 @@ def reveals_hidden_skin(plan, kinds: list[tuple[str, str]] = ()) -> bool:
     ) or any(kind in BARING_KINDS for kind, _ in kinds)
 
 
-def layer_kinds(context: PipelineContext) -> list[tuple[str, str]]:
-    """(shape kind, role) for every garment of the planned outfit."""
+def layer_kinds_of(catalog, garments) -> list[tuple[str, str]]:
+    """(shape kind, role) for every garment of an outfit."""
     kinds = []
-    for plan in context.plan.garments:
-        template = context.catalog.get(plan.template_id) if plan.template_id else None
+    for plan in garments:
+        template = catalog.get(plan.template_id) if plan.template_id else None
         kinds.append((template.procedural_kind if template is not None else plan.category, plan.role))
     return kinds
+
+
+def layer_kinds(context: PipelineContext) -> list[tuple[str, str]]:
+    """(shape kind, role) for every garment of the planned outfit."""
+    return layer_kinds_of(context.catalog, context.plan.garments)
+
+
+def replaces_clothing(catalog, garments) -> bool:
+    """Whether the outfit takes off every recognised garment before it goes on.
+
+    Only a card that says so. The short robe is an open cardigan, and an open
+    cardigan otherwise layers over the dress she arrived in.
+    """
+    for plan in garments:
+        template = catalog.get(plan.template_id) if plan.template_id else None
+        if template is not None and template.replaces_clothing:
+            return True
+    return False
 
 
 def foundation_conflicts(
@@ -133,7 +151,9 @@ async def run(context: PipelineContext) -> None:
         return
 
     report.base_body["bodyPreparation"] = "passed"
-    plan = build_strip_plan(inventory, layers)
+    plan = build_strip_plan(
+        inventory, layers, replace_all=replaces_clothing(context.catalog, context.plan.garments),
+    )
     conflicts = foundation_conflicts(plan.retain, layers)
     if conflicts:
         _refuse_foundation_over(conflicts, layers)
@@ -222,4 +242,4 @@ async def run(context: PipelineContext) -> None:
     await context.emit(JobState.PLANNING, f"replacing {', '.join(slots)}", replaced=slots, materials=removed)
 
 
-__all__ = ["foundation_conflicts", "layer_kinds", "run"]
+__all__ = ["foundation_conflicts", "layer_kinds", "layer_kinds_of", "replaces_clothing", "run"]
