@@ -27,7 +27,8 @@
     "maxLengthScale": 1.3,
     "conform": 0.95,
     "conformBelowHips": true,
-    "neckline": "plunge"
+    "neckline": "plunge",
+    "shell": "one-piece"
   },
   "materials": {
     "supportsBaseColor": true,

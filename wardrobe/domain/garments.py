@@ -129,6 +129,10 @@ class FitPolicy(BaseModel):
     pattern: str = ""
     #: AA. None keeps opacity at 1 unless the prompt says sheer. A sheer card sets it.
     opacity: float | None = Field(default=None, ge=0.2, le=1.0)
+    #: VQ. "" | one-piece. A dress lofted as one shell, so the hip is not a join.
+    shell: str = ""
+    #: VQ. An open front that crosses itself and is tied. The cardigan stays a gap.
+    wrap: bool = False
 
 
 class MaterialPolicy(BaseModel):
@@ -221,6 +225,8 @@ class GarmentTemplate(BaseModel):
                 issues.append(f"{self.id}: unknown pattern {self.fit.pattern!r}")
         if self.fit.coverage not in COVERAGE_PRESETS:
             issues.append(f"{self.id}: unknown coverage {self.fit.coverage!r}")
+        if self.fit.shell and self.fit.shell not in {"one-piece"}:
+            issues.append(f"{self.id}: unknown shell {self.fit.shell!r}")
         # Sleeves are skinned to the bones the anchors name. Anchor a sleeved garment
         # to the chest alone and its sleeves bind to the torso: the avatar lowers her
         # arms and the sleeves stay out in a T. Jacket shapes always have long sleeves.

@@ -46,19 +46,19 @@ The shell is one that already builds:
 
 | Card | Shell | What the card adds |
 | --- | --- | --- |
-| Plunge mini, backless mini, sheer mini | `dress` | neckline, back, opacity 0.55 |
+| Plunge mini, backless mini, sheer mini | `dress` | neckline, back, opacity 0.55. Plunge and sheer are one shell (`fit.shell`); the hip step is eased so it does not read as a seam |
 | Thigh-slit gown | `dress`, floor length, hips not shins | `slit: high` |
 | Micro mini, vinyl mini, leather mini | `skirt` | coverage micro, or finish latex / satin |
 | Booty shorts | `shorts` | coverage micro. The word is "hot pants" |
 | Mesh top | `crop-top` | opacity 0.55 |
 | Bralette top | `bra`, category top | adult, because it is a bra |
-| Fishnet bodystocking | `catsuit` | pattern fishnet |
+| Fishnet bodystocking | `catsuit` | pattern fishnet. Its sleeves clear the arm; other fishnet is unchanged |
 | Babydoll | `slip-dress` | mini, opacity 0.55 |
-| Short robe | `open-cardigan` | mini, satin. "kimono" selects it |
+| Short robe | `open-cardigan` | mini, satin, wrapped and tied (`fit.wrap`). "kimono" selects it. The cardigan stays a gap |
 | Micro bikini | `bikini` | coverage micro, triangle, string |
 | High-leg swimsuit | `bodysuit-block` | french-cut leg |
 | Cut-out monokini | `bodysuit-block` | waist-side windows |
-| Stiletto pumps, platform heels | `boots` | shaft `pump` (ends at the ankle). The 40 mm platform is the stance |
+| Stiletto pumps, platform heels | `boots` | shaft `pump` (ends at the ankle). The 40 mm platform is the stance. A shin with no foot gets a last, so the needle is in the mesh |
 
 See-through cards and the bralette top set `requiresAdult`, so the public
 catalogue does not list them. Swimwear was already gated by its category.

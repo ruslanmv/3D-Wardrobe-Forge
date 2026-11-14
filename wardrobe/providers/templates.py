@@ -118,6 +118,11 @@ class TemplateGarmentProvider(GarmentProvider):
                 artifact.anchors = ["upperLegs", "lowerLegs", "feet"]
         # The skirt's cut, where the template sets it (wardrobe.geometry.procedural.SkirtShape).
         fit = template.fit
+        # VQ. Only when the card asks. Every other garment's metadata stays what it was.
+        if fit.shell:
+            artifact.metadata["shell"] = fit.shell
+        if fit.wrap:
+            artifact.metadata["wrap"] = True
         for key, value in (("hemFlareRatio", fit.hem_flare_ratio), ("flareStart", fit.flare_start),
                            ("flarePower", fit.flare_power), ("waistEaseMm", fit.waist_ease_mm),
                            ("hipEaseMm", fit.hip_ease_mm), ("pleatDepth", fit.pleat_depth),

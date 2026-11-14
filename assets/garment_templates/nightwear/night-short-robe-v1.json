@@ -29,7 +29,8 @@
     "allowWidthScale": true,
     "minLengthScale": 0.7,
     "maxLengthScale": 1.3,
-    "finish": "satin"
+    "finish": "satin",
+    "wrap": true
   },
   "materials": {
     "supportsBaseColor": true,
@@ -41,5 +42,5 @@
     "short robe",
     "kimono"
   ],
-  "description": "A short open satin robe. The word kimono selects it. An overlapping kimono collar is not built."
+  "description": "A short satin robe, wrapped and tied. The word kimono selects it. An overlapping kimono collar is not built."
 }

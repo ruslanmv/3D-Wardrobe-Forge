@@ -79,6 +79,10 @@ class TopStyle:
 #: A long knit cardigan worn open: loose, hanging from the bust and shoulder blades.
 CARDIGAN = TopStyle("open-cardigan", open_front=True, ease_m=0.014, yoke_ease_m=0.008, taper=0.06,
                     sleeve="long", sleeve_ease_m=0.026, open_bust=0.42, open_hem=0.55)
+#: VQ. A short robe. The cardigan's opening is a gap; a robe's fronts cross, so this one is
+#: cut closer to her centre and the wrap panel (robe_overlay) carries the overlap. Not a collar.
+ROBE = TopStyle("short-robe", open_front=True, ease_m=0.024, yoke_ease_m=0.012, taper=0.035,
+                sleeve="long", sleeve_ease_m=0.038, open_bust=0.55, open_hem=0.62)
 #: A fitted tee: close at the body, a crew neck, short set-in sleeves.
 FITTED_TEE = TopStyle("tee", open_front=False, ease_m=0.005, yoke_ease_m=0.003, taper=0.5,
                       sleeve="short", sleeve_ease_m=0.012, front_drop_m=0.035, relax_passes=30)
@@ -731,6 +735,123 @@ def build_set_in_top(params, style: TopStyle, *, hem_y: float) -> Mesh | None:
 
 def build_open_cardigan(params, *, hem_y: float) -> Mesh | None:
     return build_set_in_top(params, CARDIGAN, hem_y=hem_y)
+
+
+def robe_overlay(params, hem_y: float) -> list[Mesh]:
+    """The part a cardigan does not have: one front crossing the centre, and a tie at the waist."""
+    return [_wrap_flap(params, hem_y), _robe_belt(params)]
+
+
+def build_wrap_robe(params, *, hem_y: float) -> Mesh | None:
+    """An open robe whose fronts cross. None when she has not been measured, as the cardigan."""
+    from wardrobe.geometry.mesh import concatenate
+
+    body = build_set_in_top(params, ROBE, hem_y=hem_y)
+    if body is None:
+        return None
+    return concatenate([body, *robe_overlay(params, hem_y)])
+
+
+def _wrap_flap(params, hem_y: float) -> Mesh:
+    """One front crossing her centre, overlapping the left front and leaving the right open."""
+    f = float(params.forward)
+    half_w, half_d = params.chest_half
+    half = abs(float(half_w))
+    y0, y1 = float(hem_y), float(params.chest_y)
+    # Onto the left front, across the centre, and short of the right front so the opening shows.
+    x0, x1 = min(-0.06, -0.70 * half), max(0.055, 0.20 * half)
+    z = f * (abs(float(half_d)) + 0.028)
+    rows, cols = 8, 7
+    positions = []
+    uvs = []
+    for i in range(rows):
+        y = y0 + (y1 - y0) * i / (rows - 1)
+        for j in range(cols):
+            x = x0 + (x1 - x0) * j / (cols - 1)
+            # A soft bow toward the hem, so the panel is not a board.
+            bow = 0.012 * (1.0 - abs(2.0 * j / (cols - 1) - 1.0)) * ((y1 - y) / max(y1 - y0, 1e-6))
+            positions.append([x, y, z + f * bow])
+            uvs.append([x - x0, y1 - y])
+    faces = []
+    for i in range(rows - 1):
+        for j in range(cols - 1):
+            a = i * cols + j
+            b, c, d = a + 1, a + cols + 1, a + cols
+            faces += [(a, b, c), (a, c, d), (a, c, b), (a, d, c)]
+    mesh = Mesh(
+        positions=np.array(positions, dtype=np.float32),
+        indices=np.array(faces, dtype=np.uint32).reshape(-1),
+        uvs=np.array(uvs, dtype=np.float32),
+        metadata={"section": "robe-wrap"},
+    )
+    return mesh.compute_normals()
+
+
+def _robe_belt(params) -> Mesh:
+    """A sash and two ends, in front of the wrap. A ring at the waist disappears into the cloth."""
+    _, half_d = params.chest_half
+    f = float(params.forward)
+    y = float(params.waist_y)
+    # The wrap sits at chest depth + 28 mm. The sash is in front of that.
+    z = f * (abs(float(half_d)) + 0.048)
+    sash = _sash(y, z, f)
+    tails = []
+    for index, x in enumerate((-0.016, 0.016)):
+        tails.append(_ribbon(
+            np.array([[x, y - 0.01, z], [x * 1.8, y - 0.20, z + f * 0.012]], dtype=np.float64),
+            0.016, f"robe-tie-{index}",
+        ))
+    from wardrobe.geometry.mesh import concatenate
+
+    return concatenate([sash, *tails])
+
+
+def _sash(y: float, z: float, forward: float) -> Mesh:
+    """A short thick band across the knot, double-sided so the edge catches the light."""
+    x0, x1 = -0.055, 0.055
+    y0, y1 = y - 0.016, y + 0.016
+    z0, z1 = z, z + forward * 0.01
+    corners = [(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0),
+               (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)]
+    faces = [
+        (0, 1, 2), (0, 2, 3), (4, 6, 5), (4, 7, 6),
+        (0, 4, 5), (0, 5, 1), (3, 2, 6), (3, 6, 7),
+        (0, 3, 7), (0, 7, 4), (1, 5, 6), (1, 6, 2),
+    ]
+    mesh = Mesh(
+        positions=np.array(corners, dtype=np.float32),
+        indices=np.array(faces, dtype=np.uint32).reshape(-1),
+        uvs=np.zeros((8, 2), dtype=np.float32),
+        metadata={"section": "robe-belt"},
+    )
+    return mesh.compute_normals()
+
+
+def _ribbon(path: np.ndarray, width: float, name: str) -> Mesh:
+    """A flat double-sided strip of ``width`` along ``path``."""
+    path = np.asarray(path, dtype=np.float64)
+    direction = path[1] - path[0]
+    direction = direction / max(float(np.linalg.norm(direction)), 1e-9)
+    side = np.cross(direction, np.array([0.0, 0.0, 1.0]))
+    if float(np.linalg.norm(side)) < 1e-6:
+        side = np.cross(direction, np.array([1.0, 0.0, 0.0]))
+    side = side / np.linalg.norm(side) * (width / 2.0)
+    left, right = path + side, path - side
+    positions = np.vstack([left, right])
+    count = path.shape[0]
+    faces = []
+    for i in range(count - 1):
+        a, b, c, d = i, i + 1, count + i + 1, count + i
+        faces += [(a, b, c), (a, c, d), (a, c, b), (a, d, c)]
+    along = np.array([0.0, float(np.linalg.norm(path[1] - path[0]))])
+    uvs = np.vstack([np.stack([np.zeros(count), along], 1), np.stack([np.full(count, width), along], 1)])
+    mesh = Mesh(
+        positions=positions.astype(np.float32),
+        indices=np.array(faces, dtype=np.uint32).reshape(-1),
+        uvs=uvs.astype(np.float32),
+        metadata={"section": name},
+    )
+    return mesh.compute_normals()
 
 
 def build_fitted_tee(params, *, hem_y: float) -> Mesh | None:

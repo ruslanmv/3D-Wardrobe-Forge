@@ -209,6 +209,10 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # BS2. A close-fit block on her skin, against a collision body that already carries the
         # cloth's margin: the profile's close-fit clearance (≈1–1.5 mm) in place of the template's.
         clearance = body_surface.close_fit_clearance_m
+    # VQ. The bodystocking's sleeves read this. A copy of the plan, not a new exported field.
+    pattern = str(getattr(context.plan.material, "pattern", "") or "")
+    if pattern and pattern != "none":
+        metadata["pattern"] = pattern
     params = FitParameters(
         measurements=context.measurements,
         clearance_m=clearance,
