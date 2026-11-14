@@ -113,3 +113,20 @@ def test_private_prebuilt_remains_hidden_after_restart(client: TestClient, orche
     assert client.get("/v1/library/mira/prebuilt").json()["count"] == 0
     assert client.get(f"/v1/library/mira/looks/{look_id}/exposure").status_code == 404
     assert [look["type"] for look in client.get("/v1/wardrobes/mira").json()["looks"]] == ["source"]
+
+
+def test_missing_preview_in_legacy_local_manifest_is_suppressed(client: TestClient, orchestrator):  # noqa: F811
+    import asyncio
+
+    from wardrobe.domain.manifests import WardrobeLook, WardrobeManifest
+
+    broken = WardrobeManifest.empty("mira")
+    broken.upsert(WardrobeLook(
+        id="look_stale", name="Older look", vrmUrl="/v1/assets/looks/look_stale/look.vrm",
+        previewUrl="/v1/assets/looks/look_stale/preview.webp",
+    ))
+    asyncio.run(orchestrator.wardrobes.save(broken))
+    returned = client.get("/v1/wardrobes/mira")
+    assert returned.status_code == 200
+    legacy = next(item for item in returned.json()["looks"] if item["id"] == "look_stale")
+    assert legacy["previewUrl"] is None
