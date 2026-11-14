@@ -166,6 +166,9 @@ class GarmentTemplate(BaseModel):
     description: str | None = None
     #: Needs an adult declaration whatever its category or material.
     requires_adult: bool = Field(default=False, alias="requiresAdult")
+    #: Take off every recognised garment, then put this one on. An open cardigan
+    #: otherwise layers, which left the short robe over the dress she arrived in.
+    replaces_clothing: bool = Field(default=False, alias="replacesClothing")
     #: The category's answer when a prompt names the category and nothing else ("skirt",
     #: "navy skirt", the Studio's "Planner chooses"), and the tie-break when two templates
     #: score the same. Without it the planner fell back on the template id's reverse

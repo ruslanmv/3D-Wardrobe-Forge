@@ -54,7 +54,7 @@ The shell is one that already builds:
 | Thigh-slit gown | `dress`, floor length, hips not shins | `slit: high` |
 | Fishnet bodystocking | `catsuit` | pattern fishnet. Its sleeves clear the arm; other fishnet is unchanged |
 | Babydoll | `slip-dress` | mini, opacity 0.55 |
-| Short robe | `open-cardigan` | mini, satin. "kimono" selects it |
+| Short robe | `open-cardigan` | mini, satin. What she wears comes off first, then the robe. "kimono" selects it |
 | Micro bikini | `bikini` | coverage micro, triangle, string |
 | High-leg swimsuit | `bodysuit-block` | french-cut leg |
 | Cut-out monokini | `bodysuit-block` | waist-side windows |

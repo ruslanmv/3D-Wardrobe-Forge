@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from tests.vroid_support import dress_like_vroid
 from wardrobe.atelier.orders import ORDERS, built_orders
 from wardrobe.cloth.asset import compile_cloth_asset
 from wardrobe.domain.looks import OutfitRequest
@@ -14,7 +15,9 @@ from wardrobe.geometry.procedural import FitParameters, build_garment, front_ang
 from wardrobe.pipeline.outfit_dictionary import OUTFITS, catalogue
 from wardrobe.pipeline.plan_outfit import plan_outfit
 from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
+from wardrobe.pipeline.prepare_base_body import layer_kinds_of, replaces_clothing
 from wardrobe.vrm.build import CALIBRATION_BODIES, build_vrm
+from wardrobe.vrm.garment_inventory import DetectedGarment, build_strip_plan, garment_inventory
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.inspect import inspect_document
 from wardrobe.vrm.measure import measure_body
@@ -97,6 +100,44 @@ def test_kimono_is_the_short_robe_and_sandals_are_not_pumps(template_catalog):
     assert robe.template_id == "night-short-robe-v1"
     sandals = plan_outfit(OutfitRequest(prompt="black strappy sandals"), template_catalog)
     assert sandals.template_id != "shoes-stiletto-pumps-v1"
+
+
+def test_only_the_short_robe_takes_her_clothes_off_first(template_catalog):
+    flagged = [template.id for template in template_catalog if template.replaces_clothing]
+    assert flagged == ["night-short-robe-v1"]
+
+
+def test_the_short_robe_takes_off_every_garment_before_it_goes_on(template_catalog, vrm_bytes):
+    """An open cardigan layers. The robe does not: her dress, the rest, and her underwear come off."""
+    document = GltfDocument.from_bytes(
+        dress_like_vroid(vrm_bytes, slots=("Tops", "Bottoms", "Onepiece", "Shoes"))
+    )
+    worn = garment_inventory(document)
+    underwear = DetectedGarment(
+        slot="tops", material="Forge bra", mesh=0, primitive=9,
+        detector="forge-tag", confidence=1.0, role="foundation", regions=frozenset({"upper"}),
+    )
+    inventory = [*worn, underwear]
+
+    robe = plan_outfit(OutfitRequest(prompt="black short robe"), template_catalog)
+    assert replaces_clothing(template_catalog, robe.garments)
+    stripped = build_strip_plan(
+        inventory, layer_kinds_of(template_catalog, robe.garments), replace_all=True,
+    )
+    assert {garment.slot for garment in stripped.remove} >= {"tops", "bottoms", "onepiece", "shoes"}
+    assert underwear in stripped.remove and stripped.retain == []
+
+    cardigan = plan_outfit(OutfitRequest(prompt="grey long cardigan"), template_catalog)
+    assert cardigan.template_id == "jacket-long-cardigan-v1"
+    assert not replaces_clothing(template_catalog, cardigan.garments)
+    layered = build_strip_plan(inventory, layer_kinds_of(template_catalog, cardigan.garments))
+    assert layered.remove == []
+
+    dress = plan_outfit(OutfitRequest(prompt="black plunge neckline dress"), template_catalog)
+    replaced = build_strip_plan(inventory, layer_kinds_of(template_catalog, dress.garments))
+    assert {garment.slot for garment in replaced.remove} == {"tops", "bottoms", "onepiece"}
+    assert underwear in replaced.retain
+    assert any(garment.slot == "shoes" for garment in replaced.retain)
 
 
 def test_the_cut_out_monokini_is_open_at_the_waist(template_catalog):
