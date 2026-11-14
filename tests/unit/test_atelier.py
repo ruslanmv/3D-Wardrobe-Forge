@@ -183,10 +183,6 @@ def _section_points(mesh, needle: str) -> np.ndarray:
     return np.vstack(chosen)
 
 
-def _names(mesh) -> list[str]:
-    return [name for name, _first, _count in section_ranges(mesh)]
-
-
 def test_a_pump_on_a_shin_grows_a_needle_that_meets_the_floor():
     """VQ. The review mannequin has no foot. After the stance, the pump mesh has a needle."""
     from wardrobe.vrm import stance
@@ -221,6 +217,34 @@ def test_a_pump_on_a_shin_grows_a_needle_that_meets_the_floor():
     assert float(boot.positions[:, 2].max() - ankle_z) > 0.08
 
 
+def test_a_missing_foot_keeps_the_measured_leg(measurements):
+    """The synthetic foot is only the foot. A tall shaft still follows the calf that was measured."""
+    ankle = np.asarray(measurements.bone_positions["leftFoot"], dtype=np.float64)
+    knee = np.asarray(measurements.bone_positions["leftLowerLeg"], dtype=np.float64)
+
+    def leg(side: str) -> np.ndarray:
+        start = np.asarray(measurements.bone_positions[f"{side}Foot"], dtype=np.float64)
+        end = np.asarray(measurements.bone_positions[f"{side}LowerLeg"], dtype=np.float64)
+        cloud = []
+        for t in np.linspace(0.0, 1.0, 14):
+            centre = start + (end - start) * t
+            radius = 0.035 + 0.032 * t
+            for angle in np.linspace(0.0, 2.0 * np.pi, 14, endpoint=False):
+                cloud.append(centre + np.array([radius * np.cos(angle), 0.0, 0.015 * np.sin(angle)]))
+        return np.array(cloud)
+
+    parts = build_boots(FitParameters(
+        measurements=measurements,
+        metadata={"boot": {"style": "over-knee"},
+                  "bootBody": {"left": leg("left"), "right": leg("right")}},
+    ))
+    positions = np.vstack([part.positions for part in parts])
+    band = positions[np.abs(positions[:, 1] - float(knee[1])) < 0.025]
+    band = band[np.abs(band[:, 0] - float(ankle[0])) < 0.12]
+    half = float(band[:, 0].max() - band[:, 0].min()) / 2.0
+    assert half > 0.055
+
+
 def test_fishnet_sleeves_stand_off_the_arm(measurements):
     profile = {"stations": [0.0, 0.45, 1.0, 1.45, 1.9],
                "left": [0.04, 0.035, 0.032, 0.028, 0.024],
@@ -246,60 +270,6 @@ def test_fishnet_sleeves_stand_off_the_arm(measurements):
 
     plain, net = built("none"), built("fishnet")
     assert off_the_arm(net) > off_the_arm(plain) + 0.01
-
-
-def test_the_plunge_and_the_sheer_dress_are_one_shell(measurements):
-    plain = build_garment("dress", FitParameters(measurements=measurements), silhouette="sheath", hem="mini")
-    plunge = build_garment(
-        "dress",
-        FitParameters(measurements=measurements, metadata={"shell": "one-piece", "neckline": "plunge"}),
-        silhouette="sheath", hem="mini",
-    )
-    sheer = build_garment(
-        "dress", FitParameters(measurements=measurements, metadata={"shell": "one-piece"}),
-        silhouette="sheath", hem="mini",
-    )
-    assert "dress-bodice" in _names(plain) and "dress-skirt" in _names(plain)
-    assert "dress-bodice" not in _names(plunge) and "dress-skirt" not in _names(plunge)
-    assert _names(sheer) == ["dress-body"]
-    front = plunge.positions[plunge.positions[:, 2] > 0.0]
-    centre = front[np.abs(front[:, 0]) < 0.025]
-    side = front[np.abs(front[:, 0]) > 0.07]
-    assert float(centre[:, 1].max()) < float(side[:, 1].max()) - 0.03
-    # The neckline stays in the bodice. Pulling the skirt's front down leaves a fin at the hem.
-    assert abs(float(centre[:, 1].min()) - float(side[:, 1].min())) < 0.04
-
-    def half_width(mesh, y):
-        band = mesh.positions[np.abs(mesh.positions[:, 1] - y) < 0.015]
-        return float(np.percentile(np.abs(band[:, 0]), 90))
-
-    waist_y = float(measurements.bone_positions["spine"][1])
-    hip_y = float(measurements.bone_positions["leftUpperLeg"][1])
-    assert half_width(plunge, waist_y) < half_width(plunge, hip_y) - 0.008
-
-
-def test_the_visual_cards_keep_their_construction(template_catalog):
-    assert template_catalog.get("dress-plunge-mini-v1").fit.shell == "one-piece"
-    assert template_catalog.get("dress-sheer-mini-v1").fit.shell == "one-piece"
-    assert template_catalog.get("night-short-robe-v1").fit.wrap is True
-    assert template_catalog.get("jacket-long-cardigan-v1").fit.wrap is False
-
-
-def test_the_short_robe_crosses_the_front_and_the_cardigan_does_not(measurements):
-    worn = FitParameters(measurements=measurements, metadata={"wrap": True})
-    robe = build_garment("open-cardigan", worn, hem="mini")
-    cardigan = build_garment("open-cardigan", FitParameters(measurements=measurements), hem="mini")
-    robe_names = _names(robe)
-    cardigan_names = _names(cardigan)
-    assert any(name == "robe-wrap" for name in robe_names)
-    assert any(name.startswith("robe-belt") or name.startswith("robe-tie") for name in robe_names)
-    assert not any(name.startswith("robe-") for name in cardigan_names)
-    wrap = _section_points(robe, "robe-wrap")
-    assert float(wrap[:, 0].min()) < 0.0 < float(wrap[:, 0].max()) - 0.04
-    belt = _section_points(robe, "robe-belt")
-    # The sash sits in front of the wrap, or it vanishes into the same black cloth.
-    forward = float(worn.forward)
-    assert float(np.max(belt[:, 2] * forward)) > float(np.max(wrap[:, 2] * forward)) + 0.01
 
 
 def test_hot_pants_are_not_denim(template_catalog):

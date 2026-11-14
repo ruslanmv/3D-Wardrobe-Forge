@@ -986,10 +986,13 @@ def build_boots(params, *, name: str = "boot") -> list[Mesh]:
             points = _stand_in_foot(params, side)
         elif _is_a_stump(params, side, points):
             # VQ. A leg tube is not a foot. The pump was wrapped around the shin and the heel
-            # post was skipped (its seat was under 16 mm). A last along the posed bones gives
-            # the upper a toe and the post a seat. A real foot, which reaches past the ankle,
-            # is built as it was.
-            points = _last_along_bones(params, side)
+            # post was skipped (its seat was under 16 mm). The measured leg stays: replacing
+            # it with a fixed-radius shin lets a tall shaft close in on the calf. Only the
+            # missing foot is added. A real foot, which reaches past the ankle, is unchanged.
+            points = np.vstack([
+                np.asarray(points, dtype=np.float64),
+                _foot_last(params, side),
+            ])
         meshes += build_boot(params, side, np.asarray(points, dtype=np.float64), spec, name=name)
     # Each boot measured itself; the pair carries both (concatenate keeps one metadata dict).
     measure = {k: v for mesh in meshes for k, v in mesh.metadata.get("bootMeasure", {}).items()}
@@ -1012,11 +1015,12 @@ def _is_a_stump(params, side: str, points: np.ndarray) -> bool:
     return float(np.percentile(ahead, 95)) < _STUMP_SPAN_M
 
 
-def _last_along_bones(params, side: str) -> np.ndarray:
+def _foot_last(params, side: str) -> np.ndarray:
     """A pitched foot on the posed ankle and toes, for a rig whose mesh has no foot.
 
     The heel pad sits just under the ankle, so the heel post can stand in the gap the
-    stance opened. Points stay on or above the floor.
+    stance opened. The leg itself is not invented: the caller's cloud already has it.
+    Points stay on or above the floor.
     """
     bones = params.measurements.bone_positions
     ankle = np.asarray(bones[f"{side}Foot"], dtype=np.float64)
@@ -1048,12 +1052,6 @@ def _last_along_bones(params, side: str) -> np.ndarray:
                                  0.012 * math.cos(b),
                                  0.018 * math.sin(a) * math.sin(b)])
             )
-    knee = bones.get(f"{side}LowerLeg")
-    knee = np.asarray(knee, dtype=np.float64) if knee is not None else ankle + np.array([0.0, 0.36, 0.0])
-    for t in np.linspace(0.0, 0.18, 8):
-        centre = ankle + (knee - ankle) * t
-        for a in np.linspace(0.0, 2 * math.pi, 12, endpoint=False):
-            out.append(centre + np.array([0.040 * math.cos(a), 0.0, 0.040 * math.sin(a)]))
     cloud = np.array(out, dtype=np.float64)
     cloud[:, 1] = np.maximum(cloud[:, 1], 0.0)
     return cloud

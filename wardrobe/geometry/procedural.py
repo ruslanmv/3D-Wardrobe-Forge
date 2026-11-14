@@ -530,8 +530,7 @@ def _full_hip_y(params: FitParameters) -> float:
 
 def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: float = 1.0,
                 name: str = "skirt", shape: SkirtShape | None = None,
-                join: tuple[float, float] | None = None, band_m: float = 0.0, even: bool = False,
-                ease_hip: bool = False) -> Mesh:
+                join: tuple[float, float] | None = None, band_m: float = 0.0, even: bool = False) -> Mesh:
     """A skirt cut from her outline: fitted down to the flare's start, then flared to the hem.
 
     ``join`` is the (half-width, half-depth) of the bodice the skirt hangs from; the
@@ -596,10 +595,6 @@ def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: 
         depth = top_d + grown * (shape.front_flare + shape.back_flare) / 2.0
         shift = grown * (shape.front_flare - shape.back_flare) / 2.0 * params.forward
         rings.append(Ring(float(y), width, depth, hip_cx, hip_cz + shift))
-    if ease_hip:
-        # A one-piece dress follows her chest, then the skirt. Left as a step, toon shading
-        # draws it as a seam and the side view grows a fin. Spread it over a short band.
-        _ease_hip(rings, start)
     if join is not None:
         for ring in rings:
             t = float(np.clip((y_top - ring.y) / 0.04, 0.0, 1.0))
@@ -609,27 +604,6 @@ def build_skirt(params: FitParameters, *, y_top: float, y_bottom: float, flare: 
             ring.center_x *= t
             ring.center_z *= t
     return loft(rings, segments=params.segments, name=name, front=params.forward, even=even)
-
-
-def _ease_hip(rings: list[Ring], hip_y: float) -> None:
-    """Blend the rings across the flare start so a one-piece dress has no shelf there."""
-    hi, lo = hip_y + 0.07, hip_y - 0.05
-    above = [ring for ring in rings if ring.y >= hi]
-    below = [ring for ring in rings if ring.y <= lo]
-    if not above or not below:
-        return
-    top = min(above, key=lambda ring: ring.y)
-    bot = max(below, key=lambda ring: ring.y)
-    span = hi - lo
-    for ring in rings:
-        if not (lo < ring.y < hi):
-            continue
-        t = (ring.y - lo) / span
-        t = t * t * (3.0 - 2.0 * t)
-        ring.half_width = bot.half_width + (top.half_width - bot.half_width) * t
-        ring.half_depth = bot.half_depth + (top.half_depth - bot.half_depth) * t
-        ring.center_x = bot.center_x + (top.center_x - bot.center_x) * t
-        ring.center_z = bot.center_z + (top.center_z - bot.center_z) * t
 
 
 #: S4b. A mini's hem, as a fraction of her hip-to-ankle drop: upper to mid thigh. It was
@@ -1591,7 +1565,7 @@ def _wrap(angle: np.ndarray) -> np.ndarray:
 
 
 def trim(mesh: Mesh, params: FitParameters, *, y_bottom: float, y_top: float,
-         top=None, bottom=None, above_only: bool = False) -> Mesh:
+         top=None, bottom=None) -> Mesh:
     """Re-cut a band's edges as functions of the angle round her body.
 
     Every shell here is lofted between horizontal rings, so every edge used to
@@ -1604,7 +1578,6 @@ def trim(mesh: Mesh, params: FitParameters, *, y_bottom: float, y_top: float,
     Seam twins share an angle, so they stay together.
     """
     points = mesh.positions.astype(np.float64)
-    held = points[:, 1].copy()
     phi = front_angle(points, params)
     span = max(y_top - y_bottom, 1e-6)
     t = np.clip((points[:, 1] - y_bottom) / span, 0.0, 1.0)
@@ -1612,12 +1585,7 @@ def trim(mesh: Mesh, params: FitParameters, *, y_bottom: float, y_top: float,
     new_bottom = y_bottom + (bottom(phi) if bottom is not None else 0.0)
     new_top = np.maximum(new_top, y_bottom + MIN_SPAN_M)
     new_bottom = np.minimum(new_bottom, new_top - MIN_SPAN_M)
-    moved = new_bottom + t * (new_top - new_bottom)
-    # A one-piece dress is one loft from hem to neck. The neckline only moves the
-    # bodice; folding the skirt into that band pulls a fin out of the hem.
-    if above_only:
-        moved = np.where(held >= y_bottom, moved, held)
-    points[:, 1] = moved
+    points[:, 1] = new_bottom + t * (new_top - new_bottom)
     mesh.positions = points.astype(np.float32)
     return mesh.compute_normals()
 
@@ -2175,15 +2143,14 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
     raise ValueError(f"unsupported haul garment: {kind!r}")
 
 
-def _cut_bodice(mesh: Mesh, params: FitParameters, y_bottom: float, y_top: float, *,
-                above_only: bool = False) -> Mesh:
+def _cut_bodice(mesh: Mesh, params: FitParameters, y_bottom: float, y_top: float) -> Mesh:
     """Neckline and back cuts for the original dress and top shapes, as for the haul ones."""
     span = y_top - y_bottom
     neck = neckline_profile(str(params.metadata.get("neckline") or ""), params, span * 0.45)
     low = back_profile(str(params.metadata.get("back") or ""), span * 0.6)
     if neck is None and low is None:
         return mesh
-    return trim(mesh, params, y_bottom=y_bottom, y_top=y_top, above_only=above_only,
+    return trim(mesh, params, y_bottom=y_bottom, y_top=y_top,
                 top=lambda phi: (neck(phi) if neck else 0.0) + (low(phi) if low else 0.0))
 
 
@@ -2222,27 +2189,17 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
 
     if category == "dress":
         top_y = params.top_edge(0.6)
-        shape = skirt_shape(params, silhouette, flare)
-        # VQ. One loft, neckline to hem. A bodice ring meeting a skirt ring reads as a top
-        # sewn to a skirt, and two sheer layers at that join go nearly solid. Only a card
-        # that asks for it (fit.shell); every other dress stays the two pieces it was.
-        if params.metadata.get("shell") == "one-piece":
-            dress = build_skirt(params, y_top=top_y, y_bottom=hem_y, flare=flare, name="dress-body",
-                                shape=shape, ease_hip=True)
-            # The neckline moves only the bodice rows. trim on the whole loft, hem to neck,
-            # compresses the front of the skirt into a fin.
-            sections = [_cut_bodice(dress, params, params.hip_y, top_y, above_only=True)]
-        else:
-            skirt = build_skirt(params, y_top=params.hip_y + 1e-3, y_bottom=hem_y, flare=flare,
-                                name="dress-skirt", shape=shape, join=params.hip_half)
-            slit = slit_profile(str(params.metadata.get("slit") or ""), params, hem_y)
-            if slit is not None:
-                skirt = trim(skirt, params, y_bottom=hem_y, y_top=params.hip_y + 1e-3, bottom=slit)
-            sections = [
-                _cut_bodice(build_bodice(params, y_top=top_y, y_bottom=params.hip_y, name="dress-bodice"),
-                            params, params.hip_y, top_y),
-                skirt,
-            ]
+        skirt = build_skirt(params, y_top=params.hip_y + 1e-3, y_bottom=hem_y, flare=flare,
+                            name="dress-skirt", shape=skirt_shape(params, silhouette, flare),
+                            join=params.hip_half)
+        slit = slit_profile(str(params.metadata.get("slit") or ""), params, hem_y)
+        if slit is not None:
+            skirt = trim(skirt, params, y_bottom=hem_y, y_top=params.hip_y + 1e-3, bottom=slit)
+        sections = [
+            _cut_bodice(build_bodice(params, y_top=top_y, y_bottom=params.hip_y, name="dress-bodice"),
+                        params, params.hip_y, top_y),
+            skirt,
+        ]
         sections += build_sleeves(params, length=params.sleeve_length)
         straps = str(params.metadata.get("straps") or "")
         if straps in DRESS_STRAPS and not (params.sleeve_length and params.sleeve_length != "none"):
@@ -2276,28 +2233,14 @@ def build_garment(category: str, params: FitParameters, *, silhouette: str = "st
         # G6. Two open fronts and a back hanging from her bust and shoulder blades to the
         # template's length, a yoke over her shoulders, set-in sleeves. Unmeasured (a direct
         # call without the fitter's points), the jacket shell below.
-        # VQ. A robe is that cut with the fronts crossing and a tie. The cardigan is unchanged.
-        from wardrobe.geometry.panels import (  # it builds on this module
-            build_open_cardigan,
-            build_wrap_robe,
-            robe_overlay,
-        )
+        from wardrobe.geometry.panels import build_open_cardigan  # it builds on this module
 
-        if params.metadata.get("wrap"):
-            built = build_wrap_robe(params, hem_y=hem_y)
-            sections = [built] if built is not None else [
-                build_bodice(params, y_top=params.chest_y + (params.shoulder_y - params.chest_y) * 0.55,
-                             y_bottom=hem_y, looseness=1.16, name="robe"),
-                *build_sleeves(params, length="long", thickness=1.55),
-                *robe_overlay(params, hem_y),
-            ]
-        else:
-            built = build_open_cardigan(params, hem_y=hem_y)
-            sections = [built] if built is not None else [
-                build_bodice(params, y_top=params.chest_y + (params.shoulder_y - params.chest_y) * 0.68,
-                             y_bottom=hem_y, looseness=1.06 + (flare - 1.0) * 0.3, name="jacket"),
-                *build_sleeves(params, length="long", thickness=1.45),
-            ]
+        built = build_open_cardigan(params, hem_y=hem_y)
+        sections = [built] if built is not None else [
+            build_bodice(params, y_top=params.chest_y + (params.shoulder_y - params.chest_y) * 0.68,
+                         y_bottom=hem_y, looseness=1.06 + (flare - 1.0) * 0.3, name="jacket"),
+            *build_sleeves(params, length="long", thickness=1.45),
+        ]
 
     elif category == "tee":
         # G6. A fitted tee: a closed body to her hip, a crew neck, short set-in sleeves
