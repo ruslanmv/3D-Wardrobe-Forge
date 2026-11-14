@@ -7,13 +7,33 @@ viewer can list generated looks with no new parsing code.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import OrchestratorDep, SettingsDep
 from wardrobe.domain.manifests import WardrobeManifest
+from wardrobe.pipeline import prebuilt
 
 router = APIRouter(tags=["wardrobes"])
+
+
+
+async def _read_wardrobe(request: Request, orchestrator, avatar_id: str, admin):
+    """Merge durable prebuilt looks; known avatars have an empty wardrobe until dressed."""
+    manifest = await prebuilt.with_prebuilt(
+        orchestrator.store, avatar_id, await orchestrator.wardrobes.get(avatar_id),
+        include_private=admin is not None,
+    )
+    if manifest is None:
+        library = getattr(request.app.state, "library", None)
+        avatar = library.get(avatar_id) if library is not None else None
+        if avatar is not None and avatar.available:
+            manifest = WardrobeManifest.empty(
+                avatar_id, source_hash=avatar.sha256, source_name=avatar.name
+            )
+    if manifest is None:
+        raise HTTPException(status_code=404, detail="wardrobe not found")
+    return manifest if admin is not None else manifest.public()
 
 
 @router.get("/wardrobes", response_model=list[str])
@@ -22,27 +42,23 @@ async def list_wardrobes(orchestrator: OrchestratorDep) -> list[str]:
 
 
 @router.get("/wardrobes/{avatar_id}", response_model=WardrobeManifest)
-async def get_wardrobe(avatar_id: str, orchestrator: OrchestratorDep, admin: AdminDep) -> WardrobeManifest:
-    manifest = await orchestrator.wardrobes.get(avatar_id)
-    if manifest is None:
-        raise HTTPException(status_code=404, detail="wardrobe not found")
-    return manifest if admin is not None else manifest.public()
+async def get_wardrobe(
+    avatar_id: str, request: Request, orchestrator: OrchestratorDep, admin: AdminDep
+) -> WardrobeManifest:
+    return await _read_wardrobe(request, orchestrator, avatar_id, admin)
 
 
 @router.get("/wardrobes/{avatar_id}/avatars.json")
 async def get_wardrobe_as_avatar_manifest(
     avatar_id: str,
+    request: Request,
     orchestrator: OrchestratorDep,
     settings: SettingsDep,
     admin: AdminDep,
     base_path: str = Query(default="", alias="basePath"),
 ) -> dict:
     """The wardrobe as a 3D-Avatar-Chatbot avatar manifest."""
-    manifest = await orchestrator.wardrobes.get(avatar_id)
-    if manifest is None:
-        raise HTTPException(status_code=404, detail="wardrobe not found")
-    if admin is None:
-        manifest = manifest.public()
+    manifest = await _read_wardrobe(request, orchestrator, avatar_id, admin)
     return manifest.to_avatar_manifest(base_path or settings.public_base_url)
 
 

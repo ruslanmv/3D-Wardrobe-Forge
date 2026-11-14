@@ -30,6 +30,7 @@ import numpy as np
 
 from tests.conftest import job_request
 from tests.vroid_support import dress_like_vroid
+from wardrobe.cloth.fingerprint import strip_cloth_payload
 from wardrobe.domain.jobs import CreateJobRequest
 from wardrobe.policy.calibration import declared_adult
 from wardrobe.vrm.build import CALIBRATION_BODIES, build_vrm
@@ -61,7 +62,7 @@ FLOAT = 5126
 
 def fingerprint(vrm: bytes) -> dict:
     document = GltfDocument.from_bytes(vrm)
-    gltf = _without_look_ids(document.gltf)
+    gltf, cloth_end = strip_cloth_payload(_without_look_ids(document.gltf))
     accessors = gltf.get("accessors") or []
     floats, float_views = [], set()
     for index, accessor in enumerate(accessors):
@@ -77,11 +78,14 @@ def fingerprint(vrm: bytes) -> dict:
             float_views.add(int(accessor["bufferView"]))
     digest = hashlib.sha256(json.dumps(gltf, sort_keys=True).encode("utf-8"))
     binary = bytes(document.binary)
+    limit = len(binary) if cloth_end is None else cloth_end
     for index, view in enumerate(gltf.get("bufferViews") or []):
         if index in float_views:
             continue
         start = int(view.get("byteOffset", 0))
-        digest.update(binary[start:start + int(view["byteLength"])])
+        end = min(start + int(view["byteLength"]), limit)
+        if end > start:
+            digest.update(binary[start:end])
     return {"exact": digest.hexdigest(), "floats": floats}
 
 

@@ -1,0 +1,12 @@
+{
+  "name": "forge-develop-cloth-bake",
+  "private": true,
+  "description": "Experiment: settle garments offline with Rapier on the posed avatar and refit skin weights. Not part of the Forge pipeline.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "0.21.0",
+    "@pixiv/three-vrm": "2.1.0",
+    "three": "0.147.0"
+  }
+}

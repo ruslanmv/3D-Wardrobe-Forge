@@ -13,6 +13,7 @@ A tattoo-only job (BA6) carries its look's outfit over in place of plan … expo
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import shutil
@@ -48,6 +49,7 @@ from wardrobe.pipeline import (
     check_painted_skin,
     fit_garment,
     generate_garment,
+    prebuilt,
     prepare_base_body,
     prepare_body_surface,
     recolour_foundation,
@@ -98,6 +100,10 @@ class Orchestrator:
         )
         self.broker = broker or default_broker
         self._started = False
+        # One wardrobe update at a time: read, add the look, write. Two jobs for the same
+        # character finishing together otherwise both read the old list and the second write
+        # drops the first look (the prebuild runs two jobs at once for one character).
+        self._wardrobe_lock = asyncio.Lock()
 
     # ------------------------------------------------------------------
     async def start(self) -> None:
@@ -120,6 +126,16 @@ class Orchestrator:
 
     # ------------------------------------------------------------------
     async def submit(self, request: CreateJobRequest) -> JobRecord:
+        # PB1. A catalog look made before is answered now, completed, instead of queued again.
+        key = self._prebuilt_key(request)
+        if key is not None:
+            cached = await prebuilt.lookup(self.store, key)
+            if cached is not None:
+                record = prebuilt.answered(request, cached)
+                await self.jobs.save(record)
+                for event in record.events:
+                    await self.broker.publish(record.id, event)
+                return record
         record = JobRecord.queued(request)
         await self._mark_private(record)
         await self.jobs.save(record)
@@ -129,6 +145,15 @@ class Orchestrator:
 
     async def get(self, job_id: str) -> JobRecord | None:
         return await self.jobs.get(job_id)
+
+    def _prebuilt_key(self, request: CreateJobRequest) -> str | None:
+        if not self.settings.wardrobe_prebuilt:
+            return None
+        try:
+            return prebuilt.cache_key(request, self.catalog)
+        except Exception as exc:  # a key that cannot be made is a miss, never a refused job
+            logger.warning("prebuilt key unavailable: %s", exc)
+            return None
 
     async def list(self, *, limit: int = 50) -> list[JobRecord]:
         return await self.jobs.list(limit=limit)
@@ -203,6 +228,9 @@ class Orchestrator:
 
             await self._publish(context)
             await context.emit(JobState.COMPLETED, "look ready")
+            key = self._prebuilt_key(record.request)
+            if key is not None:
+                await prebuilt.remember(self.store, key, record)
 
         except WardrobeError as exc:
             logger.info("job %s rejected/failed: %s", record.id, exc.message)
@@ -384,6 +412,10 @@ class Orchestrator:
         return {**described, "name": name or "Look", "prompt": prompt}
 
     async def _update_wardrobe(self, context: PipelineContext, look: LookResult) -> None:
+        async with self._wardrobe_lock:
+            await self._update_wardrobe_locked(context, look)
+
+    async def _update_wardrobe_locked(self, context: PipelineContext, look: LookResult) -> None:
         record = context.record
         avatar = record.request.avatar
         avatar_id = self._wardrobe_id(context)
