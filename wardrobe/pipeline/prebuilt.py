@@ -44,8 +44,8 @@ import hashlib
 import json
 import logging
 from datetime import UTC, datetime
-from uuid import uuid4
 from urllib.parse import urlsplit
+from uuid import uuid4
 
 from wardrobe.domain.garments import TemplateCatalog
 from wardrobe.domain.jobs import CreateJobRequest, JobEvent, JobRecord, JobState

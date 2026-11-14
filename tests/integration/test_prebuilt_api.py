@@ -78,6 +78,7 @@ def test_prebuilt_exposure_and_layering_survive_restart(client: TestClient, orch
 def test_missing_prebuilt_preview_is_not_advertised(client: TestClient, orchestrator):  # noqa: F811
     import asyncio
     import json
+
     from wardrobe.pipeline import prebuilt
     from wardrobe.storage.database import InMemoryWardrobeRepository
 
@@ -99,6 +100,7 @@ def test_missing_prebuilt_preview_is_not_advertised(client: TestClient, orchestr
 def test_private_prebuilt_remains_hidden_after_restart(client: TestClient, orchestrator):  # noqa: F811
     import asyncio
     import json
+
     from wardrobe.pipeline import prebuilt
     from wardrobe.storage.database import InMemoryWardrobeRepository
 
