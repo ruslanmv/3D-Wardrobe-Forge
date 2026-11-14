@@ -272,7 +272,7 @@ def test_fishnet_sleeves_stand_off_the_arm(measurements):
     assert off_the_arm(net) > off_the_arm(plain) + 0.01
 
 
-def test_hot_pants_are_not_denim(template_catalog):
+def test_hot_pants_are_the_denim_shorts(template_catalog):
+    """The booty-short card is gone. 'Hot pants' is the denim cut-off again."""
     plan = plan_outfit_stack(OutfitRequest(prompt="white hot pants"), template_catalog)
-    assert plan.template_id == "shorts-booty-v1"
-    assert plan.style.coverage == "micro"
+    assert plan.template_id == "shorts-denim-v1"

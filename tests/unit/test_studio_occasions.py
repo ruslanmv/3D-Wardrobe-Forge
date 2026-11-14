@@ -72,7 +72,7 @@ console.log(JSON.stringify({
 @pytest.fixture(scope="module")
 def result(template_catalog):
     catalogue = od.catalogue(template_catalog)
-    # The catalogue is a file, not an argument: eighteen more cards put the JSON
+    # The catalogue is a file, not an argument: the atelier cards put the JSON
     # past the length the kernel allows on a command line.
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
         json.dump(catalogue, handle)

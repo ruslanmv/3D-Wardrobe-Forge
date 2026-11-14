@@ -14,13 +14,17 @@ called "missing clothes":
    of them. They are not on her because nobody has run the job. The book lists
    them as `queued`. No new geometry.
 2. **Cuts the catalogue did not list as cards.** A plunge, a backless mini, a
-   thigh slit, a micro mini, vinyl, hot pants, a mesh top, a bralette worn as
-   a top, a fishnet bodystocking, a babydoll, a short robe, a micro bikini, a
-   high-leg swimsuit, a cut-out monokini, pumps, platform heels. Most of these
-   were already *words*: "plunge" recut a neckline, "micro" scaled a bikini,
-   "vinyl" selected the latex finish, "bustier" selected the corset. None of
-   them was a card in ＋ Altro, so picking a colour on a card could not own
-   the cut.
+   thigh slit, a fishnet bodystocking, a babydoll, a short robe, a micro
+   bikini, a high-leg swimsuit, a cut-out monokini, pumps, platform heels.
+   Most of these were already *words*: "plunge" recut a neckline, "micro"
+   scaled a bikini, "vinyl" selected the latex finish, "bustier" selected the
+   corset. None of them was a card in ＋ Altro, so picking a colour on a card
+   could not own the cut.
+
+   Six cards were built and then removed. On Model Girl the micro mini, the
+   vinyl mini, the leather mini, the booty shorts, the mesh top and the
+   bralette top left her turquoise dress on. They are not in the catalogue.
+   "Hot pants" is the denim short again. "Bralette" is the lingerie bralette.
 
 A third list needs a shape that does not exist. Those rows are `shape`. They
 have no template. Asking for strappy sandals still returns the flats, and the
@@ -36,8 +40,8 @@ meant: no slit, matte, no pattern, opaque.
 
 Every new card is `optIn`. Its tags are phrases the old prompts do not
 contain, so "micro bikini" is still a coverage on the triangle set, "backless
-dress" is still the A-line, "hot pants" is the new short (denim kept
-"denim shorts"), and "stiletto boots" is still the ankle boot. "Stiletto
+dress" is still the A-line, "hot pants" is still the denim short, and
+"stiletto boots" is still the ankle boot. "Stiletto
 pumps" is the pump. "Sheer mini dress" stays the skater the gallery already
 built; the sheer card answers to "mesh mini dress", and a colour picked on
 the card keeps it sheer.
@@ -48,10 +52,6 @@ The shell is one that already builds:
 | --- | --- | --- |
 | Plunge mini, backless mini, sheer mini | `dress` | neckline, back, opacity 0.55 |
 | Thigh-slit gown | `dress`, floor length, hips not shins | `slit: high` |
-| Micro mini, vinyl mini, leather mini | `skirt` | coverage micro, or finish latex / satin |
-| Booty shorts | `shorts` | coverage micro. The word is "hot pants" |
-| Mesh top | `crop-top` | opacity 0.55 |
-| Bralette top | `bra`, category top | adult, because it is a bra |
 | Fishnet bodystocking | `catsuit` | pattern fishnet. Its sleeves clear the arm; other fishnet is unchanged |
 | Babydoll | `slip-dress` | mini, opacity 0.55 |
 | Short robe | `open-cardigan` | mini, satin. "kimono" selects it |
@@ -60,11 +60,11 @@ The shell is one that already builds:
 | Cut-out monokini | `bodysuit-block` | waist-side windows |
 | Stiletto pumps, platform heels | `boots` | shaft `pump` (ends at the ankle). The 40 mm platform is the stance. A shin with no foot gets a last, so the needle is in the mesh |
 
-See-through cards and the bralette top set `requiresAdult`, so the public
-catalogue does not list them. Swimwear was already gated by its category.
-A leather skirt, a slit gown and a pump are not see-through and are not
-gated: the same rule as the leather dress and the stiletto boot that already
-shipped. Vinyl is the latex finish, which is opaque.
+See-through cards set `requiresAdult`, so the public catalogue does not list
+them. Swimwear was already gated by its category. A slit gown and a pump are
+not see-through and are not gated: the same rule as the leather dress and the
+stiletto boot that already shipped. Vinyl is the latex finish, which is
+opaque.
 
 Each built row is also a dictionary look, in the group its rating requires.
 `atelier` is private. The general cards sit in Dressy, Cozy or Swim.

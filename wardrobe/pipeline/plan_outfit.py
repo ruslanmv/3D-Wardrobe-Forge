@@ -130,8 +130,6 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
         # P1: the boned top (top-corset-v1). The lingerie foundations keep their own words
         # (guêpière, waspie); a sheer or lace corset is still gated by its material.
         "corset", "corset top", "bustier", "bustier top",
-        # AA. Longer than "bralette" and "top", so a bralette worn as a top is a top.
-        "bralette top", "mesh top",
         # A sports bra is a top (top-sports-bra-v1), not underwear: the longer phrase wins over
         # "bra", which planned it as the full-cup bra.
         "sports bra", "sport bra", "athletic bra", "gym bra", "training bra", "workout bra",
