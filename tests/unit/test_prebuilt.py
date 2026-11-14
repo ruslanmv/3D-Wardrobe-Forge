@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import pytest
+
 from tests.conftest import job_request
 from wardrobe.domain.garments import TemplateCatalog
 from wardrobe.domain.jobs import CreateJobRequest, JobState
@@ -116,10 +120,12 @@ async def test_the_dataset_store_reads_through_once_and_writes_locally(tmp_path,
             return list(remote)
 
     def fake_download(repo_id, filename, repo_type, local_dir):
+        # Like huggingface_hub: the file lands under local_dir and its path is returned.
         calls["download"] += 1
-        target = tmp_path / "hf" / filename
+        target = Path(local_dir) / filename
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(remote[filename])
+        return str(target)
 
     monkeypatch.setitem(sys.modules, "huggingface_hub",
                         types.SimpleNamespace(HfApi=FakeApi, hf_hub_download=fake_download))
@@ -155,3 +161,54 @@ async def test_two_looks_finishing_together_are_both_in_her_wardrobe(orchestrato
     manifest = await orchestrator.wardrobes.get("test-avatar")
     ids = {look.id for look in manifest.looks}
     assert tee.look.id in ids and cami.look.id in ids
+
+
+def _fake_hub(monkeypatch, api, download):
+    import sys
+    import types
+
+    monkeypatch.setitem(sys.modules, "huggingface_hub", types.SimpleNamespace(HfApi=api, hf_hub_download=download))
+
+
+async def test_a_listing_blip_keeps_the_last_good_listing_and_retries_soon(tmp_path, monkeypatch, settings):
+    from wardrobe.storage.object_store import HfDatasetObjectStore
+
+    answers = [["looks/a/look.vrm"], RuntimeError("503 from the Hub"), ["looks/a/look.vrm", "looks/b/look.vrm"]]
+
+    class Api:
+        def list_repo_files(self, repo_id, repo_type):
+            answer = answers.pop(0)
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+    _fake_hub(monkeypatch, Api, lambda **k: None)
+    store = HfDatasetObjectStore(tmp_path / "hf", settings.model_copy(update={"wardrobe_hf_dataset": "me/looks"}))
+    assert await store.exists("looks/a/look.vrm")
+    store._listed_at -= store.LIST_TTL_S + 1  # the listing is stale: the next one fails
+    assert await store.exists("looks/a/look.vrm")  # the failure did not empty the dataset
+    assert store._ttl == store.RETRY_S
+    store._listed_at -= store.RETRY_S + 1  # half a minute later it asks again, and recovers
+    assert await store.exists("looks/b/look.vrm")
+    assert store._ttl == store.LIST_TTL_S
+
+
+async def test_an_interrupted_download_leaves_nothing_under_the_key(tmp_path, monkeypatch, settings):
+    from wardrobe.storage.object_store import HfDatasetObjectStore
+
+    class Api:
+        def list_repo_files(self, repo_id, repo_type):
+            return ["looks/a/look.vrm"]
+
+    def broken(repo_id, filename, repo_type, local_dir):
+        part = Path(local_dir) / filename
+        part.parent.mkdir(parents=True, exist_ok=True)
+        part.write_bytes(b"glTF half")  # the connection drops here
+        raise ConnectionError("reset by peer")
+
+    _fake_hub(monkeypatch, Api, broken)
+    store = HfDatasetObjectStore(tmp_path / "hf", settings.model_copy(update={"wardrobe_hf_dataset": "me/looks"}))
+    with pytest.raises(FileNotFoundError):
+        await store.get("looks/a/look.vrm")
+    assert not (tmp_path / "hf" / "looks" / "a" / "look.vrm").exists()
+    assert list((tmp_path / "hf" / ".hf-download").glob("*")) == []

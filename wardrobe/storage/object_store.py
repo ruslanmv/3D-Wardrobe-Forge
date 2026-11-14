@@ -193,6 +193,8 @@ class HfDatasetObjectStore(LocalObjectStore):
     """
 
     LIST_TTL_S = 600.0
+    #: After a failed listing, ask again this soon instead of waiting out LIST_TTL_S.
+    RETRY_S = 30.0
 
     def __init__(self, root: str | Path, settings: Settings) -> None:
         super().__init__(root, settings)
@@ -208,13 +210,14 @@ class HfDatasetObjectStore(LocalObjectStore):
         self.repo_id = settings.wardrobe_hf_dataset
         self._remote: set[str] | None = None
         self._listed_at = 0.0
+        self._ttl = self.LIST_TTL_S
         self._lock = asyncio.Lock()
 
     async def _remote_files(self) -> set[str]:
         import time
 
         async with self._lock:
-            if self._remote is None or time.monotonic() - self._listed_at > self.LIST_TTL_S:
+            if self._remote is None or time.monotonic() - self._listed_at > self._ttl:
                 from huggingface_hub import HfApi
 
                 def _list() -> set[str]:
@@ -222,9 +225,13 @@ class HfDatasetObjectStore(LocalObjectStore):
 
                 try:
                     self._remote = await asyncio.to_thread(_list)
+                    self._ttl = self.LIST_TTL_S
                 except Exception as exc:  # an unreachable dataset is an empty one, not a dead Forge
+                    # A blip must not hide the whole dataset for LIST_TTL_S: keep the last good
+                    # listing, and ask again after RETRY_S instead of ten minutes.
                     logger.warning("dataset %s could not be listed: %s", self.repo_id, exc)
-                    self._remote = self._remote or set()
+                    self._remote = self._remote if self._remote is not None else set()
+                    self._ttl = self.RETRY_S
                 self._listed_at = time.monotonic()
             return self._remote
 
@@ -233,8 +240,19 @@ class HfDatasetObjectStore(LocalObjectStore):
             return False
         from huggingface_hub import hf_hub_download
 
+        final = self._path(key)
+
         def _download() -> None:
-            hf_hub_download(self.repo_id, filename=key, repo_type="dataset", local_dir=str(self.root))
+            # Into a private folder first, then one rename onto the real path: a download cut off
+            # half way can never be served as a 12 MB look that ends early, and a crash leaves
+            # nothing under the key — the next request simply downloads again.
+            scratch = self.root / ".hf-download" / uuid.uuid4().hex
+            try:
+                got = hf_hub_download(self.repo_id, filename=key, repo_type="dataset", local_dir=str(scratch))
+                final.parent.mkdir(parents=True, exist_ok=True)
+                Path(got).replace(final)
+            finally:
+                shutil.rmtree(scratch, ignore_errors=True)
 
         try:
             await asyncio.to_thread(_download)
