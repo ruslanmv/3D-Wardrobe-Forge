@@ -107,7 +107,18 @@ templates at low priority.
 
 ## The CI job: `prebuild-wardrobe.yml`
 
-Runs on every push to `main` (after `ci.yml` passes) and on manual dispatch.
+**Manual only (PB7).** Run it from Actions → Prebuild wardrobe → Run workflow;
+no push starts it. Two inputs: `only` (a template filter) and `overwrite`
+(off by default).
+
+**What we made is kept.** Look files are never replaced or deleted: every build
+is a new `looks/<id>/` folder, and nothing in Forge or its workflows deletes
+from the dataset. Each character's list (`prebuilt/wardrobes/<id>.json`) is
+merged with the dataset's copy before upload: by default a look the dataset
+already lists keeps its entry and the run only adds missing looks; only a
+manual run with `overwrite` ticked replaces listed looks with its own builds. A
+list the dataset cannot be read for at upload time is held back, not uploaded
+empty.
 
 1. **Plan.** Load the catalog and library; compute every key; read the index;
    list only the missing keys. A push that changes one template rebuilds 8
@@ -119,8 +130,9 @@ Runs on every push to `main` (after `ci.yml` passes) and on manual dispatch.
 3. **Verify.** Re-read the index; every key in the plan is either present or
    listed as failed. Post the counts in the job summary (built, reused, failed,
    bytes uploaded).
-4. **Prune.** Looks whose key no longer appears in any plan are deleted after a
-   grace period (7 days), so a rollback can still hit the old ones.
+4. **No prune.** Planned once (delete looks no plan names after 7 days) and
+   deliberately not built: the dataset only grows. Removing looks is a manual
+   decision on the dataset itself.
 
 Secrets: the bucket credentials (`S3_*`). The Space reads the same bucket with
 read-only credentials. Nothing is committed.
@@ -147,7 +159,7 @@ Speed needs no app change. Two small changes fix the conversation itself:
 | ----- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | PB1   | Cache key, `PIPELINE_VERSION`, index read/write, hit/miss in `Orchestrator.submit` | A repeated identical request returns `completed` with `cache: "prebuilt"` in < 1 s |
 | PB2   | `tools/prebuild.py` (plan / build / verify) run locally against a bucket            | 840 looks built and indexed from a laptop; rerun builds 0                        |
-| PB3   | `prebuild-wardrobe.yml` matrix on push to `main`                                    | A template change rebuilds only its 8 looks                                     |
+| PB3   | `prebuild-wardrobe.yml` matrix, manual dispatch (PB7)                               | A template change rebuilds only its 8 looks                                     |
 | PB4   | Space on the private bucket with presigned URLs                                     | Public Space answers a prebuilt lingerie request on the first poll              |
 | PB5   | App: prebuilt looks in `InSceneWardrobe`; matching follow-up offer                  | "¿Quieres lencería?" → "Sí" puts lingerie on her with no wait                   |
 
@@ -209,7 +221,7 @@ Plan the dataset for 40–45 GB.
 | ----- | ----- | ----- |
 | PB1 cache key, hit/miss in `submit`, remember on completion | done, tested | `wardrobe/pipeline/prebuilt.py`, `Orchestrator.submit` |
 | PB2 per-character ready list, `GET /v1/library/{slug}/prebuilt`, `tools/prebuild.py` | done, tested | `apps/api/routes/studio.py`, `tools/prebuild.py` |
-| PB3 CI on push to `main` | written; needs `vars.WARDROBE_HF_DATASET` | `.github/workflows/prebuild-wardrobe.yml` |
+| PB3 CI, manual dispatch only; keeps existing looks unless `overwrite` (PB7) | written; needs `secrets.HF_TOKEN` | `.github/workflows/prebuild-wardrobe.yml` |
 | PB4 dataset store; her wardrobe lists prebuilt looks after a restart | done, tested; Space needs `WARDROBE_STORAGE_BACKEND=hf` and `WARDROBE_HF_DATASET` | `HfDatasetObjectStore`, `GET /v1/wardrobes/{id}` |
 | PB5 Private names every kind she has ready | done (3D-Avatar-Chatbot `ac44d59`) | `PrivateActionBridge.closetSummary` |
 | PB6 three colours per garment, intimate first | done, tested | `assets/catalog/palettes.json`, `wardrobe/pipeline/palettes.py` |

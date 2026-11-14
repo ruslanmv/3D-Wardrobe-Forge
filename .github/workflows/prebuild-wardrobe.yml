@@ -5,8 +5,8 @@ name: Prebuild wardrobe
 # look from storage on the first poll instead of waiting for a job.
 #
 # Only missing looks are built: Forge remembers each finished look under a key of everything
-# that shapes it (wardrobe.pipeline.prebuilt), so a push that edits one template rebuilds that
-# template's looks and a push that touches nothing they depend on builds nothing. Bump
+# that shapes it (wardrobe.pipeline.prebuilt), so a run after one template changed rebuilds that
+# template's looks and a run when nothing they depend on changed builds nothing. Bump
 # PIPELINE_VERSION in wardrobe/pipeline/prebuilt.py to rebuild everything.
 #
 # Storage: a private Hugging Face dataset (~11.5 GB for 105 garments x 8 characters; too big
@@ -17,22 +17,23 @@ name: Prebuild wardrobe
 # dataset) and the repository variable WARDROBE_HF_DATASET, e.g. ruslanmv/3d-wardrobe-garments.
 # Without either the workflow warns and builds nothing; it never writes looks into the repository.
 
+# PB7. Manual only. A push to main used to start a full build for every character; the
+# dataset now holds thousands of looks built over many hours, and a build that runs on its
+# own (beside another one, or while Hugging Face is answering badly) is how a character's
+# list gets rewritten. Run it from Actions -> Prebuild wardrobe -> Run workflow, on the branch
+# whose garments you want built.
 on:
-  push:
-    branches: [main]
-    paths:
-      - wardrobe/**
-      - assets/garment_templates/**
-      - assets/library/**
-      - apps/api/**
-      - tools/prebuild.py
-      - .github/workflows/prebuild-wardrobe.yml
   workflow_dispatch:
     inputs:
       only:
         description: Only templates whose name or id contains this text (empty = all)
         required: false
         default: ""
+      overwrite:
+        description: Replace looks the dataset already lists with this run's builds (off = keep every existing look, only add new ones)
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: prebuild-wardrobe
@@ -133,9 +134,52 @@ jobs:
           if (root / "prebuilt").exists():
               # Only looks and the prebuilt index: never the library sources or job records.
               # One commit per character; files the dataset already holds are not sent again.
-              HfApi().upload_folder(
-                  repo_id=os.environ["WARDROBE_HF_DATASET"], repo_type="dataset", folder_path=str(root),
-                  allow_patterns=["looks/**", "prebuilt/**"],
+              #
+              # PB7. Keep what was made. A character's list (prebuilt/wardrobes/<id>.json) is
+              # merged with the copy the dataset holds before it goes up, so an upload never
+              # drops a look: Forge reads that copy when it lists a new look, but a listing that
+              # failed at that moment started from an empty list, and uploading it would have
+              # hidden every look built before. By default the dataset's entry wins for a look
+              # it already lists (same garment, colour, foundation and privacy): a run only adds
+              # looks that are missing. Only a manual run with "overwrite" ticked replaces them
+              # with this run's builds. Look files are never replaced either way: every build is
+              # a new looks/<id>/ folder. A list the dataset cannot be asked for right now is not
+              # uploaded at all: the looks still go up, and the next run lists them.
+              import json
+              from huggingface_hub import hf_hub_download
+              from huggingface_hub.utils import EntryNotFoundError
+              api = HfApi()
+              repo = os.environ["WARDROBE_HF_DATASET"]
+              fields = ("templateId", "color", "foundationColor", "private")
+              overwrite = "${{ inputs.overwrite }}" == "true"
+              held_back = []
+              for path in sorted((root / "prebuilt" / "wardrobes").glob("*.json")):
+                  key = str(path.relative_to(root))
+                  try:
+                      remote = json.loads(Path(hf_hub_download(repo, key, repo_type="dataset")).read_text())
+                  except EntryNotFoundError:
+                      remote = {"looks": []}
+                  except Exception as exc:
+                      print(f"::warning::{key}: the dataset copy could not be read ({exc}); not uploading it")
+                      held_back.append(key)
+                      continue
+                  local = json.loads(path.read_text())
+                  ident = lambda item: tuple(item.get(f) for f in fields)
+                  if overwrite:
+                      mine = {ident(item) for item in local.get("looks", [])}
+                      kept = [old for old in remote.get("looks", []) if ident(old) not in mine]
+                      added = local.get("looks", [])
+                  else:
+                      kept = remote.get("looks", [])
+                      have = {ident(old) for old in kept}
+                      added = [item for item in local.get("looks", []) if ident(item) not in have]
+                  local["looks"] = kept + added
+                  path.write_text(json.dumps(local))
+                  print(f"{key}: {len(kept)} kept from the dataset, {len(added)} from this run"
+                        f" ({'overwrite' if overwrite else 'keep existing'})")
+              api.upload_folder(
+                  repo_id=repo, repo_type="dataset", folder_path=str(root),
+                  allow_patterns=["looks/**", "prebuilt/**"], ignore_patterns=held_back or None,
                   commit_message="prebuild: ${{ matrix.slug }} at ${{ github.sha }}",
               )
           EOF
