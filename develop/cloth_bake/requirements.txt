@@ -1,0 +1,3 @@
+# Experiment only. Forge's own requirements are unchanged.
+# Weight fitting, if a solver ever produces a better settled target (BSD-3-Clause; builds from the sdist in ~1 min).
+py-dem-bones==0.13.1

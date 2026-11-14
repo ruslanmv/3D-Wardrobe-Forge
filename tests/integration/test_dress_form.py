@@ -56,7 +56,10 @@ def test_the_form_is_not_declared_adult():
 async def _dress(orchestrator, store, form, prompt, **options):
     await store.put("sources/form.vrm", form)
     payload = job_request("sources/form.vrm", prompt, **options)
-    payload["avatar"] = {**{k: v for k, v in SAMPLE.avatar_input().items() if k not in ("storageKey", "sha256")},
+    # The form is its own body and is not declared adult, even now that AvatarSample_A is: its
+    # declaration (and her pinned file) are not copied over.
+    dropped = ("storageKey", "sha256", "depictsAdult")
+    payload["avatar"] = {**{k: v for k, v in SAMPLE.avatar_input().items() if k not in dropped},
                          "storageKey": "sources/form.vrm", "avatarId": "dress-form-a"}
     return await orchestrator.run_now(CreateJobRequest.model_validate(payload))
 

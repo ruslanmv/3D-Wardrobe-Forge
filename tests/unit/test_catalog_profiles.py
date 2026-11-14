@@ -94,7 +94,8 @@ def test_colours_are_fixed_per_template_and_real():
 
 
 def test_the_profile_refuses_an_avatar_that_is_not_declared_adult(tmp_path):
-    # avatar-sample-a is not in policy.json: the build stops before any job runs.
+    # The underwear profile is rendered on its own avatar only: another one stops the build
+    # before any job runs, whatever that avatar's declaration.
     with pytest.raises(SystemExit, match="profile is rendered on fem-vroid"):
         asyncio.run(render.build("avatar-sample-a", set(), tmp_path, None, "underwear"))
 
@@ -104,7 +105,15 @@ def test_the_operator_declared_the_profile_avatar_through_policy_json():
 
     library = AvatarLibrary.from_directory(ROOT / "assets/library")
     assert library.get(STYLE["profiles"]["underwear"]["avatar"]).depicts_adult is True
-    assert library.get("avatar-sample-a").depicts_adult is False
+    # Every avatar in this library is declared adult by the operator: the chatbot's public
+    # built-in avatars (2026-11-07) and the three VRoid Hub models (2026-11-13). The declaration
+    # is still per slug in policy.json, never a default: a new library avatar without an entry
+    # fails here until the operator decides about it.
+    assert library.avatars, "the library manifest lists no avatars"
+    for avatar in library.avatars:
+        assert avatar.depicts_adult is True, avatar.slug
+    for slug in ("vroid-avatar-sample-o", "vroid-model-girl", "vroid-rinna"):
+        assert library.get(slug).depicts_adult is True, slug
 
 
 def test_the_cache_key_changes_with_base_layering_colour_and_profile():

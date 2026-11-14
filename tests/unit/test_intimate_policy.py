@@ -59,7 +59,11 @@ def test_every_shipped_declaration_is_explicit_and_says_who_and_why():
 
     root = Path(__file__).resolve().parents[2] / "assets/library"
     policy = json.loads((root / "policy.json").read_text())
-    slugs = {item["slug"] for item in json.loads((root / "models.json").read_text())["items"]}
+    # The library is the root manifest plus one level of collection manifests (vroid/,
+    # imports/) — the same set AvatarLibrary.from_directory merges — so a declaration for a
+    # VRoid Hub avatar is a declaration for a library avatar.
+    manifests = [root / "models.json", *sorted(root.glob("*/models.json"))]
+    slugs = {item["slug"] for path in manifests for item in json.loads(path.read_text())["items"]}
     assert set(policy["avatars"]) <= slugs
     for declaration in policy["avatars"].values():
         assert declaration["depictsAdult"] is True
