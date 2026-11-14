@@ -45,6 +45,7 @@ import json
 import logging
 from datetime import UTC, datetime
 from uuid import uuid4
+from urllib.parse import urlsplit
 
 from wardrobe.domain.garments import TemplateCatalog
 from wardrobe.domain.jobs import CreateJobRequest, JobEvent, JobRecord, JobState
@@ -113,8 +114,25 @@ async def ready_looks(store: ObjectStore, wardrobe_id: str, *, include_private: 
     except Exception as exc:
         logger.warning("prebuilt list for %s unreadable: %s", wardrobe_id, exc)
         return []
-    looks = [item for item in listed.get("looks", []) if isinstance(item, dict)]
-    return [item for item in looks if include_private or not item.get("private")]
+    looks = [item.copy() for item in listed.get("looks", []) if isinstance(item, dict)]
+    visible = [item for item in looks if include_private or not item.get("private")]
+    # Index entries can outlive a preview that CI never uploaded. Avoid advertising
+    # known-missing generated previews, without altering legitimate external URLs.
+    for item in visible:
+        preview = item.get("previewUrl")
+        look_id = item.get("lookId")
+        if not isinstance(preview, str) or not isinstance(look_id, str):
+            continue
+        expected = f"looks/{look_id}/preview.webp"
+        if urlsplit(preview).path.endswith(f"/v1/assets/{expected}"):
+            try:
+                present = await store.exists(expected)
+            except Exception as exc:
+                logger.warning("could not check preview for %s: %s", look_id, exc)
+                continue
+            if not present:
+                item["previewUrl"] = None
+    return visible
 
 
 async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, include_private: bool):

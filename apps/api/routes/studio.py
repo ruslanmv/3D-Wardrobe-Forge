@@ -426,7 +426,10 @@ async def _base_look_input(
     A private look is found only by an admin session, and what is built on it is
     private too (the second value).
     """
-    manifest = await orchestrator.wardrobes.get(slug)
+    manifest = await prebuilt.with_prebuilt(
+        orchestrator.store, slug, await orchestrator.wardrobes.get(slug),
+        include_private=admin is not None,
+    )
     look = manifest.get(look_id) if manifest is not None else None
     if look is not None and look.private and admin is None:
         look = None
@@ -451,7 +454,10 @@ async def look_exposure(
     """
     if _library(request).get(slug) is None:
         raise HTTPException(status_code=404, detail="avatar not in the library")
-    manifest = await orchestrator.wardrobes.get(slug)
+    manifest = await prebuilt.with_prebuilt(
+        orchestrator.store, slug, await orchestrator.wardrobes.get(slug),
+        include_private=admin is not None,
+    )
     look = manifest.get(look_id) if manifest is not None else None
     if look is not None and look.private and admin is None:
         look = None
