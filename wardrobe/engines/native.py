@@ -268,6 +268,14 @@ class NativeEngine(FittingEngine):
                 band = waistband_mask(layer.mesh)
                 extra = [(band, shade_material(garment_material_name(f"{layer.plan.name} Waistband", kind),
                                                material, WAISTBAND_SHADE))] if band.any() else None
+                from wardrobe.geometry.dark_fashion import hardware_triangles
+
+                metal = hardware_triangles(layer.mesh)
+                if metal.any():
+                    from wardrobe.hosiery.materials import hardware_material
+
+                    extra = [*(extra or []), (metal, hardware_material(
+                        garment_material_name(f"{layer.plan.name} Hardware", kind), "silver"))]
                 if extra and fabric.toony is not None:
                     extra[0][1].toony = fabric.toony
                 gusset = (_gusset_triangles(layer.mesh) if kind in LINGERIE_KINDS and material.exposes_body

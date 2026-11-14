@@ -182,6 +182,9 @@ class GarmentTemplate(BaseModel):
     #: DC2. A boot's construction (wardrobe.geometry.boots): style, heel and sole heights,
     #: toe, shaft, closure. Its heel and sole decide how she stands (wardrobe.vrm.stance).
     boot: dict | None = None
+    #: Dark-fashion construction (wardrobe.geometry.dark_fashion): a high collar, front
+    #: buckles, boning channels. Absent, the shape is built exactly as before.
+    construction: dict | None = None
 
     @property
     def is_procedural(self) -> bool:

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "top-structured-leather-corset-v1",
+  "name": "Structured Leather Corset",
+  "category": "top",
+  "mesh": "procedural:corset",
+  "coverage": [
+    "chest",
+    "waist"
+  ],
+  "anchors": [
+    "chest"
+  ],
+  "silhouette": "slim",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 3.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 0.95,
+    "straps": "shoulder",
+    "neckline": "sweetheart",
+    "finish": "leather"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "optIn": true,
+  "construction": {
+    "channels": 8,
+    "busk": true,
+    "defaultColor": "black"
+  },
+  "tags": [
+    "structured leather corset"
+  ],
+  "description": "Shaped leather corset with vertical boning channels, a centre-front busk and finished edges."
+}

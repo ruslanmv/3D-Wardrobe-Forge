@@ -53,6 +53,9 @@ FINISHES: dict[str, Finish] = {
                     matcap_strength=0.6, shade=0.58),
     "latex": Finish("latex", roughness=0.06, metallic=0.0, rim=0.42, rim_power=5.0, matcap="latex",
                     matcap_strength=0.9, shade=0.45),
+    # A broad, dim highlight and a deeper shade than satin, without latex's hard spots.
+    "leather": Finish("leather", roughness=0.48, metallic=0.02, rim=0.16, rim_power=2.2,
+                      matcap="leather", matcap_strength=0.38, shade=0.5),
     "metallic": Finish("metallic", roughness=0.2, metallic=0.85, rim=0.35, rim_power=3.0, matcap="metal",
                        matcap_strength=0.75, tinted=True, shade=0.42),
     "sequin": Finish("sequin", roughness=0.2, metallic=0.6, rim=0.3, rim_power=3.0, matcap="sparkle",

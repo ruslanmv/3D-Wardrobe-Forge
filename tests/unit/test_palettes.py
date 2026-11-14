@@ -29,7 +29,15 @@ def test_the_full_collection_counts_every_garment_in_three_colours(template_cata
     from wardrobe.atelier.orders import CATALOG_BEFORE_ATELIER, built_orders
 
     per_character = sum(len(palettes.colours_for(t)) for t in template_catalog.all())
-    assert len(template_catalog) == CATALOG_BEFORE_ATELIER + len(built_orders())
+    # The four dark-fashion garments are opt-in templates, not atelier cards.
+    dark_fashion = {
+        "jumpsuit-high-neck-latex-v1",
+        "under-leather-garter-v1",
+        "dress-buckle-leather-mini-v1",
+        "top-structured-leather-corset-v1",
+    }
+    assert dark_fashion <= {t.id for t in template_catalog.all()}
+    assert len(template_catalog) == CATALOG_BEFORE_ATELIER + len(built_orders()) + len(dark_fashion)
     assert per_character == len(template_catalog) * palettes.MAX_COLOURS
 
 
