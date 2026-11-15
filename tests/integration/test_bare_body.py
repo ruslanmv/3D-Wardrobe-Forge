@@ -1,10 +1,11 @@
 """Bare is private, gated, authored-only, and never calls the garment/proxy builders."""
+import hashlib
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-from tests.conftest import job_request
+from tests.conftest import clear_design_for_test, job_request
 from wardrobe.domain.jobs import CreateJobRequest, JobState
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.garment_inventory import garment_inventory
@@ -36,6 +37,12 @@ async def test_gate_order_and_no_generation(orchestrator, store, vrm_bytes):
     payload["avatar"]["depictsAdult"] = False
     result = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
     assert "depictsAdult" in result.error
+    # BE1. Declared adult, switch on, author allows it: still refused without a design clearance
+    # for these exact bytes. A declaration alone never opens bare.
+    payload["avatar"]["depictsAdult"] = True
+    result = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
+    assert result.reason == "body_surface_not_permitted"
+    assert "synthetic-reference" in result.error and result.look is None
 
 
 @pytest.mark.parametrize("change", [{"baseBody": "preserve"}, {"ensureFoundation": True},
@@ -53,6 +60,8 @@ async def test_incomplete_o_refused_without_proxy(orchestrator, store):
         pytest.skip("library AvatarSample_O unavailable")
     await store.put("sources/o.vrm", path.read_bytes())
     orchestrator.settings.wardrobe_adult_body_surface = True
+    # Cleared for the test only, so the refusal measured is the body's, not the missing review.
+    clear_design_for_test(orchestrator.settings, path.read_bytes())
     with patch("wardrobe.vrm.body_completion.complete_body", side_effect=AssertionError("no proxy")), \
          patch("wardrobe.pipeline.generate_garment.generate", side_effect=AssertionError("no garment")):
         result = await orchestrator.run_now(CreateJobRequest.model_validate(request("sources/o.vrm")))
@@ -67,6 +76,7 @@ async def test_complete_bare_tag_and_no_garments(orchestrator, store, vrm_bytes)
     doc.gltf["extensions"]["VRMC_vrm"]["meta"]["allowExcessivelySexualUsage"] = True
     await store.put("sources/a.vrm", doc.to_bytes())
     orchestrator.settings.wardrobe_adult_body_surface = True
+    clear_design_for_test(orchestrator.settings, doc.to_bytes())
     with patch("wardrobe.pipeline.bare_body.check_body", return_value=BodyIntegrity({"upper": RegionCheck(True, 1)})), \
          patch("wardrobe.pipeline.generate_garment.generate", side_effect=AssertionError("no garment")):
         result = await orchestrator.run_now(CreateJobRequest.model_validate(request("sources/a.vrm")))
@@ -84,6 +94,7 @@ async def test_real_authored_body_and_painted_skin(orchestrator, store):
         pytest.skip("library VRoid Female unavailable")
     await store.put("sources/fem.vrm", path.read_bytes())
     orchestrator.settings.wardrobe_adult_body_surface = True
+    clear_design_for_test(orchestrator.settings, path.read_bytes())
     from wardrobe.library import AvatarLibrary
     payload = request("sources/fem.vrm")
     entry = next(a for a in AvatarLibrary.from_directory(path.parent).avatars if a.slug == "fem-vroid")
@@ -146,8 +157,10 @@ async def test_authored_anatomy_cannot_be_stripped_as_garment(settings):
     extras["wardrobeForge"] = {"kind": "garment", "slot": "tops"}
     original = doc.to_bytes()
     settings.wardrobe_adult_body_surface = True
+    clear_design_for_test(settings, path.read_bytes())
     info = inspect_document(doc)
     context = SimpleNamespace(document=doc, info=info, measurements=measure_body(doc, info),
+                              source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                               settings=settings, record=JobRecord.queued(
                                   CreateJobRequest.model_validate(request("sources/a.vrm"))))
     with pytest.raises(BodyIncompleteForBare, match="anatomy was classified as clothing"):
@@ -189,8 +202,10 @@ async def test_anatomy_labelled_material_detected_as_clothing_is_kept(settings):
     position = doc.meshes[target.mesh]["primitives"][target.primitive]["attributes"]["POSITION"]
     before = hashlib.sha256(doc.read_accessor(position).tobytes()).hexdigest()
     settings.wardrobe_adult_body_surface = True
+    clear_design_for_test(settings, path.read_bytes())
     info = inspect_document(doc)
     context = SimpleNamespace(document=doc, info=info, measurements=measure_body(doc, info),
+                              source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                               settings=settings,
                               fit_report=SimpleNamespace(base_body=None),
                               record=JobRecord.queued(CreateJobRequest.model_validate(request("sources/a.vrm"))))
@@ -256,8 +271,10 @@ async def test_bare_is_barefoot_and_other_modes_still_stop_at_the_ankles(setting
     assert _painted_feet_share(other) > 0.5
     doc = GltfDocument.from_bytes(path.read_bytes())
     settings.wardrobe_adult_body_surface = True
+    clear_design_for_test(settings, path.read_bytes())
     info = inspect_document(doc)
     context = SimpleNamespace(document=doc, info=info, measurements=measure_body(doc, info), settings=settings,
+                              source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                               fit_report=SimpleNamespace(base_body=None),
                               record=JobRecord.queued(CreateJobRequest.model_validate(request("sources/a.vrm"))))
     await prepare(context)
@@ -288,6 +305,7 @@ async def test_a_built_bare_look_is_registered_identified_and_never_served_from_
     doc.gltf["extensions"]["VRMC_vrm"]["meta"]["allowExcessivelySexualUsage"] = True
     await store.put("sources/a.vrm", doc.to_bytes())
     orchestrator.settings.wardrobe_adult_body_surface = True
+    clear_design_for_test(orchestrator.settings, doc.to_bytes())
     payload = request("sources/a.vrm")
     with patch("wardrobe.pipeline.bare_body.check_body", return_value=BodyIntegrity({"upper": RegionCheck(True, 1)})):
         built = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
@@ -328,3 +346,57 @@ def test_an_older_look_without_the_new_fields_still_loads():
 
     old = WardrobeLook.model_validate({"id": "look_x", "name": "Tee", "vrmUrl": "/v1/assets/looks/look_x/look.vrm"})
     assert old.template_id is None and old.wardrobe_state is None and old.output_sha256 is None
+
+
+def test_body_completion_is_only_for_bare():
+    payload = job_request("sources/a.vrm", "x", template_id="body-bare-v1", baseBody="underwear-base",
+                          bodyCompletion="proxy")
+    with pytest.raises(ValueError, match="bodyCompletion"):
+        CreateJobRequest.model_validate(payload)
+
+
+async def test_o_reconstruction_is_opt_in_switched_tagged_private_and_never_registered(orchestrator, store):
+    """BR1 (M6). AvatarSample_O's deleted mid-chest, as a separate opt-in.
+
+    Authored-only bare stays exactly as it was (refused: incomplete). Asking for completion needs
+    the operator's own switch; with it, only the missing bands are filled by BC1's featureless
+    patch on a mesh of its own, her authored accessors are unchanged, the file says it is
+    reconstructed, and the look is never registered in any prebuilt list — so no app can serve
+    an unreviewed reconstructed body.
+    """
+    from wardrobe.pipeline import prebuilt
+
+    path = Path(__file__).parents[2] / "assets/library/vroid/vroid-avatar-sample-o.vrm"
+    if not path.exists():
+        pytest.skip("library AvatarSample_O unavailable")
+    source = path.read_bytes()
+    await store.put("sources/o.vrm", source)
+    orchestrator.settings.wardrobe_adult_body_surface = True
+    clear_design_for_test(orchestrator.settings, source)
+
+    authored = await orchestrator.run_now(CreateJobRequest.model_validate(request("sources/o.vrm")))
+    assert authored.reason == "body-incomplete-for-bare"
+
+    asked = request("sources/o.vrm", bodyCompletion="proxy")
+    refused = await orchestrator.run_now(CreateJobRequest.model_validate(asked))
+    assert refused.reason == "body_surface_not_permitted"
+    assert "WARDROBE_BARE_BODY_COMPLETION" in refused.error
+
+    orchestrator.settings.wardrobe_bare_body_completion = True
+    with patch("wardrobe.pipeline.generate_garment.generate", side_effect=AssertionError("no garment")):
+        built = await orchestrator.run_now(CreateJobRequest.model_validate(asked))
+    assert built.state is JobState.COMPLETED, built.error
+    report = built.fit_report.base_body
+    completion = report["bodyCompletion"]
+    assert completion["applied"] and completion["regions"] == ["upper"]
+    assert completion["patch"] is not None
+    assert report["integrity"]["complete"] is True
+    output = GltfDocument.from_bytes(await store.get(f"looks/{built.look.id}/look.vrm"))
+    tag = output.gltf["extras"]["wardrobeForge"]
+    assert tag["bare"] is True and tag["reconstructed"] is True and tag["reconstructedRegions"] == ["upper"]
+    proxies = [m for m in output.meshes if ((m.get("extras") or {}).get("wardrobeForge") or {}).get("kind")
+               == "bodyProxy" or "bodyProxy" in ((m.get("extras") or {}).get("wardrobeForge") or {})]
+    assert len(proxies) == 1, "the patch is one mesh of its own"
+    assert built.request.options.private
+    assert await prebuilt.ready_looks(store, "test-avatar", include_private=True) == []
+    assert await prebuilt.ready_looks(store, "vroid-avatar-sample-o", include_private=True) == []

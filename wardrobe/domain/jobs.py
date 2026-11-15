@@ -112,6 +112,14 @@ class JobOptions(BaseModel):
     base_body: Literal["preserve", "replace-outer", "underwear-base", "bare"] | None = Field(
         default=None, alias="baseBody"
     )
+    #: BR1. Opt-in reconstruction for a bare job whose authored body is incomplete (AvatarSample_O's
+    #: deleted mid-chest): "proxy" fills only the missing bands with BC1's featureless skin patch,
+    #: shaped from her own garment. Unset — the default — keeps bare authored-only: an incomplete
+    #: body is refused exactly as before. None rather than "none" by default: the prebuilt cache
+    #: key hashes every set option, and a new default would change every stored key. Needs the
+    #: operator's separate switch (WARDROBE_BARE_BODY_COMPLETION); its output is private and never
+    #: registered for the app.
+    body_completion: Literal["proxy"] | None = Field(default=None, alias="bodyCompletion")
     #: MG3. Make sure a foundation is on her under the new clothes, adding only what is missing:
     #: a Forge foundation she already wears is kept (only a new foundation replaces one), and a
     #: half the outfit brings itself (a bikini, a lingerie set) is not doubled. It is also what
@@ -143,6 +151,12 @@ class JobOptions(BaseModel):
         if self.base_body is not None:
             return self.base_body
         return "replace-outer" if self.replace_garments else "preserve"
+
+    @model_validator(mode="after")
+    def _completion_only_for_bare(self) -> JobOptions:
+        if self.body_completion is not None and self.base_body != "bare":
+            raise ValueError("bodyCompletion applies only to baseBody: bare")
+        return self
 
     @model_validator(mode="after")
     def _foundation_color_is_a_colour(self) -> JobOptions:

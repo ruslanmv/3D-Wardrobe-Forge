@@ -10,6 +10,7 @@ counts changed, material alpha modes changed and materials changed. Reads only.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -18,7 +19,8 @@ from types import SimpleNamespace
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from tests.conftest import job_request  # noqa: E402
+from tests.conftest import clear_design_for_test, job_request  # noqa: E402
+from wardrobe.body_surface.eligibility import assess  # noqa: E402
 from wardrobe.config import Settings  # noqa: E402
 from wardrobe.domain.jobs import CreateJobRequest, JobRecord  # noqa: E402
 from wardrobe.pipeline.bare_body import prepare  # noqa: E402
@@ -51,23 +53,35 @@ def morph_counts(doc: GltfDocument, meshes: set[int]) -> dict:
 async def audit(path: Path) -> dict:
     source, doc = GltfDocument.from_path(path), GltfDocument.from_path(path)
     settings = Settings()
+    sha = hashlib.sha256(path.read_bytes()).hexdigest()
+    # BE1. Eligibility is read from the real registries and reported as it stands. The geometry
+    # and texture checks below are concern 4 only (technical completeness): they run against an
+    # audit-only clearance in a temporary copy of the registry, write nothing, store nothing and
+    # render nothing, so they answer "would the body pass" without anyone's review being implied.
+    real = assess(terms=inspect_document(source).license, operator_enabled=True, depicts_adult=True,
+                  private=True, source_sha256=sha, review_root=settings.body_surface_root_path,
+                  reference_root=settings.wardrobe_calibration_root)
+    clearance = real.checks["design-clearance"]["clearance"]
+    clear_design_for_test(settings, path.read_bytes())
     settings.wardrobe_adult_body_surface = True
     payload = job_request("sources/x.vrm", "Bare", template_id="body-bare-v1", baseBody="bare", private=True)
     payload["avatar"]["depictsAdult"] = True
     info = inspect_document(doc)
     context = SimpleNamespace(document=doc, info=info, measurements=measure_body(doc, info), settings=settings,
-                              fit_report=SimpleNamespace(base_body=None),
+                              source_sha256=sha, fit_report=SimpleNamespace(base_body=None),
                               record=JobRecord.queued(CreateJobRequest.model_validate(payload)))
     try:
         await prepare(context)
     except Exception as exc:  # a refusal is a result, not a crash
-        return {"result": f"refused: {type(exc).__name__}: {str(exc)[:80]}"}
+        return {"sha256": sha, "designClearance": clearance,
+                "result": f"refused: {type(exc).__name__}: {str(exc)[:80]}"}
     drawn = drawn_meshes(doc)
     lost = [m for m in expression_meshes(source) if m in drawn_meshes(source) and m not in drawn]
     before = morph_counts(source, set(range(len(source.meshes))))
     after = morph_counts(doc, drawn)
     report = context.fit_report.base_body
     return {
+        "sha256": sha, "designClearance": clearance,
         "result": "built",
         "removedSlots": report["removedSlots"],
         "accessorsVerifiedUnchanged": report["authoredAccessorsUnchanged"],
@@ -78,6 +92,8 @@ async def audit(path: Path) -> dict:
         "materialsChanged": [[i, doc.materials[i].get("name")]
                              for i, (a, b) in enumerate(zip(source.materials, doc.materials, strict=False)) if a != b],
         "skinRestored": bool(report["skinRestored"]),
+        "skinRestoration": report["skinRestoration"],
+        "skinCensusAfter": report["skinCensusAfter"],
         "keptAnatomicalMaterials": report.get("keptAnatomicalMaterials", []),
     }
 

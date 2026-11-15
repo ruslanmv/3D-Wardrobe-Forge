@@ -104,9 +104,15 @@ class Settings(BaseSettings):
     wardrobe_body_art_root: str = str(REPO_ROOT / "assets" / "body_art")
     #: BS1. Body-surface profiles and templates (allowlisted, provenance-checked).
     wardrobe_body_surface_root: str = str(REPO_ROOT / "assets" / "body_surface")
+    #: BE1. The operator's declarations for Forge's own generated bodies, and the registry of
+    #: synthetic reference bodies by exact SHA-256 (synthetic-references.json).
+    wardrobe_calibration_root: str = str(REPO_ROOT / "assets" / "calibration")
     #: BS1. The operator's switch for adult body-surface profiles. Off: only collision-only
     #: profiles run, whatever a caller sends. Never on by default.
     wardrobe_adult_body_surface: bool = False
+    #: BR1. The operator's separate switch for bare body *reconstruction* (bodyCompletion: proxy).
+    #: Off by default; turning on adult body surfaces never turns this on.
+    wardrobe_bare_body_completion: bool = False
 
     # -- safety ----------------------------------------------------------
     max_avatar_bytes: int = 128 * 1024 * 1024

@@ -241,7 +241,11 @@ class Orchestrator:
             # BL1. Registration is not lookup: a bare look is never *answered* from the cache
             # (_prebuilt_keys), but once built it is recorded and listed like any prebuilt look,
             # so the operator's prebuild finds it, publishing carries it, and a restart keeps it.
-            for i, key in enumerate(self._remember_keys(record.request)):
+            # BR1. A reconstructed bare body (bodyCompletion: proxy) carries surface her author never
+            # made: it stays a private job result for the operator to inspect and is never
+            # registered, so no prebuilt list (and so no app) can serve it unreviewed.
+            reconstructed = ((record.fit_report.base_body or {}).get("bodyCompletion") or {}).get("applied")
+            for i, key in enumerate([] if reconstructed else self._remember_keys(record.request)):
                 await prebuilt.remember(self.store, key, record, list_it=i == 0)
 
         except WardrobeError as exc:
