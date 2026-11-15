@@ -114,6 +114,84 @@ def cache_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+#: RU1. Plan fields that come from the words rather than the garments: the display name, the
+#: planner's own notes and how sure it was. Two prompts that plan to the same garments, in
+#: the same colours and materials, make the same look; these never change its fitting.
+PLAN_WORDS = {"name", "keywords", "notes", "confidence"}
+#: Request fields the plan already holds (the planner reads them), left out so that a
+#: template request and the same garment described in words meet under one key.
+OUTFIT_PLANNED = {"prompt", "mode", "templateId", "color"}
+
+
+def _plan_material(plan) -> dict:
+    exclude: dict = dict.fromkeys(PLAN_WORDS, True)
+    if plan.layers:
+        exclude["layers"] = {"__all__": dict.fromkeys(PLAN_WORDS, True)}
+    return plan.model_dump(mode="json", by_alias=True, exclude=exclude)
+
+
+def plan_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None:
+    """RU1. The key of what the planner builds for this request, or None when it is not cacheable.
+
+    ``cache_key`` keys a request by its words, so it covers one named template only, and a
+    rephrasing ("black lace bralette" / "a black bralette in lace") or a dictionary outfit of
+    two garments ("black fitted crop top + blue straight jeans") was built again every time:
+    measured 84 s, then 55 s for the identical request, as a second look. This keys the
+    *plan* instead — every garment's template, shape, colour, material, hosiery and set,
+    plus each template's own content and the rest of the request (avatar, options, presets,
+    reveal …) — so whatever plans to the same garments is the same look.
+
+    Planning is the pipeline's own rule-based planner (``plan_outfit_stack``): deterministic and
+    milliseconds. Body art and explicit layers stay uncached, as with ``cache_key``. A plan with
+    a garment the catalogue does not hold, or a piece of the prompt it could not plan, has no
+    key: that look is not the one asked for, and must not be handed to the next person.
+    """
+    from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
+
+    outfit = request.outfit
+    if outfit is None or request.body_art or request.body_art_remove or outfit.layers:
+        return None
+    plan = plan_outfit_stack(outfit, catalog)
+    if plan.unplanned:
+        return None
+    templates = {}
+    for garment in plan.garments:
+        template = catalog.get(garment.template_id) if garment.template_id else None
+        if template is None:
+            return None
+        templates[garment.template_id] = template_fingerprint(template)
+    payload = request.model_dump(mode="json", by_alias=True, exclude_none=True)
+    payload["outfit"] = {k: v for k, v in payload["outfit"].items() if k not in OUTFIT_PLANNED}
+    material = {
+        "key": "plan-1",
+        "pipelineVersion": PIPELINE_VERSION,
+        "plan": _plan_material(plan),
+        "templates": templates,
+        "request": payload,
+    }
+    named = [request.options.foundation_color] if request.options.foundation_color else []
+    hexes = {name: COLORS.get(name.lower()) for name in named}
+    if hexes:
+        material["colorHex"] = hexes
+    canonical = json.dumps(material, sort_keys=True, separators=(",", ":"))
+    return "plan-" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def keys_for(request: CreateJobRequest, catalog: TemplateCatalog) -> list[str]:
+    """RU1. Every key a request's look is stored under: the original (words) key first, so each
+    entry already in the dataset still answers, then the plan key."""
+    keys: list[str] = []
+    for make in (cache_key, plan_key):
+        try:
+            key = make(request, catalog)
+        except Exception as exc:  # a key that cannot be made is a miss, never a refused job
+            logger.warning("prebuilt %s unavailable: %s", make.__name__, exc)
+            key = None
+        if key and key not in keys:
+            keys.append(key)
+    return keys
+
+
 def entry_key(key: str) -> str:
     return f"{PREFIX}/{key}.json"
 
@@ -126,6 +204,24 @@ def is_fresh(request: CreateJobRequest) -> bool:
     """Made on her own body, not on top of a look (a library job with baseLookId sources a look)."""
     source = request.avatar.storage_key or ""
     return not source.startswith("looks/")
+
+
+#: What makes two listed looks the same look (PB7 merges by it too). ``plan`` is None for every
+#: one-template look, so entries written before RU1 compare exactly as they did.
+LIST_FIELDS = ("templateId", "color", "foundationColor", "private", "plan")
+
+
+def dictionary_id(request: CreateJobRequest) -> str | None:
+    """RU1. The outfit dictionary entry this request is, when it is exactly one's request."""
+    try:
+        from wardrobe.pipeline.outfit_dictionary import OUTFITS
+    except Exception:  # pragma: no cover - the dictionary is optional to the cache
+        return None
+    sent = request.outfit.model_dump(by_alias=True, exclude_none=True, exclude_defaults=True)
+    for outfit in OUTFITS:
+        if outfit.request().model_dump(by_alias=True, exclude_none=True, exclude_defaults=True) == sent:
+            return outfit.id
+    return None
 
 
 #: One writer per process for the wardrobe lists: read-modify-write of a small JSON file.
@@ -229,6 +325,14 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
         "fitVerdict": record.fit_report.verdict if record.fit_report else None,
         "builtAt": datetime.now(UTC).isoformat(),
     }
+    if key.startswith("plan-") and not request.outfit.template_id:
+        # RU1. An outfit of several garments has no one template: its plan key tells it apart
+        # from every other such outfit (all of them share templateId None and color None).
+        item["plan"] = key
+        item["garments"] = [g.template_id for g in record.plan.garments] if record.plan else []
+        outfit_id = dictionary_id(request)
+        if outfit_id:
+            item["outfitId"] = outfit_id
     async with _LIST_LOCK:
         listed: dict = {"wardrobeId": wardrobe_id, "looks": []}
         try:
@@ -236,8 +340,8 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
                 listed = json.loads(await store.get(wardrobe_key(wardrobe_id)))
         except Exception:
             listed = {"wardrobeId": wardrobe_id, "looks": []}
-        fields = ("templateId", "color", "foundationColor", "private")
-        same = tuple(item[f] for f in fields)
+        same = tuple(item.get(f) for f in LIST_FIELDS)
+        fields = LIST_FIELDS
         kept = [old for old in listed.get("looks", []) if tuple(old.get(f) for f in fields) != same]
         listed["looks"] = kept
         listed["looks"].append(item)
@@ -267,7 +371,7 @@ async def lookup(store: ObjectStore, key: str) -> JobRecord | None:
     return record
 
 
-async def remember(store: ObjectStore, key: str, record: JobRecord) -> None:
+async def remember(store: ObjectStore, key: str, record: JobRecord, *, list_it: bool = True) -> None:
     """Keep a completed record under its key. Never raises: a cache that fails is a slower Forge."""
     if record.state != JobState.COMPLETED or record.look is None:
         return
@@ -282,7 +386,8 @@ async def remember(store: ObjectStore, key: str, record: JobRecord) -> None:
     }
     try:
         await store.put(entry_key(key), json.dumps(entry).encode("utf-8"), content_type="application/json")
-        await _list_look(store, record, key)
+        if list_it:
+            await _list_look(store, record, key)
     except Exception as exc:
         logger.warning("could not remember prebuilt look %s: %s", key[:12], exc)
 
@@ -319,5 +424,5 @@ def answered(request: CreateJobRequest, cached: JobRecord) -> JobRecord:
     return record
 
 
-__all__ = ["PIPELINE_VERSION", "cache_key", "lookup", "remember", "answered", "entry_key", "wardrobe_key",
-           "is_fresh", "ready_looks", "with_prebuilt"]
+__all__ = ["PIPELINE_VERSION", "LIST_FIELDS", "cache_key", "plan_key", "keys_for", "dictionary_id", "lookup",
+           "remember", "answered", "entry_key", "wardrobe_key", "is_fresh", "ready_looks", "with_prebuilt"]

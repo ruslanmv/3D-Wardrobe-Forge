@@ -127,8 +127,8 @@ class Orchestrator:
     # ------------------------------------------------------------------
     async def submit(self, request: CreateJobRequest) -> JobRecord:
         # PB1. A catalog look made before is answered now, completed, instead of queued again.
-        key = self._prebuilt_key(request)
-        if key is not None:
+        # RU1. The words key first (every look already in the dataset), then the plan key.
+        for key in self._prebuilt_keys(request):
             cached = await prebuilt.lookup(self.store, key)
             if cached is not None:
                 record = prebuilt.answered(request, cached)
@@ -146,14 +146,10 @@ class Orchestrator:
     async def get(self, job_id: str) -> JobRecord | None:
         return await self.jobs.get(job_id)
 
-    def _prebuilt_key(self, request: CreateJobRequest) -> str | None:
+    def _prebuilt_keys(self, request: CreateJobRequest) -> list[str]:
         if not self.settings.wardrobe_prebuilt:
-            return None
-        try:
-            return prebuilt.cache_key(request, self.catalog)
-        except Exception as exc:  # a key that cannot be made is a miss, never a refused job
-            logger.warning("prebuilt key unavailable: %s", exc)
-            return None
+            return []
+        return prebuilt.keys_for(request, self.catalog)
 
     async def list(self, *, limit: int = 50) -> list[JobRecord]:
         return await self.jobs.list(limit=limit)
@@ -228,9 +224,9 @@ class Orchestrator:
 
             await self._publish(context)
             await context.emit(JobState.COMPLETED, "look ready")
-            key = self._prebuilt_key(record.request)
-            if key is not None:
-                await prebuilt.remember(self.store, key, record)
+            # RU1. Under every key it answers to; the list entry is written once, by the first.
+            for i, key in enumerate(self._prebuilt_keys(record.request)):
+                await prebuilt.remember(self.store, key, record, list_it=i == 0)
 
         except WardrobeError as exc:
             logger.info("job %s rejected/failed: %s", record.id, exc.message)
