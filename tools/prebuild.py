@@ -75,6 +75,19 @@ def plan(forge: Forge, slugs: list[str] | None, only: str | None, colours: int =
     avatars = [a for a in forge.call("/v1/library").get("avatars", []) if a.get("available")]
     if slugs:
         avatars = [a for a in avatars if a["slug"] in slugs]
+    if only == "body-bare-v1":
+        # BE3. The bare body is a body mode, not a garment: since AF5 the garment catalogue route
+        # leaves it out, so planning it from that listing planned nothing and the operator's bare
+        # prebuild silently built 0 looks. One pair per character; whether she may have one is
+        # Forge's eligibility contract to answer per job (BE1), never this tool's.
+        pairs = []
+        for avatar in avatars:
+            pair = {"slug": avatar["slug"], "templateId": "body-bare-v1", "name": "Bare authored body",
+                    "color": None}
+            if not avatar.get("depictsAdult"):
+                pair["skip"] = "the bare body needs a character declared adult"
+            pairs.append(pair)
+        return pairs
     query = "?includeRestricted=true" if forge.token else ""
     catalog = forge.call("/v1/catalog/garments" + query)
     templates = [g for c in catalog.get("categories", []) for g in c.get("garments", [])]
