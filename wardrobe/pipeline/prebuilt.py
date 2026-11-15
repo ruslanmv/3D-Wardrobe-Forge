@@ -60,6 +60,35 @@ PIPELINE_VERSION = 1
 
 PREFIX = "prebuilt"
 
+#: AA. Template fields added after the dataset's keys were written, with the value every
+#: template had before they existed. The key hashes the template's JSON, so a new field
+#: (even one left at its default) would change the key of EVERY existing look: ~1900 looks
+#: already in the dataset would stop being found, and a prebuild would make them all again.
+#: A field here is left out of the hash while it holds this value, so an existing template
+#: hashes byte-for-byte as before and a new card that sets it still hashes it. Add to this
+#: list in the same commit as any new GarmentTemplate or FitPolicy field;
+#: tests/unit/test_cache_key_stability.py fails until you do.
+ADDED_TEMPLATE_FIELDS: dict[str, object] = {"replaces_clothing": False, "construction": None}
+ADDED_FIT_FIELDS: dict[str, object] = {"slit": "", "finish": "", "pattern": "", "opacity": None}
+
+
+def template_fingerprint(template) -> str:
+    """sha256 of the template as the cache key sees it (see ADDED_TEMPLATE_FIELDS)."""
+    exclude: dict = {
+        name: True
+        for name, default in ADDED_TEMPLATE_FIELDS.items()
+        if getattr(template, name, default) == default
+    }
+    fit = {
+        name: True
+        for name, default in ADDED_FIT_FIELDS.items()
+        if getattr(template.fit, name, default) == default
+    }
+    if fit:
+        exclude["fit"] = fit
+    dumped = template.model_dump_json(by_alias=True, exclude=exclude)
+    return hashlib.sha256(dumped.encode("utf-8")).hexdigest()
+
 
 def cache_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None:
     """The key a request's look is stored under, or None when it is not cacheable."""
@@ -74,7 +103,7 @@ def cache_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None
     payload = request.model_dump(mode="json", by_alias=True, exclude_none=True)
     material = {
         "pipelineVersion": PIPELINE_VERSION,
-        "template": hashlib.sha256(template.model_dump_json(by_alias=True).encode("utf-8")).hexdigest(),
+        "template": template_fingerprint(template),
         "request": payload,
     }
     named = (outfit.color, request.options.foundation_color)
@@ -83,6 +112,84 @@ def cache_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None
         material["colorHex"] = hexes
     canonical = json.dumps(material, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+#: RU1. Plan fields that come from the words rather than the garments: the display name, the
+#: planner's own notes and how sure it was. Two prompts that plan to the same garments, in
+#: the same colours and materials, make the same look; these never change its fitting.
+PLAN_WORDS = {"name", "keywords", "notes", "confidence"}
+#: Request fields the plan already holds (the planner reads them), left out so that a
+#: template request and the same garment described in words meet under one key.
+OUTFIT_PLANNED = {"prompt", "mode", "templateId", "color"}
+
+
+def _plan_material(plan) -> dict:
+    exclude: dict = dict.fromkeys(PLAN_WORDS, True)
+    if plan.layers:
+        exclude["layers"] = {"__all__": dict.fromkeys(PLAN_WORDS, True)}
+    return plan.model_dump(mode="json", by_alias=True, exclude=exclude)
+
+
+def plan_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None:
+    """RU1. The key of what the planner builds for this request, or None when it is not cacheable.
+
+    ``cache_key`` keys a request by its words, so it covers one named template only, and a
+    rephrasing ("black lace bralette" / "a black bralette in lace") or a dictionary outfit of
+    two garments ("black fitted crop top + blue straight jeans") was built again every time:
+    measured 84 s, then 55 s for the identical request, as a second look. This keys the
+    *plan* instead — every garment's template, shape, colour, material, hosiery and set,
+    plus each template's own content and the rest of the request (avatar, options, presets,
+    reveal …) — so whatever plans to the same garments is the same look.
+
+    Planning is the pipeline's own rule-based planner (``plan_outfit_stack``): deterministic and
+    milliseconds. Body art and explicit layers stay uncached, as with ``cache_key``. A plan with
+    a garment the catalogue does not hold, or a piece of the prompt it could not plan, has no
+    key: that look is not the one asked for, and must not be handed to the next person.
+    """
+    from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
+
+    outfit = request.outfit
+    if outfit is None or request.body_art or request.body_art_remove or outfit.layers:
+        return None
+    plan = plan_outfit_stack(outfit, catalog)
+    if plan.unplanned:
+        return None
+    templates = {}
+    for garment in plan.garments:
+        template = catalog.get(garment.template_id) if garment.template_id else None
+        if template is None:
+            return None
+        templates[garment.template_id] = template_fingerprint(template)
+    payload = request.model_dump(mode="json", by_alias=True, exclude_none=True)
+    payload["outfit"] = {k: v for k, v in payload["outfit"].items() if k not in OUTFIT_PLANNED}
+    material = {
+        "key": "plan-1",
+        "pipelineVersion": PIPELINE_VERSION,
+        "plan": _plan_material(plan),
+        "templates": templates,
+        "request": payload,
+    }
+    named = [request.options.foundation_color] if request.options.foundation_color else []
+    hexes = {name: COLORS.get(name.lower()) for name in named}
+    if hexes:
+        material["colorHex"] = hexes
+    canonical = json.dumps(material, sort_keys=True, separators=(",", ":"))
+    return "plan-" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def keys_for(request: CreateJobRequest, catalog: TemplateCatalog) -> list[str]:
+    """RU1. Every key a request's look is stored under: the original (words) key first, so each
+    entry already in the dataset still answers, then the plan key."""
+    keys: list[str] = []
+    for make in (cache_key, plan_key):
+        try:
+            key = make(request, catalog)
+        except Exception as exc:  # a key that cannot be made is a miss, never a refused job
+            logger.warning("prebuilt %s unavailable: %s", make.__name__, exc)
+            key = None
+        if key and key not in keys:
+            keys.append(key)
+    return keys
 
 
 def entry_key(key: str) -> str:
@@ -99,21 +206,80 @@ def is_fresh(request: CreateJobRequest) -> bool:
     return not source.startswith("looks/")
 
 
+#: What makes two listed looks the same look (PB7 merges by it too). ``plan`` is None for every
+#: one-template look, so entries written before RU1 compare exactly as they did.
+LIST_FIELDS = ("templateId", "color", "foundationColor", "private", "plan")
+
+
+def dictionary_id(request: CreateJobRequest) -> str | None:
+    """RU1. The outfit dictionary entry this request is, when it is exactly one's request."""
+    try:
+        from wardrobe.pipeline.outfit_dictionary import OUTFITS
+    except Exception:  # pragma: no cover - the dictionary is optional to the cache
+        return None
+    sent = request.outfit.model_dump(by_alias=True, exclude_none=True, exclude_defaults=True)
+    for outfit in OUTFITS:
+        if outfit.request().model_dump(by_alias=True, exclude_none=True, exclude_defaults=True) == sent:
+            return outfit.id
+    return None
+
+
 #: One writer per process for the wardrobe lists: read-modify-write of a small JSON file.
 #: The prebuild runs one Forge process, so this is enough; two processes could lose an entry,
 #: which is a later miss, never a wrong look.
 _LIST_LOCK = asyncio.Lock()
 
 
-async def ready_looks(store: ObjectStore, wardrobe_id: str, *, include_private: bool) -> list[dict]:
-    """The fresh prebuilt looks listed for a wardrobe; private ones only when asked for."""
+def merge_lists(*lists: dict) -> dict:
+    """RU2. One wardrobe list from several copies: every look in any, the newest per identity.
+
+    Two looks are the same look when LIST_FIELDS agree; of those the one built last wins, and a
+    look with no ``builtAt`` loses to one that has it. The order of first appearance is kept.
+    """
+    merged: dict[tuple, dict] = {}
+    wardrobe_id = None
+    for listed in lists:
+        if not isinstance(listed, dict):
+            continue
+        wardrobe_id = wardrobe_id or listed.get("wardrobeId")
+        for item in listed.get("looks", []):
+            if not isinstance(item, dict):
+                continue
+            ident = tuple(item.get(f) for f in LIST_FIELDS)
+            old = merged.get(ident)
+            if old is None or (item.get("builtAt") or "") > (old.get("builtAt") or ""):
+                merged[ident] = item
+    return {"wardrobeId": wardrobe_id, "looks": list(merged.values()), "pipelineVersion": PIPELINE_VERSION}
+
+
+async def read_list(store: ObjectStore, wardrobe_id: str) -> dict:
+    """RU2. A wardrobe's list as every Forge sees it: this store's copy merged with the shared one.
+
+    On the dataset store a list this Space wrote locally (after making one look) used to hide
+    the dataset's copy for the rest of the Space's life, so every look the prebuild added after
+    that stayed invisible here until a restart. Unreadable copies count as empty.
+    """
+    key = wardrobe_key(wardrobe_id)
+    copies: list[dict] = []
     try:
-        if not await store.exists(wardrobe_key(wardrobe_id)):
-            return []
-        listed = json.loads(await store.get(wardrobe_key(wardrobe_id)))
+        if await store.exists(key):
+            copies.append(json.loads(await store.get(key)))
     except Exception as exc:
         logger.warning("prebuilt list for %s unreadable: %s", wardrobe_id, exc)
-        return []
+    try:
+        shared = await store.get_shared(key)
+        if shared:
+            copies.append(json.loads(shared))
+    except Exception as exc:
+        logger.warning("shared prebuilt list for %s unreadable: %s", wardrobe_id, exc)
+    merged = merge_lists(*copies)
+    merged["wardrobeId"] = merged["wardrobeId"] or wardrobe_id
+    return merged
+
+
+async def ready_looks(store: ObjectStore, wardrobe_id: str, *, include_private: bool) -> list[dict]:
+    """The fresh prebuilt looks listed for a wardrobe; private ones only when asked for."""
+    listed = await read_list(store, wardrobe_id)
     looks = [item.copy() for item in listed.get("looks", []) if isinstance(item, dict)]
     visible = [item for item in looks if include_private or not item.get("private")]
     # Index entries can outlive a preview that CI never uploaded. Avoid advertising
@@ -175,6 +341,10 @@ async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, inclu
                 fitPassed=item.get("fitPassed"),
                 fitVerdict=item.get("fitVerdict"),
                 private=bool(item.get("private")),
+                templateId=item.get("templateId"),
+                wardrobeState=item.get("wardrobeState"),
+                sourceSha256=item.get("sourceSha256"),
+                outputSha256=item.get("outputSha256"),
             )
         )
     return merged
@@ -199,17 +369,28 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
         "fitPassed": record.fit_report.passed if record.fit_report else None,
         "fitVerdict": record.fit_report.verdict if record.fit_report else None,
         "builtAt": datetime.now(UTC).isoformat(),
+        # BL1. The look's identity, so a list read after a restart still says what it is.
+        "wardrobeState": record.look.wardrobe_state,
+        "sourceSha256": record.look.source_avatar_hash,
+        "outputSha256": record.look.output_sha256,
     }
+    if key.startswith("plan-") and not request.outfit.template_id:
+        # RU1. An outfit of several garments has no one template: its plan key tells it apart
+        # from every other such outfit (all of them share templateId None and color None).
+        item["plan"] = key
+        item["garments"] = [g.template_id for g in record.plan.garments] if record.plan else []
+        outfit_id = dictionary_id(request)
+        if outfit_id:
+            item["outfitId"] = outfit_id
     async with _LIST_LOCK:
-        listed: dict = {"wardrobeId": wardrobe_id, "looks": []}
-        try:
-            if await store.exists(wardrobe_key(wardrobe_id)):
-                listed = json.loads(await store.get(wardrobe_key(wardrobe_id)))
-        except Exception:
-            listed = {"wardrobeId": wardrobe_id, "looks": []}
-        fields = ("templateId", "color", "foundationColor", "private")
-        same = tuple(item[f] for f in fields)
-        kept = [old for old in listed.get("looks", []) if tuple(old.get(f) for f in fields) != same]
+        # RU2. Read through the merge, so writing her list never drops what the dataset holds.
+        listed = await read_list(store, wardrobe_id)
+        if item["templateId"] == "body-bare-v1" and any(
+            old.get("templateId") == "body-bare-v1" for old in listed.get("looks", [])
+        ):
+            return  # Bare prebuilds are keep-existing, never a replacement.
+        same = tuple(item.get(f) for f in LIST_FIELDS)
+        kept = [old for old in listed.get("looks", []) if tuple(old.get(f) for f in LIST_FIELDS) != same]
         listed["looks"] = kept
         listed["looks"].append(item)
         listed["pipelineVersion"] = PIPELINE_VERSION
@@ -238,9 +419,11 @@ async def lookup(store: ObjectStore, key: str) -> JobRecord | None:
     return record
 
 
-async def remember(store: ObjectStore, key: str, record: JobRecord) -> None:
+async def remember(store: ObjectStore, key: str, record: JobRecord, *, list_it: bool = True) -> None:
     """Keep a completed record under its key. Never raises: a cache that fails is a slower Forge."""
     if record.state != JobState.COMPLETED or record.look is None:
+        return
+    if record.request.options.base_body_mode == "bare" and await store.exists(entry_key(key)):
         return
     entry = {
         "key": key,
@@ -253,7 +436,8 @@ async def remember(store: ObjectStore, key: str, record: JobRecord) -> None:
     }
     try:
         await store.put(entry_key(key), json.dumps(entry).encode("utf-8"), content_type="application/json")
-        await _list_look(store, record, key)
+        if list_it:
+            await _list_look(store, record, key)
     except Exception as exc:
         logger.warning("could not remember prebuilt look %s: %s", key[:12], exc)
 
@@ -290,5 +474,6 @@ def answered(request: CreateJobRequest, cached: JobRecord) -> JobRecord:
     return record
 
 
-__all__ = ["PIPELINE_VERSION", "cache_key", "lookup", "remember", "answered", "entry_key", "wardrobe_key",
-           "is_fresh", "ready_looks", "with_prebuilt"]
+__all__ = ["PIPELINE_VERSION", "LIST_FIELDS", "merge_lists", "read_list", "cache_key", "plan_key", "keys_for",
+           "dictionary_id", "lookup", "remember", "answered", "entry_key", "wardrobe_key", "is_fresh",
+           "ready_looks", "with_prebuilt"]

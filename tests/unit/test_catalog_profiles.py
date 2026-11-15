@@ -35,7 +35,8 @@ def test_the_underwear_profile_takes_the_whole_category_and_nothing_else():
     chosen = {t.id for t in CATALOG if render.eligible(t, "underwear")}
     inventory = json.loads((ROOT / "assets/catalog/adult/underwear-inventory.json").read_text(encoding="utf-8"))
     assert {t["id"] for t in inventory["templates"]} <= chosen  # every original
-    assert chosen == {t.id for t in CATALOG if t.category == "underwear"}
+    # AF5. A body mode (body-bare-v1) is filed under underwear but is not a garment to render.
+    assert chosen == {t.id for t in CATALOG if t.category == "underwear" and not t.is_body_mode}
 
 
 def test_a_set_is_recognised_by_the_parts_forge_plans_it_as():

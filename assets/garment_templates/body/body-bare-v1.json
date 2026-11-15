@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "body-bare-v1",
+  "name": "Bare authored body",
+  "category": "underwear",
+  "mesh": "body:bare",
+  "coverage": [
+    "chest",
+    "hips",
+    "upperLegs",
+    "lowerLegs"
+  ],
+  "anchors": [
+    "hips"
+  ],
+  "materials": {
+    "supportsBaseColor": false,
+    "supportsPattern": false,
+    "supportsMetallic": false
+  },
+  "requiresAdult": true,
+  "optIn": true,
+  "tags": [
+    "bare-authored-body"
+  ],
+  "description": "Private adult authored body only; refuses incomplete bodies. No generated garment."
+}

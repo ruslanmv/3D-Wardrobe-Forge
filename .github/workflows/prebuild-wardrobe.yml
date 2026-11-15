@@ -5,8 +5,8 @@ name: Prebuild wardrobe
 # look from storage on the first poll instead of waiting for a job.
 #
 # Only missing looks are built: Forge remembers each finished look under a key of everything
-# that shapes it (wardrobe.pipeline.prebuilt), so a push that edits one template rebuilds that
-# template's looks and a push that touches nothing they depend on builds nothing. Bump
+# that shapes it (wardrobe.pipeline.prebuilt), so a run after one template changed rebuilds that
+# template's looks and a run when nothing they depend on changed builds nothing. Bump
 # PIPELINE_VERSION in wardrobe/pipeline/prebuilt.py to rebuild everything.
 #
 # Storage: a private Hugging Face dataset (~11.5 GB for 105 garments x 8 characters; too big
@@ -17,22 +17,23 @@ name: Prebuild wardrobe
 # dataset) and the repository variable WARDROBE_HF_DATASET, e.g. ruslanmv/3d-wardrobe-garments.
 # Without either the workflow warns and builds nothing; it never writes looks into the repository.
 
+# PB7. Manual only. A push to main used to start a full build for every character; the
+# dataset now holds thousands of looks built over many hours, and a build that runs on its
+# own (beside another one, or while Hugging Face is answering badly) is how a character's
+# list gets rewritten. Run it from Actions -> Prebuild wardrobe -> Run workflow, on the branch
+# whose garments you want built.
 on:
-  push:
-    branches: [main]
-    paths:
-      - wardrobe/**
-      - assets/garment_templates/**
-      - assets/library/**
-      - apps/api/**
-      - tools/prebuild.py
-      - .github/workflows/prebuild-wardrobe.yml
   workflow_dispatch:
     inputs:
       only:
         description: Only templates whose name or id contains this text (empty = all)
         required: false
         default: ""
+      overwrite:
+        description: Replace looks the dataset already lists with this run's builds (off = keep every existing look, only add new ones)
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: prebuild-wardrobe
@@ -125,20 +126,19 @@ jobs:
       - name: Upload the new looks
         if: always()
         run: |
-          python - <<'EOF'
-          import os
-          from pathlib import Path
-          from huggingface_hub import HfApi
-          root = Path(os.environ["WARDROBE_STORAGE_ROOT"])
-          if (root / "prebuilt").exists():
-              # Only looks and the prebuilt index: never the library sources or job records.
-              # One commit per character; files the dataset already holds are not sent again.
-              HfApi().upload_folder(
-                  repo_id=os.environ["WARDROBE_HF_DATASET"], repo_type="dataset", folder_path=str(root),
-                  allow_patterns=["looks/**", "prebuilt/**"],
-                  commit_message="prebuild: ${{ matrix.slug }} at ${{ github.sha }}",
-              )
-          EOF
+          # RU4. tools/publish_prebuilt.py (wardrobe.storage.dataset_publish): only looks a
+          # prebuilt entry names go up, so nothing unservable reaches the dataset, and each
+          # character's list is merged with the dataset's copy by RU1's identity (garment,
+          # colour, foundation, privacy and, for an outfit of several garments, its plan) —
+          # PB7's rule, unchanged: by default the dataset's entry wins for a look it already
+          # lists, and only a manual run with "overwrite" ticked replaces them. A list the
+          # dataset cannot be read for right now is held back; the looks still go up. Forge
+          # itself has already published in batches while it built (RU3), so this sends the rest.
+          if [ -d "$WARDROBE_STORAGE_ROOT/prebuilt" ]; then
+            python tools/publish_prebuilt.py --root "$WARDROBE_STORAGE_ROOT" \
+              --message "prebuild: ${{ matrix.slug }} at ${{ github.sha }}" \
+              ${{ inputs.overwrite && '--overwrite' || '' }}
+          fi
       - name: Summary
         if: always()
         run: |

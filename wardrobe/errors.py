@@ -50,6 +50,10 @@ class BodyIncomplete(WardrobeError):
     reason = FailureReason.BODY_INCOMPLETE
 
 
+class BodyIncompleteForBare(WardrobeError):
+    reason = FailureReason.BODY_INCOMPLETE_FOR_BARE
+
+
 class FoundationOverClothing(WardrobeError):
     """Underwear would be fitted over clothes she keeps on; it goes on her body or not at all."""
 

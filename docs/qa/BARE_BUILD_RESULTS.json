@@ -1,0 +1,1193 @@
+{
+  "base": "8512004",
+  "branch": "feat/bare-base-body",
+  "privateArtifactDirectory": "/workspace/work/forge-final",
+  "results": [
+    {
+      "character": "avatar-sample-a",
+      "mode": "bare",
+      "state": "rejected",
+      "reason": "body-incomplete-for-bare",
+      "error": "authored body is not closed in every required band",
+      "bodyChecks": {
+        "complete": false,
+        "integrity": {
+          "complete": false,
+          "regions": {
+            "leftShin": {
+              "present": true,
+              "confidence": 0.917,
+              "bands": [
+                1.0,
+                1.0,
+                0.88,
+                0.81,
+                0.81,
+                1.0
+              ]
+            },
+            "leftThigh": {
+              "present": false,
+              "confidence": 0.844,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.56,
+                0.5
+              ]
+            },
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightShin": {
+              "present": true,
+              "confidence": 0.917,
+              "bands": [
+                1.0,
+                1.0,
+                0.88,
+                0.81,
+                0.81,
+                1.0
+              ]
+            },
+            "rightThigh": {
+              "present": false,
+              "confidence": 0.844,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.56,
+                0.5
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": 214,
+        "normalMapsPreserved": true,
+        "protectedAnatomicalMaterials": [],
+        "paintedSkin": null
+      }
+    },
+    {
+      "character": "avatar-sample-a",
+      "mode": "lingerie",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": true,
+        "integrity": {
+          "complete": true,
+          "regions": {
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": null,
+        "normalMapsPreserved": null,
+        "protectedAnatomicalMaterials": null,
+        "paintedSkin": {
+          "checked": true,
+          "samples": 16440,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            255,
+            234,
+            210
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "0651bdaa77e201f27ba3fb41bd3f6e4e41aae4e31d4125d0df68437f86a343b4"
+    },
+    {
+      "character": "avatar-sample-b",
+      "mode": "bare",
+      "state": "rejected",
+      "reason": "body-incomplete-for-bare",
+      "error": "authored body is not closed in every required band",
+      "bodyChecks": {
+        "complete": false,
+        "integrity": {
+          "complete": false,
+          "regions": {
+            "leftShin": {
+              "present": true,
+              "confidence": 0.917,
+              "bands": [
+                1.0,
+                1.0,
+                0.88,
+                0.81,
+                0.81,
+                1.0
+              ]
+            },
+            "leftThigh": {
+              "present": false,
+              "confidence": 0.875,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.62,
+                0.62
+              ]
+            },
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightShin": {
+              "present": true,
+              "confidence": 0.917,
+              "bands": [
+                1.0,
+                1.0,
+                0.88,
+                0.81,
+                0.81,
+                1.0
+              ]
+            },
+            "rightThigh": {
+              "present": false,
+              "confidence": 0.875,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.62,
+                0.62
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": 218,
+        "normalMapsPreserved": true,
+        "protectedAnatomicalMaterials": [],
+        "paintedSkin": null
+      }
+    },
+    {
+      "character": "avatar-sample-b",
+      "mode": "lingerie",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": true,
+        "integrity": {
+          "complete": true,
+          "regions": {
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": null,
+        "normalMapsPreserved": null,
+        "protectedAnatomicalMaterials": null,
+        "paintedSkin": {
+          "checked": true,
+          "samples": 16686,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            206,
+            158,
+            138
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "2bc3c8e65993ad1552c0810f48a1f0f390727ebd4575f9621dba570bfe2f775c"
+    },
+    {
+      "character": "avatar-sample-c",
+      "mode": "bare",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": true,
+        "integrity": {
+          "complete": true,
+          "regions": {
+            "leftShin": {
+              "present": true,
+              "confidence": 0.927,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                0.81,
+                0.75,
+                1.0
+              ]
+            },
+            "leftThigh": {
+              "present": true,
+              "confidence": 0.917,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.75,
+                0.75
+              ]
+            },
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightShin": {
+              "present": true,
+              "confidence": 0.927,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                0.81,
+                0.75,
+                1.0
+              ]
+            },
+            "rightThigh": {
+              "present": true,
+              "confidence": 0.917,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.75,
+                0.75
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": 255,
+        "normalMapsPreserved": true,
+        "protectedAnatomicalMaterials": [],
+        "paintedSkin": {
+          "checked": true,
+          "samples": 13284,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            251,
+            218,
+            192
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "8270a240e9662dd36c077cce3f2c5a4846a90f07eb60750d229710d3bcc71187"
+    },
+    {
+      "character": "avatar-sample-c",
+      "mode": "lingerie",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": true,
+        "integrity": {
+          "complete": true,
+          "regions": {
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": null,
+        "normalMapsPreserved": null,
+        "protectedAnatomicalMaterials": null,
+        "paintedSkin": {
+          "checked": true,
+          "samples": 13284,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            251,
+            218,
+            192
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "b1a9673592b494e4b83b15a328e67a9bc04eb7f25cf73d4d695d696aa2ee95d1"
+    },
+    {
+      "character": "fem-vroid",
+      "mode": "bare",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": true,
+        "integrity": {
+          "complete": true,
+          "regions": {
+            "leftShin": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "leftThigh": {
+              "present": true,
+              "confidence": 0.99,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.94
+              ]
+            },
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightShin": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightThigh": {
+              "present": true,
+              "confidence": 0.99,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.94
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": 133,
+        "normalMapsPreserved": true,
+        "protectedAnatomicalMaterials": [],
+        "paintedSkin": {
+          "checked": true,
+          "samples": 19406,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            249,
+            232,
+            218
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "42cb6b684d2ee8fa64e7033576a21829c07047286bb34ca17ef96d0f285ec032"
+    },
+    {
+      "character": "fem-vroid",
+      "mode": "lingerie",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": null,
+        "integrity": null,
+        "authoredAccessorsUnchanged": null,
+        "normalMapsPreserved": null,
+        "protectedAnatomicalMaterials": null,
+        "paintedSkin": {
+          "checked": true,
+          "samples": 19406,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            249,
+            232,
+            218
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "c86c7ff016c6b805ca7807922ddd157124f5bb427bca8dcdbd1be10f171e1278"
+    },
+    {
+      "character": "masc-vroid",
+      "mode": "bare",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": true,
+        "integrity": {
+          "complete": true,
+          "regions": {
+            "leftShin": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "leftThigh": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightShin": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightThigh": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": 133,
+        "normalMapsPreserved": true,
+        "protectedAnatomicalMaterials": [],
+        "paintedSkin": {
+          "checked": true,
+          "samples": 18786,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            249,
+            232,
+            218
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "5537980c07c52df5f4bab137a72aaa1df30a0722260ffd2c6b9746aa340d563f"
+    },
+    {
+      "character": "masc-vroid",
+      "mode": "lingerie",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": null,
+        "integrity": null,
+        "authoredAccessorsUnchanged": null,
+        "normalMapsPreserved": null,
+        "protectedAnatomicalMaterials": null,
+        "paintedSkin": {
+          "checked": true,
+          "samples": 18786,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            249,
+            232,
+            218
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "2ee7f88f20d8508d9a88cfefc9e0ade36abfb922b0427043a290f552857a06c1"
+    },
+    {
+      "character": "vroid-avatar-sample-o",
+      "mode": "bare",
+      "state": "rejected",
+      "reason": "body-incomplete-for-bare",
+      "error": "authored body is not closed in every required band",
+      "bodyChecks": {
+        "complete": false,
+        "integrity": {
+          "complete": false,
+          "regions": {
+            "leftShin": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "leftThigh": {
+              "present": true,
+              "confidence": 0.99,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.94
+              ]
+            },
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightShin": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightThigh": {
+              "present": true,
+              "confidence": 0.99,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.94
+              ]
+            },
+            "upper": {
+              "present": false,
+              "confidence": 0.781,
+              "bands": [
+                1.0,
+                1.0,
+                0.0,
+                0.69,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": 142,
+        "normalMapsPreserved": true,
+        "protectedAnatomicalMaterials": [],
+        "paintedSkin": null
+      }
+    },
+    {
+      "character": "vroid-avatar-sample-o",
+      "mode": "lingerie",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": true,
+        "integrity": {
+          "complete": true,
+          "regions": {
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": null,
+        "normalMapsPreserved": null,
+        "protectedAnatomicalMaterials": null,
+        "paintedSkin": {
+          "checked": true,
+          "samples": 14545,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            254,
+            236,
+            230
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "fe96b7b71b7305bcda477fd1f9e986e2e69ca2422ab2db0266cfd936c31b09e6"
+    },
+    {
+      "character": "vroid-model-girl",
+      "mode": "bare",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": true,
+        "integrity": {
+          "complete": true,
+          "regions": {
+            "leftShin": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "leftThigh": {
+              "present": true,
+              "confidence": 0.917,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.75,
+                0.75
+              ]
+            },
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightShin": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightThigh": {
+              "present": true,
+              "confidence": 0.917,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.75,
+                0.75
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": 140,
+        "normalMapsPreserved": true,
+        "protectedAnatomicalMaterials": [],
+        "paintedSkin": {
+          "checked": true,
+          "samples": 20062,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            249,
+            232,
+            218
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "50bcb136540ba12bea20daf2238973666e89d42406194594ab49f1a1ec38cd0e"
+    },
+    {
+      "character": "vroid-model-girl",
+      "mode": "lingerie",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": true,
+        "integrity": {
+          "complete": true,
+          "regions": {
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": null,
+        "normalMapsPreserved": null,
+        "protectedAnatomicalMaterials": null,
+        "paintedSkin": {
+          "checked": true,
+          "samples": 20062,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            249,
+            232,
+            218
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "0701002192af3e4724f0d5e5437bd1cd3b00851083b839a6561e16da6decaabb"
+    },
+    {
+      "character": "vroid-rinna",
+      "mode": "bare",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": true,
+        "integrity": {
+          "complete": true,
+          "regions": {
+            "leftShin": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "leftThigh": {
+              "present": true,
+              "confidence": 0.99,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.94
+              ]
+            },
+            "lower": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightShin": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "rightThigh": {
+              "present": true,
+              "confidence": 0.99,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.94
+              ]
+            },
+            "upper": {
+              "present": true,
+              "confidence": 1.0,
+              "bands": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "authoredAccessorsUnchanged": 126,
+        "normalMapsPreserved": true,
+        "protectedAnatomicalMaterials": [],
+        "paintedSkin": {
+          "checked": true,
+          "samples": 24820,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            249,
+            230,
+            218
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "62e86cb6e25bef403933b25257b68b52eb46f14796ac899e86a8506f3e54296b"
+    },
+    {
+      "character": "vroid-rinna",
+      "mode": "lingerie",
+      "state": "completed",
+      "reason": null,
+      "error": null,
+      "bodyChecks": {
+        "complete": null,
+        "integrity": null,
+        "authoredAccessorsUnchanged": null,
+        "normalMapsPreserved": null,
+        "protectedAnatomicalMaterials": null,
+        "paintedSkin": {
+          "checked": true,
+          "samples": 24820,
+          "painted": 0,
+          "visible": 0,
+          "visibleShare": 0.0,
+          "visibleUpper": 0,
+          "visibleLower": 0,
+          "skinReference": [
+            249,
+            230,
+            218
+          ],
+          "shows": false
+        }
+      },
+      "outputSha256": "e253ac8a2cd2f91f4014fc7f921893eea6c5936a1842c5b67107e2968b2db0fa"
+    }
+  ],
+  "missingRequirement": "Detailed authored genital anatomy: not fulfilled; user deferred sourcing another licensed model. See BARE_BODY_PLAN.md.",
+  "renderManifestViews": 52,
+  "visualEvidence": "Private Studio renderer captures; not committed as public previews."
+}

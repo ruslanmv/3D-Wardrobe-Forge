@@ -166,6 +166,9 @@ class GarmentTemplate(BaseModel):
     description: str | None = None
     #: Needs an adult declaration whatever its category or material.
     requires_adult: bool = Field(default=False, alias="requiresAdult")
+    #: Take off every recognised garment, then put this one on. An open cardigan
+    #: otherwise layers, which left the short robe over the dress she arrived in.
+    replaces_clothing: bool = Field(default=False, alias="replacesClothing")
     #: The category's answer when a prompt names the category and nothing else ("skirt",
     #: "navy skirt", the Studio's "Planner chooses"), and the tie-break when two templates
     #: score the same. Without it the planner fell back on the template id's reverse
@@ -189,6 +192,17 @@ class GarmentTemplate(BaseModel):
     @property
     def is_procedural(self) -> bool:
         return self.mesh.startswith("procedural:")
+
+    @property
+    def is_body_mode(self) -> bool:
+        """AF5. A template that is a way of preparing her body, not a garment (``body:bare``).
+
+        ``body-bare-v1`` is filed under ``underwear`` so the catalogue groups it with what is worn
+        closest to her, but it has no garment geometry: anything that builds or lists garments —
+        the geometry builders, the garment catalogue, the prebuild — skips it. Walking it as a
+        garment raised ``unsupported garment category: 'underwear'``.
+        """
+        return self.mesh.startswith("body:")
 
     @property
     def procedural_kind(self) -> str:

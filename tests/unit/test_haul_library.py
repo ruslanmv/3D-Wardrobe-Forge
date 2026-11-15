@@ -34,6 +34,8 @@ def test_every_template_builds_geometry_on_every_body(template_catalog: Template
     document = GltfDocument.from_bytes(build_vrm(body, spec="VRM1"))
     measurements = measure_body(document, inspect_document(document))
     for template in template_catalog.all():
+        if template.is_body_mode:  # AF5: body-bare-v1 prepares her body; it has no garment geometry
+            continue
         params = FitParameters(
             measurements=measurements,
             sleeve_length=template.sleeve,

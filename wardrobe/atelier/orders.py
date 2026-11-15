@@ -74,37 +74,6 @@ ORDERS: tuple[Order, ...] = (
         adult=True, tags=("atelier", "sheer"),
     ),
     _built(
-        "aa-micro-mini", "Micro mini", "black micro mini skirt", "dressy",
-        "skirt-micro-mini-v1", "complete",
-        (("style.coverage", "micro"), ("hem", "mini")),
-    ),
-    _built(
-        "aa-vinyl-mini", "Vinyl mini", "black vinyl mini skirt", "dressy",
-        "skirt-vinyl-mini-v1", "complete",
-        (("material.finish", "latex"), ("hem", "mini")),
-    ),
-    _built(
-        "aa-leather-mini", "Leather mini", "black leather mini skirt", "dressy",
-        "skirt-leather-mini-v1", "complete",
-        (("material.finish", "satin"), ("hem", "mini")),
-    ),
-    _built(
-        "aa-booty-shorts", "Booty shorts", "black hot pants", "dressy",
-        "shorts-booty-v1", "complete",
-        (("style.coverage", "micro"),),
-    ),
-    _built(
-        "aa-mesh-top", "Mesh top", "black mesh top", "atelier",
-        "top-mesh-v1", "lingerie",
-        (("material.opacity", 0.55),),
-        adult=True, tags=("atelier", "sheer"),
-    ),
-    _built(
-        "aa-bralette-top", "Bralette top", "black bralette top", "atelier",
-        "top-bralette-outer-v1", "lingerie",
-        tags=("atelier", "bralette"), adult=True,
-    ),
-    _built(
         "aa-bodystocking", "Fishnet bodystocking", "black bodystocking", "atelier",
         "jumpsuit-bodystocking-v1", "lingerie",
         (("material.pattern", "fishnet"),),

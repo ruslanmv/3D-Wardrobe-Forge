@@ -107,7 +107,18 @@ templates at low priority.
 
 ## The CI job: `prebuild-wardrobe.yml`
 
-Runs on every push to `main` (after `ci.yml` passes) and on manual dispatch.
+**Manual only (PB7).** Run it from Actions → Prebuild wardrobe → Run workflow;
+no push starts it. Two inputs: `only` (a template filter) and `overwrite`
+(off by default).
+
+**What we made is kept.** Look files are never replaced or deleted: every build
+is a new `looks/<id>/` folder, and nothing in Forge or its workflows deletes
+from the dataset. Each character's list (`prebuilt/wardrobes/<id>.json`) is
+merged with the dataset's copy before upload: by default a look the dataset
+already lists keeps its entry and the run only adds missing looks; only a
+manual run with `overwrite` ticked replaces listed looks with its own builds. A
+list the dataset cannot be read for at upload time is held back, not uploaded
+empty.
 
 1. **Plan.** Load the catalog and library; compute every key; read the index;
    list only the missing keys. A push that changes one template rebuilds 8
@@ -119,8 +130,9 @@ Runs on every push to `main` (after `ci.yml` passes) and on manual dispatch.
 3. **Verify.** Re-read the index; every key in the plan is either present or
    listed as failed. Post the counts in the job summary (built, reused, failed,
    bytes uploaded).
-4. **Prune.** Looks whose key no longer appears in any plan are deleted after a
-   grace period (7 days), so a rollback can still hit the old ones.
+4. **No prune.** Planned once (delete looks no plan names after 7 days) and
+   deliberately not built: the dataset only grows. Removing looks is a manual
+   decision on the dataset itself.
 
 Secrets: the bucket credentials (`S3_*`). The Space reads the same bucket with
 read-only credentials. Nothing is committed.
@@ -147,7 +159,7 @@ Speed needs no app change. Two small changes fix the conversation itself:
 | ----- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | PB1   | Cache key, `PIPELINE_VERSION`, index read/write, hit/miss in `Orchestrator.submit` | A repeated identical request returns `completed` with `cache: "prebuilt"` in < 1 s |
 | PB2   | `tools/prebuild.py` (plan / build / verify) run locally against a bucket            | 840 looks built and indexed from a laptop; rerun builds 0                        |
-| PB3   | `prebuild-wardrobe.yml` matrix on push to `main`                                    | A template change rebuilds only its 8 looks                                     |
+| PB3   | `prebuild-wardrobe.yml` matrix, manual dispatch (PB7)                               | A template change rebuilds only its 8 looks                                     |
 | PB4   | Space on the private bucket with presigned URLs                                     | Public Space answers a prebuilt lingerie request on the first poll              |
 | PB5   | App: prebuilt looks in `InSceneWardrobe`; matching follow-up offer                  | "¿Quieres lencería?" → "Sí" puts lingerie on her with no wait                   |
 
@@ -199,9 +211,36 @@ what the haul is for.
 | ------------- | ----: | ---------------------: |
 | 105 garments × 8 characters × 1 colour | 840 | 11.5 GB |
 | 105 garments × 8 characters × 3 colours | 2,520 | 34.5 GB |
-| 123 garments × 8 characters × 3 colours (after AA) | **2,952** | **about 40 GB** |
+| 117 garments × 8 characters × 3 colours (after AA) | **2,808** | **about 38 GB** |
 
 Plan the dataset for 40–45 GB.
+
+## Reuse by plan, publishing from the Space, no orphans (RU1–RU4, 2026-11-15)
+
+Measured before: a dictionary outfit ("black fitted crop top + blue straight jeans") took
+84 s and the identical request again 55 s, as a second look; a template look came back in
+0.0 s. Four changes:
+
+- **RU1, plan key.** `prebuilt.plan_key` keys what the planner builds (each garment's
+  template, shape, colour, material, hosiery, set; each template's content; the rest of the
+  request), not the words. Dictionary outfits, free descriptions and rewordings that plan to
+  the same garments are reused. The old words key is asked first (`keys_for`), so every entry
+  already in the dataset still answers; `cache_key` and `PIPELINE_VERSION` are unchanged. A
+  look is remembered under both keys and listed once; outfits of several garments are listed
+  with `plan`, `garments` and, for an exact dictionary request, `outfitId`.
+  `tools/prebuild.py --outfits` builds the dictionary with the app's exact request body.
+- **RU2, merged lists.** The Space reads a wardrobe list as its local copy merged with the
+  dataset's (`prebuilt.read_list`, `ObjectStore.get_shared`), so a list it wrote after making
+  one look no longer hides what the prebuild added since.
+- **RU3, publishing from the Space.** With `WARDROBE_HF_PUBLISH` (default on) the dataset
+  store commits each finished look — entry, files, merged list — in batches of
+  `WARDROBE_HF_PUBLISH_EVERY` (10) or every `WARDROBE_HF_PUBLISH_SECONDS` (300), and on
+  shutdown. The Space's `HF_TOKEN` needs write access to the dataset; a failed commit stays
+  pending for the next batch.
+- **RU4, nothing unservable goes up.** `wardrobe.storage.dataset_publish.publish` (used by
+  the Space and by CI's `tools/publish_prebuilt.py`) sends only looks a prebuilt entry names.
+  `tools/dataset_orphans.py` lists, and with `--delete` removes, look folders no entry or
+  list names.
 
 ## Status (2026-11-13)
 
@@ -209,7 +248,7 @@ Plan the dataset for 40–45 GB.
 | ----- | ----- | ----- |
 | PB1 cache key, hit/miss in `submit`, remember on completion | done, tested | `wardrobe/pipeline/prebuilt.py`, `Orchestrator.submit` |
 | PB2 per-character ready list, `GET /v1/library/{slug}/prebuilt`, `tools/prebuild.py` | done, tested | `apps/api/routes/studio.py`, `tools/prebuild.py` |
-| PB3 CI on push to `main` | written; needs `vars.WARDROBE_HF_DATASET` | `.github/workflows/prebuild-wardrobe.yml` |
+| PB3 CI, manual dispatch only; keeps existing looks unless `overwrite` (PB7) | written; needs `secrets.HF_TOKEN` | `.github/workflows/prebuild-wardrobe.yml` |
 | PB4 dataset store; her wardrobe lists prebuilt looks after a restart | done, tested; Space needs `WARDROBE_STORAGE_BACKEND=hf` and `WARDROBE_HF_DATASET` | `HfDatasetObjectStore`, `GET /v1/wardrobes/{id}` |
 | PB5 Private names every kind she has ready | done (3D-Avatar-Chatbot `ac44d59`) | `PrivateActionBridge.closetSummary` |
 | PB6 three colours per garment, intimate first | done, tested | `assets/catalog/palettes.json`, `wardrobe/pipeline/palettes.py` |

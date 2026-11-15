@@ -37,9 +37,10 @@
     "supportsMetallic": false
   },
   "optIn": true,
+  "replacesClothing": true,
   "tags": [
     "short robe",
     "kimono"
   ],
-  "description": "A short open satin robe. The word kimono selects it. An overlapping kimono collar is not built."
+  "description": "A short open satin robe. What she is wearing comes off first, then the robe goes on. The word kimono selects it. An overlapping kimono collar is not built."
 }
