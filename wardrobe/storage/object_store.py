@@ -45,6 +45,14 @@ class ObjectStore(ABC):
     @abstractmethod
     def url_for(self, key: str) -> str: ...
 
+    async def get_shared(self, key: str) -> bytes | None:
+        """RU2. The copy every Forge shares, when this store has one apart from its own (else None).
+
+        Only the dataset store does: there a file this process wrote locally hides the
+        dataset's newer copy from ``get``. Small index files read both and merge them.
+        """
+        return None
+
     async def put_path(self, key: str, path: str | Path, *, content_type: str | None = None) -> str:
         data = await asyncio.to_thread(Path(path).read_bytes)
         return await self.put(key, data, content_type=content_type)
@@ -184,9 +192,11 @@ class HfDatasetObjectStore(LocalObjectStore):
     The prebuilt wardrobe (docs/PREBUILT_WARDROBE.md) is ~11.5 GB of looks: too big for git,
     comfortable in a private dataset repository. CI uploads the whole build in one batch; the
     Space reads a file from the dataset the first time it is asked for and keeps it on local
-    disk after that. Writes stay local — a look made on demand is there until the Space
-    restarts, and the next prebuild makes it permanent. Committing every file from the Space
-    would be thousands of commits for one build.
+    disk after that. Writes land locally; with ``wardrobe_hf_publish`` (RU3, on by default) each
+    look the Space makes — its prebuilt entry, files and wardrobe list — is also committed to
+    the dataset in batches (every ``wardrobe_hf_publish_every`` looks or
+    ``wardrobe_hf_publish_seconds``, and on shutdown), so it survives a restart and every other
+    Forge finds it. Committing every file as it is written would be thousands of commits.
 
     ``exists`` answers from a listing of the dataset, refreshed every ``LIST_TTL_S`` seconds,
     so a miss costs no request per key. The token is ``HF_TOKEN``; a private dataset needs it.
@@ -212,6 +222,17 @@ class HfDatasetObjectStore(LocalObjectStore):
         self._listed_at = 0.0
         self._ttl = self.LIST_TTL_S
         self._lock = asyncio.Lock()
+        #: RU2. key -> (read at, bytes) for get_shared.
+        self._shared: dict[str, tuple[float, bytes]] = {}
+        #: RU3. Entries and wardrobe lists written here and not yet in the dataset.
+        self.publishing = bool(settings.wardrobe_hf_publish)
+        self._publish_every = max(1, int(settings.wardrobe_hf_publish_every))
+        self._publish_seconds = max(1.0, float(settings.wardrobe_hf_publish_seconds))
+        self._pending_entries: set[str] = set()
+        self._pending_lists: set[str] = set()
+        self._publish_lock = asyncio.Lock()
+        self._timer: asyncio.Task | None = None
+        self.published = {"commits": 0, "looks": 0, "failures": 0}
 
     async def _remote_files(self) -> set[str]:
         import time
@@ -270,6 +291,111 @@ class HfDatasetObjectStore(LocalObjectStore):
         if await super().exists(key):
             return True
         return key in await self._remote_files()
+
+    async def put(self, key: str, data: bytes, *, content_type: str | None = None) -> str:
+        url = await super().put(key, data, content_type=content_type)
+        if self.publishing:
+            from wardrobe.storage.dataset_publish import ENTRY, LIST
+
+            if ENTRY.match(key):
+                self._pending_entries.add(key)
+            elif LIST.match(key):
+                self._pending_lists.add(key)
+            else:
+                return url
+            self._schedule()
+        return url
+
+    def _schedule(self) -> None:
+        """A batch goes up at ``publish_every`` looks, or ``publish_seconds`` after the first."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:  # pragma: no cover - put is always awaited inside a loop
+            return
+        if len(self._pending_entries) >= self._publish_every:
+            loop.create_task(self.flush())
+        elif self._timer is None or self._timer.done():
+            async def _later() -> None:
+                await asyncio.sleep(self._publish_seconds)
+                await self.flush()
+
+            self._timer = loop.create_task(_later())
+
+    async def flush(self) -> dict | None:
+        """RU3. Publish what is pending in one commit. Never raises; a failure stays pending."""
+        async with self._publish_lock:
+            entries, lists = sorted(self._pending_entries), sorted(self._pending_lists)
+            if not entries and not lists:
+                return None
+            self._pending_entries -= set(entries)
+            self._pending_lists -= set(lists)
+            from huggingface_hub import HfApi
+
+            from wardrobe.storage.dataset_publish import hub_download, publish
+
+            def _go() -> dict:
+                return publish(HfApi(), self.repo_id, self.root, entries=entries, lists=lists,
+                               keep_existing=False,
+                               message=f"forge: {len(entries)} looks made on demand", download=hub_download())
+
+            try:
+                result = await asyncio.to_thread(_go)
+            except Exception as exc:
+                logger.warning("could not publish %d looks to %s (kept for the next batch): %s",
+                               len(entries), self.repo_id, exc)
+                self._pending_entries |= set(entries)
+                self._pending_lists |= set(lists)
+                self.published["failures"] += 1
+                return None
+            self._pending_lists |= set(result["heldBack"])
+            self.published["commits"] += 1 if result["files"] else 0
+            self.published["looks"] += len(result["looks"])
+            # What just went up exists in the dataset now: no listing round trip to know it.
+            if self._remote is not None:
+                self._remote |= set(entries) | set(lists)
+            for key in lists:
+                self._shared.pop(key, None)
+            logger.info("published %d looks (%d files) to %s",
+                        len(result["looks"]), result["files"], self.repo_id)
+            return result
+
+    async def close(self) -> None:
+        """RU3. On shutdown: cancel the timer and publish whatever is still pending."""
+        if self._timer is not None and not self._timer.done():
+            self._timer.cancel()
+        if self.publishing:
+            await self.flush()
+
+    async def get_shared(self, key: str) -> bytes | None:
+        """RU2. The dataset's own copy of a small file, re-read at most every ``LIST_TTL_S``.
+
+        Downloaded into a private folder and never onto the local path: the local file may be
+        newer (a look this Space just made) and the merge, not the download, decides.
+        """
+        import time
+
+        cached = self._shared.get(key)
+        if cached is not None and time.monotonic() - cached[0] < self._ttl:
+            return cached[1]
+        if key not in await self._remote_files():
+            return None
+        from huggingface_hub import hf_hub_download
+
+        def _download() -> bytes:
+            scratch = self.root / ".hf-download" / uuid.uuid4().hex
+            try:
+                got = hf_hub_download(self.repo_id, filename=key, repo_type="dataset", local_dir=str(scratch))
+                return Path(got).read_bytes()
+            finally:
+                shutil.rmtree(scratch, ignore_errors=True)
+
+        try:
+            data = await asyncio.to_thread(_download)
+        except Exception as exc:
+            logger.warning("dataset copy of %s could not be read: %s", key, exc)
+            return cached[1] if cached is not None else None
+        self._shared[key] = (time.monotonic(), data)
+        return data
 
 
 def create_object_store(settings: Settings) -> ObjectStore:

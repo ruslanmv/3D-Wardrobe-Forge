@@ -79,6 +79,14 @@ class Settings(BaseSettings):
     #: PB4. With WARDROBE_STORAGE_BACKEND=hf: the dataset repository the prebuilt looks are read
     #: from, e.g. "ruslanmv/3d-wardrobe-garments". Private; read with HF_TOKEN.
     wardrobe_hf_dataset: str = ""
+    #: RU3. With the hf backend: also publish each look this Forge makes to the dataset (its
+    #: prebuilt entry, the look's files and her wardrobe list), batched — one commit per
+    #: ``wardrobe_hf_publish_every`` looks or ``wardrobe_hf_publish_seconds``, whichever comes
+    #: first, and once more on shutdown. Needs an HF_TOKEN with write access to the dataset; a
+    #: failed commit is kept and tried again with the next batch. Off: writes stay local (PB4).
+    wardrobe_hf_publish: bool = True
+    wardrobe_hf_publish_every: int = 10
+    wardrobe_hf_publish_seconds: float = 300.0
 
     s3_endpoint: str = ""
     s3_bucket: str = ""

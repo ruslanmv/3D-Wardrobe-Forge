@@ -230,15 +230,56 @@ def dictionary_id(request: CreateJobRequest) -> str | None:
 _LIST_LOCK = asyncio.Lock()
 
 
-async def ready_looks(store: ObjectStore, wardrobe_id: str, *, include_private: bool) -> list[dict]:
-    """The fresh prebuilt looks listed for a wardrobe; private ones only when asked for."""
+def merge_lists(*lists: dict) -> dict:
+    """RU2. One wardrobe list from several copies: every look in any, the newest per identity.
+
+    Two looks are the same look when LIST_FIELDS agree; of those the one built last wins, and a
+    look with no ``builtAt`` loses to one that has it. The order of first appearance is kept.
+    """
+    merged: dict[tuple, dict] = {}
+    wardrobe_id = None
+    for listed in lists:
+        if not isinstance(listed, dict):
+            continue
+        wardrobe_id = wardrobe_id or listed.get("wardrobeId")
+        for item in listed.get("looks", []):
+            if not isinstance(item, dict):
+                continue
+            ident = tuple(item.get(f) for f in LIST_FIELDS)
+            old = merged.get(ident)
+            if old is None or (item.get("builtAt") or "") > (old.get("builtAt") or ""):
+                merged[ident] = item
+    return {"wardrobeId": wardrobe_id, "looks": list(merged.values()), "pipelineVersion": PIPELINE_VERSION}
+
+
+async def read_list(store: ObjectStore, wardrobe_id: str) -> dict:
+    """RU2. A wardrobe's list as every Forge sees it: this store's copy merged with the shared one.
+
+    On the dataset store a list this Space wrote locally (after making one look) used to hide
+    the dataset's copy for the rest of the Space's life, so every look the prebuild added after
+    that stayed invisible here until a restart. Unreadable copies count as empty.
+    """
+    key = wardrobe_key(wardrobe_id)
+    copies: list[dict] = []
     try:
-        if not await store.exists(wardrobe_key(wardrobe_id)):
-            return []
-        listed = json.loads(await store.get(wardrobe_key(wardrobe_id)))
+        if await store.exists(key):
+            copies.append(json.loads(await store.get(key)))
     except Exception as exc:
         logger.warning("prebuilt list for %s unreadable: %s", wardrobe_id, exc)
-        return []
+    try:
+        shared = await store.get_shared(key)
+        if shared:
+            copies.append(json.loads(shared))
+    except Exception as exc:
+        logger.warning("shared prebuilt list for %s unreadable: %s", wardrobe_id, exc)
+    merged = merge_lists(*copies)
+    merged["wardrobeId"] = merged["wardrobeId"] or wardrobe_id
+    return merged
+
+
+async def ready_looks(store: ObjectStore, wardrobe_id: str, *, include_private: bool) -> list[dict]:
+    """The fresh prebuilt looks listed for a wardrobe; private ones only when asked for."""
+    listed = await read_list(store, wardrobe_id)
     looks = [item.copy() for item in listed.get("looks", []) if isinstance(item, dict)]
     visible = [item for item in looks if include_private or not item.get("private")]
     # Index entries can outlive a preview that CI never uploaded. Avoid advertising
@@ -334,15 +375,10 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
         if outfit_id:
             item["outfitId"] = outfit_id
     async with _LIST_LOCK:
-        listed: dict = {"wardrobeId": wardrobe_id, "looks": []}
-        try:
-            if await store.exists(wardrobe_key(wardrobe_id)):
-                listed = json.loads(await store.get(wardrobe_key(wardrobe_id)))
-        except Exception:
-            listed = {"wardrobeId": wardrobe_id, "looks": []}
+        # RU2. Read through the merge, so writing her list never drops what the dataset holds.
+        listed = await read_list(store, wardrobe_id)
         same = tuple(item.get(f) for f in LIST_FIELDS)
-        fields = LIST_FIELDS
-        kept = [old for old in listed.get("looks", []) if tuple(old.get(f) for f in fields) != same]
+        kept = [old for old in listed.get("looks", []) if tuple(old.get(f) for f in LIST_FIELDS) != same]
         listed["looks"] = kept
         listed["looks"].append(item)
         listed["pipelineVersion"] = PIPELINE_VERSION
@@ -424,5 +460,6 @@ def answered(request: CreateJobRequest, cached: JobRecord) -> JobRecord:
     return record
 
 
-__all__ = ["PIPELINE_VERSION", "LIST_FIELDS", "cache_key", "plan_key", "keys_for", "dictionary_id", "lookup",
-           "remember", "answered", "entry_key", "wardrobe_key", "is_fresh", "ready_looks", "with_prebuilt"]
+__all__ = ["PIPELINE_VERSION", "LIST_FIELDS", "merge_lists", "read_list", "cache_key", "plan_key", "keys_for",
+           "dictionary_id", "lookup", "remember", "answered", "entry_key", "wardrobe_key", "is_fresh",
+           "ready_looks", "with_prebuilt"]

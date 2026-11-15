@@ -215,6 +215,33 @@ what the haul is for.
 
 Plan the dataset for 40–45 GB.
 
+## Reuse by plan, publishing from the Space, no orphans (RU1–RU4, 2026-11-15)
+
+Measured before: a dictionary outfit ("black fitted crop top + blue straight jeans") took
+84 s and the identical request again 55 s, as a second look; a template look came back in
+0.0 s. Four changes:
+
+- **RU1, plan key.** `prebuilt.plan_key` keys what the planner builds (each garment's
+  template, shape, colour, material, hosiery, set; each template's content; the rest of the
+  request), not the words. Dictionary outfits, free descriptions and rewordings that plan to
+  the same garments are reused. The old words key is asked first (`keys_for`), so every entry
+  already in the dataset still answers; `cache_key` and `PIPELINE_VERSION` are unchanged. A
+  look is remembered under both keys and listed once; outfits of several garments are listed
+  with `plan`, `garments` and, for an exact dictionary request, `outfitId`.
+  `tools/prebuild.py --outfits` builds the dictionary with the app's exact request body.
+- **RU2, merged lists.** The Space reads a wardrobe list as its local copy merged with the
+  dataset's (`prebuilt.read_list`, `ObjectStore.get_shared`), so a list it wrote after making
+  one look no longer hides what the prebuild added since.
+- **RU3, publishing from the Space.** With `WARDROBE_HF_PUBLISH` (default on) the dataset
+  store commits each finished look — entry, files, merged list — in batches of
+  `WARDROBE_HF_PUBLISH_EVERY` (10) or every `WARDROBE_HF_PUBLISH_SECONDS` (300), and on
+  shutdown. The Space's `HF_TOKEN` needs write access to the dataset; a failed commit stays
+  pending for the next batch.
+- **RU4, nothing unservable goes up.** `wardrobe.storage.dataset_publish.publish` (used by
+  the Space and by CI's `tools/publish_prebuilt.py`) sends only looks a prebuilt entry names.
+  `tools/dataset_orphans.py` lists, and with `--delete` removes, look folders no entry or
+  list names.
+
 ## Status (2026-11-13)
 
 | Phase | State | Where |

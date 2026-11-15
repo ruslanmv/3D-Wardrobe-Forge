@@ -61,6 +61,13 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         await orchestrator.stop()
+        # RU3. Looks made since the last batch go up to the dataset before the Space stops.
+        close = getattr(orchestrator.store, "close", None)
+        if close is not None:
+            try:
+                await close()
+            except Exception:  # pragma: no cover - shutting down must not fail on this
+                logger.exception("publishing the last looks on shutdown failed")
 
 
 app = FastAPI(
