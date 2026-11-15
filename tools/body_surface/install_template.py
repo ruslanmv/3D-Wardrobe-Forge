@@ -17,6 +17,10 @@ What the tool refuses, and why:
   are research-only and are deliberately absent;
 * a template without ``--no-real-person-scan`` — a scan of a real person is biometric data
   (GDPR Art. 9) and needs consent and review this tool cannot record;
+* AF3: a source naming a donated-remains or real-person-scan dataset (``EXCLUDED_SOURCES``:
+  the Visible Human / Human Reference Atlas among them) — their licences allow reuse, but not
+  consent to a body's use in adult entertainment; and an intimate region without
+  ``--source-type`` (original-synthetic, commissioned or open-asset), recorded in provenance;
 * a field that is not zero on its edge, or larger than the template itself.
 
 It writes ``assets/body_surface/templates/<id with / as ->.json`` with the field's SHA-256 in
@@ -38,7 +42,10 @@ sys.path.insert(0, str(ROOT))
 
 from wardrobe.body_surface.library import (  # noqa: E402
     ANCHORS,
+    EXCLUDED_SOURCES,
+    INTIMATE_REGIONS,
     LICENSES,
+    SOURCE_TYPES,
     TEMPLATE_SCHEMA,
     _sha256_field,
     load_template,
@@ -68,7 +75,14 @@ def procedural_navel(radius_m: float = 0.036, cells: int = 37) -> np.ndarray:
 
 def install(field: np.ndarray, *, template_id: str, region: str, anchor: str, radius_m: float,
             license_id: str, source: str, author: str, landmarks: dict, reference_waist_m: float,
-            notes: str = "", templates_dir: Path = TEMPLATES) -> Path:
+            notes: str = "", templates_dir: Path = TEMPLATES,
+            source_type: str = "original-synthetic") -> Path:
+    if source_type not in SOURCE_TYPES:
+        allowed = ", ".join(sorted(SOURCE_TYPES))
+        raise SystemExit(f"source type {source_type!r} is not allowed; allowed: {allowed}")
+    if EXCLUDED_SOURCES.search(f"{source} {author} {notes}"):
+        raise SystemExit("refused: donated human remains and real-person scans are excluded "
+                         "from body surfaces")
     if license_id not in LICENSES:
         raise SystemExit(f"licence {license_id!r} is not allowed; allowed: {', '.join(sorted(LICENSES))}")
     if anchor not in ANCHORS:
@@ -88,6 +102,7 @@ def install(field: np.ndarray, *, template_id: str, region: str, anchor: str, ra
         "author": author,
         "license": license_id,
         "containsRealPersonScan": False,
+        "sourceType": source_type,
         "installedAt": dt.date.today().isoformat(),
         "notes": notes,
         "sha256": _sha256_field(data),
@@ -124,6 +139,8 @@ def main() -> int:
     parser.add_argument("--notes", default="")
     parser.add_argument("--no-real-person-scan", action="store_true",
                         help="state that the template is not derived from a scan of a real person")
+    parser.add_argument("--source-type", choices=sorted(SOURCE_TYPES),
+                        help="what the template was made from (required for an intimate region)")
     args = parser.parse_args()
     if args.procedural == "navel":
         path = install(procedural_navel(), template_id="navel/v1", region="navel", anchor="navel",
@@ -138,6 +155,9 @@ def main() -> int:
                if getattr(args, n) is None]
     if missing:
         raise SystemExit("missing: " + ", ".join(missing))
+    if args.region in INTIMATE_REGIONS and args.source_type is None:
+        allowed = ", ".join(sorted(SOURCE_TYPES))
+        raise SystemExit(f"refused: an intimate region needs --source-type ({allowed})")
     if not args.no_real_person_scan:
         raise SystemExit("refused: pass --no-real-person-scan to state the template is not a scan of a real "
                          "person (scans need consent and review this tool cannot record)")
@@ -147,7 +167,8 @@ def main() -> int:
     path = install(field, template_id=args.id, region=args.region, anchor=args.anchor,
                    radius_m=args.radius_mm / 1000, license_id=args.license, source=args.source,
                    author=args.author,
-                   landmarks=landmarks, reference_waist_m=args.reference_waist_mm / 1000, notes=args.notes)
+                   landmarks=landmarks, reference_waist_m=args.reference_waist_mm / 1000, notes=args.notes,
+                   source_type=args.source_type or "original-synthetic")
     print("installed", path.relative_to(ROOT))
     return 0
 

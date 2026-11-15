@@ -84,6 +84,7 @@ class FailureReason(StrEnum):
     BODY_SURFACE_UNAVAILABLE = "body_surface_profile_unavailable"
     #: BS1. An adult body-surface profile refused: model terms, operator switch or declaration.
     BODY_SURFACE_NOT_PERMITTED = "body_surface_not_permitted"
+    BODY_INCOMPLETE_FOR_BARE = "body-incomplete-for-bare"
     INTERNAL = "internal_error"
 
 
@@ -107,8 +108,8 @@ class JobOptions(BaseModel):
     #: How the source outfit is prepared before the new one is built (wardrobe.pipeline.prepare_base_body):
     #: preserve — layer over what she wears; replace-outer — take off what the whole new outfit
     #: covers (the default); underwear-base — take it off *and* put underwear on first, in the same
-    #: job. There is deliberately no mode that leaves her with nothing on.
-    base_body: Literal["preserve", "replace-outer", "underwear-base"] | None = Field(
+    #: job. bare is a private, adult-gated authored-body-only mode.
+    base_body: Literal["preserve", "replace-outer", "underwear-base", "bare"] | None = Field(
         default=None, alias="baseBody"
     )
     #: MG3. Make sure a foundation is on her under the new clothes, adding only what is missing:
@@ -179,6 +180,13 @@ class CreateJobRequest(BaseModel):
 
     @model_validator(mode="after")
     def _body_art_list(self) -> CreateJobRequest:
+        bare_template = self.outfit is not None and self.outfit.template_id == "body-bare-v1"
+        if bare_template != (self.options.base_body_mode == "bare"):
+            raise ValueError("body-bare-v1 and baseBody=bare must be requested together")
+        if bare_template and (self.body_art or self.body_art_remove or self.body_surface
+                              or self.options.ensure_foundation or self.options.foundation_color
+                              or self.outfit.layers or self.outfit.color):
+            raise ValueError("bare mode accepts no garments, colours, body art or body surface")
         check_items(self.body_art, self.body_art_remove)
         changes_a_look = self.body_art or self.body_art_remove or self.options.foundation_color
         if self.outfit is None and not changes_a_look:
@@ -296,6 +304,7 @@ _REJECTION_REASONS = frozenset(
         FailureReason.INTIMATE_NOT_PERMITTED,
         FailureReason.ADULT_DECLARATION_REQUIRED,
         FailureReason.BODY_INCOMPLETE,
+        FailureReason.BODY_INCOMPLETE_FOR_BARE,
         FailureReason.FOUNDATION_OVER_CLOTHING,
         FailureReason.PAINTED_CLOTHING_SHOWS,
         FailureReason.BODY_ART_NEEDS_LOOK,

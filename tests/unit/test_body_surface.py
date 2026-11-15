@@ -451,3 +451,80 @@ def test_body_points_without_positions_are_what_they_were():
     (skin,) = skin_parts(document, measurements.bone_positions)
     moved = body_points(document, positions={skin.accessor: skin.positions + [0, 0.01, 0]})
     assert moved.shape == plain.shape and not np.array_equal(moved, plain)
+
+
+# --- AF3: what a template is made from, and who it may be used on ---------------------------------
+
+
+def test_donated_remains_and_real_scans_are_refused_even_mislabelled(tmp_path):
+    # The installer refuses a dataset of donated remains by name, whatever flags are passed.
+    for source in ("Human Reference Atlas skin, female (HuBMAP)", "NLM Visible Human Female surface"):
+        with pytest.raises(SystemExit, match="excluded"):
+            install_template.install(
+                np.zeros((9, 9, 3)), template_id="pubic/v1", region="pubic", anchor="centre-front-crotch",
+                radius_m=0.04, license_id="CC-BY-4.0", source=source, author="test",
+                landmarks={"centre": {"uv": [0, 0]}}, reference_waist_m=0.26,
+                templates_dir=tmp_path / "templates")
+    # And the server refuses one written by hand with containsRealPersonScan: false.
+    path = _bump(tmp_path / "templates")
+    data = json.loads(path.read_text())
+    data["provenance"]["source"] = "derived from the Human Reference Atlas (doi 10.48539/HBM453.MVPL.398)"
+    path.write_text(json.dumps(data))
+    with pytest.raises(LibraryError, match="donated human remains"):
+        load_template(path)
+
+
+def test_an_intimate_template_must_say_what_it_is_made_from(tmp_path):
+    path = _bump(tmp_path / "templates", region="chestDetail")
+    assert json.loads(path.read_text())["provenance"]["sourceType"] == "original-synthetic"
+    data = json.loads(path.read_text())
+    del data["provenance"]["sourceType"]
+    path.write_text(json.dumps(data))
+    with pytest.raises(LibraryError, match="sourceType"):
+        load_template(path)
+    data["provenance"]["sourceType"] = "real-person-scan"
+    path.write_text(json.dumps(data))
+    with pytest.raises(LibraryError, match="sourceType"):
+        load_template(path)
+    # A non-intimate template written before AF3 (no sourceType) still loads: nothing shipped changes.
+    navel = _bump(tmp_path / "other", region="navel")
+    data = json.loads(navel.read_text())
+    del data["provenance"]["sourceType"]
+    navel.write_text(json.dumps(data))
+    assert load_template(navel).region == "navel"
+
+
+def test_intimate_detail_needs_a_review_of_this_exact_file(tmp_path):
+    allow = LicenseTerms(raw={"allowExcessivelySexualUsage": True})
+    common = {"operator_enabled": True, "depicts_adult": True}
+    # The bare body and non-intimate adult work are unaffected by the fourth question.
+    assert gate.evaluate(Capability.ADULT_BODY_SURFACE, allow, **common).allowed
+    refused = gate.evaluate(Capability.ADULT_BODY_SURFACE, allow, intimate=True, **common)
+    assert not refused.allowed and refused.refused_by == "adult-design-review"
+    # The review is read server-side, by the SHA-256 of the reviewed bytes.
+    (tmp_path / "adult-design-reviews.json").write_text(json.dumps({
+        "schema": gate.REVIEWS_SCHEMA,
+        "reviews": {
+            "a" * 64: {"outcome": "clearly-adult", "reviewer": "QA", "date": "2026-11-15", "evidence": "x"},
+            "b" * 64: {"outcome": "clearly-adult", "reviewer": "QA"},  # incomplete: not a review
+        }}))
+    review = gate.design_review(tmp_path, "a" * 64)
+    assert gate.evaluate(Capability.ADULT_BODY_SURFACE, allow, intimate=True, design_reviewed=review,
+                         **common).allowed
+    assert gate.design_review(tmp_path, "b" * 64) is None
+    assert gate.design_review(tmp_path, "c" * 64) is None
+    assert gate.design_review(tmp_path, None) is None
+    # The earlier questions still come first.
+    assert gate.evaluate(Capability.ADULT_BODY_SURFACE, allow, intimate=True, design_reviewed=review,
+                         operator_enabled=False, depicts_adult=True).refused_by == "operator-disabled"
+
+
+def test_no_library_character_is_reviewed_for_intimate_detail():
+    root = Path(__file__).parents[2] / "assets" / "body_surface"
+    data = json.loads((root / "adult-design-reviews.json").read_text())
+    assert data["schema"] == gate.REVIEWS_SCHEMA
+    assert data["reviews"] == {}
+    import hashlib
+    library = Path(__file__).parents[2] / "assets" / "library"
+    for vrm in [*library.glob("*.vrm"), *(library / "vroid").glob("*.vrm")]:
+        assert gate.design_review(root, hashlib.sha256(vrm.read_bytes()).hexdigest()) is None

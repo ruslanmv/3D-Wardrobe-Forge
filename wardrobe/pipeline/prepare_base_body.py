@@ -136,6 +136,10 @@ async def run(context: PipelineContext) -> None:
     if context.plan is None or context.document is None or context.info is None:
         return
     mode = context.record.request.options.base_body_mode
+    if mode == "bare":
+        from wardrobe.pipeline.bare_body import prepare
+        await prepare(context)
+        return
     report = context.fit_report
     report.base_body = {"mode": mode, "removedSlots": [], "removedMaterials": [], "complete": None,
                         "layerOrder": "passed", "bodyPreparation": "not-requested"}

@@ -85,6 +85,9 @@ def plan(forge: Forge, slugs: list[str] | None, only: str | None, colours: int =
     templates.sort(key=lambda t: (FIRST.get(t.get("category"), len(FIRST)), t["name"].lower()))
     pairs = []
     for template in templates:
+        # Bare builds are manual opt-in only; never added to an existing prebuild invocation.
+        if template["id"] == "body-bare-v1" and only != "body-bare-v1":
+            continue
         for colour in (template.get("prebuiltColors") or [None])[: colours or None]:
             for avatar in avatars:
                 pair = {"slug": avatar["slug"], "templateId": template["id"], "name": template["name"],
@@ -122,6 +125,9 @@ def job_body(pair: dict) -> dict:
             "outfit": {"mode": "auto", **pair["outfit"]},
             "options": {"renderPreview": True, "engine": "auto", "ensureFoundation": True},
         }
+    if pair["templateId"] == "body-bare-v1":
+        return {"outfit": {"prompt": "Bare authored body", "mode": "template", "templateId": "body-bare-v1"},
+                "options": {"baseBody": "bare", "renderPreview": True, "engine": "native"}}
     colour = pair.get("color")
     outfit = {"prompt": f"{colour} {pair['name']}" if colour else pair["name"], "mode": "template",
               "templateId": pair["templateId"]}
@@ -140,6 +146,11 @@ def build(forge: Forge, pair: dict, job_timeout: float) -> dict:
         return out
     started = time.monotonic()
     try:
+        if pair["templateId"] == "body-bare-v1":
+            existing = forge.call(f"/v1/library/{pair['slug']}/prebuilt").get("looks", [])
+            if any(look.get("templateId") == "body-bare-v1" for look in existing):
+                out.update(result="present", reason="keep-existing: no overwrite")
+                return out
         job = forge.call(f"/v1/library/{pair['slug']}/jobs", job_body(pair))
         prebuilt = job.get("state") == "completed"
         while job.get("state") not in TERMINAL:
@@ -166,6 +177,8 @@ def build(forge: Forge, pair: dict, job_timeout: float) -> dict:
         out.update(result="present" if prebuilt else "built", lookId=(job.get("look") or {}).get("id"))
     else:
         out.update(result="failed", reason=job.get("error") or job["state"])
+        if pair["templateId"] == "body-bare-v1":
+            out["reasonCode"] = job.get("reason")
     return out
 
 

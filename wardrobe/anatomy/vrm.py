@@ -62,7 +62,11 @@ def build_reference_vrm(size_id: str, *, spec: str = "VRM1", correctives: bool =
         return mesh
 
     body = BodyProportions(name=size_id, height=float(V[:, 1].max()))
-    data = build_vrm(body, spec=spec, mesh_builder=builder, skeleton=skeleton(J))
+    # AF5. The operator's terms for these bodies (2026-11-15): adult use allowed. They are generated
+    # here, declared adult in assets/calibration/policy.json (ANSUR II women aged 21 and over on
+    # MakeHuman's CC0 adult template, no genital detail), and depict no one. The calibration bodies
+    # and fit forms keep the default, false.
+    data = build_vrm(body, spec=spec, mesh_builder=builder, skeleton=skeleton(J), allow_sexual=True)
     document = GltfDocument.from_bytes(data)
     extras = document.gltf.setdefault("extras", {})
     extras["wardrobeAnatomy"] = {

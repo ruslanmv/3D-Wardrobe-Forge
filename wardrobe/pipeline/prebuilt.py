@@ -377,6 +377,10 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
     async with _LIST_LOCK:
         # RU2. Read through the merge, so writing her list never drops what the dataset holds.
         listed = await read_list(store, wardrobe_id)
+        if item["templateId"] == "body-bare-v1" and any(
+            old.get("templateId") == "body-bare-v1" for old in listed.get("looks", [])
+        ):
+            return  # Bare prebuilds are keep-existing, never a replacement.
         same = tuple(item.get(f) for f in LIST_FIELDS)
         kept = [old for old in listed.get("looks", []) if tuple(old.get(f) for f in LIST_FIELDS) != same]
         listed["looks"] = kept
@@ -410,6 +414,8 @@ async def lookup(store: ObjectStore, key: str) -> JobRecord | None:
 async def remember(store: ObjectStore, key: str, record: JobRecord, *, list_it: bool = True) -> None:
     """Keep a completed record under its key. Never raises: a cache that fails is a slower Forge."""
     if record.state != JobState.COMPLETED or record.look is None:
+        return
+    if record.request.options.base_body_mode == "bare" and await store.exists(entry_key(key)):
         return
     entry = {
         "key": key,

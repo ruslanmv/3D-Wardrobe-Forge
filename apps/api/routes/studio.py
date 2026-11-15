@@ -291,7 +291,10 @@ async def create_library_job(
     body's ``options.private`` is ignored: privacy is decided here, from whether
     the job relies on an admin session's declaration or builds on a private look.
     """
+    if body.options.base_body_mode == "bare" and admin is None:
+        raise HTTPException(status_code=403, detail="bare bodies require an admin session")
     avatar, private = _dressable(request, slug, admin)
+    private = private or body.options.base_body_mode == "bare"
 
     avatar_input = avatar.avatar_input()
     if body.base_look_id:

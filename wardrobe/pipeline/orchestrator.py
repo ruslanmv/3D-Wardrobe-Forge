@@ -147,7 +147,9 @@ class Orchestrator:
         return await self.jobs.get(job_id)
 
     def _prebuilt_keys(self, request: CreateJobRequest) -> list[str]:
-        if not self.settings.wardrobe_prebuilt:
+        # Bare requests always recheck current terms, switch and declaration before output: never
+        # answered from the cache, never remembered in it (feat/bare-base-body).
+        if not self.settings.wardrobe_prebuilt or request.options.base_body_mode == "bare":
             return []
         return prebuilt.keys_for(request, self.catalog)
 
@@ -206,11 +208,15 @@ class Orchestrator:
                 await generate_garment.plan(context)
                 engine = self._engine_for_outfit(engine, context)
                 await prepare_base_body.run(context)
-                await set_stance.run(context)  # DC1: on the heels of the shoes she is put in
-                await prepare_body_surface.run(context)  # BS1-BS3: only when the job asks for one
-                await generate_garment.generate(context)
-                await fit_garment.run(context, engine)
-                await assemble_vrm.run(context, engine)
+                if record.request.options.base_body_mode == "bare":
+                    engine = select_engine("native", self.settings)
+                    context.output_bytes = context.document.to_bytes()
+                else:
+                    await set_stance.run(context)  # DC1: on the heels of the shoes she is put in
+                    await prepare_body_surface.run(context)
+                    await generate_garment.generate(context)
+                    await fit_garment.run(context, engine)
+                    await assemble_vrm.run(context, engine)
                 await check_painted_skin.run(context)  # PB1: underwear on bare skin, or refused
             # BA4. Clothes are finished; only now is her visible skin measured, and a tattoo
             # added where it is. Neither stage does anything for a job without body art

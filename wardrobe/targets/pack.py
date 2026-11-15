@@ -101,6 +101,8 @@ def rating_for(plan, body_art=()) -> str:
     (``{"rating": ...}`` each) makes it at least that strong — the stronger of the
     clothes and the body art, never weaker.
     """
+    if plan is not None and plan.template_id == "body-bare-v1":
+        return "intimate"
     garments = plan.garments if plan is not None else []
     gated = [g for g in garments if getattr(g, "requires_adult", False)]
     clothes = ("general" if not gated
