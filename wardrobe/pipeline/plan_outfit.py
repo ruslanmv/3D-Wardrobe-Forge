@@ -661,13 +661,22 @@ def resolve_material(
     """
     notes = notes if notes is not None else []
     base_color = _colour(parsed.color_hex, text, "#6b6f76")
+    color_name = parsed.color_name
+    # These four cards are black when the prompt names no colour. Every other card stays grey.
+    if color_name is None and (template.construction or {}).get("defaultColor") == "black":
+        color_name = "black"
+        base_color = _colour("#111111", "", "#111111")
     policy = template.materials
 
     # AA. The template's own finish is the card. A word in the prompt still wins.
-    finish = (
-        request.finish or parsed.finish or FABRIC_FINISH.get(parsed.fabric or "")
-        or template.fit.finish or "matte"
-    )
+    # "leather" as a fabric still means satin for every card that is not itself leather,
+    # so boots and the leather mini keep the finish they have. An explicit finish word
+    # (latex, satin, gloss) still wins over the card.
+    fabric_finish = FABRIC_FINISH.get(parsed.fabric or "")
+    template_finish = template.fit.finish or None
+    if template_finish == "leather" and fabric_finish == "satin" and not (request.finish or parsed.finish):
+        fabric_finish = None
+    finish = request.finish or parsed.finish or fabric_finish or template_finish or "matte"
     if finish not in FINISHES or not policy.supports_finish:
         finish = "matte"
 
@@ -730,7 +739,7 @@ def resolve_material(
 
     return MaterialPlan(
         baseColor=base_color,
-        colorName=parsed.color_name,
+        colorName=color_name,
         metallic=metallic,
         roughness=roughness,
         fabric=parsed.fabric,

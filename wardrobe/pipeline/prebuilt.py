@@ -68,7 +68,7 @@ PREFIX = "prebuilt"
 #: hashes byte-for-byte as before and a new card that sets it still hashes it. Add to this
 #: list in the same commit as any new GarmentTemplate or FitPolicy field;
 #: tests/unit/test_cache_key_stability.py fails until you do.
-ADDED_TEMPLATE_FIELDS: dict[str, object] = {"replaces_clothing": False}
+ADDED_TEMPLATE_FIELDS: dict[str, object] = {"replaces_clothing": False, "construction": None}
 ADDED_FIT_FIELDS: dict[str, object] = {"slit": "", "finish": "", "pattern": "", "opacity": None}
 
 

@@ -2129,12 +2129,23 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         )
         return [waistband, *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="tights")]
     if kind == "catsuit":
+        construction = meta.get("construction") if isinstance(meta.get("construction"), dict) else {}
+        high_neck = construction.get("collar") == "high"
+        # The ordinary catsuit stops below the neck. A high neck rises to it, then tapers in.
         top_y = params.chest_y + (params.shoulder_y - params.chest_y) * 0.62
+        if high_neck:
+            top_y = params.neck_y + params.height * 0.012
         bottom_y = crotch_y(params, params.hip_y - thigh * 0.12)
-        body = cut_top(build_band(params, y_bottom=bottom_y, y_top=top_y, rows=10, name="catsuit-body"),
-                       bottom_y, top_y)
+        body = cut_top(build_band(params, y_bottom=bottom_y, y_top=top_y, rows=16 if high_neck else 10,
+                                  name="catsuit-body"), bottom_y, top_y)
+        if high_neck:
+            from wardrobe.geometry.dark_fashion import collar_band, taper_catsuit_neck
+
+            body = taper_catsuit_neck(body, params)
         legs = build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="catsuit", ankle=True)
         sections = [body, *legs]
+        if high_neck:
+            sections.append(collar_band(params))
         sections += build_sleeves(
             params, length=params.sleeve_length or "long", thickness=1.1,
             fishnet=params.metadata.get("pattern") == "fishnet",

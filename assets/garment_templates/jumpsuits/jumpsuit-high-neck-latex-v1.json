@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "jumpsuit-high-neck-latex-v1",
+  "name": "High-Neck Latex Catsuit",
+  "category": "jumpsuit",
+  "mesh": "procedural:catsuit",
+  "coverage": [
+    "neck",
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs",
+    "lowerLegs",
+    "upperArms",
+    "lowerArms"
+  ],
+  "anchors": [
+    "neck",
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs",
+    "lowerLegs",
+    "upperArms",
+    "lowerArms"
+  ],
+  "silhouette": "slim",
+  "hem": "ankle",
+  "sleeve": "long",
+  "fit": {
+    "bodyClearanceMm": 2.5,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "conform": 1.0,
+    "conformBelowHips": true,
+    "finish": "latex"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": true
+  },
+  "optIn": true,
+  "construction": {
+    "collar": "high",
+    "zipper": "center-front",
+    "defaultColor": "black"
+  },
+  "tags": [
+    "high-neck latex catsuit",
+    "high neck latex catsuit"
+  ],
+  "description": "Fitted latex catsuit with a raised collar, long sleeves, ankle-length legs and a centre-front zipper."
+}
