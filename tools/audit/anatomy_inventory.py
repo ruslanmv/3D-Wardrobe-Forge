@@ -116,8 +116,8 @@ def texture_stats(doc, owners):
         xs = np.clip((uvs[:, 0] % 1.0) * (w - 1), 0, w - 1).astype(int)
         ys = np.clip((uvs[:, 1] % 1.0) * (h - 1), 0, h - 1).astype(int)
         rgb = tex[ys, xs, :3]
-        l = rgb @ np.array([0.299, 0.587, 0.114])
-        lum.append(l)
+        luma = rgb @ np.array([0.299, 0.587, 0.114])
+        lum.append(luma)
         # Skin is warm and fairly light; anything far from the region's median hue is not skin.
         med = np.median(rgb, 0)
         painted += int((np.linalg.norm(rgb - med, axis=1) > 0.18).sum())
@@ -126,8 +126,8 @@ def texture_stats(doc, owners):
         painted += int((alpha < 0.5).sum())
     if not lum:
         return {"texture": None}
-    l = np.concatenate(lum)
-    return {"luminanceStd": round(float(l.std()), 4), "offSkinShare": round(painted / max(n, 1), 3), "texels": n}
+    luma = np.concatenate(lum)
+    return {"luminanceStd": round(float(luma.std()), 4), "offSkinShare": round(painted / max(n, 1), 3), "texels": n}
 
 
 def inspect(name: str, path: Path) -> dict:
@@ -143,11 +143,11 @@ def inspect(name: str, path: Path) -> dict:
     if not parts:
         out["regions"] = {"note": "no skin found by skin_parts"}
         return out
-    l, r = bones.get("leftUpperLeg"), bones.get("rightUpperLeg")
+    left, right = bones.get("leftUpperLeg"), bones.get("rightUpperLeg")
     hips = bones["hips"]
-    if l is not None and r is not None:
+    if left is not None and right is not None:
         # Pubic region: between the thigh roots, a little below and in front of them.
-        pubic = (l + r) / 2.0 + np.array([0.0, -0.06, 0.0])
+        pubic = (left + right) / 2.0 + np.array([0.0, -0.06, 0.0])
         all_pts = np.concatenate([p.positions[p.used] for p in parts])
         # Push the centre forward onto the front surface of her body at that height.
         slab = all_pts[np.abs(all_pts[:, 1] - pubic[1]) < 0.02]
