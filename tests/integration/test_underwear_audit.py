@@ -41,7 +41,8 @@ def published() -> dict:
 
 def test_every_underwear_template_is_audited_once(published):
     catalog = TemplateCatalog.from_directory(ROOT / "assets" / "garment_templates")
-    expected = sorted(t.id for t in catalog if t.category == "underwear")
+    # AF5. A body mode (body-bare-v1) is filed under underwear but is not a garment: skipped, as the code does.
+    expected = sorted(t.id for t in catalog if t.category == "underwear" and not t.is_body_mode)
     assert sorted(item["id"] for item in published["items"]) == expected
 
 

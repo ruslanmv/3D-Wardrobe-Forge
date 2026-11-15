@@ -172,3 +172,48 @@ async def test_publishing_off_keeps_writes_local(tmp_path, settings, hub):
     await store.put(prebuilt.entry_key("k1"), b"{}")
     await store.close()
     assert hub.commits == []
+
+
+def _private_look(root: Path, key: str, look_id: str):
+    _finished_look(root, key, look_id)
+    (root / "looks" / look_id / "private.json").write_text('{"private": true, "wardrobeId": "mira"}')
+
+
+def _list_with(root: Path, items: list[dict]):
+    (root / "prebuilt" / "wardrobes").mkdir(parents=True, exist_ok=True)
+    (root / prebuilt.wardrobe_key("mira")).write_text(json.dumps({"wardrobeId": "mira", "looks": items}))
+
+
+def test_a_private_look_never_goes_to_a_dataset_not_known_private(tmp_path, hub):
+    """BI4. The fake hub has no repo_info: not known private, so nothing private goes up."""
+    root = tmp_path / "root"
+    _finished_look(root, "k1", "look_public")
+    _private_look(root, "k2", "look_secret")
+    _list_with(root, [{"lookId": "look_public", "templateId": "t", "private": False},
+                      {"lookId": "import-abc", "templateId": None, "plan": "import-abc", "private": True}])
+    result = dp.publish(hub.module.HfApi(), "me/looks", root, download=dp.hub_download())
+    sent = hub.commits[0]
+    assert "looks/look_public/look.vrm" in sent
+    assert not any("look_secret" in name for name in sent) and "prebuilt/k2.json" not in sent
+    uploaded = json.loads(hub.files[prebuilt.wardrobe_key("mira")])
+    assert [item["lookId"] for item in uploaded["looks"]] == ["look_public"]
+    assert result["privateHeldBack"] == ["import-abc", "look_secret"] and result["includePrivate"] is False
+
+
+def test_a_private_look_goes_to_a_dataset_the_hub_says_is_private(tmp_path, hub):
+    root = tmp_path / "root"
+    _private_look(root, "k2", "look_secret")
+    api = hub.module.HfApi()
+    api.repo_info = lambda repo_id, repo_type: types.SimpleNamespace(private=True)
+    result = dp.publish(api, "me/looks", root, download=dp.hub_download())
+    assert "looks/look_secret/look.vrm" in hub.commits[0] and result["includePrivate"] is True
+
+
+def test_an_unanswered_visibility_question_counts_as_public(tmp_path, hub):
+    api = hub.module.HfApi()
+
+    def boom(**_):
+        raise RuntimeError("hub down")
+
+    api.repo_info = boom
+    assert dp.dataset_is_private(api, "me/looks") is False

@@ -81,9 +81,29 @@ def merge_list(local: dict, remote: dict, *, keep_existing: bool) -> dict:
     return {**local, "looks": kept + added}
 
 
+def dataset_is_private(api, repo: str) -> bool:
+    """BI4. Whether the hub says this dataset is private. Anything else (an error, no answer, an
+    API without ``repo_info``) is *not private*: a private look is never sent on a guess."""
+    try:
+        return bool(api.repo_info(repo_id=repo, repo_type="dataset").private)
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _is_private_look(root: Path, look_id: str | None, entry: bytes) -> bool:
+    if look_id and (root / "looks" / look_id / "private.json").is_file():
+        return True
+    try:
+        record = json.loads(entry).get("record") or {}
+        return bool(((record.get("request") or {}).get("options") or {}).get("private"))
+    except (ValueError, AttributeError):
+        return False
+
+
 def publish(api, repo: str, root: Path, *, entries: Iterable[str] | None = None,
             lists: Iterable[str] | None = None, keep_existing: bool = True,
-            message: str = "publish prebuilt looks", download=None) -> dict:
+            message: str = "publish prebuilt looks", download=None,
+            include_private: bool | None = None) -> dict:
     """Upload ``entries`` (default: every entry under root), the looks they name, and ``lists``
     (default: every list under root), merged. One commit. Returns what went up and what did not.
 
@@ -92,6 +112,14 @@ def publish(api, repo: str, root: Path, *, entries: Iterable[str] | None = None,
     """
     from huggingface_hub import CommitOperationAdd
 
+    # BI4. A private look (a bare prebuild, an operator's imported body state, anything an admin
+    # session's declaration made) is served only to an admin session or a read grant. Before,
+    # publishing sent its VRM and its list entry to the dataset with everything else, so a public
+    # dataset made it public. It goes up only to a dataset the hub says is private (or when the
+    # caller says so); otherwise it stays in this storage and is reported as held back.
+    if include_private is None:
+        include_private = dataset_is_private(api, repo)
+    private_held: list[str] = []
     entries = sorted(set(entries if entries is not None else entries_under(root)))
     lists = sorted(set(lists if lists is not None else lists_under(root)))
     files: list[str] = []
@@ -100,7 +128,11 @@ def publish(api, repo: str, root: Path, *, entries: Iterable[str] | None = None,
         path = root / key
         if not path.is_file():
             continue
-        look = look_of_entry(path.read_bytes())
+        raw = path.read_bytes()
+        look = look_of_entry(raw)
+        if not include_private and _is_private_look(root, look, raw):
+            private_held.append(look or key)
+            continue
         found = look_files(root, look) if look else []
         if not any(name.endswith("/look.vrm") for name in found):
             continue  # an entry whose look is not here (freed locally, already up) goes alone
@@ -108,7 +140,9 @@ def publish(api, repo: str, root: Path, *, entries: Iterable[str] | None = None,
         files += found
         looks.append(look)
     # An entry already up with its look freed locally: the entry alone is harmless and current.
-    files += [key for key in entries if key not in files and (root / key).is_file()]
+    files += [key for key in entries if key not in files and (root / key).is_file()
+              and (include_private or not _is_private_look(root, look_of_entry((root / key).read_bytes()),
+                                                           (root / key).read_bytes()))]
 
     held_back: list[str] = []
     merged: dict[str, bytes] = {}
@@ -125,6 +159,11 @@ def publish(api, repo: str, root: Path, *, entries: Iterable[str] | None = None,
             held_back.append(key)
             continue
         local = json.loads(path.read_text())
+        if not include_private:
+            hidden = [item for item in local.get("looks", [])
+                      if isinstance(item, dict) and item.get("private")]
+            private_held += [item.get("lookId") or "?" for item in hidden]
+            local["looks"] = [item for item in local.get("looks", []) if item not in hidden]
         merged[key] = json.dumps(merge_list(local, remote, keep_existing=keep_existing)).encode("utf-8")
 
     operations = [CommitOperationAdd(path_in_repo=key, path_or_fileobj=str(root / key))
@@ -132,7 +171,8 @@ def publish(api, repo: str, root: Path, *, entries: Iterable[str] | None = None,
     operations += [CommitOperationAdd(path_in_repo=key, path_or_fileobj=data) for key, data in merged.items()]
     if operations:
         api.create_commit(repo_id=repo, repo_type="dataset", operations=operations, commit_message=message)
-    return {"files": len(operations), "looks": looks, "lists": sorted(merged), "heldBack": held_back}
+    return {"files": len(operations), "looks": looks, "lists": sorted(merged), "heldBack": held_back,
+            "privateHeldBack": sorted(set(private_held)), "includePrivate": bool(include_private)}
 
 
 def hub_download(token: str | None = None):

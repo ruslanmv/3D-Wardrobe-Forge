@@ -345,6 +345,8 @@ async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, inclu
                 wardrobeState=item.get("wardrobeState"),
                 sourceSha256=item.get("sourceSha256"),
                 outputSha256=item.get("outputSha256"),
+                origin=item.get("origin"),
+                garments=item.get("garments") if item.get("origin") == "operator-import" else None,
             )
         )
     return merged
@@ -396,6 +398,95 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
         listed["pipelineVersion"] = PIPELINE_VERSION
         await store.put(wardrobe_key(wardrobe_id), json.dumps(listed).encode("utf-8"),
                         content_type="application/json")
+
+
+def import_look_id(output_sha256: str) -> str:
+    """BI1. An imported body state's look id: its own bytes name it, so a re-upload is the same look."""
+    return f"import-{output_sha256[:24]}"
+
+
+async def register_import(store: ObjectStore, wardrobe_id: str, data: bytes, *, verdict: dict,
+                          state: str, name: str, source_sha256: str, output_sha256: str,
+                          imported_by: str, provenance: dict, vrm_url: str,
+                          garments: list[str] | None = None) -> dict:
+    """BI1. Store an accepted operator import and list it in her wardrobe, privately.
+
+    The order is the orchestrator's (``_mark_private``): the private marker is written before the
+    VRM, so there is no moment in which the file is stored and not yet known to be private, and
+    every object is in the store, so a restart loses nothing. The list entry carries the same
+    identity fields as a built look (BL1), so the app reads ``wardrobeState``, ``sourceSha256`` and
+    ``outputSha256`` from it exactly as for ``body-bare-v1``. ``plan`` is the import's own key, so two
+    imports are two looks and a re-upload of the same bytes replaces itself (LIST_FIELDS).
+    """
+    from wardrobe.domain.jobs import private_marker
+
+    look_id = import_look_id(output_sha256)
+    marker = {"private": True, "wardrobeId": wardrobe_id, "origin": "operator-import"}
+    await store.put(private_marker(look_id), json.dumps(marker).encode("utf-8"),
+                    content_type="application/json")
+    await store.put(f"looks/{look_id}/look.vrm", data, content_type="model/gltf-binary")
+    now = datetime.now(UTC).isoformat()
+    record = {"lookId": look_id, "wardrobeId": wardrobe_id, "state": state, "name": name,
+              "sourceSha256": source_sha256, "outputSha256": output_sha256, "importedBy": imported_by,
+              "importedAt": now, "provenance": provenance, "verdict": verdict}
+    await store.put(f"looks/{look_id}/import.json", json.dumps(record).encode("utf-8"),
+                    content_type="application/json")
+    item = {
+        "key": f"import-{output_sha256}",
+        # One garment is a look of that template, as Forge lists a built one; several are a plan.
+        "templateId": garments[0] if garments and len(garments) == 1 else None,
+        "garments": list(garments or []),
+        "color": None,
+        "foundationColor": None,
+        "plan": f"import-{output_sha256}",
+        "lookId": look_id,
+        "name": name,
+        "vrmUrl": vrm_url,
+        "previewUrl": None,
+        "private": True,
+        "prompt": None,
+        "fitPassed": True,
+        "fitVerdict": "imported",
+        "builtAt": now,
+        "wardrobeState": state,
+        "sourceSha256": source_sha256,
+        "outputSha256": output_sha256,
+        "origin": "operator-import",
+    }
+    async with _LIST_LOCK:
+        listed = await read_list(store, wardrobe_id)
+        same = tuple(item.get(f) for f in LIST_FIELDS)
+        listed["looks"] = [old for old in listed.get("looks", [])
+                           if tuple(old.get(f) for f in LIST_FIELDS) != same] + [item]
+        listed["pipelineVersion"] = PIPELINE_VERSION
+        await store.put(wardrobe_key(wardrobe_id), json.dumps(listed).encode("utf-8"),
+                        content_type="application/json")
+    return item
+
+
+async def withdraw_import(store: ObjectStore, wardrobe_id: str, look_id: str) -> bool:
+    """BI1. Take an imported body state out of her list and delete its files. False when unknown.
+
+    Only an import: a built look is not this route's to delete. The marker is deleted last, so
+    the VRM is never stored without it."""
+    if not look_id.startswith("import-"):
+        return False
+    async with _LIST_LOCK:
+        listed = await read_list(store, wardrobe_id)
+        kept = [old for old in listed.get("looks", []) if old.get("lookId") != look_id]
+        if len(kept) == len(listed.get("looks", [])):
+            return False
+        listed["looks"] = kept
+        await store.put(wardrobe_key(wardrobe_id), json.dumps(listed).encode("utf-8"),
+                        content_type="application/json")
+    from wardrobe.domain.jobs import private_marker
+
+    for key in (f"looks/{look_id}/look.vrm", f"looks/{look_id}/import.json", private_marker(look_id)):
+        try:
+            await store.delete(key)
+        except Exception as exc:  # noqa: BLE001 - a leftover file is private by its marker
+            logger.warning("could not delete %s: %s", key, exc)
+    return True
 
 
 async def lookup(store: ObjectStore, key: str) -> JobRecord | None:
@@ -475,5 +566,6 @@ def answered(request: CreateJobRequest, cached: JobRecord) -> JobRecord:
 
 
 __all__ = ["PIPELINE_VERSION", "LIST_FIELDS", "merge_lists", "read_list", "cache_key", "plan_key", "keys_for",
-           "dictionary_id", "lookup", "remember", "answered", "entry_key", "wardrobe_key", "is_fresh",
+           "import_look_id", "register_import", "withdraw_import", "dictionary_id", "lookup", "remember",
+           "answered", "entry_key", "wardrobe_key", "is_fresh",
            "ready_looks", "with_prebuilt"]

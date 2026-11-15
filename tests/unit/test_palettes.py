@@ -10,7 +10,8 @@ from wardrobe.pipeline.plan_outfit import COLORS
 
 
 def test_every_garment_has_one_to_three_real_colours_default_first(template_catalog):
-    for template in template_catalog.all():
+    # AF5. A body mode (body-bare-v1) is filed under underwear but is not a garment: skipped, as the code does.
+    for template in (t for t in template_catalog.all() if not t.is_body_mode):
         colours = palettes.colours_for(template)
         assert 1 <= len(colours) <= palettes.MAX_COLOURS, template.id
         assert all(c in COLORS for c in colours), template.id
@@ -28,9 +29,11 @@ def test_the_full_collection_counts_every_garment_in_three_colours(template_cata
     """PB6, plus the atelier cards. Every garment is still three colours."""
     from wardrobe.atelier.orders import CATALOG_BEFORE_ATELIER, built_orders
 
-    per_character = sum(len(palettes.colours_for(t)) for t in template_catalog.all())
-    assert len(template_catalog) == CATALOG_BEFORE_ATELIER + len(built_orders())
-    assert per_character == len(template_catalog) * palettes.MAX_COLOURS
+    # AF5. A body mode (body-bare-v1) is filed under underwear but is not a garment: skipped, as the code does.
+    garments = [t for t in template_catalog.all() if not t.is_body_mode]
+    per_character = sum(len(palettes.colours_for(t)) for t in garments)
+    assert len(garments) == CATALOG_BEFORE_ATELIER + len(built_orders())
+    assert per_character == len(garments) * palettes.MAX_COLOURS
 
 
 def test_every_override_names_a_real_garment(template_catalog):
