@@ -154,3 +154,24 @@ def test_the_prebuild_sends_a_dictionary_outfit_as_the_app_does(template_catalog
         "options": {"renderPreview": True, "engine": "auto", "ensureFoundation": True},
     })
     assert prebuilt.plan_key(prebuilt_request, template_catalog) == prebuilt.plan_key(app_request, template_catalog)
+
+
+async def test_a_bare_request_is_never_answered_from_the_cache(orchestrator, store, stored_avatar):
+    """A stale stored result must not stand in for today's terms, switch and declaration.
+
+    Seeds a completed entry under every key the request would have if bare were cacheable, then
+    submits it: it is queued for a fresh, gated run, and an ordinary request still hits.
+    """
+    orchestrator.queue = RecordingQueue()
+    tee = await orchestrator.run_now(_template())
+    assert (await orchestrator.submit(_template())).look.id == tee.look.id  # clothing still reuses
+
+    payload = job_request("sources/test-avatar.vrm", "Bare", template_id="body-bare-v1", baseBody="bare",
+                          private=True)
+    bare = CreateJobRequest.model_validate(payload)
+    assert orchestrator._prebuilt_keys(bare) == []
+    for key in prebuilt.keys_for(bare, orchestrator.catalog) or ["0" * 64]:
+        await prebuilt.remember(store, key, tee)  # a stale, completed record under the would-be key
+    queued = await orchestrator.submit(bare)
+    assert queued.state == JobState.QUEUED and orchestrator.queue.ids[-1] == queued.id
+    assert queued.look is None
