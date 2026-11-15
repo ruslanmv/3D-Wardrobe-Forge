@@ -131,6 +131,7 @@ def list_garments(
         template for template in all_templates
         if (category is None or template.category == category)
         and (include_restricted or not restricted(template))
+        and not template.is_body_mode  # AF5: the bare body is a body mode, not a garment to build
     ]
     groups = []
     for name in LABELS:

@@ -191,6 +191,17 @@ class GarmentTemplate(BaseModel):
         return self.mesh.startswith("procedural:")
 
     @property
+    def is_body_mode(self) -> bool:
+        """AF5. A template that is a way of preparing her body, not a garment (``body:bare``).
+
+        ``body-bare-v1`` is filed under ``underwear`` so the catalogue groups it with what is worn
+        closest to her, but it has no garment geometry: anything that builds or lists garments —
+        the geometry builders, the garment catalogue, the prebuild — skips it. Walking it as a
+        garment raised ``unsupported garment category: 'underwear'``.
+        """
+        return self.mesh.startswith("body:")
+
+    @property
     def procedural_kind(self) -> str:
         return self.mesh.split(":", 1)[1] if self.is_procedural else self.category
 

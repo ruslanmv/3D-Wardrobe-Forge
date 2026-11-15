@@ -91,8 +91,14 @@ async def prepare(context):
     if not integrity.complete:
         raise BodyIncompleteForBare("authored body is not closed in every required band",
                                     detail={"integrity": integrity.to_dict()})
-    tagged = any(((n.get("extras") or {}).get("wardrobeForge") or {}).get("kind") == "garment"
-                 for n in [*doc.nodes, *doc.meshes])
+    # AF5. A garment still drawn: a tagged node that still holds a mesh, or a tagged mesh a node
+    # still draws. remove_garments detaches a whole-mesh garment from its node (no renumbering),
+    # so the node keeps its tag with nothing on it - counting the tag alone refused every look
+    # Forge itself had dressed, as "detected clothing remains" (ref-f-median, tee and jeans).
+    drawn = {n["mesh"] for n in doc.nodes if "mesh" in n}
+    garment = lambda item: ((item.get("extras") or {}).get("wardrobeForge") or {}).get("kind") == "garment"  # noqa: E731
+    tagged = any(garment(n) and "mesh" in n for n in doc.nodes) or any(
+        garment(m) and i in drawn for i, m in enumerate(doc.meshes))
     remaining = [g for g in garment_inventory(doc) if not is_anatomy(g)]
     if remaining or tagged:
         raise BodyIncompleteForBare("detected clothing remains")

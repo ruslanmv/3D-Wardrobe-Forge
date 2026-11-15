@@ -130,10 +130,21 @@ def check_body(
         near = np.hypot(dx, dz) < radius
         sector = ((np.arctan2(dz, dx) + np.pi) / (2 * np.pi) * SECTORS).astype(int) % SECTORS
         bands = []
+        leg = bare and region not in {"upper", "lower"}
         for k in range(BANDS_PER_REGION):
             y0 = low + (high - low) * k / BANDS_PER_REGION
             y1 = low + (high - low) * (k + 1) / BANDS_PER_REGION
             inside = near & (points[:, 1] >= y0) & (points[:, 1] < y1)
+            if leg and inside.any():
+                # AF5. A leg is not straight up the knee-to-foot axis: at the ankle the skin sits
+                # behind the foot bone, so sectors round that one axis read a closed ankle as
+                # 56-62 % (ref-f-median). Each band is read round its own skin's centre; a real
+                # hole still leaves sectors empty.
+                cx, cz = points[inside, 0].mean(), points[inside, 2].mean()
+                ring = ((np.arctan2(points[inside, 2] - cz, points[inside, 0] - cx) + np.pi)
+                        / (2 * np.pi) * SECTORS).astype(int) % SECTORS
+                bands.append(len(np.unique(ring)) / SECTORS)
+                continue
             bands.append(len(np.unique(sector[inside])) / SECTORS)
         confidence = float(np.mean(bands)) if bands else 0.0
         present = min(bands) >= MIN_BAND_COVERAGE
