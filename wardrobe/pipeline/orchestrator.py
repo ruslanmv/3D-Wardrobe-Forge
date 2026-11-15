@@ -188,7 +188,13 @@ class Orchestrator:
         """
         if record.request.options.private:
             marker = private_marker(look_id_for(record.id))
-            await self.store.put(marker, b'{"private": true}\n', content_type="application/json")
+            # BI2. The marker names her wardrobe, so a read grant scoped to her can be checked
+            # against the file itself after a restart, with no job record in memory.
+            options = record.request.options
+            wardrobe_id = options.wardrobe_id or record.request.avatar.avatar_id
+            body = {"private": True, **({"wardrobeId": wardrobe_id} if wardrobe_id else {})}
+            data = (json.dumps(body) + "\n").encode("utf-8")
+            await self.store.put(marker, data, content_type="application/json")
 
     # ------------------------------------------------------------------
     async def execute(self, record: JobRecord) -> JobRecord:

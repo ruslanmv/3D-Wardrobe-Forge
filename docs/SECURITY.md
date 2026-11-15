@@ -53,6 +53,13 @@ either unless an AI mesh provider is enabled.
 
 Both images run as a non-root user.
 
+## Private looks for a consumer (BI2)
+
+A companion app never holds the admin token. It holds a read grant (`X-Wardrobe-Grant`): read
+only, scoped to named library avatars, at most 30 days, signed with `WARDROBE_GRANT_SECRET`
+(unset: no grants), revocable by id (`WARDROBE_GRANT_REVOKED`) or by rotating the secret. No write
+route accepts one. See `docs/qa/BODY_STATE_IMPORT.md`.
+
 ## Privacy
 
 - Generated looks are **private by default**. Nothing is world-readable.

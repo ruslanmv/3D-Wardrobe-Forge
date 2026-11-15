@@ -83,6 +83,7 @@ def test_camel_case_json_round_trips():
 
 
 def test_procedural_meshes_are_flagged(template_catalog: TemplateCatalog):
-    for template in template_catalog:
+    # AF5. A body mode (body-bare-v1) is filed under underwear but is not a garment: skipped, as the code does.
+    for template in (t for t in template_catalog if not t.is_body_mode):
         assert template.is_procedural, f"{template.id} references a binary mesh that is not shipped"
         assert template.procedural_kind

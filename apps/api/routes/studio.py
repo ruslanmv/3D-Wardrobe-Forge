@@ -26,6 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import OrchestratorDep, SettingsDep, StoreDep, http_error_for
+from apps.api.grants import GrantDep, can_read_private
 from apps.api.ratelimit import limit_job_creation
 from apps.api.routes.avatars import _inspect
 from apps.api.routes.body_art import check_designs
@@ -492,7 +493,8 @@ async def look_exposure(
 
 
 @router.get("/library/{slug}/prebuilt")
-async def list_prebuilt(slug: str, request: Request, admin: AdminDep, store: StoreDep) -> dict:
+async def list_prebuilt(slug: str, request: Request, admin: AdminDep, store: StoreDep,
+                        grant: GrantDep) -> dict:
     """PB2. The looks already made for her, fresh on her own body: worn at once, no job.
 
     What the app reads to know what she has ready, so "lingerie" finds a lingerie look instead
@@ -502,7 +504,7 @@ async def list_prebuilt(slug: str, request: Request, admin: AdminDep, store: Sto
     avatar = _library(request).get(slug)
     if avatar is None or not avatar.available:
         raise HTTPException(status_code=404, detail="avatar not in the library")
-    looks = await prebuilt.ready_looks(store, slug, include_private=admin is not None)
+    looks = await prebuilt.ready_looks(store, slug, include_private=can_read_private(admin, grant, slug))
     return {"slug": slug, "pipelineVersion": prebuilt.PIPELINE_VERSION, "count": len(looks), "looks": looks}
 
 

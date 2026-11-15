@@ -352,7 +352,7 @@ class HfDatasetObjectStore(LocalObjectStore):
             self.published["looks"] += len(result["looks"])
             # What just went up exists in the dataset now: no listing round trip to know it.
             if self._remote is not None:
-                self._remote |= set(entries) | set(lists)
+                self._remote |= set(entries) | set(lists) | set(result.get("uploaded") or [])
             for key in lists:
                 self._shared.pop(key, None)
             logger.info("published %d looks (%d files) to %s",

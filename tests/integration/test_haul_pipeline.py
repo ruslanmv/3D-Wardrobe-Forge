@@ -65,7 +65,8 @@ async def test_every_template_completes_and_passes(orchestrator, store, template
     """
     await store.put("sources/haul.vrm", build_vrm(CALIBRATION_BODIES[2], spec="VRM1"))
     failures = []
-    for template in template_catalog.all():
+    # AF5. A body mode (body-bare-v1) is filed under underwear but is not a garment: its own suite (test_bare_body) covers it.
+    for template in (t for t in template_catalog.all() if not t.is_body_mode):
         payload = job_request("sources/haul.vrm", template.name, template_id=template.id)
         # Swimwear and underwear are gated by category. A see-through card in
         # another category is gated by requiresAdult (a sheer dress, a mesh top).

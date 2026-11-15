@@ -16,7 +16,9 @@ from wardrobe.pipeline.plan_outfit import plan_outfit
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = TemplateCatalog.from_directory(ROOT / "assets" / "garment_templates")
-TEMPLATES = sorted(CATALOG, key=lambda t: t.id)
+# AF5. A body mode (body-bare-v1) is filed under underwear but is not a garment: it has no
+# construction controls to honour, and the Studio does not offer it as one.
+TEMPLATES = sorted((t for t in CATALOG if not t.is_body_mode), key=lambda t: t.id)
 
 
 def test_every_pattern_block_field_is_explained():

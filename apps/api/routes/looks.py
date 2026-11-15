@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import CatalogDep, OrchestratorDep, StoreDep
+from apps.api.grants import GrantDep
 from wardrobe.domain.garments import GarmentTemplate
 from wardrobe.domain.jobs import private_marker
 from wardrobe.domain.looks import LookResult
@@ -44,18 +47,28 @@ async def get_template(template_id: str, catalog: CatalogDep) -> GarmentTemplate
 
 
 @router.get("/assets/{key:path}")
-async def get_asset(key: str, store: StoreDep, admin: AdminDep) -> Response:
+async def get_asset(key: str, store: StoreDep, admin: AdminDep, grant: GrantDep) -> Response:
     """Serve a stored artifact (local backend only; S3 issues signed URLs).
 
-    A private look's files are served to an admin session only. The marker is read
-    from the store rather than from a job record, so it holds after a restart.
+    A private look's files are served to an admin session, and (BI2) to a read grant for the
+    wardrobe its marker names. The marker is read from the store rather than from a job record,
+    so it holds after a restart. A marker that names no wardrobe (written before BI2) is
+    admin-only, as it always was; an unreadable one is treated as private to no grant.
     """
     try:
         validate_storage_key(key)
         parts = key.split("/")
         in_a_look = len(parts) > 2 and parts[0] == "looks"
-        if admin is None and in_a_look and await store.exists(private_marker(parts[1])):
-            raise KeyError(key)
+        marker = private_marker(parts[1]) if in_a_look else None
+        if admin is None and marker and await store.exists(marker):
+            if grant is None:
+                raise KeyError(key)
+            try:
+                owner = json.loads(await store.get(marker)).get("wardrobeId")
+            except (ValueError, AttributeError):
+                owner = None
+            if not grant.covers(owner):
+                raise KeyError(key)
         data = await store.get(key)
     except (ValueError, OSError, KeyError):
         raise HTTPException(status_code=404, detail="asset not found") from None

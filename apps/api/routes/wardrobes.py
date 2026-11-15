@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import OrchestratorDep, SettingsDep
+from apps.api.grants import GrantDep, can_read_private
 from wardrobe.domain.manifests import WardrobeManifest
 from wardrobe.pipeline import prebuilt
 
@@ -18,11 +19,15 @@ router = APIRouter(tags=["wardrobes"])
 
 
 
-async def _read_wardrobe(request: Request, orchestrator, avatar_id: str, admin):
-    """Merge durable prebuilt looks; known avatars have an empty wardrobe until dressed."""
+async def _read_wardrobe(request: Request, orchestrator, avatar_id: str, admin, grant=None):
+    """Merge durable prebuilt looks; known avatars have an empty wardrobe until dressed.
+
+    BI2. A read grant for this avatar sees her private looks too, as an admin session does.
+    """
+    private = can_read_private(admin, grant, avatar_id)
     manifest = await prebuilt.with_prebuilt(
         orchestrator.store, avatar_id, await orchestrator.wardrobes.get(avatar_id),
-        include_private=admin is not None,
+        include_private=private,
     )
     if manifest is None:
         library = getattr(request.app.state, "library", None)
@@ -33,7 +38,7 @@ async def _read_wardrobe(request: Request, orchestrator, avatar_id: str, admin):
             )
     if manifest is None:
         raise HTTPException(status_code=404, detail="wardrobe not found")
-    return manifest if admin is not None else manifest.public()
+    return manifest if private else manifest.public()
 
 
 @router.get("/wardrobes", response_model=list[str])
@@ -43,9 +48,9 @@ async def list_wardrobes(orchestrator: OrchestratorDep) -> list[str]:
 
 @router.get("/wardrobes/{avatar_id}", response_model=WardrobeManifest)
 async def get_wardrobe(
-    avatar_id: str, request: Request, orchestrator: OrchestratorDep, admin: AdminDep
+    avatar_id: str, request: Request, orchestrator: OrchestratorDep, admin: AdminDep, grant: GrantDep
 ) -> WardrobeManifest:
-    return await _read_wardrobe(request, orchestrator, avatar_id, admin)
+    return await _read_wardrobe(request, orchestrator, avatar_id, admin, grant)
 
 
 @router.get("/wardrobes/{avatar_id}/avatars.json")
@@ -55,10 +60,11 @@ async def get_wardrobe_as_avatar_manifest(
     orchestrator: OrchestratorDep,
     settings: SettingsDep,
     admin: AdminDep,
+    grant: GrantDep,
     base_path: str = Query(default="", alias="basePath"),
 ) -> dict:
     """The wardrobe as a 3D-Avatar-Chatbot avatar manifest."""
-    manifest = await _read_wardrobe(request, orchestrator, avatar_id, admin)
+    manifest = await _read_wardrobe(request, orchestrator, avatar_id, admin, grant)
     return manifest.to_avatar_manifest(base_path or settings.public_base_url)
 
 

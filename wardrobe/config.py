@@ -113,6 +113,12 @@ class Settings(BaseSettings):
     #: BR1. The operator's separate switch for bare body *reconstruction* (bodyCompletion: proxy).
     #: Off by default; turning on adult body surfaces never turns this on.
     wardrobe_bare_body_completion: bool = False
+    #: BI2. Signs read grants (wardrobe.policy.grants): what a companion app holds to list and
+    #: fetch one avatar's private looks, instead of the admin token. Empty: no grants, private
+    #: looks stay admin-only. A secret, at least 32 characters; rotating it revokes every grant.
+    wardrobe_grant_secret: str = ""
+    #: BI2. Grant ids revoked before they expire, comma separated.
+    wardrobe_grant_revoked: str = ""
 
     # -- safety ----------------------------------------------------------
     max_avatar_bytes: int = 128 * 1024 * 1024

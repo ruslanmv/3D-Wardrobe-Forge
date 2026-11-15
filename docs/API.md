@@ -302,6 +302,22 @@ profile refused by the model's terms, the operator's switch
 clearance) and, per layer, any `relaxation`. See
 [BODY_SURFACE](BODY_SURFACE.md).
 
+## Private body states and read grants (BI1, BI2)
+
+Admin session only (`X-Wardrobe-Admin`); details and every refusal in
+`docs/qa/BODY_STATE_IMPORT.md`.
+
+- `POST /v1/admin/library/{slug}/body-states` (multipart: `file`, `state` = `lingerie` | `bare`,
+  `sourceSha256`, `licence`, `rightsAttested`, optional `sha256`, `name`, `garments`) → `201
+  {look, verdict}`; `422 {reason: body_state_*, message, verdict}` with every check's answer.
+- `GET /v1/admin/library/{slug}/body-states`, `DELETE /v1/admin/library/{slug}/body-states/{lookId}`.
+- `POST /v1/admin/grants {slugs, ttlSeconds, label}` → `201 {token, header, id, slugs, expires}`;
+  `409 grants_unavailable` without `WARDROBE_GRANT_SECRET`.
+
+A consumer sends the grant as `X-Wardrobe-Grant`. It reads private looks of the avatars it names
+through `GET /v1/wardrobes/{slug}`, `GET /v1/library/{slug}/prebuilt` and `/v1/assets/looks/…`,
+and nothing else.
+
 ## Wardrobes
 
 | Endpoint | Returns |

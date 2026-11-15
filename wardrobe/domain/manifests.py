@@ -39,6 +39,12 @@ class WardrobeLook(BaseModel):
     wardrobe_state: str | None = Field(default=None, alias="wardrobeState")
     source_sha256: str | None = Field(default=None, alias="sourceSha256")
     output_sha256: str | None = Field(default=None, alias="outputSha256")
+    #: BI1. ``operator-import`` for a body state an operator supplied (checked by
+    #: ``wardrobe.body_surface.body_state_import``); None for every look Forge built.
+    origin: str | None = None
+    #: BI1. The template ids an imported body state is made of (from the file's own garment tags,
+    #: or the operator's, checked against the catalogue), so the companion can tell its coverage.
+    garments: list[str] | None = None
 
     def to_avatar_item(self) -> dict:
         """Render as a 3D-Avatar-Chatbot ``avatars.json`` item."""

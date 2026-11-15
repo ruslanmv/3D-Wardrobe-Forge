@@ -29,6 +29,12 @@ def main(argv=None) -> int:
     parser.add_argument("--repo", default=os.environ.get("WARDROBE_HF_DATASET", ""))
     parser.add_argument("--overwrite", action="store_true", help="This run's looks replace the listed ones")
     parser.add_argument("--message", default="publish prebuilt looks")
+    # BI4. Private looks go up only to a dataset the hub itself reports private. This flag can
+    # ask for that, never force it: against a dataset not confirmed private, every private file
+    # is refused and the command exits 3.
+    parser.add_argument("--include-private", action="store_true", default=None,
+                        help="Publish private looks too; refused unless the hub confirms the dataset "
+                             "is private")
     opts = parser.parse_args(argv)
     if not opts.repo:
         print("no dataset: pass --repo or set WARDROBE_HF_DATASET", file=sys.stderr)
@@ -37,10 +43,15 @@ def main(argv=None) -> int:
 
     token = os.environ.get("HF_TOKEN")
     result = publish(HfApi(token=token), opts.repo, opts.root, keep_existing=not opts.overwrite,
-                     message=opts.message, download=hub_download(token))
+                     message=opts.message, download=hub_download(token),
+                     include_private=opts.include_private)
     for key in result["heldBack"]:
         print(f"::warning::{key}: the dataset copy could not be read; not uploaded this time")
     print(json.dumps({k: (len(v) if isinstance(v, list) else v) for k, v in result.items()}))
+    if result.get("refusedPrivate"):
+        print(f"::error::{opts.repo} is not confirmed private by the hub: "
+              f"{len(result['privateHeldBack'])} private looks were not published", file=sys.stderr)
+        return 3
     return 0
 
 

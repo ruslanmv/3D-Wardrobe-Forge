@@ -409,6 +409,9 @@ class FitReport(BaseModel):
     #: L8/L9. Each lingerie piece's elastic edges (strain, force and pressure per pose) and
     #: its garment rules (wardrobe.lingerie.report). Absent from a job without lingerie.
     lingerie: dict | None = Field(default=None, exclude_if=lambda v: v is None)
+    #: KL1. A bottom tucked inside a top she keeps: {keptTopHemY, moved, noRoom}. Absent otherwise,
+    #: so a report written before KL1 serialises exactly as it did.
+    kept_top_tuck: dict | None = Field(default=None, alias="keptTopTuck", exclude_if=lambda v: v is None)
     #: DC1. The heel and sole she stands on and the pitch and lift that give them, with the
     #: stance she stood in before. Absent from a job without shoes in it.
     stance: dict | None = Field(default=None, exclude_if=lambda v: v is None)
