@@ -442,6 +442,14 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     if kind in SEAM_WELDED_KINDS:
         _weld_seam_normals(mesh)
 
+    if artifact.metadata.get("construction"):
+        # Raised pieces (a zipper, buckles, boning) go on after the radial passes, or those
+        # passes draw them back into the cloth and they disappear. Only a template that
+        # asks for them; every other garment is the mesh it was fitted as.
+        from wardrobe.geometry.dark_fashion import apply_construction
+
+        mesh = apply_construction(mesh, params)
+
     # The shell's UVs are metres of fabric; one pattern tile covers its physical size.
     scale = float(context.plan.material.texture_scale or 0.0)
     if scale > 0.0 and mesh.uvs is not None:

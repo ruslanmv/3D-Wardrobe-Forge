@@ -10,8 +10,9 @@ from wardrobe.pipeline.plan_outfit import COLORS
 
 
 def test_every_garment_has_one_to_three_real_colours_default_first(template_catalog):
-    # AF5. A body mode (body-bare-v1) is filed under underwear but is not a garment: skipped, as the code does.
-    for template in (t for t in template_catalog.all() if not t.is_body_mode):
+    for template in template_catalog.all():
+        if template.is_body_mode:  # AF5: body-bare-v1 is not a garment and has no colours
+            continue
         colours = palettes.colours_for(template)
         assert 1 <= len(colours) <= palettes.MAX_COLOURS, template.id
         assert all(c in COLORS for c in colours), template.id
@@ -29,10 +30,18 @@ def test_the_full_collection_counts_every_garment_in_three_colours(template_cata
     """PB6, plus the atelier cards. Every garment is still three colours."""
     from wardrobe.atelier.orders import CATALOG_BEFORE_ATELIER, built_orders
 
-    # AF5. A body mode (body-bare-v1) is filed under underwear but is not a garment: skipped, as the code does.
+    # AF5. A body mode (body-bare-v1) is not a garment: no colours, not counted.
     garments = [t for t in template_catalog.all() if not t.is_body_mode]
     per_character = sum(len(palettes.colours_for(t)) for t in garments)
-    assert len(garments) == CATALOG_BEFORE_ATELIER + len(built_orders())
+    # The four dark-fashion garments are opt-in templates, not atelier cards.
+    dark_fashion = {
+        "jumpsuit-high-neck-latex-v1",
+        "under-leather-garter-v1",
+        "dress-buckle-leather-mini-v1",
+        "top-structured-leather-corset-v1",
+    }
+    assert dark_fashion <= {t.id for t in template_catalog.all()}
+    assert len(garments) == CATALOG_BEFORE_ATELIER + len(built_orders()) + len(dark_fashion)
     assert per_character == len(garments) * palettes.MAX_COLOURS
 
 

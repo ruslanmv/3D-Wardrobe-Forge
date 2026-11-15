@@ -296,6 +296,9 @@ def matcap(style: str, strength: float, tint: Colour = (1.0, 1.0, 1.0), size: in
         light = 0.8 * _smoothstep(0.25, 0.6, spot(-0.3, 0.4, 0.26)) + 0.2 * _smoothstep(0.85, 1.0, radius)
     elif style == "satin":
         light = 0.7 * spot(-0.1, 0.3, 0.42, 2.2)
+    elif style == "leather":
+        # Softer and broader than latex, dimmer than satin: a hide, not a mirror.
+        light = 0.55 * spot(-0.22, 0.28, 0.34, 1.8) + 0.18 * _smoothstep(0.9, 1.0, radius)
     elif style == "metal":
         sky = _smoothstep(0.15, 0.55, y) * 0.8
         band = np.exp(-((y + 0.08) / 0.1) ** 2) * 0.55
