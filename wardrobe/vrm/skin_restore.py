@@ -81,7 +81,7 @@ class SkinRestoration:
 def restore_skin(
     document: GltfDocument, measurements: BodyMeasurements, garments: set[tuple[int, int]],
     *, above: float | None = None, preserve_normals: bool = False,
-    protected_materials: set[int] | None = None,
+    protected_materials: set[int] | None = None, include_feet: bool = False,
 ) -> SkinRestoration | None:
     """Restore her skin texture between her ankles and her neck. None: nothing to restore.
 
@@ -95,7 +95,10 @@ def restore_skin(
         return None
     main = _image(document, skin.texture, textures)
     h, w = main.shape[:2]
-    drawn = _region(document, skin, w, h, above=above)
+    # AF4. A bare body is barefoot: painted socks or shoes on her feet (Rinna's are 94 % black) go
+    # with the rest of her painted clothing. Only the bare path asks; every other mode stops at the
+    # ankles exactly as before.
+    drawn = _region(document, skin, w, h, above=above, include_feet=include_feet)
     owned = _region(document, skin, w, h, everywhere=True)
     region = drawn | (_dilate(drawn, REGION_PAD_TEXELS) & ~owned)
     if not region.any():
@@ -142,7 +145,7 @@ def restore_skin(
 
 
 def _region(document: GltfDocument, skin, w: int, h: int, *, everywhere: bool = False,
-            above: float | None = None) -> np.ndarray:
+            above: float | None = None, include_feet: bool = False) -> np.ndarray:
     """Texels of the skin material's triangles between her ankles and her shoulders (or all)."""
     from PIL import Image, ImageDraw
 
@@ -151,8 +154,9 @@ def _region(document: GltfDocument, skin, w: int, h: int, *, everywhere: bool = 
     for primitive, points, triangles in skin.parts:
         uv = document.read_accessor(primitive["attributes"]["TEXCOORD_0"]).astype(np.float64)[:, :2]
         centre = points[triangles].mean(axis=1)[:, 1]
+        floor = -np.inf if include_feet else skin.ankle
         chosen = triangles if everywhere else triangles[
-            (centre >= max(skin.ankle, above if above is not None else skin.ankle))
+            (centre >= max(floor, above if above is not None else floor))
             & (centre <= skin.high + SHOULDER_M + 0.02)]
         corners = uv[chosen]  # (T, 3, 2)
         # A triangle across the texture's seam would be drawn the width of the texture.

@@ -153,3 +153,112 @@ async def test_authored_anatomy_cannot_be_stripped_as_garment(settings):
     with pytest.raises(BodyIncompleteForBare, match="anatomy was classified as clothing"):
         await prepare(context)
     assert doc.to_bytes() == original
+
+
+async def test_anatomy_labelled_material_detected_as_clothing_is_kept(settings):
+    """AF4. A primitive whose own material the author labelled anatomical stays on her body.
+
+    A garment detector reads shape and colour; a dark, tight surface between her thighs reads like
+    briefs. The author's material label wins: the primitive is not stripped, the job does not refuse
+    for it, its geometry is byte-identical afterwards, and the report names what was kept.
+    """
+    import hashlib
+    from types import SimpleNamespace
+
+    from wardrobe.domain.jobs import JobRecord
+    from wardrobe.pipeline.bare_body import prepare
+    from wardrobe.vrm.inspect import inspect_document
+    from wardrobe.vrm.measure import measure_body
+    path = Path(__file__).parents[2] / "assets/library/AvatarSample_C.vrm"
+    if not path.exists():
+        pytest.skip("library AvatarSample C unavailable")
+    doc = GltfDocument.from_bytes(path.read_bytes())
+    detected = garment_inventory(doc)
+    assert detected, "the fixture must have clothing to take off"
+    # The garment with a material of its own (not shared with any other detected primitive).
+    counts = {}
+    for g in detected:
+        m = doc.meshes[g.mesh]["primitives"][g.primitive]["material"]
+        counts[m] = counts.get(m, 0) + 1
+    target = next(g for g in detected if g.slot == "bottoms"
+                  and counts[doc.meshes[g.mesh]["primitives"][g.primitive]["material"]] == 1)
+    material = doc.meshes[target.mesh]["primitives"][target.primitive]["material"]
+    # The author marks the material anatomical; its name still reads like clothing to the detector.
+    doc.materials[material].setdefault("extras", {})["authoredAnatomy"] = True
+    assert any(g.mesh == target.mesh and g.primitive == target.primitive for g in garment_inventory(doc))
+    position = doc.meshes[target.mesh]["primitives"][target.primitive]["attributes"]["POSITION"]
+    before = hashlib.sha256(doc.read_accessor(position).tobytes()).hexdigest()
+    settings.wardrobe_adult_body_surface = True
+    info = inspect_document(doc)
+    context = SimpleNamespace(document=doc, info=info, measurements=measure_body(doc, info),
+                              settings=settings,
+                              fit_report=SimpleNamespace(base_body=None),
+                              record=JobRecord.queued(CreateJobRequest.model_validate(request("sources/a.vrm"))))
+    await prepare(context)
+    kept = [p for m in doc.meshes for p in m["primitives"] if p.get("material") == material]
+    assert kept, "the anatomy-labelled primitive was stripped"
+    assert hashlib.sha256(doc.read_accessor(kept[0]["attributes"]["POSITION"]).tobytes()).hexdigest() == before
+    assert material in context.fit_report.base_body["keptAnatomicalMaterials"]
+    assert material in context.fit_report.base_body["protectedAnatomicalMaterials"]
+    # Every other detected garment is gone.
+    others = [g for g in garment_inventory(doc)
+              if doc.meshes[g.mesh]["primitives"][g.primitive].get("material") != material]
+    assert not others
+
+
+def _painted_feet_share(doc):
+    """Share of her foot/ankle skin vertices whose texel is dark paint (socks, painted shoes)."""
+    import io
+
+    import numpy as np
+    from PIL import Image
+
+    from wardrobe.body_surface.surface import skin_parts
+    from wardrobe.vrm.inspect import inspect_document
+    from wardrobe.vrm.measure import measure_body
+    bones = {k: np.asarray(v, float) for k, v in dict(measure_body(doc, inspect_document(doc)).bone_positions).items()}
+    dark, total = 0, 0
+    for part in skin_parts(doc, bones):
+        material = doc.materials[part.material]
+        info = (material.get("pbrMetallicRoughness") or {}).get("baseColorTexture")
+        attrs = doc.meshes[part.primitives[0][0]]["primitives"][part.primitives[0][1]]["attributes"]
+        if not info or "TEXCOORD_0" not in attrs:
+            continue
+        image = doc.gltf["images"][doc.gltf["textures"][info["index"]]["source"]]
+        view = doc.gltf["bufferViews"][image["bufferView"]]
+        start = view.get("byteOffset", 0)
+        tex = np.asarray(Image.open(io.BytesIO(doc.binary[start:start + view["byteLength"]])).convert("RGB"))
+        uv = doc.read_accessor(attrs["TEXCOORD_0"])[part.used]
+        feet = part.positions[part.used][:, 1] < bones["leftFoot"][1] + 0.05
+        h, w = tex.shape[:2]
+        rgb = tex[np.clip(((uv[:, 1] % 1) * h).astype(int), 0, h - 1), np.clip(((uv[:, 0] % 1) * w).astype(int), 0, w - 1)]
+        dark += int((rgb[feet].max(1) < 64).sum())
+        total += int(feet.sum())
+    return dark / max(total, 1)
+
+
+async def test_bare_is_barefoot_and_other_modes_still_stop_at_the_ankles(settings):
+    """AF4. Rinna's feet are painted black (socks): the bare body takes them off with the rest of her
+    painted clothing; the shared restorer, called as every other mode calls it, leaves feet alone."""
+    from types import SimpleNamespace
+
+    from wardrobe.domain.jobs import JobRecord
+    from wardrobe.pipeline.bare_body import prepare
+    from wardrobe.vrm.inspect import inspect_document
+    from wardrobe.vrm.measure import measure_body
+    from wardrobe.vrm.skin_restore import restore_skin
+    path = Path(__file__).parents[2] / "assets/library/vroid/vroid-rinna.vrm"
+    if not path.exists():
+        pytest.skip("library Rinna unavailable")
+    assert _painted_feet_share(GltfDocument.from_bytes(path.read_bytes())) > 0.5
+    other = GltfDocument.from_bytes(path.read_bytes())
+    restore_skin(other, measure_body(other, inspect_document(other)), set())
+    assert _painted_feet_share(other) > 0.5
+    doc = GltfDocument.from_bytes(path.read_bytes())
+    settings.wardrobe_adult_body_surface = True
+    info = inspect_document(doc)
+    context = SimpleNamespace(document=doc, info=info, measurements=measure_body(doc, info), settings=settings,
+                              fit_report=SimpleNamespace(base_body=None),
+                              record=JobRecord.queued(CreateJobRequest.model_validate(request("sources/a.vrm"))))
+    await prepare(context)
+    assert _painted_feet_share(doc) == 0
