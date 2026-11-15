@@ -3772,6 +3772,296 @@
    "verdict": "matches spec"
   },
   {
+   "id": "under-leather-garter-v1",
+   "name": "Leather Garter Belt",
+   "kind": "suspender-belt",
+   "baseBody": "preserve",
+   "color": "black",
+   "spec": null,
+   "jobState": "completed",
+   "fitPassed": true,
+   "warnings": [
+    "hosiery: FR (right-front) stretches 10.7% in walk, past the 10% limit"
+   ],
+   "fitted": {
+    "frontCoverage": 0.585,
+    "backCoverage": 0.585,
+    "sideHeightMm": 87.1,
+    "backWidthAboveSeamMm": 0.0,
+    "seamY": 0.8156
+   },
+   "geometrySha256": "7499516928becab8fb647581419cad2469100305cf4912e428e06170a52c0ef7",
+   "vertices": 231,
+   "rules": [],
+   "comparison": [],
+   "contact": {
+    "rest": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    },
+    "sitting": {
+     "maxPenetrationMm": 31.8,
+     "penetratingPct": 10.39,
+     "maxEdgeStretch": 1.03,
+     "stretchedPct": 0.0
+    },
+    "sittingWide": {
+     "maxPenetrationMm": 28.5,
+     "penetratingPct": 9.96,
+     "maxEdgeStretch": 1.03,
+     "stretchedPct": 0.0
+    },
+    "standing": {
+     "maxPenetrationMm": 0.0,
+     "penetratingPct": 0.0,
+     "maxEdgeStretch": 1.0,
+     "stretchedPct": 0.0
+    }
+   },
+   "builtAs": "under-suspender-belt-v1",
+   "parts": [
+    {
+     "name": "Black Leather Suspender Belt",
+     "templateId": "under-suspender-belt-v1",
+     "role": "foundation",
+     "category": "underwear",
+     "fitted": true,
+     "primitives": [
+      "Black Leather Suspender Belt"
+     ],
+     "vertices": 231,
+     "triangles": 384,
+     "geometrySha256": "7499516928becab8fb647581419cad2469100305cf4912e428e06170a52c0ef7",
+     "contact": {
+      "rest": {
+       "maxPenetrationMm": 0.0,
+       "penetratingPct": 0.0,
+       "maxEdgeStretch": 1.0,
+       "stretchedPct": 0.0
+      },
+      "sitting": {
+       "maxPenetrationMm": 31.8,
+       "penetratingPct": 10.39,
+       "maxEdgeStretch": 1.03,
+       "stretchedPct": 0.0
+      },
+      "sittingWide": {
+       "maxPenetrationMm": 28.5,
+       "penetratingPct": 9.96,
+       "maxEdgeStretch": 1.03,
+       "stretchedPct": 0.0
+      },
+      "standing": {
+       "maxPenetrationMm": 0.0,
+       "penetratingPct": 0.0,
+       "maxEdgeStretch": 1.0,
+       "stretchedPct": 0.0
+      }
+     }
+    },
+    {
+     "name": "Black Thigh-High Stockings",
+     "templateId": "legwear-thigh-highs-v1",
+     "role": "legwear",
+     "category": "legwear",
+     "fitted": true,
+     "primitives": [
+      "Black Thigh-High Stockings",
+      "Black Thigh-High Stockings Edge",
+      "Black Thigh-High Stockings Top"
+     ],
+     "vertices": 3126,
+     "triangles": 1856,
+     "geometrySha256": "80ab037031d773bd08a2ab9a1003485d36e9c5ba4b9656f0901d459854a345f0",
+     "contact": {
+      "rest": {
+       "maxPenetrationMm": 0.0,
+       "penetratingPct": 0.0,
+       "maxEdgeStretch": 1.0,
+       "stretchedPct": 0.0
+      },
+      "sitting": {
+       "maxPenetrationMm": 24.0,
+       "penetratingPct": 5.18,
+       "maxEdgeStretch": 2.38,
+       "stretchedPct": 6.74
+      },
+      "sittingWide": {
+       "maxPenetrationMm": 21.7,
+       "penetratingPct": 7.77,
+       "maxEdgeStretch": 2.44,
+       "stretchedPct": 6.5
+      },
+      "standing": {
+       "maxPenetrationMm": 0.0,
+       "penetratingPct": 0.0,
+       "maxEdgeStretch": 1.0,
+       "stretchedPct": 0.0
+      }
+     }
+    },
+    {
+     "name": "Black Suspender Straps",
+     "templateId": null,
+     "role": "connector",
+     "category": "underwear",
+     "fitted": true,
+     "primitives": [
+      "Black Suspender Straps",
+      "Black Suspender Straps Hardware"
+     ],
+     "vertices": 1808,
+     "triangles": 1744,
+     "geometrySha256": "1e20a82aa4d5a9e59349a51d1bb157b933eb9a6bb2d79d8a3b75c4e5e07e761c",
+     "contact": {
+      "rest": {
+       "maxPenetrationMm": 4.7,
+       "penetratingPct": 8.96,
+       "maxEdgeStretch": 1.0,
+       "stretchedPct": 0.0
+      },
+      "sitting": {
+       "maxPenetrationMm": 9.9,
+       "penetratingPct": 3.76,
+       "maxEdgeStretch": 3.37,
+       "stretchedPct": 13.28
+      },
+      "sittingWide": {
+       "maxPenetrationMm": 3.3,
+       "penetratingPct": 1.33,
+       "maxEdgeStretch": 3.59,
+       "stretchedPct": 13.75
+      },
+      "standing": {
+       "maxPenetrationMm": 4.7,
+       "penetratingPct": 8.96,
+       "maxEdgeStretch": 1.0,
+       "stretchedPct": 0.0
+      }
+     }
+    }
+   ],
+   "hosiery": {
+    "straps": {
+     "restSlack": 0.015,
+     "thresholds": {
+      "warning": 0.04,
+      "error": 0.1
+     },
+     "tension": {
+      "FL": {
+       "strap": "left-front",
+       "restLengthM": 0.1948,
+       "currentLengthM": {
+        "stand": 0.1919,
+        "walk": 0.165,
+        "sit": 0.1199
+       },
+       "stretch": {
+        "stand": -0.0148,
+        "walk": -0.1532,
+        "sit": -0.3846
+       },
+       "status": {
+        "stand": "ok",
+        "walk": "slack",
+        "sit": "slack"
+       }
+      },
+      "RL": {
+       "strap": "left-back",
+       "restLengthM": 0.1876,
+       "currentLengthM": {
+        "stand": 0.1848,
+        "walk": 0.1858,
+        "sit": 0.1669
+       },
+       "stretch": {
+        "stand": -0.0148,
+        "walk": -0.0098,
+        "sit": -0.1102
+       },
+       "status": {
+        "stand": "ok",
+        "walk": "ok",
+        "sit": "slack"
+       }
+      },
+      "FR": {
+       "strap": "right-front",
+       "restLengthM": 0.1948,
+       "currentLengthM": {
+        "stand": 0.1919,
+        "walk": 0.2157,
+        "sit": 0.1198
+       },
+       "stretch": {
+        "stand": -0.0148,
+        "walk": 0.1074,
+        "sit": -0.3848
+       },
+       "status": {
+        "stand": "ok",
+        "walk": "error",
+        "sit": "slack"
+       }
+      },
+      "RR": {
+       "strap": "right-back",
+       "restLengthM": 0.1876,
+       "currentLengthM": {
+        "stand": 0.1848,
+        "walk": 0.1778,
+        "sit": 0.1669
+       },
+       "stretch": {
+        "stand": -0.0148,
+        "walk": -0.0522,
+        "sit": -0.1105
+       },
+       "status": {
+        "stand": "ok",
+        "walk": "slack",
+        "sit": "slack"
+       }
+      }
+     },
+     "maxStretch": {
+      "stand": -0.0148,
+      "walk": 0.1074,
+      "sit": -0.1102
+     }
+    },
+    "clips": {
+     "count": 4,
+     "bandDistanceMm": {
+      "FL": 0.0,
+      "RL": 0.0,
+      "FR": 0.0,
+      "RR": 0.0
+     },
+     "maxBandDistanceMm": 0.0
+    },
+    "stockingTop": {
+     "left": {
+      "topY": 0.7124,
+      "bottomY": 0.6774,
+      "widthMm": 35.2
+     },
+     "right": {
+      "topY": 0.7124,
+      "bottomY": 0.6774,
+      "widthMm": 35.2
+     }
+    }
+   },
+   "hard": [],
+   "soft": [],
+   "verdict": "no pattern spec"
+  },
+  {
    "id": "under-lingerie-set-v1",
    "name": "Lingerie Set",
    "kind": "bikini",
@@ -6123,6 +6413,14 @@
    "hard": [],
    "soft": [],
    "verdict": "no pattern spec"
+  }
+ ],
+ "updates": [
+  {
+   "at": "2026-11-15T23:54:43+00:00",
+   "ids": [
+    "under-leather-garter-v1"
+   ]
   }
  ]
 }

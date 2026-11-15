@@ -156,3 +156,25 @@ def test_where_the_top_is_open_nothing_is_tucked(her):
     angle = np.arctan2(before[:, 2] - hips[2], before[:, 0] - hips[0])
     opening = np.abs(angle - np.pi / 2) < 0.2
     assert np.array_equal(before[opening], mesh.positions[opening])
+
+
+def test_a_foundation_in_the_tops_slot_is_not_a_kept_top(her):
+    """KL2. A Forge bralette is filed under tops with the role "foundation". Read as a kept top,
+    a waspie layered over it was pulled inside the bralette's band: up to 21 mm into her ribs at
+    rest (the underwear audit). Nothing goes under a foundation."""
+    import copy
+
+    doc, measurements = her
+    as_foundation = GltfDocument(copy.deepcopy(doc.gltf), doc.binary)
+    for node in as_foundation.nodes:
+        if "mesh" in node:
+            node["extras"] = {"wardrobeForge": {"kind": "garment", "slot": "tops", "role": "foundation"}}
+    mesh = tube(measurements, 0.25)
+    before = mesh.positions.copy()
+    assert tuck_under_kept_tops(as_foundation, mesh, measurements, category="underwear") is None
+    assert np.array_equal(before, mesh.positions)
+    # The same top as an outer layer (or her own) still is one.
+    for node in as_foundation.nodes:
+        if "mesh" in node:
+            node["extras"]["wardrobeForge"]["role"] = "main"
+    assert tuck_under_kept_tops(as_foundation, mesh, measurements, category="underwear")["moved"] > 0

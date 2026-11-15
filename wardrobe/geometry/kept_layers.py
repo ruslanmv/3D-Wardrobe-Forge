@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from wardrobe.vrm.garment_inventory import garment_inventory
+from wardrobe.vrm.garment_inventory import FOUNDATION_ROLES, garment_inventory
 
 #: KL1 applies to these catalogue categories: what is worn under a top she keeps. Underwear is one:
 #: the foundation briefs Forge adds under new jeans (ensureFoundation) were fitted to her body
@@ -94,7 +94,14 @@ def tuck_under_kept_tops(document, mesh, measurements, *, category: str | None,
     from wardrobe.engines.geometry_checks import body_points  # the engines package imports this one
 
     worn = garment_inventory(document)
-    over = {(g.mesh, g.primitive) for g in worn if g.slot in OVER_SLOTS}
+    # KL2. A foundation is not a top anything goes under. A Forge bralette is filed in the tops
+    # slot (it covers her chest) with the role "foundation": read as a kept top, it had a waspie
+    # and a guêpière layered over it "tucked" inside the bralette's band, which lies on her
+    # skin, so their upper rows were pulled up to 21 mm into her ribs at rest (the underwear
+    # audit: 0 mm before KL1, 12.8% of the waspie inside her after). What hangs over a bottom
+    # is her own top or an outer layer; underwear is under everything by construction.
+    over = {(g.mesh, g.primitive) for g in worn
+            if g.slot in OVER_SLOTS and g.role not in FOUNDATION_ROLES}
     if not over:
         return None
     every = {(m, p) for m, mesh_ in enumerate(document.meshes) for p in range(len(mesh_["primitives"]))}
