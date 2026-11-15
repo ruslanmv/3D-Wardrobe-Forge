@@ -294,5 +294,12 @@ async def withdraw_body_state(slug: str, look_id: str, request: Request, admin: 
                               store: StoreDep) -> None:
     _signed_in(admin)
     _library_avatar(request, slug)
-    if not await prebuilt.withdraw_import(store, slug, look_id):
+    result = await prebuilt.withdraw_import(store, slug, look_id)
+    if result is None:
         raise HTTPException(status_code=404, detail="no such imported body state")
+    if not result["withdrawn"]:
+        # Out of her list, but some files could not be deleted: they keep their private marker,
+        # so they stay protected. Call again to finish; it is safe to repeat.
+        raise HTTPException(status_code=503, detail={
+            "reason": "body_state_withdraw_incomplete", "remaining": result["remaining"],
+            "message": "some files could not be deleted; they are still private. Retry the withdrawal."})

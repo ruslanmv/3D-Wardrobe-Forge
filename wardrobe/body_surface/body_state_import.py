@@ -104,7 +104,7 @@ def identity_primitives(doc: GltfDocument, head: int | None) -> list[tuple[str, 
         return []
     subtree = _head_subtree(doc, head)
     found = []
-    for ni in doc.mesh_nodes():
+    for ni in scene_mesh_nodes(doc):
         node = doc.nodes[ni]
         skin = node.get("skin")
         joints = (doc.gltf.get("skins") or [])[skin]["joints"] if skin is not None else None
@@ -150,19 +150,42 @@ def drawn_garments(doc: GltfDocument) -> list[str]:
     import that does not carry them is a look of unknown coverage: never offered as a step of
     undressing. Read from the file, not from anything the caller says.
     """
-    drawn = {n["mesh"] for n in doc.nodes if "mesh" in n}
     out: list[str] = []
-    for node in doc.nodes:
-        tag = (node.get("extras") or {}).get("wardrobeForge") or {}
+    for index in scene_mesh_nodes(doc):
+        tag = (doc.nodes[index].get("extras") or {}).get("wardrobeForge") or {}
         template = tag.get("templateId")
-        drawn_garment = tag.get("kind") == "garment" and node.get("mesh") in drawn
-        if drawn_garment and template and template not in out:
+        if tag.get("kind") == "garment" and template and template not in out:
             out.append(str(template))
     return out
 
 
+def scene_mesh_nodes(doc: GltfDocument) -> list[int]:
+    """BI6. The nodes the renderer draws: reachable from the active scene's roots and holding a mesh.
+
+    A mesh definition proves nothing about what is on screen. An import that kept her face mesh
+    in the file but detached it from the scene (the node removed from every parent, or left
+    without its ``mesh``) passed the face-and-hair check while the renderer drew no face at all.
+    """
+    scenes = doc.gltf.get("scenes") or []
+    if not scenes:
+        return []
+    index = doc.gltf.get("scene", 0)
+    scene = scenes[index] if isinstance(index, int) and 0 <= index < len(scenes) else scenes[0]
+    seen: set[int] = set()
+    stack = list(scene.get("nodes") or [])
+    while stack:
+        node = stack.pop()
+        if not isinstance(node, int) or node in seen or not 0 <= node < len(doc.nodes):
+            continue
+        seen.add(node)
+        stack.extend(doc.nodes[node].get("children") or [])
+    return sorted(n for n in seen if "mesh" in doc.nodes[n])
+
+
 def _primitive(doc: GltfDocument, mesh_name: str, index: int) -> dict | None:
-    for mesh in doc.meshes:
+    """The primitive of a mesh of this name that a scene node actually draws, or None."""
+    for node in scene_mesh_nodes(doc):
+        mesh = doc.meshes[doc.nodes[node]["mesh"]]
         if mesh.get("name", "") == mesh_name and index < len(mesh["primitives"]):
             return mesh["primitives"][index]
     return None
@@ -341,5 +364,5 @@ def check(data: bytes, original: bytes, *, state: str, source_sha256: str,
 
 __all__ = [
     "BARE_REGIONS", "IDENTITY_TOLERANCE_M", "MAX_BYTES", "RIG_TOLERANCE_M", "STATES", "ImportVerdict",
-    "check", "drawn_garments", "identity_primitives", "same_title", "sha256",
+    "check", "drawn_garments", "scene_mesh_nodes", "identity_primitives", "same_title", "sha256",
 ]

@@ -464,29 +464,57 @@ async def register_import(store: ObjectStore, wardrobe_id: str, data: bytes, *, 
     return item
 
 
-async def withdraw_import(store: ObjectStore, wardrobe_id: str, look_id: str) -> bool:
-    """BI1. Take an imported body state out of her list and delete its files. False when unknown.
+async def withdraw_import(store: ObjectStore, wardrobe_id: str, look_id: str) -> dict | None:
+    """BI1. Take an imported body state out of her list and delete its files.
 
-    Only an import: a built look is not this route's to delete. The marker is deleted last, so
-    the VRM is never stored without it."""
+    Returns None when there is no such import for her; otherwise ``{"withdrawn", "remaining"}``.
+
+    The private marker is what ``/v1/assets`` protects the files with, so it is deleted only once
+    every protected file is verifiably gone. Before, the marker went last but unconditionally:
+    a VRM whose deletion failed stayed in storage with no marker, and anyone could download it.
+    Now a file that could not be deleted (or whose absence cannot be confirmed) keeps the marker,
+    the result says which files remain, and calling again finishes the job: an import already out
+    of her list but still holding files or a marker is still hers to withdraw.
+    """
     if not look_id.startswith("import-"):
-        return False
+        return None
+    from wardrobe.domain.jobs import private_marker
+
+    marker = private_marker(look_id)
+    protected = [f"looks/{look_id}/look.vrm", f"looks/{look_id}/import.json"]
+    try:
+        owner = json.loads(await store.get(marker)).get("wardrobeId") if await store.exists(marker) else None
+    except Exception:  # noqa: BLE001 - unreadable marker: still a marker, ownership unknown
+        owner = None
     async with _LIST_LOCK:
         listed = await read_list(store, wardrobe_id)
         kept = [old for old in listed.get("looks", []) if old.get("lookId") != look_id]
-        if len(kept) == len(listed.get("looks", [])):
-            return False
-        listed["looks"] = kept
-        await store.put(wardrobe_key(wardrobe_id), json.dumps(listed).encode("utf-8"),
-                        content_type="application/json")
-    from wardrobe.domain.jobs import private_marker
-
-    for key in (f"looks/{look_id}/look.vrm", f"looks/{look_id}/import.json", private_marker(look_id)):
+        in_list = len(kept) != len(listed.get("looks", []))
+        if not in_list and owner != wardrobe_id:
+            return None  # not hers (or not there at all): nothing to withdraw under this avatar
+        if in_list:
+            listed["looks"] = kept
+            await store.put(wardrobe_key(wardrobe_id), json.dumps(listed).encode("utf-8"),
+                            content_type="application/json")
+    remaining: list[str] = []
+    for key in protected:
         try:
-            await store.delete(key)
-        except Exception as exc:  # noqa: BLE001 - a leftover file is private by its marker
+            if await store.exists(key):
+                await store.delete(key)
+        except Exception as exc:  # noqa: BLE001
             logger.warning("could not delete %s: %s", key, exc)
-    return True
+        try:
+            still = await store.exists(key)
+        except Exception:  # noqa: BLE001 - cannot confirm it is gone: treat it as there
+            still = True
+        if still:
+            remaining.append(key)
+    if not remaining:
+        try:
+            await store.delete(marker)
+        except Exception as exc:  # noqa: BLE001 - a marker left behind protects nothing, harms nothing
+            logger.warning("could not delete %s: %s", marker, exc)
+    return {"withdrawn": not remaining, "remaining": remaining}
 
 
 async def lookup(store: ObjectStore, key: str) -> JobRecord | None:

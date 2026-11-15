@@ -197,3 +197,46 @@ def test_model_girl_as_bare_is_refused_without_review(model_girl, settings):
 ])
 def test_forge_look_titles_are_hers_and_nothing_looser(title, ok):
     assert bsi.same_title(title, "Model Girl") is ok
+
+
+# -- BI6: what the renderer draws, not what the file defines --------------------------------------
+def detach_face(doc) -> None:
+    """Her face mesh stays in the file; its node is taken out of the scene (no parent, no root)."""
+    face = next(i for i, n in enumerate(doc.nodes) if n.get("name") == "Face")
+    for node in doc.nodes:
+        if face in (node.get("children") or []):
+            node["children"] = [c for c in node["children"] if c != face]
+    for scene in doc.gltf.get("scenes") or []:
+        scene["nodes"] = [n for n in scene.get("nodes", []) if n != face]
+
+
+def unmesh_face(doc) -> None:
+    """The node is in the scene but no longer draws the mesh."""
+    face = next(n for n in doc.nodes if n.get("name") == "Face")
+    face.pop("mesh")
+    face.pop("skin", None)
+
+
+@pytest.mark.parametrize("change", [detach_face, unmesh_face], ids=["detached-node", "node-without-mesh"])
+def test_a_face_the_renderer_does_not_draw_is_not_her_face(body, settings, change):
+    clear_design_for_test(settings, body)
+    imported = edited(body, change)
+    clear_design_for_test(settings, body, imported)
+    verdict = run(imported, body, settings)
+    assert verdict.reason == "identity-mismatch"
+    assert verdict.checks["face-and-hair"]["changed"] == [{"mesh": "Face", "primitive": 0, "why": "absent"}]
+
+
+def test_model_girl_with_her_face_detached_is_refused(model_girl, settings):
+    def detach(doc):
+        faces = {i for i, n in enumerate(doc.nodes)
+                 if "mesh" in n and doc.meshes[n["mesh"]].get("name", "").startswith("Face")}
+        for node in doc.nodes:
+            node["children"] = [c for c in node.get("children", []) if c not in faces] or node.get("children", [])
+            if not node["children"]:
+                node.pop("children")
+        for scene in doc.gltf["scenes"]:
+            scene["nodes"] = [n for n in scene["nodes"] if n not in faces]
+    verdict = run(edited(model_girl, detach), model_girl, settings, state="lingerie")
+    assert verdict.reason == "identity-mismatch"
+    assert {c["why"] for c in verdict.checks["face-and-hair"]["changed"]} == {"absent"}

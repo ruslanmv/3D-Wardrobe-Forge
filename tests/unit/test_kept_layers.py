@@ -13,7 +13,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from wardrobe.geometry.kept_layers import INSIDE_TOP_M, MIN_SKIN_CLEARANCE_M, tuck_under_kept_tops
+from wardrobe.geometry.kept_layers import (
+    HEM_BAND_M,
+    INSIDE_TOP_M,
+    MIN_SEPARATION_M,
+    MIN_SKIN_CLEARANCE_M,
+    tuck_under_kept_tops,
+)
 from wardrobe.geometry.mesh import Mesh
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.inspect import inspect_document
@@ -73,7 +79,7 @@ def test_a_bottom_already_inside_is_left_alone(her):
     assert report["moved"] == 0 and np.array_equal(before, mesh.positions)
 
 
-@pytest.mark.parametrize("category", ["dress", "top", "jacket", "underwear", "shoes", None])
+@pytest.mark.parametrize("category", ["dress", "top", "jacket", "shoes", "legwear", None])
 def test_only_bottoms_are_tucked(her, category):
     doc, measurements = her
     mesh = tube(measurements, 0.25)
@@ -86,3 +92,67 @@ def test_no_kept_top_no_change(vrm_bytes):
     doc = GltfDocument.from_bytes(vrm_bytes)
     measurements = measure_body(doc, inspect_document(doc))
     assert tuck_under_kept_tops(doc, tube(measurements, 0.25), measurements, category="trousers") is None
+
+
+def test_a_layer_already_fitted_under_it_is_a_floor_too(her):
+    """Over the foundation briefs, the first KL1 pulled the jeans inside them (beige patches)."""
+    doc, measurements = her
+    hips = measurements.bone_positions["hips"]
+    briefs = tube(measurements, 0.20).positions  # an inner layer just inside the bottom
+    mesh = tube(measurements, 0.25)
+    report = tuck_under_kept_tops(doc, mesh, measurements, category="trousers", inner_points=briefs)
+    r = np.hypot(mesh.positions[:, 0] - hips[0], mesh.positions[:, 2] - hips[2])
+    # Where the bottom shows (below the hem and in the hem band) it is never inside the briefs.
+    shows = mesh.positions[:, 1] < report["keptTopHemY"] + HEM_BAND_M
+    assert r[shows].min() >= 0.20 + MIN_SEPARATION_M - 1e-4
+    assert report["moved"] + report["noRoom"] > 0
+
+
+def test_above_the_hem_band_it_is_only_inside_the_top(her):
+    """Hidden by the top there: inside it, even where the top is closer to her than any floor."""
+    doc, measurements = her
+    mesh = tube(measurements, 0.25)
+    before = mesh.positions.copy()
+    report = tuck_under_kept_tops(doc, mesh, measurements, category="trousers")
+    hips = measurements.bone_positions["hips"]
+    hidden = (before[:, 1] >= report["keptTopHemY"] + HEM_BAND_M) & np.any(before != mesh.positions, axis=1)
+    assert hidden.any()
+    r = np.hypot(mesh.positions[hidden, 0] - hips[0], mesh.positions[hidden, 2] - hips[2])
+    assert np.all(r < 0.25) and np.all(r > 0)
+
+
+def test_underwear_under_a_kept_top_is_tucked_too(her):
+    doc, measurements = her
+    mesh = tube(measurements, 0.25)
+    assert tuck_under_kept_tops(doc, mesh, measurements, category="underwear")["moved"] > 0
+
+
+def test_where_the_top_is_open_nothing_is_tucked(her):
+    """A cardigan's open front: no top in that sector, so the bottom there is left as fitted."""
+    doc, measurements = her
+    from wardrobe.engines.geometry_checks import body_points as real_points
+    from wardrobe.geometry import kept_layers as kl
+
+    hips = measurements.bone_positions["hips"]
+    calls = {"n": 0}
+
+    def without_front(document, **kw):
+        points = real_points(document, **kw)
+        calls["n"] += 1
+        if calls["n"] == 1:  # the top: cut a wedge out of it, straight ahead of her
+            angle = np.arctan2(points[:, 2] - hips[2], points[:, 0] - hips[0])
+            points = points[np.abs(angle - np.pi / 2) > 0.5]
+        return points
+
+    import wardrobe.engines.geometry_checks as gc
+    original = gc.body_points
+    gc.body_points = without_front
+    try:
+        mesh = tube(measurements, 0.25)
+        before = mesh.positions.copy()
+        kl.tuck_under_kept_tops(doc, mesh, measurements, category="trousers")
+    finally:
+        gc.body_points = original
+    angle = np.arctan2(before[:, 2] - hips[2], before[:, 0] - hips[0])
+    opening = np.abs(angle - np.pi / 2) < 0.2
+    assert np.array_equal(before[opening], mesh.positions[opening])

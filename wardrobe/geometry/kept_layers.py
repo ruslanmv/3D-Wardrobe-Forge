@@ -25,8 +25,11 @@ import numpy as np
 
 from wardrobe.vrm.garment_inventory import garment_inventory
 
-#: KL1 applies to these catalogue categories: what is worn from the waist down, under a top.
-UNDER_TOP_CATEGORIES = frozenset({"trousers", "shorts", "skirt"})
+#: KL1 applies to these catalogue categories: what is worn under a top she keeps. Underwear is one:
+#: the foundation briefs Forge adds under new jeans (ensureFoundation) were fitted to her body
+#: alone, sat on or outside the cardigan above its hem, and left the jeans no room between the
+#: two. A vertex already inside the top is never moved, so a bralette under it is unchanged.
+UNDER_TOP_CATEGORIES = frozenset({"trousers", "shorts", "skirt", "underwear"})
 #: Which kept slots hang over a bottom. A kept one-piece is not one: it already covers her hips.
 OVER_SLOTS = frozenset({"tops"})
 #: The bottom ends this far inside the top's inner surface.
@@ -64,8 +67,28 @@ def _table(points, centre, y0, bands, percentile) -> np.ndarray:
     return table
 
 
-def tuck_under_kept_tops(document, mesh, measurements, *, category: str | None) -> dict | None:
-    """Move a bottom's vertices inside any top she keeps. Returns a report, or None if not applicable."""
+#: Above the hem by this much, what is inside the kept top is hidden by it (a cardigan is opaque):
+#: there a bottom only has to be inside the top, even where the top hugs her closer than any
+#: clearance allows (the small of her back). At the hem itself the floors still hold: that is
+#: where the bottom shows.
+HEM_BAND_M = 0.02
+#: Inside the top by at least this where it hides the bottom.
+HIDDEN_INSIDE_TOP_M = 0.004
+#: Below this separation from either neighbour two surfaces z-fight: then there is no room.
+MIN_SEPARATION_M = 0.001
+#: Over a layer already fitted this job (the foundation briefs under the jeans), at least this far out.
+OVER_INNER_LAYER_M = 0.004
+
+
+def tuck_under_kept_tops(document, mesh, measurements, *, category: str | None,
+                         inner_points: np.ndarray | None = None) -> dict | None:
+    """Move a bottom's vertices inside any top she keeps. Returns a report, or None if not applicable.
+
+    ``inner_points`` are the layers already fitted under this one in the same job. The first
+    version measured only her skin, so over a foundation it pulled straight jeans inside the
+    briefs, and the briefs came through the denim in patches: the floor is the outermost of her
+    skin and those layers.
+    """
     if category not in UNDER_TOP_CATEGORIES or mesh is None or mesh.vertex_count == 0:
         return None
     from wardrobe.engines.geometry_checks import body_points  # the engines package imports this one
@@ -85,30 +108,56 @@ def tuck_under_kept_tops(document, mesh, measurements, *, category: str | None) 
     positions = mesh.positions.astype(np.float64)
     inside_span = (positions[:, 1] >= hem) & (positions[:, 1] <= top_y)
     if not inside_span.any():
-        return {"keptTopHemY": round(hem, 4), "moved": 0, "noRoom": 0}
+        return {"keptTopHemY": round(hem, 4), "moved": 0, "noRoom": 0, "hiddenUnderTop": 0}
     bands = int(np.ceil((top_y - hem) / BAND_M)) + 1
     top_r = _table(top, centre, hem, bands, TOP_PERCENTILE)
+    # Where the top itself is, sector by sector, without borrowing from neighbours: a cardigan's
+    # open front has no cardigan in it. Borrowing the panels' radius there pulled a skirt in the
+    # opening under her briefs, and the briefs showed through it where nothing covers them.
+    t_band, t_sector, _ = _cells(top, centre, hem)
+    present = np.zeros((bands, SECTORS), dtype=bool)
+    ok = (t_band >= 0) & (t_band < bands)
+    present[t_band[ok], t_sector[ok]] = True
     skin_r = _table(skin, centre, hem, bands, SKIN_PERCENTILE)
+    inner_r = (_table(inner_points, centre, hem, bands, SKIN_PERCENTILE)
+               if inner_points is not None and len(inner_points) else np.full_like(skin_r, np.nan))
     band, sector, radius = _cells(positions, centre, hem)
-    moved = no_room = 0
+    moved = no_room = hidden = 0
     for i in np.flatnonzero(inside_span):
         b, s = int(band[i]), int(sector[i])
-        if not 0 <= b < bands or np.isnan(top_r[b, s]):
+        if not 0 <= b < bands or np.isnan(top_r[b, s]) or not present[b, s]:
             continue
-        limit = top_r[b, s] - INSIDE_TOP_M
-        if radius[i] <= limit:
-            continue
+        top = top_r[b, s]
         floor = (skin_r[b, s] if not np.isnan(skin_r[b, s]) else 0.0) + MIN_SKIN_CLEARANCE_M
-        if limit < floor:
-            no_room += 1
+        under = inner_r[b, s]
+        if not np.isnan(under):
+            floor = max(floor, under)
+        gap = top - floor
+        # The margins are what the gap allows, up to the full ones: over a foundation the space
+        # between her briefs and her cardigan's hem is a few millimetres, and a fixed 4 mm each
+        # side found "no room" in most cells and left the jeans outside the cardigan.
+        margin_top = min(INSIDE_TOP_M, gap / 2)
+        margin_under = min(OVER_INNER_LAYER_M if not np.isnan(under) else 0.0, gap / 2)
+        if positions[i, 1] >= hem + HEM_BAND_M and radius[i] > top - HIDDEN_INSIDE_TOP_M > 0:
+            scale = (top - HIDDEN_INSIDE_TOP_M) / radius[i]
+            positions[i, 0] = centre[0] + (positions[i, 0] - centre[0]) * scale
+            positions[i, 2] = centre[1] + (positions[i, 2] - centre[1]) * scale
+            moved += 1
+            hidden += 1 if top - HIDDEN_INSIDE_TOP_M < floor else 0
             continue
+        if gap < 2 * MIN_SEPARATION_M or radius[i] <= top - margin_top:
+            if radius[i] > top - margin_top:
+                no_room += 1
+            continue
+        limit = max(top - margin_top, floor + margin_under)
         scale = limit / radius[i]
         positions[i, 0] = centre[0] + (positions[i, 0] - centre[0]) * scale
         positions[i, 2] = centre[1] + (positions[i, 2] - centre[1]) * scale
         moved += 1
     mesh.positions = positions.astype(np.float32)
-    return {"keptTopHemY": round(hem, 4), "moved": moved, "noRoom": no_room}
+    return {"keptTopHemY": round(hem, 4), "moved": moved, "noRoom": no_room, "hiddenUnderTop": hidden}
 
 
-__all__ = ["INSIDE_TOP_M", "MIN_SKIN_CLEARANCE_M", "OVER_SLOTS", "UNDER_TOP_CATEGORIES",
+__all__ = ["HEM_BAND_M", "HIDDEN_INSIDE_TOP_M", "MIN_SEPARATION_M",
+           "INSIDE_TOP_M", "MIN_SKIN_CLEARANCE_M", "OVER_SLOTS", "UNDER_TOP_CATEGORIES",
            "tuck_under_kept_tops"]

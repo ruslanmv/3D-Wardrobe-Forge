@@ -232,3 +232,51 @@ def test_garments_come_from_the_file_or_a_checked_operator_list(env, mira, state
         listed = client.get("/v1/wardrobes/mira", headers=headers).json()["looks"]
         mine = next(item for item in listed if item["id"] == look["lookId"])
         assert mine["garments"] == ["under-chemise-satin-v1"] and mine["templateId"] == "under-chemise-satin-v1"
+
+
+def test_a_failed_vrm_deletion_keeps_the_marker_and_a_retry_finishes(env, mira, state, monkeypatch):
+    """BI1 (review finding): the marker used to be deleted even when look.vrm could not be, and the
+    VRM then served to anyone. Now it stays private until it is gone, and DELETE can be repeated."""
+    from wardrobe.storage.object_store import LocalObjectStore
+
+    clear_design_for_test(env["settings"], mira, state)
+    with env["client"]() as client:
+        headers = sign_in(client)
+        url = upload(client, headers, state, source=sha(mira)).json()["look"]["vrmUrl"].split("/v1/", 1)[1]
+        look_id = url.split("/")[2]
+        real_delete = LocalObjectStore.delete
+
+        async def failing(self, key):
+            if key.endswith("/look.vrm"):
+                raise OSError("disk says no")
+            return await real_delete(self, key)
+
+        monkeypatch.setattr(LocalObjectStore, "delete", failing)
+        first = client.delete(f"/v1/admin/library/mira/body-states/{look_id}", headers=headers)
+        assert first.status_code == 503
+        assert first.json()["detail"]["remaining"] == [f"looks/{look_id}/look.vrm"]
+        assert client.get(f"/v1/{url}").status_code == 404  # still private, anonymously
+        assert client.get(f"/v1/{url}", headers=headers).status_code == 200
+        assert client.get("/v1/admin/library/mira/body-states", headers=headers).json()["count"] == 0
+        # Under another avatar it is not there to withdraw.
+        assert client.delete(f"/v1/admin/library/nora/body-states/{look_id}", headers=headers).status_code == 404
+        monkeypatch.setattr(LocalObjectStore, "delete", real_delete)
+        assert client.delete(f"/v1/admin/library/mira/body-states/{look_id}", headers=headers).status_code == 204
+        assert client.get(f"/v1/{url}", headers=headers).status_code == 404
+        assert client.delete(f"/v1/admin/library/mira/body-states/{look_id}", headers=headers).status_code == 404
+
+
+def test_grants_expire_by_the_clock_and_never_cross_avatars(env, mira, state, monkeypatch):
+    clear_design_for_test(env["settings"], mira, state)
+    with env["client"]() as client:
+        headers = sign_in(client)
+        url = upload(client, headers, state, source=sha(mira)).json()["look"]["vrmUrl"].split("/v1/", 1)[1]
+        token = grant_for(client, headers, "mira", ttl=60)
+        assert client.get(f"/v1/{url}", headers=token).status_code == 200
+        assert client.get("/v1/library/nora/prebuilt", headers=token).json()["count"] == 0
+        import time as clock
+
+        later = clock.time() + 61
+        monkeypatch.setattr(grants.time, "time", lambda: later)
+        assert client.get(f"/v1/{url}", headers=token).status_code == 404
+        assert client.get(f"/v1/{url}", headers={grants.HEADER: "not.a-grant"}).status_code == 404

@@ -73,6 +73,23 @@ builds and deletes. `wardrobe/policy/grants.py`:
   private marker, a stored object. A marker written before BI2 names none and stays admin-only.
 - No write route accepts it (tested: import, mint, declare, withdraw all answer 401).
 
+## Review findings on PR #41, fixed
+
+- **Withdrawal kept no marker on a failed delete (P1).** The private marker is deleted only after
+  every protected file is verifiably gone; otherwise `DELETE` answers 503 with the files that
+  remain, still private, and repeating it finishes the job (an import already out of her list but
+  with files or a marker under her wardrobe is still hers to withdraw).
+  `test_a_failed_vrm_deletion_keeps_the_marker_and_a_retry_finishes`.
+- **Imports lost after a restart (P1).** An import has no prebuilt entry, so publishing sent its
+  list item without its files. Now its folder (VRM, `private.json`, `import.json`) goes in the same
+  commit as the list, or the item is left out (`unavailable`) unless the dataset already lists it.
+  `test_an_import_survives_a_restart_with_no_local_storage` (HfDatasetObjectStore: failed publish
+  kept, published, local storage deleted, a new store reads the list, the marker and the bytes).
+- **Detached face/hair passed identity (P2).** Identity is read from nodes reachable from the
+  active scene that draw a mesh (`scene_mesh_nodes`), on both files.
+  `test_a_face_the_renderer_does_not_draw_is_not_her_face[detached-node|node-without-mesh]`,
+  `test_model_girl_with_her_face_detached_is_refused`; these fail on the pre-fix validator.
+
 ## BI4. Private looks are not published to a public dataset
 
 `dataset_publish.publish` (CI's `tools/publish_prebuilt.py`, and the Space's own dataset store)
@@ -80,29 +97,60 @@ sent every prebuilt entry's files and every wardrobe list whole. A private look 
 the pipeline (every bare prebuild is private) therefore went to the dataset with its VRM, and a
 private list item with it. Now a private look (its `private.json` marker, or a private request
 in its entry) and every private list item go up only when the hub reports the dataset private
-(`repo_info().private`), or when `--include-private` says so. Anything else, including no
-answer, counts as public: they stay in local storage and are returned as `privateHeldBack`.
+(`repo_info().private`). Nothing overrides that: `include_private=True` / `--include-private`
+against a dataset not confirmed private is refused (`refusedPrivate`, CLI exit 3), and
+`include_private=False` keeps them home even on a private one. Anything else, including no answer,
+counts as public. The dataset's own copy of a list is filtered the same way before it is sent
+back. Tests: confirmed-public, unverifiable, confirmed-private, the CLI against a public dataset,
+private items already in the remote list.
 Consequence on a Space whose dataset is public: its private looks do not survive a restart
 (local disk only). Make the dataset private to keep them.
 
-## KL1. The jeans hip split
+## KL1. The jeans hip split (partial)
 
-AvatarSample A keeps her cardigan when she is given straight jeans. The jeans were fitted to her
-body alone and drawn over the cardigan, and its ribbed hem came through the denim in a jagged
-band all round her hips. `wardrobe/geometry/kept_layers.py: tuck_under_kept_tops` (called by the
-native engine after the shell is built) moves a `trousers`, `shorts` or `skirt` vertex that is
-inside a kept top's height span and outside its inner surface radially to 4 mm inside it, never
-closer than 3 mm to her skin; a vertex with no room is left and counted (`noRoom`). Heights are
-never changed, the kept top is never moved. Rendered in the app before and after (front, side,
-back, close-ups): the band is gone and the cardigan hangs over the jeans. What is left: a faint
-line on the denim just under the hem, where tucked vertices meet untouched ones.
+AvatarSample A keeps her cardigan under new bottoms. Bottoms were fitted to her body alone and
+drawn over the cardigan; its ribbed hem came through the denim in a jagged band all round her
+hips. `wardrobe/geometry/kept_layers.py: tuck_under_kept_tops`, called by the native engine after
+the shell is built, now moves a `trousers`, `shorts`, `skirt` or `underwear` vertex that lies in
+a kept top's height span and outside it, radially, never changing a height or the kept top:
 
-**`PIPELINE_VERSION` was not bumped.** KL1 changes the bytes of new bottoms built under a kept
-top. Bumping would make every cached look a miss (~1900 looks rebuilt) and break the historic
-cache keys the P0 list asks to keep. Cached bottoms on the characters whose own top stays on
-(AvatarSample A, B, C, O and Model Girl have a `tops` slot; VRoid F/M and Rinna have no
-removable clothing) therefore keep the split until rebuilt. Measured on A only. That is a decision for the
-operator: bump in its own commit, or rebuild only those looks.
+- **In the hem band** (the lowest 2 cm of the top, where the bottom shows): 4 mm inside the top,
+  never inside her skin + 3 mm or a layer already fitted this job; the margins shrink to what the
+  gap allows; no room at all is counted (`noRoom`) and left.
+- **Above it** (hidden by the top): 4 mm inside the top, whatever is under it (`hiddenUnderTop`).
+- **Only where the top itself is**, sector by sector: a cardigan's open front is left as fitted.
+
+Underwear is included because the foundation briefs Forge adds under new jeans (`ensureFoundation`)
+sat on or outside the cardigan above its hem and left the jeans no room. The result is recorded on
+the fit report as `keptTopTuck` (absent for every other look, so older reports serialise as before).
+
+Rendered in the app, AvatarSample A, as `tools/prebuild.py` requests them (black, over beige
+briefs): straight jeans: back and sides clean, the cardigan hangs over the jeans; **the front
+hem band of the cardigan panels is still covered by the jeans** (`noRoom` 6). Pencil skirt: back and
+front opening clean, a thin strip of the high-waisted briefs shows at the top of the opening.
+Status: **improved, not resolved** at the front hem band.
+
+### Regenerating only the affected cached looks (no `PIPELINE_VERSION` bump)
+
+`PIPELINE_VERSION` stays 1; every historic key is unchanged (`test_cache_key_stability`). Cached
+looks built before KL1 keep the defect until rebuilt, and only those are rebuilt:
+
+```bash
+# 1. Name them: library characters with a kept top x listed public one-template looks of the
+#    tucked categories, built before KL1 (fit report without keptTopTuck). Reads only.
+python tools/kept_top_bottoms.py --lists <root with prebuilt/wardrobes> --entries <root with prebuilt/*.json>
+# 2. A fresh local Forge (empty WARDROBE_STORAGE_ROOT, so every request is a miss), this code.
+# 3. Run the per-pair commands step 1 prints, e.g.
+python tools/prebuild.py --forge http://127.0.0.1:8090 --slugs avatar-sample-a --only jeans-straight-v1
+# 4. Check each rebuilt entry's fitReport.keptTopTuck, render a sample, then replace exactly those
+#    entries and list items under their unchanged keys:
+python tools/publish_prebuilt.py --root <fresh storage> --repo <dataset> --overwrite
+# 5. Step 1 again: the rebuilt pairs are gone from the list. Old look folders are orphans
+#    (tools/dataset_orphans.py), not served.
+```
+
+Verified locally: step 3 rebuilt one pair, its entry carried `keptTopTuck`, step 1 then reported
+0 affected. Underwear on characters with a kept top needs `--admin-token-file` for step 3.
 
 ## Eight catalogue tests that failed on clean `06ea379`
 

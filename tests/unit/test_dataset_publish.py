@@ -13,6 +13,8 @@ import pytest
 from wardrobe.pipeline import prebuilt
 from wardrobe.storage import dataset_publish as dp
 
+ROOT = Path(__file__).resolve().parents[2]
+
 
 class FakeHub:
     """A dataset in memory: list, download, commit — the three calls Forge makes."""
@@ -21,9 +23,19 @@ class FakeHub:
         self.files = dict(files or {})
         self.commits: list[list[str]] = []
         self.fail_next = False
+        #: BI4. What the hub answers for visibility: True, False, or None (it cannot be asked).
+        self.private = None
         hub = self
 
         class Api:
+            def __init__(self, token=None):
+                pass
+
+            def repo_info(self, repo_id, repo_type):
+                if hub.private is None:
+                    raise RuntimeError("visibility unavailable")
+                return types.SimpleNamespace(private=hub.private)
+
             def list_repo_files(self, repo_id, repo_type):
                 return list(hub.files)
 
@@ -217,3 +229,119 @@ def test_an_unanswered_visibility_question_counts_as_public(tmp_path, hub):
 
     api.repo_info = boom
     assert dp.dataset_is_private(api, "me/looks") is False
+
+
+# -- BI4: the privacy boundary is the hub's answer, never a flag ----------------------------------
+def _mixed_root(tmp_path) -> Path:
+    root = tmp_path / "root"
+    _finished_look(root, "k1", "look_public")
+    _private_look(root, "k2", "look_secret")
+    _list_with(root, [{"lookId": "look_public", "templateId": "t", "private": False},
+                      {"lookId": "look_secret", "templateId": "u", "private": True}])
+    return root
+
+
+@pytest.mark.parametrize("visibility", [False, None], ids=["confirmed-public", "unverifiable"])
+def test_include_private_cannot_send_private_files_to_a_dataset_not_confirmed_private(tmp_path, hub, visibility):
+    hub.private = visibility
+    root = _mixed_root(tmp_path)
+    result = dp.publish(hub.module.HfApi(), "me/looks", root, download=dp.hub_download(), include_private=True)
+    sent = hub.commits[0]
+    assert not any("look_secret" in name for name in sent) and "prebuilt/k2.json" not in sent
+    assert "looks/look_public/look.vrm" in sent  # ordinary public looks still go up
+    listed = json.loads(hub.files[prebuilt.wardrobe_key("mira")])
+    assert [item["lookId"] for item in listed["looks"]] == ["look_public"]
+    assert result["refusedPrivate"] is True and result["includePrivate"] is False
+
+
+def test_a_confirmed_private_dataset_takes_private_looks(tmp_path, hub):
+    hub.private = True
+    result = dp.publish(hub.module.HfApi(), "me/looks", _mixed_root(tmp_path), download=dp.hub_download())
+    assert "looks/look_secret/look.vrm" in hub.commits[0] and result["verifiedPrivate"] is True
+    # Asking for less is honoured: False keeps them home even then.
+    hub.commits.clear()
+    result = dp.publish(hub.module.HfApi(), "me/looks", _mixed_root(tmp_path / "again"),
+                        download=dp.hub_download(), include_private=False)
+    assert not any("look_secret" in name for name in hub.commits[0]) and result["refusedPrivate"] is False
+
+
+def test_private_items_already_in_the_dataset_list_are_not_resent_to_a_public_one(tmp_path, hub):
+    hub.private = False
+    hub.files[prebuilt.wardrobe_key("mira")] = _listed({**_look("u", None, "look_old_secret"), "private": True})
+    root = tmp_path / "root"
+    _finished_look(root, "k1", "look_public")
+    _list_with(root, [{"lookId": "look_public", "templateId": "t", "private": False}])
+    dp.publish(hub.module.HfApi(), "me/looks", root, download=dp.hub_download(), keep_existing=False)
+    listed = json.loads(hub.files[prebuilt.wardrobe_key("mira")])
+    assert [item["lookId"] for item in listed["looks"]] == ["look_public"]
+
+
+def test_the_cli_refuses_include_private_against_a_public_dataset(tmp_path, hub, monkeypatch, capsys):
+    import importlib.util
+
+    hub.private = False
+    root = _mixed_root(tmp_path)
+    spec = importlib.util.spec_from_file_location("publish_prebuilt", ROOT / "tools/publish_prebuilt.py")
+    cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cli)
+    monkeypatch.setattr(cli, "hub_download", lambda token=None: dp.hub_download())
+    code = cli.main(["--root", str(root), "--repo", "me/public-looks", "--include-private"])
+    assert code == 3 and "not confirmed private" in capsys.readouterr().err
+    assert not any("look_secret" in name for commit in hub.commits for name in commit)
+
+
+# -- BI5: an imported body state goes up whole, or not at all ------------------------------------
+def _import(root: Path, look_id: str, *, files: bool = True) -> dict:
+    if files:
+        folder = root / "looks" / look_id
+        folder.mkdir(parents=True)
+        (folder / "look.vrm").write_bytes(b"imported vrm")
+        (folder / "private.json").write_text('{"private": true, "wardrobeId": "mira"}')
+        (folder / "import.json").write_text(json.dumps({"lookId": look_id}))
+    return {"lookId": look_id, "templateId": None, "plan": f"plan-{look_id}", "private": True,
+            "origin": "operator-import", "vrmUrl": f"/v1/assets/looks/{look_id}/look.vrm"}
+
+
+def test_an_import_goes_up_with_its_vrm_marker_and_receipt(tmp_path, hub):
+    hub.private = True
+    root = tmp_path / "root"
+    _list_with(root, [_import(root, "import-aaa")])
+    result = dp.publish(hub.module.HfApi(), "me/looks", root, download=dp.hub_download())
+    sent = set(hub.commits[0])
+    assert {"looks/import-aaa/look.vrm", "looks/import-aaa/private.json", "looks/import-aaa/import.json",
+            prebuilt.wardrobe_key("mira")} <= sent
+    assert result["looks"] == ["import-aaa"]
+
+
+def test_a_list_never_names_an_import_whose_files_cannot_go_up(tmp_path, hub):
+    hub.private = True
+    root = tmp_path / "root"
+    _list_with(root, [_import(root, "import-gone", files=False)])
+    result = dp.publish(hub.module.HfApi(), "me/looks", root, download=dp.hub_download())
+    assert json.loads(hub.files[prebuilt.wardrobe_key("mira")])["looks"] == []
+    assert result["unavailable"] == ["import-gone"]
+
+
+async def test_an_import_survives_a_restart_with_no_local_storage(tmp_path, settings, hub):
+    """The Space's case: imported, published privately, local disk wiped, a new process reads it back."""
+    import shutil
+
+    hub.private = True
+    store = _store(tmp_path, settings, wardrobe_hf_publish_every=100, wardrobe_hf_publish_seconds=3600)
+    item = await prebuilt.register_import(
+        store, "mira", b"imported vrm bytes", verdict={"accepted": True}, state="lingerie", name="Chemise",
+        source_sha256="a" * 64, output_sha256="b" * 64, imported_by="admin", provenance={},
+        vrm_url="/v1/assets/looks/import-bbbbbbbbbbbbbbbbbbbbbbbb/look.vrm", garments=["under-chemise-satin-v1"])
+    hub.fail_next = True
+    assert await store.flush() is None  # a failed publication stays pending
+    assert await store.flush() is not None
+    look = item["lookId"]
+    assert {f"looks/{look}/look.vrm", f"looks/{look}/private.json", f"looks/{look}/import.json"} <= set(hub.files)
+    await store.close()
+    shutil.rmtree(store.root)
+
+    fresh = _store(tmp_path, settings, wardrobe_hf_publish=False)
+    listed = await prebuilt.ready_looks(fresh, "mira", include_private=True)
+    assert [x["lookId"] for x in listed] == [look] and listed[0]["origin"] == "operator-import"
+    assert await fresh.exists(f"looks/{look}/private.json")  # /v1/assets still protects it
+    assert await fresh.get(f"looks/{look}/look.vrm") == b"imported vrm bytes"
