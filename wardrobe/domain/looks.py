@@ -260,6 +260,8 @@ class OutfitPlan(BaseModel):
     @property
     def garments(self) -> list[OutfitPlan]:
         """Every garment to build, inner first: the layers, or this plan alone."""
+        if self.template_id == "body-bare-v1":
+            return []
         return list(self.layers) if self.layers else [self]
 
     def design_sheet(self, template=None, *, removed: list[str] | None = None,

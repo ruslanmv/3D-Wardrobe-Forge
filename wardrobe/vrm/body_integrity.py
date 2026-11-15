@@ -85,6 +85,7 @@ def check_body(
     *,
     without: set[tuple[int, int]] | None = None,
     also_without: set[tuple[int, int]] | None = None,
+    bare: bool = False,
 ) -> BodyIntegrity:
     """Whether the body is closed across ``regions`` once ``without`` is taken off.
 
@@ -100,12 +101,33 @@ def check_body(
     checks: dict[str, RegionCheck] = {}
     for region in sorted(regions):
         span = region_heights(measurements, region)
-        if span is None:
-            checks[region] = RegionCheck(present=True, confidence=0.0)  # nothing to check against
+        center_x, center_z = axis_x, axis_z
+        radius = MAX_TORSO_RADIUS_M
+        if bare:
+            bones = measurements.bone_positions
+            if region in {"upper", "lower"}:
+                if region == "upper" and "neck" not in bones:
+                    span = None
+                if region == "upper" and "neck" in bones and "spine" in bones:
+                    span = (float(bones["spine"][1]), float(bones["neck"][1]))
+            else:
+                side = "left" if region.startswith("left") else "right"
+                names = ((side + "UpperLeg", side + "LowerLeg") if region.endswith("Thigh")
+                         else (side + "LowerLeg", side + "Foot"))
+                a, b = (bones.get(n) for n in names)
+                span = None if a is None or b is None else (float(b[1]), float(a[1]))
+                if span is not None:
+                    center_x, center_z = float((a[0] + b[0]) / 2), float((a[2] + b[2]) / 2)
+                    # Exclude the opposite leg; absence of one leg cannot be filled by the other.
+                    other = bones.get(("right" if side == "left" else "left") + "LowerLeg")
+                    if other is not None:
+                        radius = min(radius, abs(float(a[0] - other[0])) * 0.49)
+        if span is None or (bare and span[1] <= span[0]):
+            checks[region] = RegionCheck(present=not bare, confidence=0.0)  # nothing to check against
             continue
         low, high = span
-        dx, dz = points[:, 0] - axis_x, points[:, 2] - axis_z
-        near = np.hypot(dx, dz) < MAX_TORSO_RADIUS_M
+        dx, dz = points[:, 0] - center_x, points[:, 2] - center_z
+        near = np.hypot(dx, dz) < radius
         sector = ((np.arctan2(dz, dx) + np.pi) / (2 * np.pi) * SECTORS).astype(int) % SECTORS
         bands = []
         for k in range(BANDS_PER_REGION):

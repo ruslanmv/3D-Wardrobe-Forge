@@ -80,7 +80,8 @@ class SkinRestoration:
 
 def restore_skin(
     document: GltfDocument, measurements: BodyMeasurements, garments: set[tuple[int, int]],
-    *, above: float | None = None,
+    *, above: float | None = None, preserve_normals: bool = False,
+    protected_materials: set[int] | None = None,
 ) -> SkinRestoration | None:
     """Restore her skin texture between her ankles and her neck. None: nothing to restore.
 
@@ -90,7 +91,7 @@ def restore_skin(
     """
     textures: dict = {}
     skin, _ = skin_surface(document, measurements, garments, textures)
-    if skin is None:
+    if skin is None or skin.material in (protected_materials or set()):
         return None
     main = _image(document, skin.texture, textures)
     h, w = main.shape[:2]
@@ -124,7 +125,7 @@ def restore_skin(
             shaded[:, :, 3] = np.where(mask, 255.0, picture[:, :, 3])
             replaced[shade] = _add(document, shade, shaded, "shade")
     normal = (material.get("normalTexture") or {}).get("index")
-    if normal is not None and normal not in replaced:
+    if not preserve_normals and normal is not None and normal not in replaced:
         picture = _image(document, normal, textures)
         if picture is not None and picture.shape[:2] == (h, w):
             flattened = picture.copy()

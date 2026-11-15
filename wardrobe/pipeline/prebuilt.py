@@ -236,6 +236,10 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
                 listed = json.loads(await store.get(wardrobe_key(wardrobe_id)))
         except Exception:
             listed = {"wardrobeId": wardrobe_id, "looks": []}
+        if item["templateId"] == "body-bare-v1" and any(
+            old.get("templateId") == "body-bare-v1" for old in listed.get("looks", [])
+        ):
+            return  # Bare prebuilds are keep-existing, never a replacement.
         fields = ("templateId", "color", "foundationColor", "private")
         same = tuple(item[f] for f in fields)
         kept = [old for old in listed.get("looks", []) if tuple(old.get(f) for f in fields) != same]
@@ -270,6 +274,8 @@ async def lookup(store: ObjectStore, key: str) -> JobRecord | None:
 async def remember(store: ObjectStore, key: str, record: JobRecord) -> None:
     """Keep a completed record under its key. Never raises: a cache that fails is a slower Forge."""
     if record.state != JobState.COMPLETED or record.look is None:
+        return
+    if record.request.options.base_body_mode == "bare" and await store.exists(entry_key(key)):
         return
     entry = {
         "key": key,

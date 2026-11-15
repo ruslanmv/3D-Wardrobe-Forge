@@ -39,6 +39,12 @@ async def plan(context: PipelineContext) -> None:
     await context.emit(JobState.PLANNING, "planning the outfit")
 
     request = context.record.request.outfit
+    if context.record.request.options.base_body_mode == "bare":
+        from wardrobe.domain.looks import OutfitPlan
+        context.plan = OutfitPlan(name="Bare authored body", category="underwear",
+                                  templateId="body-bare-v1", requiresAdult=True)
+        context.record.plan = context.plan
+        return
     outfit_plan = plan_outfit_stack(request, context.catalog)
     mode = context.record.request.options.base_body_mode
     # PB1. Read before any foundation is added: underwear she asked for, not one put under clothes.

@@ -251,6 +251,8 @@ async def customize_garment(request: CustomizeGarmentRequest, http: Request, cat
             # bypass the server's adult/licensing policy.
             options=request.options.model_copy(update={"private": False}),
         )
+        if job.options.base_body_mode == "bare":
+            raise HTTPException(status_code=403, detail="bare bodies require the private library route")
         record = await orchestrator.submit(job)
     return {
         "jobId": record.id,
