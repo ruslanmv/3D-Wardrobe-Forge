@@ -341,6 +341,10 @@ async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, inclu
                 fitPassed=item.get("fitPassed"),
                 fitVerdict=item.get("fitVerdict"),
                 private=bool(item.get("private")),
+                templateId=item.get("templateId"),
+                wardrobeState=item.get("wardrobeState"),
+                sourceSha256=item.get("sourceSha256"),
+                outputSha256=item.get("outputSha256"),
             )
         )
     return merged
@@ -365,6 +369,10 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
         "fitPassed": record.fit_report.passed if record.fit_report else None,
         "fitVerdict": record.fit_report.verdict if record.fit_report else None,
         "builtAt": datetime.now(UTC).isoformat(),
+        # BL1. The look's identity, so a list read after a restart still says what it is.
+        "wardrobeState": record.look.wardrobe_state,
+        "sourceSha256": record.look.source_avatar_hash,
+        "outputSha256": record.look.output_sha256,
     }
     if key.startswith("plan-") and not request.outfit.template_id:
         # RU1. An outfit of several garments has no one template: its plan key tells it apart

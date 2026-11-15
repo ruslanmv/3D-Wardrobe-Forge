@@ -14,6 +14,7 @@ A tattoo-only job (BA6) carries its look's outfit over in place of plan … expo
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import shutil
@@ -153,6 +154,12 @@ class Orchestrator:
             return []
         return prebuilt.keys_for(request, self.catalog)
 
+    def _remember_keys(self, request: CreateJobRequest) -> list[str]:
+        """The keys a finished look is recorded under: every request's, bare included."""
+        if not self.settings.wardrobe_prebuilt:
+            return []
+        return prebuilt.keys_for(request, self.catalog)
+
     async def list(self, *, limit: int = 50) -> list[JobRecord]:
         return await self.jobs.list(limit=limit)
 
@@ -231,7 +238,10 @@ class Orchestrator:
             await self._publish(context)
             await context.emit(JobState.COMPLETED, "look ready")
             # RU1. Under every key it answers to; the list entry is written once, by the first.
-            for i, key in enumerate(self._prebuilt_keys(record.request)):
+            # BL1. Registration is not lookup: a bare look is never *answered* from the cache
+            # (_prebuilt_keys), but once built it is recorded and listed like any prebuilt look,
+            # so the operator's prebuild finds it, publishing carries it, and a restart keeps it.
+            for i, key in enumerate(self._remember_keys(record.request)):
                 await prebuilt.remember(self.store, key, record, list_it=i == 0)
 
         except WardrobeError as exc:
@@ -367,6 +377,9 @@ class Orchestrator:
             vrmUrl=vrm_url,
             previewUrl=preview_url,
             sourceAvatarHash=context.source_sha256,
+            templateId=record.request.outfit.template_id if record.request.outfit else None,
+            wardrobeState="bare" if record.request.options.base_body_mode == "bare" else None,
+            outputSha256=hashlib.sha256(context.output_bytes).hexdigest(),
             prompt=prompt,
             plan=context.plan,
             sizeBytes=len(context.output_bytes),
@@ -446,6 +459,10 @@ class Orchestrator:
                 private=record.request.options.private,
                 occasion=occasion,
                 style=style,
+                templateId=look.template_id,
+                wardrobeState=look.wardrobe_state,
+                sourceSha256=context.source_sha256,
+                outputSha256=look.output_sha256,
             )
         )
         await self.wardrobes.save(manifest)

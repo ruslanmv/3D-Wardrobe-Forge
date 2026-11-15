@@ -262,3 +262,69 @@ async def test_bare_is_barefoot_and_other_modes_still_stop_at_the_ankles(setting
                               record=JobRecord.queued(CreateJobRequest.model_validate(request("sources/a.vrm"))))
     await prepare(context)
     assert _painted_feet_share(doc) == 0
+
+
+async def test_a_built_bare_look_is_registered_identified_and_never_served_from_cache(orchestrator, store,
+                                                                                      vrm_bytes):
+    """BL1. Registration is not lookup, and bare identity survives the whole way to a client.
+
+    The merge put the bare bypass inside the keys that also drive registration, so a built bare
+    look was in no list; and the wardrobe manifest dropped templateId, so a client could not tell
+    a bare look from any other.
+    """
+    import hashlib
+
+    from wardrobe.pipeline import prebuilt
+    from wardrobe.vrm.body_integrity import BodyIntegrity, RegionCheck
+
+    class Recording:
+        def __init__(self):
+            self.ids = []
+
+        async def enqueue(self, job_id):
+            self.ids.append(job_id)
+
+    doc = GltfDocument.from_bytes(vrm_bytes)
+    doc.gltf["extensions"]["VRMC_vrm"]["meta"]["allowExcessivelySexualUsage"] = True
+    await store.put("sources/a.vrm", doc.to_bytes())
+    orchestrator.settings.wardrobe_adult_body_surface = True
+    payload = request("sources/a.vrm")
+    with patch("wardrobe.pipeline.bare_body.check_body", return_value=BodyIntegrity({"upper": RegionCheck(True, 1)})):
+        built = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
+    assert built.state is JobState.COMPLETED, built.error
+    output = await store.get(f"looks/{built.look.id}/look.vrm")
+
+    # The look itself says what it is.
+    assert built.look.template_id == "body-bare-v1" and built.look.wardrobe_state == "bare"
+    assert built.look.output_sha256 == hashlib.sha256(output).hexdigest()
+
+    # Registered: in her prebuilt list (private), with its identity, and in the wardrobe a client reads.
+    listed = await prebuilt.ready_looks(store, "test-avatar", include_private=True)
+    mine = [item for item in listed if item.get("templateId") == "body-bare-v1"]
+    assert len(mine) == 1 and mine[0]["lookId"] == built.look.id
+    assert mine[0]["wardrobeState"] == "bare" and mine[0]["outputSha256"] == built.look.output_sha256
+    assert mine[0]["sourceSha256"] == built.look.source_avatar_hash
+    assert await prebuilt.ready_looks(store, "test-avatar", include_private=False) == []  # never public
+    manifest = await prebuilt.with_prebuilt(store, "test-avatar", None, include_private=True)
+    entry = next(look for look in manifest.looks if look.id == built.look.id)
+    dumped = entry.model_dump(by_alias=True)
+    assert dumped["templateId"] == "body-bare-v1" and dumped["wardrobeState"] == "bare"
+    assert dumped["outputSha256"] == built.look.output_sha256 and dumped["private"] is True
+
+    # Not served from the cache: the same request again is queued for a fresh, gated run.
+    orchestrator.queue = Recording()
+    again = await orchestrator.submit(CreateJobRequest.model_validate(payload))
+    assert again.state == JobState.QUEUED and again.look is None
+    # … and a second build keeps the listed one (bare prebuilds are keep-existing).
+    with patch("wardrobe.pipeline.bare_body.check_body", return_value=BodyIntegrity({"upper": RegionCheck(True, 1)})):
+        second = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
+    assert second.state is JobState.COMPLETED
+    listed = await prebuilt.ready_looks(store, "test-avatar", include_private=True)
+    assert [i["lookId"] for i in listed if i.get("templateId") == "body-bare-v1"] == [built.look.id]
+
+
+def test_an_older_look_without_the_new_fields_still_loads():
+    from wardrobe.domain.manifests import WardrobeLook
+
+    old = WardrobeLook.model_validate({"id": "look_x", "name": "Tee", "vrmUrl": "/v1/assets/looks/look_x/look.vrm"})
+    assert old.template_id is None and old.wardrobe_state is None and old.output_sha256 is None

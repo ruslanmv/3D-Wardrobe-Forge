@@ -32,6 +32,13 @@ class WardrobeLook(BaseModel):
     #: OC1. The occasion and style it was made for (wardrobe.pipeline.occasions), when the job said.
     occasion: str | None = None
     style: str | None = None
+    #: BL1. Backward-compatible identity of the look (absent on looks made before it): its
+    #: template, its wardrobe state ("bare" for body-bare-v1), the source avatar's hash and the
+    #: output file's. The companion app reads these; it never infers bare from a name.
+    template_id: str | None = Field(default=None, alias="templateId")
+    wardrobe_state: str | None = Field(default=None, alias="wardrobeState")
+    source_sha256: str | None = Field(default=None, alias="sourceSha256")
+    output_sha256: str | None = Field(default=None, alias="outputSha256")
 
     def to_avatar_item(self) -> dict:
         """Render as a 3D-Avatar-Chatbot ``avatars.json`` item."""

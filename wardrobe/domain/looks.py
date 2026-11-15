@@ -350,6 +350,12 @@ class LookResult(BaseModel):
     prompt: str | None = None
     plan: OutfitPlan | None = None
     size_bytes: int | None = Field(default=None, alias="sizeBytes")
+    #: BL1. What kind of look this is, for a client that must not guess from a name: the template
+    #: it was made from, "bare" when it is her authored body with nothing on, and the hash of the
+    #: file itself so a client can confirm the asset it loaded is this one. Absent on older looks.
+    template_id: str | None = Field(default=None, alias="templateId")
+    wardrobe_state: str | None = Field(default=None, alias="wardrobeState")
+    output_sha256: str | None = Field(default=None, alias="outputSha256")
     #: Extra views of a hosiery look (thumb, detail, sit, walk, back): name -> URL. Absent otherwise.
     previews: dict[str, str] | None = None
 
