@@ -189,7 +189,9 @@ def test_every_underwear_and_swimwear_shape_says_what_it_covers():
 
     catalog = TemplateCatalog.from_directory(Path(__file__).resolve().parents[2] / "assets" / "garment_templates")
     accessories = {"suspender-belt"}  # worn with briefs, over them; it replaces nothing
-    shapeless = sorted({t.procedural_kind for t in catalog.all() if t.category in {"underwear", "swimwear"}}
+    # AF5. A body mode (body-bare-v1) has no garment shape by design: it is skipped as here.
+    shapeless = sorted({t.procedural_kind for t in catalog.all()
+                        if t.category in {"underwear", "swimwear"} and not t.is_body_mode}
                        - set(KIND_REGIONS) - accessories)
     assert shapeless == []
 
