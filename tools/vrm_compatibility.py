@@ -58,7 +58,8 @@ def assess(info, rig_issues: list[str]) -> dict:
 
     ordinary = _decision(
         "ready-for-wardrobe",
-        "Ordinary opaque clothing needs no adult-design review; normal fitting and renderer checks still apply.",
+        "Ordinary opaque clothing needs no adult-design review; "
+        "normal fitting and renderer checks still apply.",
     )
 
     # The real operator declaration, private session, and consent cannot be asserted by
@@ -110,7 +111,9 @@ def inspect_file(path: Path) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Local, read-only VRM compatibility and capability preflight")
+    parser = argparse.ArgumentParser(
+        description="Local, read-only VRM compatibility and capability preflight"
+    )
     parser.add_argument("file", type=Path, help="Any local VRM 0.x or VRM 1.0 file")
     args = parser.parse_args(argv)
     try:
