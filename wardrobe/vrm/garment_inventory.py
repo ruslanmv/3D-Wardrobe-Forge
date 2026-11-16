@@ -26,7 +26,11 @@ from dataclasses import dataclass, field
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.garments import KIND_REGIONS, SLOT_REGIONS
 
-_VROID = re.compile(r"_(Tops|Bottoms|Onepiece|Shoes)_\d+_CLOTH\b", re.IGNORECASE)
+# BR2. VRoid numbers the sub-parts of one outfit's material ``…_Onepiece_00_CLOTH_01``, ``_02``.
+# ``_CLOTH\b`` never matched them (``_`` is a word character, so there is no boundary before
+# ``_01``): AvatarSample_O's black collar and cuff (46 opaque triangles) were not clothing to
+# Forge, and a bare build of her kept them on.
+_VROID = re.compile(r"_(Tops|Bottoms|Onepiece|Shoes)_\d+_CLOTH(?:_\d+)?\b", re.IGNORECASE)
 _FORGE = re.compile(r"\[Forge_(Tops|Bottoms|Onepiece|Shoes)_\d+_CLOTH\]", re.IGNORECASE)
 
 #: Detector -> confidence. Only these are ever acted on.

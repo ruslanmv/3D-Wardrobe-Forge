@@ -121,6 +121,7 @@ def packet(
     )
     pictures = sheets(sheet_dir)
     return {
+        "reconstruction": reconstruction(document),
         "schema": "wardrobe.bodySurface.reviewPacket.v1",
         "preparedAt": datetime.now(UTC).replace(microsecond=0).isoformat(),
         "file": {
@@ -187,14 +188,53 @@ def packet(
     }
 
 
+def reconstruction(document: GltfDocument) -> dict:
+    """BR2. Whether part of this body was made by Forge rather than authored, and where.
+
+    A bare look built with ``bodyCompletion: proxy`` (BR1) has BC1's featureless patch where the
+    source had no skin. A reviewer of that output file must be told so before anything else: what
+    they look at in that band is not the author's surface. Read from the file's own tags and from
+    the meshes tagged ``bodyProxy``, never inferred.
+    """
+    tag = ((document.gltf.get("extras") or {}).get("wardrobeForge")) or {}
+
+    def proxy(item: dict) -> bool:
+        forge = ((item.get("extras") or {}).get("wardrobeForge")) or {}
+        return "bodyProxy" in forge or forge.get("kind") == "bodyProxy"
+
+    meshes = [m.get("name") or f"mesh {i}" for i, m in enumerate(document.meshes) if proxy(m)]
+    nodes = [n.get("name") or f"node {i}" for i, n in enumerate(document.nodes) if proxy(n) and "mesh" in n]
+    reconstructed = bool(tag.get("reconstructed")) or bool(meshes or nodes)
+    return {
+        "reconstructed": reconstructed,
+        "method": tag.get("reconstruction"),
+        "regions": list(tag.get("reconstructedRegions") or []),
+        "patchMeshes": meshes,
+        "note": ("Part of this body is not the author's: Forge filled the regions named with a "
+                 "featureless patch (an interpolation of the skin round the gap, nothing drawn), "
+                 "because the source file has no skin there. This review is of this output file.")
+        if reconstructed else "No part of this body is tagged as made by Forge.",
+    }
+
+
 def markdown(p: dict) -> str:
     file, says, now, entry = p["file"], p["whatTheFileSays"], p["eligibilityNow"], p["reviewEntry"]
+    made = p["reconstruction"]
     lines = [
         "# Adult-design review packet",
         "",
         f"Prepared {p['preparedAt']} by `tools/body_surface/review_packet.py`. This packet records no "
         "finding. The determination is the reviewer's.",
         "",
+        *([
+            "## This file is reconstructed",
+            "",
+            f"- Regions filled by Forge: **{', '.join(made['regions']) or 'not named in the file'}**",
+            f"- Method: `{made['method'] or 'not named in the file'}`; patch mesh: "
+            f"{', '.join(f'`{m}`' for m in made['patchMeshes']) or 'none tagged'}",
+            f"- {made['note']}",
+            "",
+        ] if made["reconstructed"] else []),
         "## The exact file",
         "",
         f"- Path: `{file['path']}`",

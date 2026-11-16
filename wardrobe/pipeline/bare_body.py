@@ -1,13 +1,17 @@
 """Private authored-body preparation. Never generates or completes geometry."""
 import hashlib
+import logging
 import re
 
 from wardrobe.body_surface.eligibility import assess
 from wardrobe.errors import BodyIncompleteForBare, BodySurfaceNotPermitted
 from wardrobe.vrm import body_completion
 from wardrobe.vrm.body_integrity import check_body
+from wardrobe.vrm.completion_join import measure_join
 from wardrobe.vrm.garment_inventory import build_strip_plan, garment_inventory, remove_garments
 from wardrobe.vrm.skin_restore import restoration_verdict, restore_skin, skin_census
+
+logger = logging.getLogger(__name__)
 
 
 async def prepare(context):
@@ -83,6 +87,15 @@ async def prepare(context):
     if any(hashlib.sha256(doc.read_accessor(a).tobytes()).hexdigest() != digest
            for a, digest in fingerprints.items()):
         raise BodyIncompleteForBare("authored body geometry changed during preparation")
+    if completion and completion["applied"]:
+        # BR2. How the patch meets her, measured on the finished body (her skin restored, her
+        # garments off): the numbers a reviewer of a reconstructed file reads. A measurement that
+        # cannot run says so; it never stops the look (it changes nothing in the file).
+        try:
+            completion["join"] = measure_join(doc, context.measurements, context.info)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("bare: join measurement failed: %s", exc)
+            completion["join"] = {"error": f"{type(exc).__name__}: {exc}"[:200]}
     # SR2. Say which it was: restored, nothing to restore, or not verified — measured after.
     census = skin_census(doc, context.measurements, include_feet=True, protected_materials=protected)
     skin_verdict = restoration_verdict(restored, census)
