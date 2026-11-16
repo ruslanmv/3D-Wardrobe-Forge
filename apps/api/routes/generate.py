@@ -7,7 +7,7 @@ Orchestrator.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from apps.api.dependencies import OrchestratorDep
@@ -52,6 +52,8 @@ async def generate(request: GenerateRequest, orchestrator: OrchestratorDep) -> G
         # Privacy is the server's to decide (apps/api/admin.py), never a caller's.
         options=request.options.model_copy(update={"private": False}),
     )
+    if job_request.options.base_body_mode == "bare":
+        raise HTTPException(status_code=403, detail="bare bodies require the private library route")
     record = await orchestrator.submit(job_request)
     return GenerateAccepted(
         jobId=record.id,

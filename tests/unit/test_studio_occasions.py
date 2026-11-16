@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -23,7 +24,7 @@ pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node is no
 
 SCRIPT = r"""
 const m = await import(process.argv[1]);
-const catalogue = JSON.parse(process.argv[2]);
+const catalogue = JSON.parse(await import('node:fs').then((fs) => fs.readFileSync(process.argv[2], 'utf8')));
 const colours = ['black', 'white', 'red', 'dark grey', 'grey', 'navy', 'pink'];
 const view = (adult) => m.visibleOccasions(catalogue, { adult }).map((o) => ({
     id: o.id,
@@ -71,13 +72,21 @@ console.log(JSON.stringify({
 @pytest.fixture(scope="module")
 def result(template_catalog):
     catalogue = od.catalogue(template_catalog)
-    out = subprocess.run(
-        ["node", "--input-type=module", "-e", SCRIPT, MODULE.as_uri(), json.dumps(catalogue)],
-        capture_output=True,
-        text=True,
-        timeout=60,
-        check=True,
-    )
+    # The catalogue is a file, not an argument: the atelier cards put the JSON
+    # past the length the kernel allows on a command line.
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
+        json.dump(catalogue, handle)
+        path = handle.name
+    try:
+        out = subprocess.run(
+            ["node", "--input-type=module", "-e", SCRIPT, MODULE.as_uri(), path],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=True,
+        )
+    finally:
+        Path(path).unlink(missing_ok=True)
     return json.loads(out.stdout)
 
 

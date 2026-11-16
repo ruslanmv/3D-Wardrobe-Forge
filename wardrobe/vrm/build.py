@@ -221,7 +221,7 @@ def _normalize_to_height(positions: dict[str, np.ndarray], mesh: Mesh, target_he
 
 
 def build_vrm(body: BodyProportions, *, spec: str = "VRM1", mesh_builder=None,
-              skeleton: dict[str, np.ndarray] | None = None) -> bytes:
+              skeleton: dict[str, np.ndarray] | None = None, allow_sexual: bool = False) -> bytes:
     """Return a complete, self-contained VRM as GLB bytes.
 
     ``mesh_builder(body, positions) -> Mesh`` replaces the calibration body's
@@ -231,6 +231,10 @@ def build_vrm(body: BodyProportions, *, spec: str = "VRM1", mesh_builder=None,
 
     ``skeleton`` (RB4) replaces the formula's joint positions: the anatomical reference bodies
     take theirs from their template's joints, which move with the body as it is fitted to a size.
+
+    ``allow_sexual`` (AF5) is the licence term VRM 1.0 calls ``allowExcessivelySexualUsage``
+    (VRM 0.x ``sexualUssageName``). These bodies are this repository's own, so their terms are the
+    operator's to set: false by default, true for the anatomical reference bodies only.
     """
     if spec not in {"VRM0", "VRM1"}:
         raise ValueError("spec must be 'VRM0' or 'VRM1'")
@@ -337,16 +341,19 @@ def build_vrm(body: BodyProportions, *, spec: str = "VRM1", mesh_builder=None,
 
     # ---- VRM extension block --------------------------------------------
     if spec == "VRM1":
-        document.gltf.setdefault("extensions", {})["VRMC_vrm"] = _vrm1_block(body, node_index, body_node)
+        document.gltf.setdefault("extensions", {})["VRMC_vrm"] = _vrm1_block(body, node_index, body_node,
+                                                                             allow_sexual=allow_sexual)
         document.declare_extension("VRMC_vrm", required=True)
     else:
-        document.gltf.setdefault("extensions", {})["VRM"] = _vrm0_block(body, node_index, mesh_index)
+        document.gltf.setdefault("extensions", {})["VRM"] = _vrm0_block(body, node_index, mesh_index,
+                                                                        allow_sexual=allow_sexual)
         document.declare_extension("VRM", required=True)
 
     return document.to_bytes()
 
 
-def _vrm1_block(body: BodyProportions, node_index: dict[str, int], body_node: int) -> dict:
+def _vrm1_block(body: BodyProportions, node_index: dict[str, int], body_node: int, *,
+                allow_sexual: bool = False) -> dict:
     return {
         "specVersion": "1.0",
         "meta": {
@@ -356,7 +363,7 @@ def _vrm1_block(body: BodyProportions, node_index: dict[str, int], body_node: in
             "licenseUrl": "https://vrm.dev/licenses/1.0/",
             "avatarPermission": "everyone",
             "allowExcessivelyViolentUsage": False,
-            "allowExcessivelySexualUsage": False,
+            "allowExcessivelySexualUsage": bool(allow_sexual),
             "commercialUsage": "corporation",
             "allowPoliticalOrReligiousUsage": False,
             "allowAntisocialOrHateUsage": False,
@@ -379,7 +386,8 @@ def _vrm1_block(body: BodyProportions, node_index: dict[str, int], body_node: in
     }
 
 
-def _vrm0_block(body: BodyProportions, node_index: dict[str, int], mesh_index: int) -> dict:
+def _vrm0_block(body: BodyProportions, node_index: dict[str, int], mesh_index: int, *,
+                allow_sexual: bool = False) -> dict:
     modification_to_license = {
         "prohibited": "CC_BY_ND",
         "allowModification": "Redistribution_Prohibited",
@@ -394,7 +402,7 @@ def _vrm0_block(body: BodyProportions, node_index: dict[str, int], mesh_index: i
             "author": "3D-Wardrobe-Forge",
             "allowedUserName": "Everyone",
             "violentUssageName": "Disallow",
-            "sexualUssageName": "Disallow",
+            "sexualUssageName": "Allow" if allow_sexual else "Disallow",
             "commercialUssageName": "Allow",
             "licenseName": modification_to_license.get(body.modification, "CC0"),
         },

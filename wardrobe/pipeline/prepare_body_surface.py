@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from wardrobe.body_surface import gate
 from wardrobe.body_surface.collision import build_state
-from wardrobe.body_surface.library import library_at
+from wardrobe.body_surface.library import INTIMATE_REGIONS, library_at
 from wardrobe.body_surface.regions import build_regions
 from wardrobe.body_surface.surface import skin_parts
 from wardrobe.domain.jobs import JobState
@@ -44,10 +44,15 @@ async def run(context: PipelineContext) -> None:
             f"no body-surface profile {request.profile_id!r} on this server",
             detail={"profileId": request.profile_id, "available": sorted(library.profiles)},
         )
+    # AF3. Intimate regions also need a recorded adult-design review of this exact source file.
+    intimate = any(region.key in INTIMATE_REGIONS for region in profile.regions)
     decision = gate.evaluate(
         profile.capability, context.info.license if context.info is not None else None,
         operator_enabled=context.settings.wardrobe_adult_body_surface,
         depicts_adult=bool(context.record.request.avatar.depicts_adult),
+        intimate=intimate,
+        design_reviewed=gate.design_review(context.settings.body_surface_root_path, context.source_sha256)
+        if intimate else None,
     )
     if not decision.allowed:
         raise BodySurfaceNotPermitted(decision.message, detail={"profileId": profile.id,

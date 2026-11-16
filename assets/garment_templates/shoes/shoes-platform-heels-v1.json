@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "shoes-platform-heels-v1",
+  "name": "Platform Heels",
+  "category": "shoes",
+  "mesh": "procedural:boots",
+  "coverage": [
+    "feet",
+    "lowerLegs"
+  ],
+  "anchors": [
+    "feet",
+    "lowerLegs"
+  ],
+  "silhouette": "straight",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 4.0,
+    "allowLengthScale": false,
+    "allowWidthScale": false
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": false,
+    "supportsMetallic": false,
+    "supportsFinish": true,
+    "supportsTransparency": false
+  },
+  "optIn": true,
+  "boot": {
+    "style": "platform-heel",
+    "heelMm": 120,
+    "platformMm": 40
+  },
+  "tags": [
+    "platform heels"
+  ],
+  "description": "Closed heels on a 40 mm platform and a 120 mm block. 'Platform boots' stay the below-knee boot."
+}

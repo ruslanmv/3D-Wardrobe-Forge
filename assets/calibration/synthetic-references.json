@@ -1,0 +1,14 @@
+{
+ "schema": "wardrobe.calibration.syntheticReferences.v1",
+ "about": "BE1. Forge's own generated adult reference bodies, keyed by the SHA-256 of the bytes tools/anatomy/register_synthetic_references.py rebuilt. A record is a design clearance for that exact file only: it says the body was generated here from a declared adult template, so there is no character design to review. It is not a person's review and is never reported as one. Library characters are never listed here.",
+ "references": {
+  "0f4c482ee2972caf41906d88865445afd0a811ef423c419bf2e577c32241564f": {
+   "bodyId": "ref-f-median",
+   "generator": "wardrobe.anatomy.vrm.build_reference_vrm",
+   "template": "MakeHuman hm08 female young adult (CC0), calibrated to ANSUR II women aged 21 and over",
+   "sizes": "assets/anatomy/reference-sizes.json#ref-f-median",
+   "bytes": 17331864,
+   "declaredAdultBy": "assets/calibration/policy.json"
+  }
+ }
+}

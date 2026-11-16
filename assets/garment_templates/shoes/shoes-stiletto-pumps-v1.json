@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "shoes-stiletto-pumps-v1",
+  "name": "Stiletto Pumps",
+  "category": "shoes",
+  "mesh": "procedural:boots",
+  "coverage": [
+    "feet",
+    "lowerLegs"
+  ],
+  "anchors": [
+    "feet",
+    "lowerLegs"
+  ],
+  "silhouette": "straight",
+  "hem": "mini",
+  "sleeve": "none",
+  "fit": {
+    "bodyClearanceMm": 3.0,
+    "allowLengthScale": false,
+    "allowWidthScale": false
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": false,
+    "supportsMetallic": false,
+    "supportsFinish": true,
+    "supportsTransparency": false
+  },
+  "optIn": true,
+  "boot": {
+    "style": "pump",
+    "heelMm": 100,
+    "platformMm": 4
+  },
+  "tags": [
+    "stiletto pumps",
+    "pumps"
+  ],
+  "description": "Pointed pumps on a 100 mm needle heel. The upper ends at the ankle. 'Stiletto boots' stay the ankle boot."
+}

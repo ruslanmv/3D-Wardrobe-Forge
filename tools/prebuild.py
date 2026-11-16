@@ -9,6 +9,13 @@ each finished look (``wardrobe.pipeline.prebuilt``); a rerun finds them and buil
     python tools/prebuild.py --forge http://127.0.0.1:8090 --admin-token-file ~/.forge-token
     python tools/prebuild.py --forge ... --slugs fem-vroid --only lingerie --report out.json
     python tools/prebuild.py --forge ... --colours 1          # default colour only
+    python tools/prebuild.py --forge ... --outfits            # also every outfit dictionary entry
+
+RU1. ``--outfits`` (or ``--outfits-only``) also makes every entry of the outfit dictionary
+(``GET /v1/outfits``) on every character, sent exactly as the companion app sends it —
+``{"mode": "auto", **entry.request}`` with the same options — so Forge's plan key for the
+prebuilt look is the key the app's request produces, and her "crop top & jeans" is ready at
+once. A private entry is asked for only on a character declared adult.
 
 Each garment is made in its prebuilt colours (assets/catalog/palettes.json, at most three,
 default first), intimate categories first.
@@ -68,6 +75,19 @@ def plan(forge: Forge, slugs: list[str] | None, only: str | None, colours: int =
     avatars = [a for a in forge.call("/v1/library").get("avatars", []) if a.get("available")]
     if slugs:
         avatars = [a for a in avatars if a["slug"] in slugs]
+    if only == "body-bare-v1":
+        # BE3. The bare body is a body mode, not a garment: since AF5 the garment catalogue route
+        # leaves it out, so planning it from that listing planned nothing and the operator's bare
+        # prebuild silently built 0 looks. One pair per character; whether she may have one is
+        # Forge's eligibility contract to answer per job (BE1), never this tool's.
+        pairs = []
+        for avatar in avatars:
+            pair = {"slug": avatar["slug"], "templateId": "body-bare-v1", "name": "Bare authored body",
+                    "color": None}
+            if not avatar.get("depictsAdult"):
+                pair["skip"] = "the bare body needs a character declared adult"
+            pairs.append(pair)
+        return pairs
     query = "?includeRestricted=true" if forge.token else ""
     catalog = forge.call("/v1/catalog/garments" + query)
     templates = [g for c in catalog.get("categories", []) for g in c.get("garments", [])]
@@ -78,6 +98,9 @@ def plan(forge: Forge, slugs: list[str] | None, only: str | None, colours: int =
     templates.sort(key=lambda t: (FIRST.get(t.get("category"), len(FIRST)), t["name"].lower()))
     pairs = []
     for template in templates:
+        # Bare builds are manual opt-in only; never added to an existing prebuild invocation.
+        if template["id"] == "body-bare-v1" and only != "body-bare-v1":
+            continue
         for colour in (template.get("prebuiltColors") or [None])[: colours or None]:
             for avatar in avatars:
                 pair = {"slug": avatar["slug"], "templateId": template["id"], "name": template["name"],
@@ -88,8 +111,36 @@ def plan(forge: Forge, slugs: list[str] | None, only: str | None, colours: int =
     return pairs
 
 
+def plan_outfits(forge: Forge, slugs: list[str] | None, only: str | None) -> list[dict]:
+    """RU1. Every (character, dictionary outfit) pair worth asking for."""
+    avatars = [a for a in forge.call("/v1/library").get("avatars", []) if a.get("available")]
+    if slugs:
+        avatars = [a for a in avatars if a["slug"] in slugs]
+    entries = forge.call("/v1/outfits").get("outfits", [])
+    if only:
+        entries = [e for e in entries if only.lower() in (e["title"] + " " + e["id"]).lower()]
+    pairs = []
+    for entry in entries:
+        for avatar in avatars:
+            pair = {"slug": avatar["slug"], "templateId": f"outfit:{entry['id']}", "name": entry["title"],
+                    "color": None, "outfit": entry["request"]}
+            if entry.get("rating") == "private" and not avatar.get("depictsAdult"):
+                pair["skip"] = "a private outfit needs a character declared adult"
+            pairs.append(pair)
+    return pairs
+
+
 def job_body(pair: dict) -> dict:
     """What Try-On sends for a fresh garment: the template, over a foundation, previewed."""
+    if pair.get("outfit"):
+        # RU1. A dictionary outfit, byte for byte the body the companion app's TryOnGenerator sends.
+        return {
+            "outfit": {"mode": "auto", **pair["outfit"]},
+            "options": {"renderPreview": True, "engine": "auto", "ensureFoundation": True},
+        }
+    if pair["templateId"] == "body-bare-v1":
+        return {"outfit": {"prompt": "Bare authored body", "mode": "template", "templateId": "body-bare-v1"},
+                "options": {"baseBody": "bare", "renderPreview": True, "engine": "native"}}
     colour = pair.get("color")
     outfit = {"prompt": f"{colour} {pair['name']}" if colour else pair["name"], "mode": "template",
               "templateId": pair["templateId"]}
@@ -108,6 +159,11 @@ def build(forge: Forge, pair: dict, job_timeout: float) -> dict:
         return out
     started = time.monotonic()
     try:
+        if pair["templateId"] == "body-bare-v1":
+            existing = forge.call(f"/v1/library/{pair['slug']}/prebuilt").get("looks", [])
+            if any(look.get("templateId") == "body-bare-v1" for look in existing):
+                out.update(result="present", reason="keep-existing: no overwrite")
+                return out
         job = forge.call(f"/v1/library/{pair['slug']}/jobs", job_body(pair))
         prebuilt = job.get("state") == "completed"
         while job.get("state") not in TERMINAL:
@@ -134,6 +190,8 @@ def build(forge: Forge, pair: dict, job_timeout: float) -> dict:
         out.update(result="present" if prebuilt else "built", lookId=(job.get("look") or {}).get("id"))
     else:
         out.update(result="failed", reason=job.get("error") or job["state"])
+        if pair["templateId"] == "body-bare-v1":
+            out["reasonCode"] = job.get("reason")
     return out
 
 
@@ -150,12 +208,17 @@ def main(argv=None) -> int:
     parser.add_argument("--job-timeout", type=float, default=900.0, help="Seconds per look")
     parser.add_argument("--report", type=Path, help="Write the per-look results here as JSON")
     parser.add_argument("--plan-only", action="store_true", help="List the pairs and stop")
+    parser.add_argument("--outfits", action="store_true", help="Also every outfit dictionary entry (RU1)")
+    parser.add_argument("--outfits-only", action="store_true", help="Only the outfit dictionary entries")
     opts = parser.parse_args(argv)
 
     token = Path(opts.admin_token_file).expanduser().read_text().strip() if opts.admin_token_file else None
     forge = Forge(opts.forge, token)
     try:
-        pairs = plan(forge, opts.slugs.split(",") if opts.slugs else None, opts.only, opts.colours)
+        slugs = opts.slugs.split(",") if opts.slugs else None
+        pairs = [] if opts.outfits_only else plan(forge, slugs, opts.only, opts.colours)
+        if opts.outfits or opts.outfits_only:
+            pairs += plan_outfits(forge, slugs, opts.only)
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
         print(f"Forge unreachable at {opts.forge}: {exc}", file=sys.stderr)
         return 2

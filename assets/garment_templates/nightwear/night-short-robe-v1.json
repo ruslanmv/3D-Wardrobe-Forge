@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "night-short-robe-v1",
+  "name": "Short Robe",
+  "category": "nightwear",
+  "mesh": "procedural:open-cardigan",
+  "coverage": [
+    "chest",
+    "waist",
+    "hips",
+    "upperLegs",
+    "upperArms",
+    "lowerArms"
+  ],
+  "anchors": [
+    "chest",
+    "waist",
+    "hips",
+    "shoulders",
+    "upperArms",
+    "lowerArms"
+  ],
+  "silhouette": "straight",
+  "hem": "mini",
+  "sleeve": "long",
+  "fit": {
+    "bodyClearanceMm": 8.0,
+    "allowLengthScale": true,
+    "allowWidthScale": true,
+    "minLengthScale": 0.7,
+    "maxLengthScale": 1.3,
+    "finish": "satin"
+  },
+  "materials": {
+    "supportsBaseColor": true,
+    "supportsPattern": true,
+    "supportsMetallic": false
+  },
+  "optIn": true,
+  "replacesClothing": true,
+  "tags": [
+    "short robe",
+    "kimono"
+  ],
+  "description": "A short open satin robe. What she is wearing comes off first, then the robe goes on. The word kimono selects it. An overlapping kimono collar is not built."
+}

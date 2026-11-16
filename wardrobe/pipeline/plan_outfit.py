@@ -135,7 +135,7 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
         "sports bra", "sport bra", "athletic bra", "gym bra", "training bra", "workout bra",
         "bra top",
     ),
-    "shoes": ("shoes", "boots", "heels", "sneakers", "trainers", "sandals"),
+    "shoes": ("shoes", "boots", "heels", "sneakers", "trainers", "sandals", "pumps"),
     # try-on haul. The planner takes the longest phrase that matches, so a word
     # must never sit in two categories: "bandeau" is a template tag, not a
     # keyword, or "bandeau bikini" would plan a top.
@@ -151,10 +151,13 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
         # hosiery foundations: words no other category claims (see wardrobe.hosiery)
         "waspie", "waist cincher", "guêpière", "guepiere",
     ),
-    "jumpsuit": ("jumpsuit", "catsuit", "unitard", "boilersuit"),
+    "jumpsuit": ("jumpsuit", "catsuit", "unitard", "boilersuit", "bodystocking"),
     "nightwear": (
         "nightwear", "nightgown", "nightdress", "nightie", "chemise", "pajamas", "pyjamas", "pajama",
         "pyjama", "sleepwear",
+        # AA. A babydoll and a short robe are nightwear. "kimono" is the same robe
+        # until a wrap collar exists (docs/ADULT_ATELIER.md).
+        "babydoll", "short robe", "kimono",
     ),
     "legwear": (
         "stockings", "thigh highs", "thigh-highs", "thigh-high socks", "over-the-knee socks",
@@ -658,13 +661,29 @@ def resolve_material(
     """
     notes = notes if notes is not None else []
     base_color = _colour(parsed.color_hex, text, "#6b6f76")
+    color_name = parsed.color_name
+    # These four cards are black when the prompt names no colour. Every other card stays grey.
+    if color_name is None and (template.construction or {}).get("defaultColor") == "black":
+        color_name = "black"
+        base_color = _colour("#111111", "", "#111111")
     policy = template.materials
 
-    finish = request.finish or parsed.finish or FABRIC_FINISH.get(parsed.fabric or "") or "matte"
+    # AA. The template's own finish is the card. A word in the prompt still wins.
+    # "leather" as a fabric still means satin for every card that is not itself leather,
+    # so boots and the leather mini keep the finish they have. An explicit finish word
+    # (latex, satin, gloss) still wins over the card.
+    fabric_finish = FABRIC_FINISH.get(parsed.fabric or "")
+    template_finish = template.fit.finish or None
+    if template_finish == "leather" and fabric_finish == "satin" and not (request.finish or parsed.finish):
+        fabric_finish = None
+    finish = request.finish or parsed.finish or fabric_finish or template_finish or "matte"
     if finish not in FINISHES or not policy.supports_finish:
         finish = "matte"
 
-    pattern = request.pattern or parsed.pattern or ("sequin" if finish == "sequin" else "none")
+    pattern = (
+        request.pattern or parsed.pattern or template.fit.pattern
+        or ("sequin" if finish == "sequin" else "none")
+    )
     if pattern not in PATTERNS or not policy.supports_pattern:
         pattern = "none"
     pattern_color = None
@@ -673,7 +692,15 @@ def resolve_material(
         fallback = "#f3f2ee" if _luminance(base_color) < 0.45 else "#15151a"
         pattern_color = _colour(parsed.pattern_color_hex, "", fallback)
 
-    opacity = request.opacity if request.opacity is not None else (parsed.opacity or 1.0)
+    # AA. A sheer card stays sheer when the prompt is only a colour.
+    if request.opacity is not None:
+        opacity = request.opacity
+    elif parsed.opacity:  # truthy, as the old `parsed.opacity or 1.0` read it
+        opacity = parsed.opacity
+    elif template.fit.opacity is not None:
+        opacity = template.fit.opacity
+    else:
+        opacity = 1.0
     if opacity < MIN_OPACITY:
         notes.append(f"opacity {opacity:g} is below the renderer's minimum; clamped to {MIN_OPACITY:g}")
         opacity = MIN_OPACITY
@@ -712,7 +739,7 @@ def resolve_material(
 
     return MaterialPlan(
         baseColor=base_color,
-        colorName=parsed.color_name,
+        colorName=color_name,
         metallic=metallic,
         roughness=roughness,
         fabric=parsed.fabric,
@@ -739,7 +766,7 @@ def resolve_style(parsed: ParsedPrompt, request: OutfitRequest, template: Garmen
         back=parsed.back or fit.back,
         legCut=parsed.leg_cut or fit.leg_cut,
         rise=parsed.rise or "",
-        slit=parsed.slit or "",
+        slit=parsed.slit or fit.slit,
         front=parsed.front or "",
     )
 

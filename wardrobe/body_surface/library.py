@@ -42,6 +42,21 @@ TEMPLATE_SCHEMA = "wardrobe.bodySurfaceTemplate.v1"
 #: file with the operator. SMPL / SMPL-X / STAR model data are research-only and are not here.
 LICENSES = frozenset({"CC0-1.0", "CC-BY-4.0", "MIT", "Apache-2.0", "LicenseRef-Commissioned"})
 
+#: AF3. What a template was made from. A licence says what may be done with a file, not what it is
+#: of: a CC BY scan of a real body is still a real body. A template with an intimate region must
+#: name one of these; any other template that names a source type must name one of these too.
+SOURCE_TYPES = frozenset({"original-synthetic", "commissioned", "open-asset"})
+
+#: AF3. Datasets made from donated human remains or real-person scans. Their licences may allow
+#: reuse; consent to a body's use in adult entertainment is not something a licence grants. They
+#: keep their place in the anatomical reference path (wardrobe.anatomy) and are refused here,
+#: even when a provenance record forgets to say what they are.
+EXCLUDED_SOURCES = re.compile(
+    r"visible\s*human|humanatlas|human reference atlas|hubmap|HBM453|national library of medicine"
+    r"|cadaver|donated (?:body|bodies|remains)|post-?mortem",
+    re.I,
+)
+
 #: Regions whose visible geometry is intimate anatomy: any of them makes a profile adult-only.
 INTIMATE_REGIONS = frozenset({"nipples", "chestDetail", "externalAnatomy", "pubic"})
 
@@ -135,6 +150,17 @@ def load_template(path: Path) -> Template:
         raise LibraryError(f"{data['id']}: licence {provenance.get('license')!r} is not on the allowlist")
     if provenance.get("containsRealPersonScan") is not False:
         raise LibraryError(f"{data['id']}: provenance must state containsRealPersonScan: false")
+    described = " ".join(str(provenance.get(k, "")) for k in ("source", "author", "notes", "doi"))
+    if EXCLUDED_SOURCES.search(described):
+        raise LibraryError(f"{data['id']}: made from donated human remains or a real-person scan; "
+                           "excluded from body surfaces")
+    source_type = provenance.get("sourceType")
+    if str(data.get("region")) in INTIMATE_REGIONS and source_type not in SOURCE_TYPES:
+        raise LibraryError(f"{data['id']}: an intimate region needs provenance.sourceType, one of "
+                           f"{', '.join(sorted(SOURCE_TYPES))}")
+    if source_type is not None and source_type not in SOURCE_TYPES:
+        raise LibraryError(f"{data['id']}: sourceType {source_type!r} is not one of "
+                           f"{', '.join(sorted(SOURCE_TYPES))}")
     recorded = str(provenance.get("sha256", ""))
     if recorded != _sha256_field(data):
         raise LibraryError(f"{data['id']}: field data does not match its recorded sha256 "
@@ -244,7 +270,8 @@ def library_at(root: str) -> BodySurfaceLibrary:
 
 
 __all__ = [
-    "ANCHORS", "BodySurfaceLibrary", "INTIMATE_REGIONS", "LICENSES", "LibraryError", "MEASUREMENTS",
+    "ANCHORS", "BodySurfaceLibrary", "EXCLUDED_SOURCES", "INTIMATE_REGIONS", "LICENSES", "LibraryError",
+    "MEASUREMENTS", "SOURCE_TYPES",
     "PROFILE_SCHEMA", "Profile", "Region", "TEMPLATE_SCHEMA", "Template", "library_at", "load_profile",
     "load_template",
 ]

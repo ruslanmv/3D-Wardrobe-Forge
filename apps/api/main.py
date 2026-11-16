@@ -12,6 +12,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from apps.api.dependencies import SettingsDep, key_status, require_api_key
+from apps.api.routes.access import router as access_router
 from apps.api.routes.admin import router as admin_router
 from apps.api.routes.avatars import router as avatars_router
 from apps.api.routes.body_art import router as body_art_router
@@ -57,10 +58,25 @@ async def lifespan(app: FastAPI):
         logger.exception("avatar library failed to load; the Studio will offer no avatars")
         library = AvatarLibrary(root=settings.wardrobe_library_root, problem=f"library failed to load: {exc}")
     app.state.library = library
+    # WD1. A withdrawal a failure or a restart cut short is carried on before anything is
+    # served; one that finished is re-enforced if its files have come back. Never fatal.
+    try:
+        from wardrobe.pipeline import prebuilt
+
+        await prebuilt.resume_withdrawals(orchestrator.store)
+    except Exception:  # pragma: no cover - startup must not fail on this
+        logger.exception("resuming withdrawals failed; pending ones stay blocked by their receipts")
     try:
         yield
     finally:
         await orchestrator.stop()
+        # RU3. Looks made since the last batch go up to the dataset before the Space stops.
+        close = getattr(orchestrator.store, "close", None)
+        if close is not None:
+            try:
+                await close()
+            except Exception:  # pragma: no cover - shutting down must not fail on this
+                logger.exception("publishing the last looks on shutdown failed")
 
 
 app = FastAPI(
@@ -96,6 +112,7 @@ app.include_router(wardrobes_router, prefix="/v1", dependencies=api_dependencies
 app.include_router(generate_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(studio_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(admin_router, prefix="/v1", dependencies=api_dependencies)
+app.include_router(access_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(body_art_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(body_surface_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(outfits_router, prefix="/v1", dependencies=api_dependencies)

@@ -13,7 +13,7 @@ a look that has boots keeps her on their heels, because the boots are still on h
 from __future__ import annotations
 
 from wardrobe.domain.jobs import JobState
-from wardrobe.geometry.boots import INSOLE_M
+from wardrobe.geometry.boots import INSOLE_M, spec_for
 from wardrobe.pipeline.context import PipelineContext
 from wardrobe.vrm import stance
 from wardrobe.vrm.inspect import VrmSpec
@@ -53,8 +53,11 @@ async def run(context: PipelineContext) -> None:
     if heel_m > 0.0 or platform_m > 0.0:
         # Her foot rests on the insole, not on the sole: the boot has a floor under her.
         heel_m, platform_m = heel_m + INSOLE_M, platform_m + INSOLE_M
+    # AA. Only a pump (no shaft above the ankle) asks for the toe-joint stance; every other
+    # shoe stands her exactly as before the atelier.
+    pump = spec_for({"boot": spec}).get("shaft") == "pump" if spec else False
     target = stance.stance_for(
-        context.document, context.info, heel_m=heel_m, platform_m=platform_m, forward=forward
+        context.document, context.info, heel_m=heel_m, platform_m=platform_m, forward=forward, pump=pump
     )
     if target is None:
         context.warn(

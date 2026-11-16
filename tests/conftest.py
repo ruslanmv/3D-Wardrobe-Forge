@@ -98,3 +98,26 @@ def job_request(storage_key: str, prompt: str, **options) -> dict:
             **options,
         },
     }
+
+
+def clear_design_for_test(settings: Settings, *sources: bytes) -> None:
+    """BE1. Point ``settings`` at a temporary copy of the body-surface registry that holds a
+    *test* clearly-adult review for each source's exact bytes. Tests of the bare pipeline need
+    the design clearance the real gate asks for; the committed registry is never written, and
+    the reviewer is named as a fixture so nothing here can be mistaken for a person's review."""
+    import hashlib
+    import json
+    import shutil
+    import tempfile
+
+    root = Path(tempfile.mkdtemp(prefix="reviews-")) / "body_surface"
+    shutil.copytree(settings.body_surface_root_path, root)
+    path = root / "adult-design-reviews.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    for blob in sources:
+        data["reviews"][hashlib.sha256(blob).hexdigest()] = {
+            "outcome": "clearly-adult", "reviewer": "test-fixture (not a review)",
+            "date": "2026-11-15", "evidence": "unit test",
+        }
+    path.write_text(json.dumps(data), encoding="utf-8")
+    settings.wardrobe_body_surface_root = str(root)

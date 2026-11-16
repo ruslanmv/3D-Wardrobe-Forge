@@ -510,10 +510,28 @@ def _foot_samples(document: GltfDocument, info) -> list[tuple]:
     return samples
 
 
+#: How far past the ankle a surface has to reach before it is a foot. A shin tube is shorter.
+_FOOT_SPAN_M = 0.07
+
+
+def _samples_span_a_foot(samples: list, ankle: np.ndarray, forward: float) -> bool:
+    """True when the sampled surface runs forward of the ankle, as a foot does and a shin does not."""
+    if not samples:
+        return False
+    cloud = np.vstack([positions for positions, *_rest in samples])
+    ahead = (cloud[:, 2] - float(ankle[2])) * forward
+    return float(np.max(ahead)) > _FOOT_SPAN_M
+
+
 def stance_for(
-    document: GltfDocument, info, *, heel_m: float, platform_m: float, forward: float
+    document: GltfDocument, info, *, heel_m: float, platform_m: float, forward: float, pump: bool = False
 ) -> Stance | None:
-    """The stance a pair of shoes asks for on this avatar, or None when it has no feet to stand on."""
+    """The stance a pair of shoes asks for on this avatar, or None when it has no feet to stand on.
+
+    ``pump`` (AA): the shoe has no shaft above the ankle, so a rig whose mesh ends at the ankle
+    is stood on its toe joint (see below). Off, the stance is exactly what it was before the
+    atelier, so every existing boot keeps the pose its dataset looks were made in.
+    """
     if heel_m <= 0.0 and platform_m <= 0.0:
         return FLAT
     feet = flat_feet(document, info, forward)
@@ -526,6 +544,11 @@ def stance_for(
     flat = _flat_world(document, info, current, forward)
     before = _stance_map(document, info, flat, current, forward)
     samples = _foot_samples(document, info)
+    # VQ. The calibration mannequin's leg ends at the ankle: those vertices are a shin, not a
+    # foot, and a 55° pitch leaves the ankle ~30 mm up, so a pump never grows a heel. A real
+    # foot reaches well past the ankle. Only then do her vertices decide the lift. Otherwise
+    # the toe joint is the foot she does not have a surface for, and it is what meets the sole.
+    on_a_foot = _samples_span_a_foot(samples, ankle, forward) if pump else True
 
     def lowest(pitch: float) -> float:
         after = _stance_map(document, info, flat, Stance(pitch_deg=math.degrees(pitch), lift_m=1e-9), forward)
@@ -538,10 +561,15 @@ def stance_for(
             total = np.where(np.abs(blended[:, 3, 3]) < 1e-9, 1.0, blended[:, 3, 3])
             y = (np.einsum("nj,nj->n", blended[:, 1, :3], positions) + blended[:, 1, 3]) / total
             low = min(low, float(y.min()))
-        return low
+        if on_a_foot:
+            return low
+        # The toe joint, turned and not yet lifted. It is below the shin on a pitched foot.
+        turned = _about(ankle, forward * pitch) @ np.array([*ball, 1.0])
+        return min(low, float(turned[1]))
 
     return solve(
-        ankle, ball, heel_m=heel_m, platform_m=platform_m, forward=forward, lowest=lowest if samples else None
+        ankle, ball, heel_m=heel_m, platform_m=platform_m, forward=forward,
+        lowest=lowest if (samples or pump) else None,
     )
 
 

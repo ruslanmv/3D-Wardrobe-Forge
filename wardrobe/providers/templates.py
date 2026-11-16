@@ -62,6 +62,8 @@ class TemplateGarmentProvider(GarmentProvider):
             key += f"|front={style.front}"
         if style.collection is not None:  # likewise (LC1): a thong set and a Brazilian set differ
             key += "|collection=" + json.dumps(style.collection, sort_keys=True)
+        if template.construction:  # likewise: a high collar and a plain catsuit are different shells
+            key += "|construction=" + json.dumps(template.construction, sort_keys=True)
         digest = sha1(key.encode()).hexdigest()[:12]
 
         artifact = GarmentArtifact(
@@ -132,6 +134,9 @@ class TemplateGarmentProvider(GarmentProvider):
             # DC2. The boot's construction, for wardrobe.geometry.boots (its heel and sole have
             # already decided how she stands: wardrobe.pipeline.set_stance).
             artifact.metadata["boot"] = dict(template.boot)
+        if template.construction:
+            # Only when the template asks: a plain catsuit, dress or corset carries no such block.
+            artifact.metadata["construction"] = dict(template.construction)
         if template.lingerie is not None:
             # The pattern block's spec, for wardrobe.lingerie to build from.
             artifact.metadata["lingerie"] = dict(template.lingerie)

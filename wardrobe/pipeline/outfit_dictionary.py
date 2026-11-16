@@ -86,6 +86,9 @@ GROUPS: tuple[Group, ...] = (
     # apron or stethoscope is claimed, because Forge builds none. Each wears sheer stockings,
     # so each is gated as the stockings are, and the group says so.
     Group("roleplay", "Role-play · adults", private=True),
+    # AA. Cards the atelier added. Private because every look in it is gated
+    # (see-through, or a bra worn as a top). General new cards stay in their own groups.
+    Group("atelier", "Atelier · adults", private=True),
 )
 
 
@@ -597,7 +600,17 @@ def _collection_outfits() -> tuple[Outfit, ...]:
     return tuple(out)
 
 
-OUTFITS = OUTFITS + _collection_outfits()
+def _atelier_outfits() -> tuple[Outfit, ...]:
+    """AA. One dictionary look per card the atelier built. The order book is the source."""
+    from wardrobe.atelier.orders import built_orders
+
+    return tuple(
+        Outfit(order.id, order.title, order.group, order.prompt, tags=order.tags)
+        for order in built_orders()
+    )
+
+
+OUTFITS = OUTFITS + _collection_outfits() + _atelier_outfits()
 
 
 #: CR2. Stockings as an add-on to a look she wears: the request blocks merged into the look's
@@ -700,6 +713,7 @@ def _catalogue(catalog_id: int, catalog: TemplateCatalog) -> tuple[dict, ...]:
 
 def catalogue(catalog: TemplateCatalog) -> dict:
     """``GET /v1/outfits``: the groups and every entry, planned. Cached per catalogue."""
+    from wardrobe.atelier.orders import report as atelier_report
     from wardrobe.pipeline.occasions import catalogue as occasions
 
     entries = [dict(entry) for entry in _catalogue(id(catalog), catalog)]
@@ -710,6 +724,9 @@ def catalogue(catalog: TemplateCatalog) -> dict:
         # OC1. Occasion → style → these entries' ids: the Studio's first question. Additive, so
         # a client that reads only groups and outfits is unchanged.
         "occasions": occasions({entry["id"]: entry for entry in entries}),
+        # AA. What the atelier built, what is already a prompt, and what still needs a shape.
+        # Additive: a client that does not know the key ignores it.
+        "atelier": atelier_report(),
     }
 
 

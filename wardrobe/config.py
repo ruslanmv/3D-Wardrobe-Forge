@@ -79,6 +79,14 @@ class Settings(BaseSettings):
     #: PB4. With WARDROBE_STORAGE_BACKEND=hf: the dataset repository the prebuilt looks are read
     #: from, e.g. "ruslanmv/3d-wardrobe-garments". Private; read with HF_TOKEN.
     wardrobe_hf_dataset: str = ""
+    #: RU3. With the hf backend: also publish each look this Forge makes to the dataset (its
+    #: prebuilt entry, the look's files and her wardrobe list), batched — one commit per
+    #: ``wardrobe_hf_publish_every`` looks or ``wardrobe_hf_publish_seconds``, whichever comes
+    #: first, and once more on shutdown. Needs an HF_TOKEN with write access to the dataset; a
+    #: failed commit is kept and tried again with the next batch. Off: writes stay local (PB4).
+    wardrobe_hf_publish: bool = True
+    wardrobe_hf_publish_every: int = 10
+    wardrobe_hf_publish_seconds: float = 300.0
 
     s3_endpoint: str = ""
     s3_bucket: str = ""
@@ -96,9 +104,38 @@ class Settings(BaseSettings):
     wardrobe_body_art_root: str = str(REPO_ROOT / "assets" / "body_art")
     #: BS1. Body-surface profiles and templates (allowlisted, provenance-checked).
     wardrobe_body_surface_root: str = str(REPO_ROOT / "assets" / "body_surface")
+    #: BE1. The operator's declarations for Forge's own generated bodies, and the registry of
+    #: synthetic reference bodies by exact SHA-256 (synthetic-references.json).
+    wardrobe_calibration_root: str = str(REPO_ROOT / "assets" / "calibration")
     #: BS1. The operator's switch for adult body-surface profiles. Off: only collision-only
     #: profiles run, whatever a caller sends. Never on by default.
     wardrobe_adult_body_surface: bool = False
+    #: BR1. The operator's separate switch for bare body *reconstruction* (bodyCompletion: proxy).
+    #: Off by default; turning on adult body surfaces never turns this on.
+    wardrobe_bare_body_completion: bool = False
+    #: BI2. Signs read grants (wardrobe.policy.grants): what a companion app holds to list and
+    #: fetch one avatar's private looks, instead of the admin token. Empty: no grants, private
+    #: looks stay admin-only. A secret, at least 32 characters; rotating it revokes every grant.
+    wardrobe_grant_secret: str = ""
+    #: AC1. Who may be issued an account capability (wardrobe.policy.identity). Empty: nobody,
+    #: and the operator grants above are the only grants. "assertion": a trusted backend's
+    #: signed statement, checked with WARDROBE_IDENTITY_SECRET. "package.module:factory": the
+    #: deployment's own verifier. Anything that cannot be loaded is treated as empty.
+    wardrobe_identity_verifier: str = ""
+    #: Shared with the backend that signs identity assertions; never sent to a browser, never
+    #: equal to the grant secret. At least 32 characters.
+    wardrobe_identity_secret: str = ""
+    #: The `aud` an assertion must carry: this Forge. An assertion made for another service fails.
+    wardrobe_identity_audience: str = "wardrobe-forge"
+    #: Comma-separated `iss` values accepted. Empty: any issuer that holds the secret.
+    wardrobe_identity_issuers: str = ""
+    #: How long an account capability lasts, seconds (30 to 900).
+    wardrobe_capability_ttl_s: int = 300
+    #: Comma-separated account ids whose capabilities are refused (survives a lost disk; the
+    #: store's list, written from /v1/admin/access/revocations, does not).
+    wardrobe_account_revoked: str = ""
+    #: BI2. Grant ids revoked before they expire, comma separated.
+    wardrobe_grant_revoked: str = ""
 
     # -- safety ----------------------------------------------------------
     max_avatar_bytes: int = 128 * 1024 * 1024

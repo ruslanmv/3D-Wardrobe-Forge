@@ -302,6 +302,34 @@ profile refused by the model's terms, the operator's switch
 clearance) and, per layer, any `relaxation`. See
 [BODY_SURFACE](BODY_SURFACE.md).
 
+## Private body states and read grants (BI1, BI2)
+
+Admin session only (`X-Wardrobe-Admin`); details and every refusal in
+`docs/qa/BODY_STATE_IMPORT.md`.
+
+- `POST /v1/admin/library/{slug}/body-states` (multipart: `file`, `state` = `lingerie` | `bare`,
+  `sourceSha256`, `licence`, `rightsAttested`, optional `sha256`, `name`, `garments`) → `201
+  {look, verdict}`; `422 {reason: body_state_*, message, verdict}` with every check's answer.
+- `GET /v1/admin/library/{slug}/body-states`, `DELETE /v1/admin/library/{slug}/body-states/{lookId}`
+  (WD1: `204` withdrawn, also when it already was; `503 body_state_withdraw_incomplete` with
+  `remaining`, repeat to finish; `404` never hers).
+- `GET /v1/admin/library/{slug}/withdrawals` → `{slug, count, withdrawals}`: the withdrawal
+  receipts. A withdrawn import is not listed and not served to anyone, across restarts and
+  dataset publishes; see `docs/qa/ASSET_WITHDRAWAL.md`.
+- `POST /v1/admin/grants {slugs, ttlSeconds, label}` → `201 {token, header, id, slugs, expires}`;
+  `409 grants_unavailable` without `WARDROBE_GRANT_SECRET`.
+
+- `GET /v1/access`, `POST /v1/access/capabilities {avatars, ttlSeconds?}` with
+  `X-Wardrobe-Identity` → `201 {token, header, expiresIn, subject, slugs, expires}`: a short-lived
+  capability for the verified account (AC1). `503 account_access_unavailable` unless the
+  deployment configures an identity verifier. Revocation: `GET`/`POST
+  /v1/admin/access/revocations`, `DELETE /v1/admin/access/revocations/subjects/{subject}`.
+  See `docs/ACCOUNT_ACCESS.md`.
+
+A consumer sends the grant as `X-Wardrobe-Grant`. It reads private looks of the avatars it names
+through `GET /v1/wardrobes/{slug}`, `GET /v1/library/{slug}/prebuilt` and `/v1/assets/looks/…`,
+and nothing else.
+
 ## Wardrobes
 
 | Endpoint | Returns |
