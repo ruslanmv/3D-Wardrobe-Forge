@@ -9,7 +9,7 @@ It is a preflight, not an authorization token: existing server-side gates, opera
 declarations, exact-file design reviews, and renderer/import checks remain authoritative.
 
 Usage:
-    python tools/vrm_compatibility.py /path/to/character.vrm
+    python -m tools.vrm_compatibility /path/to/character.vrm
 """
 
 from __future__ import annotations
