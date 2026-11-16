@@ -7,7 +7,8 @@ software already does, how it was tested, and the smallest set of things an auth
 must bring for the first dressed → bare → dressed acceptance to be run.
 
 Where each of the eight library characters stands, file by file, is in
-`docs/qa/BODY_STATE_CHARACTERS.md`.
+`docs/qa/BODY_STATE_CHARACTERS.md`. One sheet per character, and the pre-flight for a delivered
+file, are in `docs/qa/body-state-specs/`.
 
 ## Two results, kept apart
 
