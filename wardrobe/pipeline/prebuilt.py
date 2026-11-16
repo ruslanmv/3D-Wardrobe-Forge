@@ -257,8 +257,15 @@ async def read_list(store: ObjectStore, wardrobe_id: str) -> dict:
 
     On the dataset store a list this Space wrote locally (after making one look) used to hide
     the dataset's copy for the rest of the Space's life, so every look the prebuild added after
-    that stayed invisible here until a restart. Unreadable copies count as empty.
+    that stayed invisible here until a restart. Unreadable copies count as empty. A withdrawn
+    import is never in it (WD1).
     """
+    merged = await _read_list_unfiltered(store, wardrobe_id)
+    merged["looks"] = await _not_withdrawn(store, merged["looks"])
+    return merged
+
+
+async def _read_list_unfiltered(store: ObjectStore, wardrobe_id: str) -> dict:
     key = wardrobe_key(wardrobe_id)
     copies: list[dict] = []
     try:
@@ -277,11 +284,42 @@ async def read_list(store: ObjectStore, wardrobe_id: str) -> dict:
     return merged
 
 
-async def ready_looks(store: ObjectStore, wardrobe_id: str, *, include_private: bool) -> list[dict]:
-    """The fresh prebuilt looks listed for a wardrobe; private ones only when asked for."""
+async def _not_withdrawn(store: ObjectStore, looks: list[dict]) -> list[dict]:
+    """WD1. ``looks`` without the imports a withdrawal receipt blocks.
+
+    This is where a stale manifest stops. The merge above takes a look from *any* copy of the
+    list, which is what RU2 wants for a look the prebuild added and exactly wrong for one the
+    operator withdrew: after a restart with empty storage the local list is gone, the
+    dataset's copy may still name the look, and before this the look was back in her
+    wardrobe. Only an operator import can be withdrawn, so only those cost a lookup.
+    """
+    from wardrobe.storage import withdrawals
+
+    kept = []
+    for item in looks:
+        imported = item.get("origin") == "operator-import" and isinstance(item.get("lookId"), str)
+        if imported and await withdrawals.is_withdrawn(store, item["lookId"]):
+            continue
+        kept.append(item)
+    return kept
+
+
+#: AC1. "Whoever's": what an admin session passes as the reader of account-bound looks.
+ANY_ACCOUNT = object()
+
+
+async def ready_looks(store: ObjectStore, wardrobe_id: str, *, include_private: bool,
+                      account=ANY_ACCOUNT) -> list[dict]:
+    """The fresh prebuilt looks listed for a wardrobe; private ones only when asked for.
+
+    AC1. A list item that names an ``account`` is that account's look: listed to it (and to an
+    admin session, ``ANY_ACCOUNT``), to nobody else, even a reader of her other private looks.
+    """
     listed = await read_list(store, wardrobe_id)
     looks = [item.copy() for item in listed.get("looks", []) if isinstance(item, dict)]
     visible = [item for item in looks if include_private or not item.get("private")]
+    if account is not ANY_ACCOUNT:
+        visible = [item for item in visible if not item.get("account") or item["account"] == account]
     # Index entries can outlive a preview that CI never uploaded. Avoid advertising
     # known-missing generated previews, without altering legitimate external URLs.
     for item in visible:
@@ -301,7 +339,8 @@ async def ready_looks(store: ObjectStore, wardrobe_id: str, *, include_private: 
     return visible
 
 
-async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, include_private: bool):
+async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, include_private: bool,
+                        account=ANY_ACCOUNT):
     """Her wardrobe with every prebuilt look in it, whether or not this process made them.
 
     A Space keeps its wardrobe manifests in memory or on local disk; the prebuilt looks were
@@ -311,7 +350,7 @@ async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, inclu
     """
     from wardrobe.domain.manifests import WardrobeLook, WardrobeManifest
 
-    looks = await ready_looks(store, wardrobe_id, include_private=include_private)
+    looks = await ready_looks(store, wardrobe_id, include_private=include_private, account=account)
     if manifest is None and not looks:
         return None
     merged = manifest.model_copy(deep=True) if manifest is not None else WardrobeManifest.empty(wardrobe_id)
@@ -419,11 +458,20 @@ async def register_import(store: ObjectStore, wardrobe_id: str, data: bytes, *, 
     imports are two looks and a re-upload of the same bytes replaces itself (LIST_FIELDS).
     """
     from wardrobe.domain.jobs import private_marker
+    from wardrobe.storage import withdrawals
 
     look_id = import_look_id(output_sha256)
     marker = {"private": True, "wardrobeId": wardrobe_id, "origin": "operator-import"}
     await store.put(private_marker(look_id), json.dumps(marker).encode("utf-8"),
                     content_type="application/json")
+    # WD1. Importing the same bytes again is the operator putting the look back: the one thing
+    # that lifts its receipt. The receipt is kept (state "restored", with its history), not
+    # deleted, so the withdrawal that happened stays on record and a later one continues it.
+    receipt = await withdrawals.read(store, look_id)
+    if withdrawals.blocks(receipt):
+        await store.put(withdrawals.receipt_key(look_id),
+                        withdrawals.dumps(withdrawals.restored(receipt, by=imported_by)),
+                        content_type="application/json")
     await store.put(f"looks/{look_id}/look.vrm", data, content_type="model/gltf-binary")
     now = datetime.now(UTC).isoformat()
     record = {"lookId": look_id, "wardrobeId": wardrobe_id, "state": state, "name": name,
@@ -464,57 +512,150 @@ async def register_import(store: ObjectStore, wardrobe_id: str, data: bytes, *, 
     return item
 
 
-async def withdraw_import(store: ObjectStore, wardrobe_id: str, look_id: str) -> dict | None:
-    """BI1. Take an imported body state out of her list and delete its files.
+def _import_files(look_id: str) -> list[str]:
+    """What a withdrawal deletes, in order: the protected files, then the marker that protects them."""
+    from wardrobe.domain.jobs import private_marker
 
-    Returns None when there is no such import for her; otherwise ``{"withdrawn", "remaining"}``.
+    return [f"looks/{look_id}/look.vrm", f"looks/{look_id}/import.json", private_marker(look_id)]
 
-    The private marker is what ``/v1/assets`` protects the files with, so it is deleted only once
-    every protected file is verifiably gone. Before, the marker went last but unconditionally:
-    a VRM whose deletion failed stayed in storage with no marker, and anyone could download it.
-    Now a file that could not be deleted (or whose absence cannot be confirmed) keeps the marker,
-    the result says which files remain, and calling again finishes the job: an import already out
-    of her list but still holding files or a marker is still hers to withdraw.
+
+async def withdraw_import(store: ObjectStore, wardrobe_id: str, look_id: str, *,
+                          withdrawn_by: str = "admin") -> dict | None:
+    """BI1/WD1. Withdraw an imported body state, durably.
+
+    Returns None when there is no such import for her; otherwise ``{"withdrawn", "remaining",
+    "receipt", "repeated"}``. The sequence, each step safe to repeat and to resume:
+
+    1. **The receipt, state "pending"** (``wardrobe.storage.withdrawals``). From this write on
+       the look is not listed and not served, whichever copy of anything still names it, and a
+       process that dies anywhere below resumes here (``resume_withdrawals``).
+    2. **Her list**, rewritten without the look.
+    3. **The files**, ``store.purge``: look.vrm, import.json, then the private marker, each
+       deleted only when the one before is confirmed gone, from every place the store keeps
+       them. On the dataset store the dataset's copies, its list and the final receipt change in
+       one commit.
+    4. **The receipt, state "withdrawn"**, written only when nothing remains.
+
+    The marker is what ``/v1/assets`` protects the files with, so it goes last and only after
+    them (BI1's review finding): a VRM that could not be deleted keeps its marker, the result
+    says what remains, and calling again finishes the job. An import already out of her list
+    but still holding files, a marker or a pending receipt is still hers to withdraw.
+    Withdrawing what is already withdrawn changes nothing and says so (``repeated``).
     """
     if not look_id.startswith("import-"):
         return None
     from wardrobe.domain.jobs import private_marker
+    from wardrobe.storage import withdrawals
 
     marker = private_marker(look_id)
-    protected = [f"looks/{look_id}/look.vrm", f"looks/{look_id}/import.json"]
+    files = _import_files(look_id)
     try:
         owner = json.loads(await store.get(marker)).get("wardrobeId") if await store.exists(marker) else None
     except Exception:  # noqa: BLE001 - unreadable marker: still a marker, ownership unknown
         owner = None
+    previous = await withdrawals.read(store, look_id)
+    receipted = withdrawals.blocks(previous) and previous.get("wardrobeId") == wardrobe_id
+    if withdrawals.blocks(previous) and previous.get("wardrobeId") not in (None, wardrobe_id):
+        return None  # withdrawn under another avatar: not hers to touch
+    item = None
     async with _LIST_LOCK:
-        listed = await read_list(store, wardrobe_id)
+        # The unfiltered list: read_list hides a look with a pending receipt, and a retry must
+        # still find the line it has to remove.
+        listed = await _read_list_unfiltered(store, wardrobe_id)
         kept = [old for old in listed.get("looks", []) if old.get("lookId") != look_id]
         in_list = len(kept) != len(listed.get("looks", []))
-        if not in_list and owner != wardrobe_id:
+        if not in_list and owner != wardrobe_id and not receipted:
             return None  # not hers (or not there at all): nothing to withdraw under this avatar
+        if previous is not None and previous.get("state") == withdrawals.WITHDRAWN and not in_list:
+            leftover = [key for key in files if await _still_there(store, key)]
+            if not leftover:
+                # Repeated withdrawal: nothing to do, and the receipt already says so.
+                return {"withdrawn": True, "remaining": [], "receipt": previous, "repeated": True}
+        item = next((old for old in listed.get("looks", []) if old.get("lookId") == look_id), None)
+        receipt = withdrawals.begin(previous, look_id=look_id, wardrobe_id=wardrobe_id,
+                                    files=files[:-1], by=withdrawn_by, item=item)
+        await store.put(withdrawals.receipt_key(look_id), withdrawals.dumps(receipt),
+                        content_type="application/json")
         if in_list:
-            listed["looks"] = kept
+            listed["looks"] = await _not_withdrawn(store, kept)
             await store.put(wardrobe_key(wardrobe_id), json.dumps(listed).encode("utf-8"),
                             content_type="application/json")
-    remaining: list[str] = []
-    for key in protected:
+    final = withdrawals.completed(receipt)
+    try:
+        remaining = await store.purge(
+            files[:-1], then=[marker],
+            replace={withdrawals.receipt_key(look_id): withdrawals.dumps(final)},
+            unlist={wardrobe_key(wardrobe_id): look_id})
+    except Exception as exc:  # noqa: BLE001 - a store that raises has confirmed nothing
+        logger.warning("withdrawing %s: the store failed (%s); its files count as remaining", look_id, exc)
+        remaining = files[:-1]
+    if remaining:
+        receipt = withdrawals.failed(receipt, remaining)
         try:
-            if await store.exists(key):
-                await store.delete(key)
+            await store.put(withdrawals.receipt_key(look_id), withdrawals.dumps(receipt),
+                            content_type="application/json")
+        except Exception as exc:  # noqa: BLE001 - the pending receipt of step 1 still stands
+            logger.warning("could not update the receipt of %s: %s", look_id, exc)
+        return {"withdrawn": False, "remaining": remaining, "receipt": receipt, "repeated": False}
+    return {"withdrawn": True, "remaining": [], "receipt": final, "repeated": False}
+
+
+async def _still_there(store: ObjectStore, key: str) -> bool:
+    try:
+        return await store.exists(key)
+    except Exception:  # noqa: BLE001 - cannot confirm it is gone: treat it as there
+        return True
+
+
+async def list_withdrawals(store: ObjectStore, wardrobe_id: str | None = None) -> list[dict]:
+    """WD1. The withdrawal receipts in this store (for one wardrobe, or all), oldest first."""
+    from wardrobe.storage import withdrawals
+
+    receipts = []
+    for key in await store.list_keys(withdrawals.PREFIX):
+        look_id = withdrawals.look_of_receipt(key)
+        receipt = await withdrawals.read(store, look_id) if look_id else None
+        if receipt is None or (wardrobe_id is not None and receipt.get("wardrobeId") != wardrobe_id):
+            continue
+        receipts.append({"lookId": look_id, **receipt})
+    return sorted(receipts, key=lambda r: str(r.get("requestedAt") or ""))
+
+
+async def resume_withdrawals(store: ObjectStore) -> dict:
+    """WD1. Finish every withdrawal that did not finish, and re-enforce the ones that did.
+
+    Run at startup. A ``pending`` receipt is a withdrawal a failure or a restart cut short: it
+    is carried on from where it stopped. A ``withdrawn`` one whose files are back in the store
+    (a dataset restored from a backup, another publisher's stale root) has them deleted again:
+    the look was already blocked by the receipt; this takes the bytes away as well. Never
+    raises: a withdrawal that still cannot finish stays pending for the next start or the
+    operator's next DELETE.
+    """
+    from wardrobe.storage import withdrawals
+
+    done, pending = [], []
+    try:
+        receipts = await list_withdrawals(store)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("withdrawal receipts could not be listed: %s", exc)
+        return {"resumed": done, "pending": pending}
+    for receipt in receipts:
+        look_id, wardrobe_id = receipt.get("lookId"), receipt.get("wardrobeId")
+        if not withdrawals.blocks(receipt) or not look_id or not wardrobe_id:
+            continue
+        leftover = [key for key in _import_files(look_id) if await _still_there(store, key)]
+        if receipt.get("state") == withdrawals.WITHDRAWN and not leftover:
+            continue
+        try:
+            result = await withdraw_import(store, wardrobe_id, look_id,
+                                           withdrawn_by=str(receipt.get("requestedBy") or "admin"))
         except Exception as exc:  # noqa: BLE001
-            logger.warning("could not delete %s: %s", key, exc)
-        try:
-            still = await store.exists(key)
-        except Exception:  # noqa: BLE001 - cannot confirm it is gone: treat it as there
-            still = True
-        if still:
-            remaining.append(key)
-    if not remaining:
-        try:
-            await store.delete(marker)
-        except Exception as exc:  # noqa: BLE001 - a marker left behind protects nothing, harms nothing
-            logger.warning("could not delete %s: %s", marker, exc)
-    return {"withdrawn": not remaining, "remaining": remaining}
+            logger.warning("could not resume the withdrawal of %s: %s", look_id, exc)
+            result = None
+        (done if result and result["withdrawn"] else pending).append(look_id)
+    if done or pending:
+        logger.info("withdrawals resumed: %d finished, %d still pending", len(done), len(pending))
+    return {"resumed": done, "pending": pending}
 
 
 async def lookup(store: ObjectStore, key: str) -> JobRecord | None:

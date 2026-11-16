@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import OrchestratorDep, SettingsDep
-from apps.api.grants import GrantDep, can_read_private
+from apps.api.grants import GrantDep, can_read_private, reader_account
 from wardrobe.domain.manifests import WardrobeManifest
 from wardrobe.pipeline import prebuilt
 
@@ -27,7 +27,7 @@ async def _read_wardrobe(request: Request, orchestrator, avatar_id: str, admin, 
     private = can_read_private(admin, grant, avatar_id)
     manifest = await prebuilt.with_prebuilt(
         orchestrator.store, avatar_id, await orchestrator.wardrobes.get(avatar_id),
-        include_private=private,
+        include_private=private, account=reader_account(admin, grant),
     )
     if manifest is None:
         library = getattr(request.app.state, "library", None)

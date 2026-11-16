@@ -60,6 +60,15 @@ only, scoped to named library avatars, at most 30 days, signed with `WARDROBE_GR
 (unset: no grants), revocable by id (`WARDROBE_GRANT_REVOKED`) or by rotating the secret. No write
 route accepts one. See `docs/qa/BODY_STATE_IMPORT.md`.
 
+An operator grant is a per-deployment credential: do not put one in a page's public
+configuration. A signed-in person should hold an **account capability** (AC1): the same token
+bound to their account and avatars, at most 15 minutes, issued by `POST /v1/access/capabilities`
+after a pluggable identity verifier has verified them, revocable by id or by account. Off by
+default (no verifier, nobody). See `docs/ACCOUNT_ACCESS.md`.
+
+A withdrawn import stays withdrawn across restarts and dataset publishes (WD1,
+`docs/qa/ASSET_WITHDRAWAL.md`).
+
 ## Privacy
 
 - Generated looks are **private by default**. Nothing is world-readable.

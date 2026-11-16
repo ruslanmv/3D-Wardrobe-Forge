@@ -256,14 +256,32 @@ def test_a_failed_vrm_deletion_keeps_the_marker_and_a_retry_finishes(env, mira, 
         assert first.status_code == 503
         assert first.json()["detail"]["remaining"] == [f"looks/{look_id}/look.vrm"]
         assert client.get(f"/v1/{url}").status_code == 404  # still private, anonymously
-        assert client.get(f"/v1/{url}", headers=headers).status_code == 200
+        # WD1. And served to no one while the withdrawal is pending, the admin session included
+        # (before: 200). The operator asked for it to be gone; that a file would not delete is
+        # no reason to keep handing it out, and on the dataset store "still there" used to be
+        # for ever.
+        assert client.get(f"/v1/{url}", headers=headers).status_code == 404
         assert client.get("/v1/admin/library/mira/body-states", headers=headers).json()["count"] == 0
+        pending = client.get("/v1/admin/library/mira/withdrawals", headers=headers).json()["withdrawals"]
+        assert [(r["lookId"], r["state"], r["remaining"]) for r in pending] == [
+            (look_id, "pending", [f"looks/{look_id}/look.vrm"])]
         # Under another avatar it is not there to withdraw.
         assert client.delete(f"/v1/admin/library/nora/body-states/{look_id}", headers=headers).status_code == 404
         monkeypatch.setattr(LocalObjectStore, "delete", real_delete)
         assert client.delete(f"/v1/admin/library/mira/body-states/{look_id}", headers=headers).status_code == 204
         assert client.get(f"/v1/{url}", headers=headers).status_code == 404
-        assert client.delete(f"/v1/admin/library/mira/body-states/{look_id}", headers=headers).status_code == 404
+        # WD1. Repeating a finished withdrawal is a no-op that succeeds (before: 404, as if the
+        # import had never existed). Under another avatar, and for a look that never was, 404.
+        assert client.delete(f"/v1/admin/library/mira/body-states/{look_id}", headers=headers).status_code == 204
+        assert client.delete(f"/v1/admin/library/nora/body-states/{look_id}", headers=headers).status_code == 404
+        assert client.delete("/v1/admin/library/mira/body-states/import-never", headers=headers).status_code == 404
+        done = client.get("/v1/admin/library/mira/withdrawals", headers=headers).json()["withdrawals"]
+        assert [(r["state"], r["remaining"], r["attempts"]) for r in done] == [("withdrawn", [], 2)]
+        assert [e["event"] for e in done[0]["history"]] == ["requested", "incomplete", "retried", "withdrawn"]
+        assert done[0]["requestedBy"] == "admin" and done[0]["completedAt"]
+        # The receipt is the operator's record, not an asset.
+        assert client.get(f"/v1/assets/withdrawn/{look_id}.json").status_code == 404
+        assert client.get("/v1/admin/library/mira/withdrawals").status_code == 401
 
 
 def test_grants_expire_by_the_clock_and_never_cross_avatars(env, mira, state, monkeypatch):

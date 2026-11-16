@@ -24,6 +24,15 @@ The operator mints one per deployment of the app (or per device) in an admin ses
 (``POST /v1/admin/grants``). Who may *use* the app's Private mode is the app's question — its own
 consent flow and age gate — and a grant does not answer it; it only stops the Forge secret from
 being the thing the app holds.
+
+AC1. **Account capabilities.** An operator grant answers "which avatars", for whoever holds it,
+for up to thirty days: handed to a browser it is a shared long-lived credential. A capability is
+the same signed token with one more claim, ``sub``: the signed-in account it was issued to by
+``POST /v1/access/capabilities`` (``wardrobe.policy.identity``), after that account was verified
+and found entitled to each avatar it names. It lasts at most ``ACCOUNT_MAX_TTL_S`` (a token with
+``sub`` and a longer life does not verify, whoever signed it), is revocable by its id or by its
+account (``wardrobe.policy.revocations``), and reads a look whose marker names an account only
+when it is that account's. Tokens minted before AC1 carry no ``sub`` and verify as they did.
 """
 
 from __future__ import annotations
@@ -42,8 +51,14 @@ SCOPE = "private-read"
 VERSION = 1
 MIN_SECRET_LENGTH = 32
 MAX_TTL_S = 30 * 24 * 3600
+#: AC1. The longest an account capability lives. Short enough that a copied one is soon
+#: nothing, long enough for a wardrobe to be listed and a 15 MB look downloaded on a phone.
+ACCOUNT_MAX_TTL_S = 15 * 60
+ACCOUNT_MIN_TTL_S = 30
 MAX_SLUGS = 32
 _SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+#: An account id as an identity provider states it: opaque, printable, bounded.
+_SUBJECT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:@|+=/-]{0,127}$")
 
 
 class GrantError(ValueError):
@@ -57,13 +72,26 @@ class Grant:
     expires: int
     issued: int
     label: str
+    #: AC1. The account this capability was issued to; None for an operator grant.
+    subject: str | None = None
 
-    def covers(self, slug: str | None) -> bool:
-        return bool(slug) and slug in self.slugs
+    def covers(self, slug: str | None, account: str | None = None) -> bool:
+        """Whether this grant reads private looks of ``slug``.
+
+        ``account`` is the account a look's own marker names, when it names one: such a look
+        is that account's alone, so an operator grant (no subject) and another account's
+        capability do not read it, even for the right avatar.
+        """
+        if not slug or slug not in self.slugs:
+            return False
+        return account is None or (self.subject is not None and self.subject == account)
 
     def to_dict(self) -> dict:
-        return {"id": self.id, "scope": SCOPE, "slugs": sorted(self.slugs), "expires": self.expires,
-                "issued": self.issued, "label": self.label}
+        out = {"id": self.id, "scope": SCOPE, "slugs": sorted(self.slugs), "expires": self.expires,
+               "issued": self.issued, "label": self.label}
+        if self.subject is not None:
+            out["subject"] = self.subject
+        return out
 
 
 def _b64(data: bytes) -> str:
@@ -82,18 +110,30 @@ def _sign(secret: str, body: str) -> str:
     return _b64(hmac.new(secret.encode("utf-8"), body.encode("ascii"), hashlib.sha256).digest())
 
 
-def mint(secret: str, *, slugs, ttl_s: int, label: str = "", now: float | None = None) -> tuple[str, Grant]:
+def mint(secret: str, *, slugs, ttl_s: int, label: str = "", now: float | None = None,
+         subject: str | None = None) -> tuple[str, Grant]:
+    """Sign a grant. With ``subject`` it is an account capability (AC1): shorter-lived, and bound."""
     if not usable(secret):
         raise GrantError(f"grants need WARDROBE_GRANT_SECRET of at least {MIN_SECRET_LENGTH} characters")
     names = sorted({str(s) for s in slugs or []})
     if not names or len(names) > MAX_SLUGS or not all(_SLUG.match(s) for s in names):
         raise GrantError(f"a grant names 1-{MAX_SLUGS} library avatars by slug")
-    if not 60 <= int(ttl_s) <= MAX_TTL_S:
-        raise GrantError(f"a grant lasts between 60 s and {MAX_TTL_S // 86400} days")
+    if subject is None:
+        if not 60 <= int(ttl_s) <= MAX_TTL_S:
+            raise GrantError(f"a grant lasts between 60 s and {MAX_TTL_S // 86400} days")
+    else:
+        if not isinstance(subject, str) or not _SUBJECT.match(subject):
+            raise GrantError("a capability is issued to one account, named by its identity provider")
+        if not ACCOUNT_MIN_TTL_S <= int(ttl_s) <= ACCOUNT_MAX_TTL_S:
+            raise GrantError(
+                f"a capability lasts between {ACCOUNT_MIN_TTL_S} s and {ACCOUNT_MAX_TTL_S // 60} minutes")
     issued = int(now if now is not None else time.time())
-    grant = Grant(secrets.token_hex(8), frozenset(names), issued + int(ttl_s), issued, str(label)[:80])
+    grant = Grant(secrets.token_hex(8), frozenset(names), issued + int(ttl_s), issued, str(label)[:80],
+                  subject)
     claims = {"v": VERSION, "scope": SCOPE, "jti": grant.id, "slugs": names, "iat": issued,
               "exp": grant.expires, "label": grant.label}
+    if subject is not None:
+        claims["sub"] = subject
     body = _b64(json.dumps(claims, separators=(",", ":"), sort_keys=True).encode("utf-8"))
     return f"{body}.{_sign(secret, body)}", grant
 
@@ -120,8 +160,17 @@ def verify(secret: str | None, token: str | None, *, revoked=(), now: float | No
         return None
     if expires <= current or expires - issued > MAX_TTL_S or grant_id in set(revoked or ()):
         return None
-    return Grant(grant_id, slugs, expires, issued, str(claims.get("label", "")))
+    subject = claims.get("sub")
+    if subject is not None:
+        # AC1. A token that names an account is a capability, and a capability is short-lived
+        # by definition: one with a longer life is refused here even though it is signed, so a
+        # misconfigured issuer cannot hand out a month-long token with someone's name on it.
+        if not isinstance(subject, str) or not _SUBJECT.match(subject):
+            return None
+        if expires - issued > ACCOUNT_MAX_TTL_S:
+            return None
+    return Grant(grant_id, slugs, expires, issued, str(claims.get("label", "")), subject)
 
 
-__all__ = ["HEADER", "MAX_TTL_S", "MIN_SECRET_LENGTH", "SCOPE", "Grant", "GrantError", "mint", "usable",
-           "verify"]
+__all__ = ["ACCOUNT_MAX_TTL_S", "ACCOUNT_MIN_TTL_S", "HEADER", "MAX_TTL_S", "MIN_SECRET_LENGTH", "SCOPE",
+           "Grant", "GrantError", "mint", "usable", "verify"]
