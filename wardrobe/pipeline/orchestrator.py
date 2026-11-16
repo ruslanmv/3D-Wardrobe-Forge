@@ -14,6 +14,7 @@ A tattoo-only job (BA6) carries its look's outfit over in place of plan … expo
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import shutil
@@ -127,8 +128,8 @@ class Orchestrator:
     # ------------------------------------------------------------------
     async def submit(self, request: CreateJobRequest) -> JobRecord:
         # PB1. A catalog look made before is answered now, completed, instead of queued again.
-        key = self._prebuilt_key(request)
-        if key is not None:
+        # RU1. The words key first (every look already in the dataset), then the plan key.
+        for key in self._prebuilt_keys(request):
             cached = await prebuilt.lookup(self.store, key)
             if cached is not None:
                 record = prebuilt.answered(request, cached)
@@ -146,14 +147,18 @@ class Orchestrator:
     async def get(self, job_id: str) -> JobRecord | None:
         return await self.jobs.get(job_id)
 
-    def _prebuilt_key(self, request: CreateJobRequest) -> str | None:
+    def _prebuilt_keys(self, request: CreateJobRequest) -> list[str]:
+        # Bare requests always recheck current terms, switch and declaration before output: never
+        # answered from the cache, never remembered in it (feat/bare-base-body).
+        if not self.settings.wardrobe_prebuilt or request.options.base_body_mode == "bare":
+            return []
+        return prebuilt.keys_for(request, self.catalog)
+
+    def _remember_keys(self, request: CreateJobRequest) -> list[str]:
+        """The keys a finished look is recorded under: every request's, bare included."""
         if not self.settings.wardrobe_prebuilt:
-            return None
-        try:
-            return prebuilt.cache_key(request, self.catalog)
-        except Exception as exc:  # a key that cannot be made is a miss, never a refused job
-            logger.warning("prebuilt key unavailable: %s", exc)
-            return None
+            return []
+        return prebuilt.keys_for(request, self.catalog)
 
     async def list(self, *, limit: int = 50) -> list[JobRecord]:
         return await self.jobs.list(limit=limit)
@@ -183,7 +188,13 @@ class Orchestrator:
         """
         if record.request.options.private:
             marker = private_marker(look_id_for(record.id))
-            await self.store.put(marker, b'{"private": true}\n', content_type="application/json")
+            # BI2. The marker names her wardrobe, so a read grant scoped to her can be checked
+            # against the file itself after a restart, with no job record in memory.
+            options = record.request.options
+            wardrobe_id = options.wardrobe_id or record.request.avatar.avatar_id
+            body = {"private": True, **({"wardrobeId": wardrobe_id} if wardrobe_id else {})}
+            data = (json.dumps(body) + "\n").encode("utf-8")
+            await self.store.put(marker, data, content_type="application/json")
 
     # ------------------------------------------------------------------
     async def execute(self, record: JobRecord) -> JobRecord:
@@ -210,11 +221,15 @@ class Orchestrator:
                 await generate_garment.plan(context)
                 engine = self._engine_for_outfit(engine, context)
                 await prepare_base_body.run(context)
-                await set_stance.run(context)  # DC1: on the heels of the shoes she is put in
-                await prepare_body_surface.run(context)  # BS1-BS3: only when the job asks for one
-                await generate_garment.generate(context)
-                await fit_garment.run(context, engine)
-                await assemble_vrm.run(context, engine)
+                if record.request.options.base_body_mode == "bare":
+                    engine = select_engine("native", self.settings)
+                    context.output_bytes = context.document.to_bytes()
+                else:
+                    await set_stance.run(context)  # DC1: on the heels of the shoes she is put in
+                    await prepare_body_surface.run(context)
+                    await generate_garment.generate(context)
+                    await fit_garment.run(context, engine)
+                    await assemble_vrm.run(context, engine)
                 await check_painted_skin.run(context)  # PB1: underwear on bare skin, or refused
             # BA4. Clothes are finished; only now is her visible skin measured, and a tattoo
             # added where it is. Neither stage does anything for a job without body art
@@ -228,9 +243,16 @@ class Orchestrator:
 
             await self._publish(context)
             await context.emit(JobState.COMPLETED, "look ready")
-            key = self._prebuilt_key(record.request)
-            if key is not None:
-                await prebuilt.remember(self.store, key, record)
+            # RU1. Under every key it answers to; the list entry is written once, by the first.
+            # BL1. Registration is not lookup: a bare look is never *answered* from the cache
+            # (_prebuilt_keys), but once built it is recorded and listed like any prebuilt look,
+            # so the operator's prebuild finds it, publishing carries it, and a restart keeps it.
+            # BR1. A reconstructed bare body (bodyCompletion: proxy) carries surface her author never
+            # made: it stays a private job result for the operator to inspect and is never
+            # registered, so no prebuilt list (and so no app) can serve it unreviewed.
+            reconstructed = ((record.fit_report.base_body or {}).get("bodyCompletion") or {}).get("applied")
+            for i, key in enumerate([] if reconstructed else self._remember_keys(record.request)):
+                await prebuilt.remember(self.store, key, record, list_it=i == 0)
 
         except WardrobeError as exc:
             logger.info("job %s rejected/failed: %s", record.id, exc.message)
@@ -365,6 +387,9 @@ class Orchestrator:
             vrmUrl=vrm_url,
             previewUrl=preview_url,
             sourceAvatarHash=context.source_sha256,
+            templateId=record.request.outfit.template_id if record.request.outfit else None,
+            wardrobeState="bare" if record.request.options.base_body_mode == "bare" else None,
+            outputSha256=hashlib.sha256(context.output_bytes).hexdigest(),
             prompt=prompt,
             plan=context.plan,
             sizeBytes=len(context.output_bytes),
@@ -444,6 +469,10 @@ class Orchestrator:
                 private=record.request.options.private,
                 occasion=occasion,
                 style=style,
+                templateId=look.template_id,
+                wardrobeState=look.wardrobe_state,
+                sourceSha256=context.source_sha256,
+                outputSha256=look.output_sha256,
             )
         )
         await self.wardrobes.save(manifest)

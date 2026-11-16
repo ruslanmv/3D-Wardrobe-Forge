@@ -133,9 +133,26 @@ def test_an_adult_profile_is_refused_in_order(adult_root, vrm_bytes, vrm0_bytes,
     assert data is None
 
 
-def test_an_adult_profile_runs_only_with_all_three(adult_root, vrm_bytes):
+def test_an_adult_profile_runs_only_with_all_four(adult_root, vrm_bytes):
+    """Model terms, operator switch, adult declaration — and (AF3) a recorded review that this exact
+    file's character is clearly adult in design, because the test profile carries an intimate region."""
+    import hashlib
+    import json
+
+    from wardrobe.body_surface import gate
     settings = {"wardrobe_body_surface_root": str(adult_root), "wardrobe_adult_body_surface": True}
-    record, _, _ = run(allowing(vrm_bytes), DRESS, settings=settings, bodySurface={"profileId": "test-adult"})
+    source = allowing(vrm_bytes)
+    reviews = adult_root / "adult-design-reviews.json"
+    reviews.unlink(missing_ok=True)
+    record, _, _ = run(source, DRESS, settings=settings, bodySurface={"profileId": "test-adult"})
+    assert record.state == "rejected" and "clearly adult" in record.error
+    reviews.write_text(json.dumps({"schema": gate.REVIEWS_SCHEMA, "reviews": {
+        hashlib.sha256(source).hexdigest(): {"outcome": "clearly-adult", "reviewer": "test",
+                                             "date": "2026-11-15", "evidence": "fixture"}}}))
+    try:
+        record, _, _ = run(source, DRESS, settings=settings, bodySurface={"profileId": "test-adult"})
+    finally:
+        reviews.unlink()
     assert record.state == "completed", record.error
     assert report(record)["bodySurface"]["capability"] == "adult_body_surface"
 

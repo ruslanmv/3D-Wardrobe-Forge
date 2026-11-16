@@ -20,6 +20,7 @@ from wardrobe.engines.base import FittingEngine
 from wardrobe.engines.geometry_checks import pose_stress_test
 from wardrobe.engines.shell import build_fitted_shell, on_axis_mask, shell_coverage
 from wardrobe.errors import FittingError
+from wardrobe.geometry.kept_layers import tuck_under_kept_tops
 from wardrobe.geometry.procedural import trim_triangles
 from wardrobe.geometry.raster import RenderLayer, render
 from wardrobe.geometry.waistband import WAISTBAND_SHADE, waistband_mask
@@ -104,6 +105,14 @@ class NativeEngine(FittingEngine):
         hosiery_fit.before_shell(context)
         shell = build_fitted_shell(context)
         mesh = hosiery_fit.after_shell(context, shell.mesh)
+        # KL1. Under the top she keeps, not over it (the jeans hip split): see kept_layers.
+        tucked = tuck_under_kept_tops(context.document, mesh, context.measurements,
+                                      category=context.plan.category,
+                                      inner_points=context.collision_points)
+        if tucked is not None:
+            context.artifact.metadata["keptTopTuck"] = tucked
+            if context.fit_report is not None:
+                context.fit_report.kept_top_tuck = tucked
 
         # ---- skin binding ----------------------------------------------
         regions = artifact.anchors or artifact.coverage
@@ -268,6 +277,14 @@ class NativeEngine(FittingEngine):
                 band = waistband_mask(layer.mesh)
                 extra = [(band, shade_material(garment_material_name(f"{layer.plan.name} Waistband", kind),
                                                material, WAISTBAND_SHADE))] if band.any() else None
+                from wardrobe.geometry.dark_fashion import hardware_triangles
+
+                metal = hardware_triangles(layer.mesh)
+                if metal.any():
+                    from wardrobe.hosiery.materials import hardware_material
+
+                    extra = [*(extra or []), (metal, hardware_material(
+                        garment_material_name(f"{layer.plan.name} Hardware", kind), "silver"))]
                 if extra and fabric.toony is not None:
                     extra[0][1].toony = fabric.toony
                 gusset = (_gusset_triangles(layer.mesh) if kind in LINGERIE_KINDS and material.exposes_body

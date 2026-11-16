@@ -72,6 +72,8 @@ NECKLINES = ("v", "plunge", "sweetheart", "triangle", "demi", "balconette")
 RISES = ("high", "low", "ultra-low")
 BACKS = ("low",)
 LEG_CUTS = ("high",)
+#: AA. A template may own a thigh slit. Empty means the prompt decides, as before.
+SLITS = ("high",)
 FLARE_STARTS = ("waist", "high-hip", "hip", "below-hip")
 
 
@@ -119,6 +121,14 @@ class FitPolicy(BaseModel):
     back: str = ""
     leg_cut: str = Field(default="", alias="legCut")
     coverage: str = "standard"
+    #: AA. "" | high. A card can be a slit gown without the prompt repeating "slit".
+    slit: str = ""
+    #: AA. The card's own finish and pattern, used when the prompt names neither.
+    #: Empty keeps the old rule: matte, and no pattern unless the finish is sequin.
+    finish: str = ""
+    pattern: str = ""
+    #: AA. None keeps opacity at 1 unless the prompt says sheer. A sheer card sets it.
+    opacity: float | None = Field(default=None, ge=0.2, le=1.0)
 
 
 class MaterialPolicy(BaseModel):
@@ -156,6 +166,9 @@ class GarmentTemplate(BaseModel):
     description: str | None = None
     #: Needs an adult declaration whatever its category or material.
     requires_adult: bool = Field(default=False, alias="requiresAdult")
+    #: Take off every recognised garment, then put this one on. An open cardigan
+    #: otherwise layers, which left the short robe over the dress she arrived in.
+    replaces_clothing: bool = Field(default=False, alias="replacesClothing")
     #: The category's answer when a prompt names the category and nothing else ("skirt",
     #: "navy skirt", the Studio's "Planner chooses"), and the tie-break when two templates
     #: score the same. Without it the planner fell back on the template id's reverse
@@ -172,10 +185,24 @@ class GarmentTemplate(BaseModel):
     #: DC2. A boot's construction (wardrobe.geometry.boots): style, heel and sole heights,
     #: toe, shaft, closure. Its heel and sole decide how she stands (wardrobe.vrm.stance).
     boot: dict | None = None
+    #: Dark-fashion construction (wardrobe.geometry.dark_fashion): a high collar, front
+    #: buckles, boning channels. Absent, the shape is built exactly as before.
+    construction: dict | None = None
 
     @property
     def is_procedural(self) -> bool:
         return self.mesh.startswith("procedural:")
+
+    @property
+    def is_body_mode(self) -> bool:
+        """AF5. A template that is a way of preparing her body, not a garment (``body:bare``).
+
+        ``body-bare-v1`` is filed under ``underwear`` so the catalogue groups it with what is worn
+        closest to her, but it has no garment geometry: anything that builds or lists garments —
+        the geometry builders, the garment catalogue, the prebuild — skips it. Walking it as a
+        garment raised ``unsupported garment category: 'underwear'``.
+        """
+        return self.mesh.startswith("body:")
 
     @property
     def procedural_kind(self) -> str:
@@ -198,9 +225,17 @@ class GarmentTemplate(BaseModel):
             ("neckline", self.fit.neckline, NECKLINES),
             ("back", self.fit.back, BACKS),
             ("legCut", self.fit.leg_cut, LEG_CUTS),
+            ("slit", self.fit.slit, SLITS),
         ):
             if value and value not in allowed:
                 issues.append(f"{self.id}: unknown {field} {value!r}")
+        if self.fit.finish or self.fit.pattern:
+            from wardrobe.materials.finishes import FINISHES, PATTERNS
+
+            if self.fit.finish and self.fit.finish not in FINISHES:
+                issues.append(f"{self.id}: unknown finish {self.fit.finish!r}")
+            if self.fit.pattern and self.fit.pattern not in PATTERNS:
+                issues.append(f"{self.id}: unknown pattern {self.fit.pattern!r}")
         if self.fit.coverage not in COVERAGE_PRESETS:
             issues.append(f"{self.id}: unknown coverage {self.fit.coverage!r}")
         # Sleeves are skinned to the bones the anchors name. Anchor a sleeved garment

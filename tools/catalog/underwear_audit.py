@@ -1,6 +1,6 @@
 """UA1. The underwear audit: does each fitted piece measure what its pattern says it is?
 
-    python tools/catalog/underwear_audit.py --out /tmp/ua            # all 35, ~10 min
+    python tools/catalog/underwear_audit.py --out /tmp/ua            # all 36, ~10 min
     python tools/catalog/underwear_audit.py --out /tmp/ua --only under-thong-v2 under-g-string-v2
     python tools/catalog/underwear_audit.py --out /tmp/ua2 --before /tmp/ua/audit.json
 
@@ -33,7 +33,15 @@ against: they are measured and reported as ``no pattern spec``, never passed by 
 ``--out`` must be outside the repository: each fitted VRM is kept there (``vrm/{id}.vrm``), so
 a later run's ``--before`` can be compared look for look. ``audit.json`` is written there too;
 ``--publish`` also writes the numbers (no meshes, no images) to
-assets/catalog/adult/underwear-audit.json and docs/UNDERWEAR_AUDIT.md.
+assets/catalog/adult/underwear-audit.json and docs/UNDERWEAR_AUDIT.md. With ``--only``,
+``--publish`` replaces those pieces' records and keeps every other published record as it is.
+
+UA2. Three things a new template found. A body mode (``body-bare-v1``) is filed under
+underwear and is not a garment: it is left out, where the full run used to stop on it before
+fitting anything. A template the planner builds as another template of its own kind (the
+Leather Garter Belt is the classic suspender belt in leather, ``wardrobe.hosiery.planning``)
+is measured on that piece, not on the stockings and straps planned with it. And a partial
+``--publish`` used to write only its own pieces over the whole published file.
 """
 
 from __future__ import annotations
@@ -311,6 +319,133 @@ def geometry_hash(points: np.ndarray, tris: np.ndarray) -> str:
     return digest.hexdigest()
 
 
+def audited(catalog) -> list:
+    """The underwear garments, in the published order. A body mode is not a garment (AF5).
+
+    ``body-bare-v1`` sorts first and cannot be requested as a template without its own base
+    body, so the documented full run failed on it before a single piece was fitted, and a
+    template added after it could only be audited by naming it with ``--only``.
+    """
+    return sorted(
+        (t for t in catalog if t.category == "underwear" and not t.is_body_mode), key=lambda v: v.id
+    )
+
+
+def piece_names(template, garments: list[dict], kinds: dict[str, str | None]) -> list[str]:
+    """The planned garments that are this template's own piece.
+
+    Its own id, when the plan kept it. Otherwise the planner rebuilt it: as another template
+    of its own kind (the Leather Garter Belt is planned as the classic suspender belt, with
+    the stockings and straps a belt is worn with), and then that piece is the garment, or as
+    parts of other kinds (under-lingerie-set-v1 is a bralette and briefs), and then the whole
+    plan is. Measuring a belt together with the stockings it clips to gave a belt 5,165
+    vertices and a side height of 95 mm for the classic belt's 87: not this piece's figures.
+    """
+    own = [g["name"] for g in garments if g.get("templateId") == template.id]
+    if own:
+        return own
+    same_kind = [g["name"] for g in garments if kinds.get(g.get("templateId")) == template.procedural_kind]
+    return same_kind or [g["name"] for g in garments]
+
+
+CONTACT_KEYS = ("maxPenetrationMm", "penetratingPct", "maxEdgeStretch", "stretchedPct")
+
+
+def with_pieces(template, plan, own: list[str]) -> list[dict]:
+    """The other pieces of a template the planner rebuilt as another of its own kind.
+
+    The Leather Garter Belt *is* a belt with four straps clipped to thigh-high stockings: its
+    silhouette is the belt's, measured like every other belt's, but a record of the belt alone
+    says nothing about two thirds of what the card puts on her. Each piece planned with it is
+    measured as well (``parts``). Empty for a template the plan kept under its own id, whose
+    record is what it always was, and for a set planned as parts of other kinds, whose whole
+    plan is already the measured piece.
+    """
+    if any(g.template_id == template.id for g in plan.garments):
+        return []
+    if len(own) == len(plan.garments):
+        return []
+    return [
+        {"name": g.name, "templateId": g.template_id, "role": str(g.role), "category": str(g.category)}
+        for g in plan.garments
+    ]
+
+
+def parts(document: GltfDocument, path: Path, poses: list[dict], pieces: list[dict]) -> list[dict]:
+    """Each planned piece on the fitted look: its size, its geometry hash, its contact per pose.
+
+    A piece is every primitive its name starts (the stockings are three: leg, top band, edge;
+    the straps two: webbing and hardware), as ``_garment`` merges them. Contact is the worst
+    of its primitives per pose, since the question is whether any of it is inside her.
+    """
+    out = []
+    for piece in pieces:
+        points, tris = _garment(document, [piece["name"]])
+        if points is None:
+            out.append({**piece, "fitted": False})
+            continue
+        measured = pose_contact.measure(path, poses, [piece["name"]])["garments"]
+        contact: dict = {}
+        for by in measured.values():
+            for pose, m in by.items():
+                worst = contact.setdefault(pose, dict.fromkeys(CONTACT_KEYS, 0.0))
+                for key in CONTACT_KEYS:
+                    worst[key] = max(worst[key], m[key])
+        out.append(
+            {
+                **piece,
+                "fitted": True,
+                "primitives": sorted(measured),
+                "vertices": int(points.shape[0]),
+                "triangles": int(tris.shape[0]),
+                "geometrySha256": geometry_hash(points, tris),
+                "contact": contact,
+            }
+        )
+    return out
+
+
+def strap_summary(hosiery: dict | None) -> dict | None:
+    """The fit report's own hosiery figures: each strap's length and strain per pose, the clips.
+
+    Copied from ``wardrobe.hosiery.report``, not re-derived: the report is where strap tension
+    and the clips' distance from the stocking band are computed, against the limits it warns by.
+    The clips' positions and skin weights are left in the fit report; here, what was measured.
+    """
+    if not hosiery:
+        return None
+    out = {key: hosiery[key] for key in ("straps", "clips") if key in hosiery}
+    tops = hosiery.get("stockingTop") or {}
+    if tops:
+        out["stockingTop"] = {
+            side: {key: top[key] for key in ("topY", "bottomY", "widthMm") if key in top}
+            for side, top in tops.items()
+            if isinstance(top, dict)
+        }
+    return out or None
+
+
+def merged(previous: dict, result: dict) -> dict:
+    """A partial audit (``--only``) laid over the published one: its pieces replaced or added.
+
+    Every other record is kept exactly as published, in id order. The tolerances and the
+    avatar must be the ones the kept records were measured with, or the file would mix two
+    standards under one header.
+    """
+    for key in ("schemaVersion", "avatar", "tolerances"):
+        if previous.get(key) != result.get(key):
+            raise SystemExit(f"published {key} differs from this run's; run the full audit to re-publish")
+    items = {item["id"]: item for item in previous["items"]}
+    items.update({item["id"]: item for item in result["items"]})
+    # The header keeps the date of the last full audit, which is when the kept records were
+    # measured; each partial run is listed under it with the pieces it measured.
+    updates = [*previous.get("updates", []), {
+        "at": result["generatedAt"],
+        "ids": sorted(item["id"] for item in result["items"]),
+    }]
+    return {**previous, "updates": updates, "items": [items[key] for key in sorted(items)]}
+
+
 def _verdict(item: dict, fitted: bool) -> str:
     if not fitted:
         return "not fitted"
@@ -386,7 +521,8 @@ async def audit(out: Path, only: set[str]) -> dict:
         # filling the gap between her thighs moved the crotch every piece is measured from.
         marks = landmarks_for_document(GltfDocument.from_bytes(Path(entry.path).read_bytes()))
         drafts = _Drafts().__enter__()
-        for t in sorted((t for t in catalog if t.category == "underwear"), key=lambda v: v.id):
+        kinds = {t.id: t.procedural_kind for t in catalog}
+        for t in audited(catalog):
             if only and t.id not in only:
                 continue
             profile = render.profile_for(t, style, AVATAR, "underwear")
@@ -431,9 +567,9 @@ async def audit(out: Path, only: set[str]) -> dict:
             if fitted:
                 garments = render._rendered(result.plan)
                 # A set (under-lingerie-set-v1) is planned as its parts, each its own template.
-                names = [g["name"] for g in garments if g.get("templateId") == t.id] or [
-                    g["name"] for g in garments
-                ]
+                names = piece_names(t, garments, kinds)
+                # The pieces planned with a rebuilt one (the leather belt's stockings and straps).
+                worn_with = with_pieces(t, result.plan, names)
                 data = await store.get(f"looks/{result.look.id}/look.vrm")
                 path = out / "vrm" / f"{t.id}.vrm"
                 path.write_bytes(data)
@@ -464,13 +600,16 @@ async def audit(out: Path, only: set[str]) -> dict:
                     )
                     contact = pose_contact.measure(path, poses, names)
                     item["contact"] = {
-                        pose: {
-                            k: m[k]
-                            for k in ("maxPenetrationMm", "penetratingPct", "maxEdgeStretch", "stretchedPct")
-                        }
+                        pose: {k: m[k] for k in CONTACT_KEYS}
                         for by in list(contact["garments"].values())[:1]
                         for pose, m in by.items()
                     }
+                    if worn_with:
+                        item["builtAs"] = next(
+                            (g["templateId"] for g in garments if g["name"] in names), None
+                        )
+                        item["parts"] = parts(document, path, poses, worn_with)
+                        item["hosiery"] = strap_summary(report.hosiery)
             item["hard"], item["soft"] = classify(item.get("comparison", []), item.get("rules", []))
             if not item.get("fitPassed"):
                 item["hard"].append("fitReport.passed")
@@ -530,6 +669,11 @@ def markdown(result: dict) -> str:
         f"`{result['avatar']}`: {', '.join(f'{n} {v}' for v, n in sorted(counts.items()))}. Each piece "
         "is fitted exactly as its preview is; the tool's docstring has the definitions.",
         "",
+        *[
+            f"Re-measured on {update['at'][:10]} (`--only`, the other records kept as published): "
+            f"{', '.join(f'`{i}`' for i in update['ids'])}.\n"
+            for update in result.get("updates", [])
+        ],
         "Each column is *spec / measured*, ✗ outside tolerance. **Pattern** coverage is the "
         "builder's own figure for the drafted pattern (±0.02), against that template's own spec: "
         "a G-string is held to a G-string's 0.03 at the back, a brief to a brief's 0.85. **Side** "
@@ -564,6 +708,47 @@ def markdown(result: dict) -> str:
             f"| {_cell(rows, 'fitted.sideHeightMm')} | {_cell(rows, 'fitted.backWidthMm')} | {moved} "
             f"| {contact} | {hard} | {soft} |"
         )
+    for item in result["items"]:
+        if not item.get("parts"):
+            continue
+        lines += [
+            "",
+            f"## `{item['id']}`: the pieces it is worn with",
+            "",
+            f"Built as `{item.get('builtAs')}`; the row above is that piece. Every piece the card puts "
+            "on her, measured on the same fitted look (contact is the worst of a piece's primitives):",
+            "",
+            "| Piece | Template | Role | Vertices | Standing: inside, deepest | "
+            "Sit (Wide): inside, deepest, stretch | Geometry |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+        ]
+        for part in item["parts"]:
+            if not part.get("fitted"):
+                lines.append(f"| {part['name']} | `{part.get('templateId')}` | {part['role']} | not fitted |")
+                continue
+            stand, sit = part["contact"].get("standing", {}), part["contact"].get("sittingWide", {})
+            lines.append(
+                f"| {part['name']} | `{part.get('templateId') or '–'}` | {part['role']} | {part['vertices']} "
+                f"| {stand.get('penetratingPct')}%, {stand.get('maxPenetrationMm')} mm "
+                f"| {sit.get('penetratingPct')}%, {sit.get('maxPenetrationMm')} mm, "
+                f"{sit.get('maxEdgeStretch')}x | `{part['geometrySha256'][:12]}` |"
+            )
+        tension = ((item.get("hosiery") or {}).get("straps") or {}).get("tension") or {}
+        if tension:
+            limits = item["hosiery"]["straps"].get("thresholds", {})
+            lines += [
+                "",
+                f"Strap strain per pose, from the fit report (warning past {limits.get('warning')}, "
+                f"error past {limits.get('error')}; negative is slack):",
+                "",
+                "| Strap | Rest length mm | Stand | Walk | Sit |",
+                "| --- | --- | --- | --- | --- |",
+            ]
+            for row in tension.values():
+                strain, status = row["stretch"], row["status"]
+                poses = ("stand", "walk", "sit")
+                cells = " | ".join(f"{strain[pose]:+.3f} ({status[pose]})" for pose in poses)
+                lines.append(f"| {row['strap']} | {row['restLengthM'] * 1000:.1f} | {cells} |")
     return "\n".join(lines) + "\n"
 
 
@@ -586,8 +771,10 @@ def main() -> int:
         changes = diff(json.loads(args.before.read_text()), result)
         print("\n".join(changes) or "no change from --before")
     if args.publish:
-        (ROOT / "assets/catalog/adult/underwear-audit.json").write_text(json.dumps(result, indent=1) + "\n")
-        (ROOT / "docs/UNDERWEAR_AUDIT.md").write_text(markdown(result))
+        target = ROOT / "assets/catalog/adult/underwear-audit.json"
+        published = merged(json.loads(target.read_text()), result) if args.only else result
+        target.write_text(json.dumps(published, indent=1) + "\n")
+        (ROOT / "docs/UNDERWEAR_AUDIT.md").write_text(markdown(published))
     counts = {}
     for item in result["items"]:
         counts[item["verdict"]] = counts.get(item["verdict"], 0) + 1

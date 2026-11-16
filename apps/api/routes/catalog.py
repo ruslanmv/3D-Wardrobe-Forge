@@ -131,6 +131,7 @@ def list_garments(
         template for template in all_templates
         if (category is None or template.category == category)
         and (include_restricted or not restricted(template))
+        and not template.is_body_mode  # AF5: the bare body is a body mode, not a garment to build
     ]
     groups = []
     for name in LABELS:
@@ -251,6 +252,8 @@ async def customize_garment(request: CustomizeGarmentRequest, http: Request, cat
             # bypass the server's adult/licensing policy.
             options=request.options.model_copy(update={"private": False}),
         )
+        if job.options.base_body_mode == "bare":
+            raise HTTPException(status_code=403, detail="bare bodies require the private library route")
         record = await orchestrator.submit(job)
     return {
         "jobId": record.id,

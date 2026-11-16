@@ -298,8 +298,29 @@ def _even_angles(half_width: float, half_depth: float, start: float, count: int)
     return np.interp(np.linspace(0.0, perimeter, count), arc, dense), perimeter
 
 
+def _carry_frame(carried: tuple[np.ndarray, np.ndarray], previous: np.ndarray, tangent: np.ndarray):
+    """The previous ring's frame, turned onto ``tangent`` so the tube does not twist."""
+    axis = np.cross(previous, tangent)
+    sine = float(np.linalg.norm(axis))
+    normal, binormal = carried
+    if sine > 1e-8:
+        axis /= sine
+        angle = math.atan2(sine, float(np.dot(previous, tangent)))
+        normal = _rodrigues(normal, axis, angle)
+        binormal = _rodrigues(binormal, axis, angle)
+    normal = normal - tangent * float(np.dot(normal, tangent))
+    normal /= max(float(np.linalg.norm(normal)), 1e-9)
+    binormal = np.cross(tangent, normal)
+    return normal, binormal
+
+
+def _rodrigues(vector: np.ndarray, axis: np.ndarray, angle: float) -> np.ndarray:
+    c, s = math.cos(angle), math.sin(angle)
+    return vector * c + np.cross(axis, vector) * s + axis * float(np.dot(axis, vector)) * (1.0 - c)
+
+
 def sweep(points: np.ndarray, radii: list[float], *, segments: int = 12, name: str = "sweep",
-          max_spacing: float | None = None) -> Mesh:
+          max_spacing: float | None = None, transport: bool = False) -> Mesh:
     """Build a tube following a polyline (used for sleeves and trouser legs)."""
     points = np.asarray(points, dtype=np.float64)
     if max_spacing and points.shape[0] >= 2 and len(radii) == points.shape[0]:
@@ -325,12 +346,20 @@ def sweep(points: np.ndarray, radii: list[float], *, segments: int = 12, name: s
     reference = np.array([0.0, 1.0, 0.0])
     # Metres of fabric, as in ``loft``: round the tube, and along the path.
     along = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(points, axis=0), axis=1))])
+    carried: tuple[np.ndarray, np.ndarray] | None = None
 
     for index, (point, tangent, radius) in enumerate(zip(points, tangents, radii, strict=True)):
-        helper = reference if abs(float(np.dot(tangent, reference))) < 0.9 else np.array([1.0, 0.0, 0.0])
-        normal = np.cross(tangent, helper)
-        normal /= max(float(np.linalg.norm(normal)), 1e-9)
-        binormal = np.cross(tangent, normal)
+        if transport and carried is not None:
+            # VQ. A fresh world-up frame twists where the arm's tangent crosses the helper,
+            # and a fishnet tile stretched across that twist draws as a solid patch.
+            normal, binormal = _carry_frame(carried, tangents[index - 1], tangent)
+        else:
+            helper = reference if abs(float(np.dot(tangent, reference))) < 0.9 else np.array([1.0, 0.0, 0.0])
+            normal = np.cross(tangent, helper)
+            normal /= max(float(np.linalg.norm(normal)), 1e-9)
+            binormal = np.cross(tangent, normal)
+        if transport:
+            carried = (normal, binormal)
 
         ring = point + radius * (np.outer(np.cos(angles), normal) + np.outer(np.sin(angles), binormal))
         positions.append(ring)
@@ -612,7 +641,7 @@ def skirt_top(params: FitParameters) -> float:
 
 
 def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25,
-                  name: str = "sleeve") -> list[Mesh]:
+                  name: str = "sleeve", fishnet: bool = False) -> list[Mesh]:
     """Tubes swept along each arm's bone chain."""
     if length == "none":
         return []
@@ -622,6 +651,11 @@ def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25
     profile = params.metadata.get("armProfile")
     # Ease over the measured arm: a catsuit (1.1) 1.1 cm, a tee (1.25) 1.9 cm, a jacket (1.45) 2.9 cm.
     ease = params.clearance_m + max(thickness - 1.0, 0.0) * 0.05
+    # VQ. A fishnet sleeve at the catsuit's 7.5 mm ease is inside the arm tube, and the body
+    # shows through as torn patches. The net needs air around the arm, and a frame that
+    # does not twist the tile.
+    if fishnet:
+        ease += 0.016
 
     for side in ("left", "right"):
         chain = [f"{side}UpperArm", f"{side}LowerArm", f"{side}Hand"]
@@ -630,7 +664,10 @@ def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25
             continue
         path = np.array(points, dtype=np.float64)
         measured = profile.get(side) if isinstance(profile, dict) else None
-        stations = (0.0, 0.2, 0.45) if length == "short" else (0.0, 0.45, 1.0, 1.45, 1.9)
+        if fishnet and isinstance(profile, dict) and profile.get("stations"):
+            stations = tuple(float(s) for s in profile["stations"])
+        else:
+            stations = (0.0, 0.2, 0.45) if length == "short" else (0.0, 0.45, 1.0, 1.45, 1.9)
         if measured:
             radii = [float(np.interp(s, profile["stations"], measured)) + ease for s in stations]
             path = np.array([path[0] + (path[1] - path[0]) * s if s <= 1.0
@@ -642,9 +679,20 @@ def build_sleeves(params: FitParameters, *, length: str, thickness: float = 1.25
             # Stop just short of the wrist so the hand stays visible.
             path = np.array([path[0], path[1], path[1] + (path[2] - path[1]) * 0.9])
             radii = [radius * 1.2, radius * 1.0, radius * 0.85]
+        if fishnet and path.shape[0] >= 2:
+            # The shoulder joint is inside the chest. A tube from the joint is inside her,
+            # and the net tears there. Start out along the arm.
+            step = path[1] - path[0]
+            step = step / max(float(np.linalg.norm(step)), 1e-9)
+            path = path.copy()
+            path[0] = path[0] + step * 0.05
+            radii[0] = max(radii[0], radii[min(1, len(radii) - 1)] * 1.2)
 
-        meshes.append(sweep(path, radii, segments=max(params.segments // 2, 8), name=f"{name}-{side}",
-                            max_spacing=GARMENT_ROW_SPACING_M))
+        meshes.append(sweep(
+            path, radii, segments=max(params.segments // 2, 16 if fishnet else 8),
+            name=f"{name}-{side}", max_spacing=0.02 if fishnet else GARMENT_ROW_SPACING_M,
+            transport=fishnet,
+        ))
     return meshes
 
 
@@ -2081,13 +2129,27 @@ def _haul_sections(kind: str, params: FitParameters, *, hem_y: float, flare: flo
         )
         return [waistband, *build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="tights")]
     if kind == "catsuit":
+        construction = meta.get("construction") if isinstance(meta.get("construction"), dict) else {}
+        high_neck = construction.get("collar") == "high"
+        # The ordinary catsuit stops below the neck. A high neck rises to it, then tapers in.
         top_y = params.chest_y + (params.shoulder_y - params.chest_y) * 0.62
+        if high_neck:
+            top_y = params.neck_y + params.height * 0.012
         bottom_y = crotch_y(params, params.hip_y - thigh * 0.12)
-        body = cut_top(build_band(params, y_bottom=bottom_y, y_top=top_y, rows=10, name="catsuit-body"),
-                       bottom_y, top_y)
+        body = cut_top(build_band(params, y_bottom=bottom_y, y_top=top_y, rows=16 if high_neck else 10,
+                                  name="catsuit-body"), bottom_y, top_y)
+        if high_neck:
+            from wardrobe.geometry.dark_fashion import collar_band, taper_catsuit_neck
+
+            body = taper_catsuit_neck(body, params)
         legs = build_legwear(params, top_y=params.hip_y + thigh * 0.02, name="catsuit", ankle=True)
         sections = [body, *legs]
-        sections += build_sleeves(params, length=params.sleeve_length or "long", thickness=1.1)
+        if high_neck:
+            sections.append(collar_band(params))
+        sections += build_sleeves(
+            params, length=params.sleeve_length or "long", thickness=1.1,
+            fishnet=params.metadata.get("pattern") == "fishnet",
+        )
         return sections
     raise ValueError(f"unsupported haul garment: {kind!r}")
 

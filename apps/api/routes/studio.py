@@ -26,6 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import OrchestratorDep, SettingsDep, StoreDep, http_error_for
+from apps.api.grants import GrantDep, can_read_private, reader_account
 from apps.api.ratelimit import limit_job_creation
 from apps.api.routes.avatars import _inspect
 from apps.api.routes.body_art import check_designs
@@ -52,7 +53,7 @@ from wardrobe.pipeline.plan_outfit import (
     SLEEVE_KEYWORDS,
 )
 from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
-from wardrobe.pipeline.prepare_base_body import foundation_conflicts
+from wardrobe.pipeline.prepare_base_body import foundation_conflicts, layer_kinds_of, replaces_clothing
 from wardrobe.policy import file_safety, intimate, licensing
 from wardrobe.targets.bundle import LookFiles, build_wardrobe_bundle, select_looks
 from wardrobe.targets.pack import RATINGS, PackAvatar, PackLook, build_pack, pack_slug, spdx_for, zip_pack
@@ -291,7 +292,10 @@ async def create_library_job(
     body's ``options.private`` is ignored: privacy is decided here, from whether
     the job relies on an admin session's declaration or builds on a private look.
     """
+    if body.options.base_body_mode == "bare" and admin is None:
+        raise HTTPException(status_code=403, detail="bare bodies require an admin session")
     avatar, private = _dressable(request, slug, admin)
+    private = private or body.options.base_body_mode == "bare"
 
     avatar_input = avatar.avatar_input()
     if body.base_look_id:
@@ -366,11 +370,11 @@ def plan_report(source: bytes, outfit: OutfitRequest, mode: str, catalog, *, dep
         garments.append({**garment.design_sheet(template, inner=inner), "allowed": decision.allowed,
                          "refusal": decision.message if not decision.allowed else None})
 
-    kinds = []
-    for garment in plan.garments:
-        template = catalog.get(garment.template_id) if garment.template_id else None
-        kinds.append((template.procedural_kind if template is not None else garment.category, garment.role))
-    strip = build_strip_plan(inventory, kinds) if mode != "preserve" else build_strip_plan(inventory, [])
+    kinds = layer_kinds_of(catalog, plan.garments)
+    strip = (
+        build_strip_plan(inventory, kinds, replace_all=replaces_clothing(catalog, plan.garments))
+        if mode != "preserve" else build_strip_plan(inventory, [])
+    )
     integrity = (
         check_body(document, measurements, set().union(*(g.regions for g in strip.remove)),
                    without={(g.mesh, g.primitive) for g in strip.remove},
@@ -489,7 +493,8 @@ async def look_exposure(
 
 
 @router.get("/library/{slug}/prebuilt")
-async def list_prebuilt(slug: str, request: Request, admin: AdminDep, store: StoreDep) -> dict:
+async def list_prebuilt(slug: str, request: Request, admin: AdminDep, store: StoreDep,
+                        grant: GrantDep) -> dict:
     """PB2. The looks already made for her, fresh on her own body: worn at once, no job.
 
     What the app reads to know what she has ready, so "lingerie" finds a lingerie look instead
@@ -499,7 +504,8 @@ async def list_prebuilt(slug: str, request: Request, admin: AdminDep, store: Sto
     avatar = _library(request).get(slug)
     if avatar is None or not avatar.available:
         raise HTTPException(status_code=404, detail="avatar not in the library")
-    looks = await prebuilt.ready_looks(store, slug, include_private=admin is not None)
+    looks = await prebuilt.ready_looks(store, slug, include_private=can_read_private(admin, grant, slug),
+                                       account=reader_account(admin, grant))
     return {"slug": slug, "pipelineVersion": prebuilt.PIPELINE_VERSION, "count": len(looks), "looks": looks}
 
 

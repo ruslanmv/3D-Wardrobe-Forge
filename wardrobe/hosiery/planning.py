@@ -47,6 +47,8 @@ from wardrobe.hosiery.presets import expand
 
 LEGWEAR_TEMPLATE = "legwear-thigh-highs-v1"
 GARTER_SET_TEMPLATE = "under-garter-set-v1"
+#: The leather suspender belt. Opt-in, so "garter belt" is still the Garter Set.
+LEATHER_GARTER_TEMPLATE = "under-leather-garter-v1"
 #: Garment shapes with a hem the reveal can move.
 SKIRTED_KINDS = frozenset({"dress", "skirt", "slip-dress", "swim-dress"})
 #: Words that make a set: pieces planned together share a setId.
@@ -56,10 +58,14 @@ BELT_BLACK = "#111111"
 STOCKING_BLACK = "#15151a"
 
 
+def _is_hosiery_belt(template_id: str | None) -> bool:
+    return template_id in BELT_TEMPLATES.values() or template_id == LEATHER_GARTER_TEMPLATE
+
+
 def engaged(request: OutfitRequest, plan: OutfitPlan) -> bool:
     if request.hosiery or request.suspender_belt or request.reveal or request.preset:
         return True
-    return any(g.template_id in BELT_TEMPLATES.values() for g in plan.garments)
+    return any(_is_hosiery_belt(g.template_id) for g in plan.garments)
 
 
 def apply(plan: OutfitPlan, request: OutfitRequest, catalog) -> OutfitPlan:
@@ -72,13 +78,19 @@ def apply(plan: OutfitPlan, request: OutfitRequest, catalog) -> OutfitPlan:
 
     garments = list(plan.garments)
     notes: list[str] = []
+    # The leather suspender belt, named outright. "black garter belt" never selects it.
+    leather = any(g.template_id == LEATHER_GARTER_TEMPLATE for g in garments)
+    if leather:
+        # "stockings" on its own is the tights. On this belt they are the thigh-highs
+        # the four straps clip to; the tights have no top for a clip.
+        garments = [g for g in garments if g.category != "legwear"]
 
     def planned(prompt: str, template_id: str) -> OutfitPlan:
         return _placed(plan_outfit(OutfitRequest(prompt=prompt, templateId=template_id), catalog), catalog)
 
     # ---- the belt ------------------------------------------------------------
     belt_opts = request.suspender_belt
-    belt_index = next((i for i, g in enumerate(garments) if g.template_id in BELT_TEMPLATES.values()), None)
+    belt_index = next((i for i, g in enumerate(garments) if _is_hosiery_belt(g.template_id)), None)
     garter_index = next((i for i, g in enumerate(garments) if g.template_id == GARTER_SET_TEMPLATE), None)
     belt: BeltPlan | None = None
     if belt_opts is not None and not belt_opts.enabled:
@@ -86,6 +98,10 @@ def apply(plan: OutfitPlan, request: OutfitRequest, catalog) -> OutfitPlan:
     elif belt_opts is not None or belt_index is not None:
         style = belt_opts.style if belt_opts is not None else _style_of(garments[belt_index].template_id)
         belt = _belt_plan(belt_opts, style)
+        if leather:
+            # Four straps, meant to be seen, in the leather finish. The belt geometry is the
+            # classic suspender belt; only the cloth changes.
+            belt = belt.model_copy(update={"material": "leather", "visibility": "full", "strapCount": 4})
         if belt_index is None and garter_index is not None:
             belt_index = garter_index
             notes.append("the suspender belt replaces the Garter Set: its straps clip to the stocking tops")
@@ -120,8 +136,20 @@ def apply(plan: OutfitPlan, request: OutfitRequest, catalog) -> OutfitPlan:
             garment = garment.model_copy(update={"name": garment.name.replace("Thigh-High", kind)})
         if legwear_index is None:
             garments.append(garment)
+            legwear_index = len(garments) - 1
         else:
             garments[legwear_index] = garment
+        if leather and stockings is not None:
+            # Matching opaque thigh-highs. Sheer would be a different garment, and would
+            # gate the stockings on their own; the belt already gates the outfit.
+            stockings = stockings.model_copy(update={
+                "type": "opaque", "denier": 80, "opacity": 1.0, "pattern": "none", "color": STOCKING_BLACK,
+            })
+            base = garments[legwear_index].material.model_copy(update={"finish": "satin"})
+            garments[legwear_index] = garments[legwear_index].model_copy(update={
+                "material": _stocking_material(stockings, base),
+                "requires_adult": False,
+            })
 
     # ---- the reveal ---------------------------------------------------------------
     reveal: RevealPlan | None = None
@@ -248,8 +276,11 @@ def _briefs_over(garments: list, catalog, notes: list[str]) -> list:
 
 def _belt_name(belt: BeltPlan) -> str:
     colour = _colour_word(belt.color).title()
-    return f"{colour} " + {"classic": "Suspender Belt", "high_waisted": "High-Waisted Suspender Belt",
-                           "waspie": "Waspie", "guepiere": "Guêpière"}[belt.style]
+    title = {"classic": "Suspender Belt", "high_waisted": "High-Waisted Suspender Belt",
+             "waspie": "Waspie", "guepiere": "Guêpière"}[belt.style]
+    if belt.material == "leather" and belt.style == "classic":
+        title = "Leather Suspender Belt"
+    return f"{colour} {title}"
 
 
 def _belt_material(belt: BeltPlan) -> MaterialPlan:
@@ -263,6 +294,9 @@ def _belt_material(belt: BeltPlan) -> MaterialPlan:
     if belt.material == "mesh":
         return MaterialPlan(baseColor=colour, colorName=_colour_word(belt.color), finish="matte",
                             opacity=0.55, alphaMode="blend", roughness=0.7)
+    if belt.material == "leather":
+        return MaterialPlan(baseColor=colour, colorName=_colour_word(belt.color), finish="leather",
+                            roughness=0.48, fabric="leather")
     finish = "satin" if belt.material == "satin" else "matte"
     return MaterialPlan(baseColor=colour, colorName=_colour_word(belt.color), finish=finish,
                         roughness=0.3 if finish == "satin" else 0.8, fabric=belt.material)
@@ -328,14 +362,16 @@ def _connector(belt: BeltPlan) -> OutfitPlan:
     from wardrobe.pipeline.plan_outfit import hex_to_linear_rgba
 
     colour = _colour_word(belt.color)
+    leather = belt.material == "leather"
     return OutfitPlan(
         name=f"{colour.title()} Suspender Straps",
         category="underwear",
         templateId=None,
         silhouette="slim",
         hem="mini",
-        material=MaterialPlan(baseColor=hex_to_linear_rgba(belt.color), colorName=colour, finish="satin",
-                              roughness=0.35),
+        material=MaterialPlan(baseColor=hex_to_linear_rgba(belt.color), colorName=colour,
+                              finish="leather" if leather else "satin",
+                              roughness=0.48 if leather else 0.35),
         style=StylePlan(straps="garter"),
         role="connector",
         layer=2,

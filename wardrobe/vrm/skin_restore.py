@@ -80,7 +80,8 @@ class SkinRestoration:
 
 def restore_skin(
     document: GltfDocument, measurements: BodyMeasurements, garments: set[tuple[int, int]],
-    *, above: float | None = None,
+    *, above: float | None = None, preserve_normals: bool = False,
+    protected_materials: set[int] | None = None, include_feet: bool = False,
 ) -> SkinRestoration | None:
     """Restore her skin texture between her ankles and her neck. None: nothing to restore.
 
@@ -90,13 +91,11 @@ def restore_skin(
     """
     textures: dict = {}
     skin, _ = skin_surface(document, measurements, garments, textures)
-    if skin is None:
+    if skin is None or skin.material in (protected_materials or set()):
         return None
     main = _image(document, skin.texture, textures)
     h, w = main.shape[:2]
-    drawn = _region(document, skin, w, h, above=above)
-    owned = _region(document, skin, w, h, everywhere=True)
-    region = drawn | (_dilate(drawn, REGION_PAD_TEXELS) & ~owned)
+    region = _skin_region(document, skin, w, h, above=above, include_feet=include_feet)
     if not region.any():
         return None
     flat = main.reshape(-1, 4)
@@ -124,7 +123,7 @@ def restore_skin(
             shaded[:, :, 3] = np.where(mask, 255.0, picture[:, :, 3])
             replaced[shade] = _add(document, shade, shaded, "shade")
     normal = (material.get("normalTexture") or {}).get("index")
-    if normal is not None and normal not in replaced:
+    if not preserve_normals and normal is not None and normal not in replaced:
         picture = _image(document, normal, textures)
         if picture is not None and picture.shape[:2] == (h, w):
             flattened = picture.copy()
@@ -140,8 +139,73 @@ def restore_skin(
     )
 
 
+def _skin_region(document: GltfDocument, skin, w: int, h: int, *, above=None, include_feet=False):
+    # AF4. A bare body is barefoot: painted socks or shoes on her feet (Rinna's are 94 % black) go
+    # with the rest of her painted clothing. Only the bare path asks; every other mode stops at the
+    # ankles exactly as before.
+    drawn = _region(document, skin, w, h, above=above, include_feet=include_feet)
+    owned = _region(document, skin, w, h, everywhere=True)
+    return drawn | (_dilate(drawn, REGION_PAD_TEXELS) & ~owned)
+
+
+def skin_census(document: GltfDocument, measurements: BodyMeasurements,
+                garments: set[tuple[int, int]] = frozenset(), *, include_feet: bool = False,
+                protected_materials: set[int] | None = None) -> dict:
+    """SR2. What :func:`restore_skin` would find, as numbers, without changing anything.
+
+    ``restore_skin`` returns None both when there is nothing to restore and when it cannot look
+    (no skin material found, or the skin is protected anatomy), and a report that said
+    ``skinRestored: false`` read as a failure either way. Model Girl was reported exactly so; her
+    body texture has no painted clothing at all (0 painted, 0 cut-away texels in 3.18 M; furthest
+    texel 42 from her skin colour, under the 45 threshold), so nothing needed restoring. This is
+    the measurement that tells the cases apart; :func:`restoration_verdict` names them.
+    """
+    textures: dict = {}
+    skin, _ = skin_surface(document, measurements, set(garments), textures)
+    if skin is None:
+        # A body drawn with no colour texture at all (Forge's generated reference bodies) cannot
+        # carry painted clothing: there are no texels to paint. Said as such, not as "not found".
+        textured = any((m.get("pbrMetallicRoughness") or {}).get("baseColorTexture")
+                       for m in document.materials)
+        return {"skinFound": False, "untextured": not textured}
+    if skin.material in (protected_materials or set()):
+        return {"skinFound": True, "protected": True, "material": skin.material}
+    main = _image(document, skin.texture, textures)
+    h, w = main.shape[:2]
+    region = _skin_region(document, skin, w, h, include_feet=include_feet)
+    flat = main.reshape(-1, 4)
+    distance = np.linalg.norm(flat[:, :3] - skin.reference, axis=1).reshape(h, w)
+    return {
+        "skinFound": True, "material": skin.material,
+        "regionTexels": int(region.sum()),
+        "paintedTexels": int((not_skin(flat, skin.reference).reshape(h, w) & region).sum()),
+        "cutAwayTexels": int(((main[:, :, 3] < 128) & region).sum()),
+        "maxSkinDistance": round(float(distance[region].max()), 1) if region.any() else None,
+    }
+
+
+def restoration_verdict(restored: SkinRestoration | None, census_after: dict) -> str:
+    """``restoration-completed`` | ``restoration-not-needed`` | ``restoration-not-applicable`` |
+    ``unverified``.
+
+    ``census_after`` is measured on the document after restoration (or after nothing ran): a
+    completed restoration leaves no painted or cut-away texel in her region; a body that never
+    had any needed none; a body with no colour texture anywhere has no texels to paint
+    (``restoration-not-applicable``). Anything else — no skin found, protected material, texels left — is
+    unverified and says so, rather than reading as a pass or a failure.
+    """
+    clean = (census_after.get("skinFound") and not census_after.get("protected")
+             and census_after.get("regionTexels", 0) > 0
+             and census_after.get("paintedTexels") == 0 and census_after.get("cutAwayTexels") == 0)
+    if not clean:
+        if restored is None and census_after.get("untextured"):
+            return "restoration-not-applicable"
+        return "unverified"
+    return "restoration-completed" if restored is not None else "restoration-not-needed"
+
+
 def _region(document: GltfDocument, skin, w: int, h: int, *, everywhere: bool = False,
-            above: float | None = None) -> np.ndarray:
+            above: float | None = None, include_feet: bool = False) -> np.ndarray:
     """Texels of the skin material's triangles between her ankles and her shoulders (or all)."""
     from PIL import Image, ImageDraw
 
@@ -150,8 +214,9 @@ def _region(document: GltfDocument, skin, w: int, h: int, *, everywhere: bool = 
     for primitive, points, triangles in skin.parts:
         uv = document.read_accessor(primitive["attributes"]["TEXCOORD_0"]).astype(np.float64)[:, :2]
         centre = points[triangles].mean(axis=1)[:, 1]
+        floor = -np.inf if include_feet else skin.ankle
         chosen = triangles if everywhere else triangles[
-            (centre >= max(skin.ankle, above if above is not None else skin.ankle))
+            (centre >= max(floor, above if above is not None else floor))
             & (centre <= skin.high + SHOULDER_M + 0.02)]
         corners = uv[chosen]  # (T, 3, 2)
         # A triangle across the texture's seam would be drawn the width of the texture.

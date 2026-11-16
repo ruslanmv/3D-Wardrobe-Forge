@@ -84,6 +84,7 @@ class FailureReason(StrEnum):
     BODY_SURFACE_UNAVAILABLE = "body_surface_profile_unavailable"
     #: BS1. An adult body-surface profile refused: model terms, operator switch or declaration.
     BODY_SURFACE_NOT_PERMITTED = "body_surface_not_permitted"
+    BODY_INCOMPLETE_FOR_BARE = "body-incomplete-for-bare"
     INTERNAL = "internal_error"
 
 
@@ -107,10 +108,18 @@ class JobOptions(BaseModel):
     #: How the source outfit is prepared before the new one is built (wardrobe.pipeline.prepare_base_body):
     #: preserve — layer over what she wears; replace-outer — take off what the whole new outfit
     #: covers (the default); underwear-base — take it off *and* put underwear on first, in the same
-    #: job. There is deliberately no mode that leaves her with nothing on.
-    base_body: Literal["preserve", "replace-outer", "underwear-base"] | None = Field(
+    #: job. bare is a private, adult-gated authored-body-only mode.
+    base_body: Literal["preserve", "replace-outer", "underwear-base", "bare"] | None = Field(
         default=None, alias="baseBody"
     )
+    #: BR1. Opt-in reconstruction for a bare job whose authored body is incomplete (AvatarSample_O's
+    #: deleted mid-chest): "proxy" fills only the missing bands with BC1's featureless skin patch,
+    #: shaped from her own garment. Unset — the default — keeps bare authored-only: an incomplete
+    #: body is refused exactly as before. None rather than "none" by default: the prebuilt cache
+    #: key hashes every set option, and a new default would change every stored key. Needs the
+    #: operator's separate switch (WARDROBE_BARE_BODY_COMPLETION); its output is private and never
+    #: registered for the app.
+    body_completion: Literal["proxy"] | None = Field(default=None, alias="bodyCompletion")
     #: MG3. Make sure a foundation is on her under the new clothes, adding only what is missing:
     #: a Forge foundation she already wears is kept (only a new foundation replaces one), and a
     #: half the outfit brings itself (a bikini, a lingerie set) is not doubled. It is also what
@@ -142,6 +151,12 @@ class JobOptions(BaseModel):
         if self.base_body is not None:
             return self.base_body
         return "replace-outer" if self.replace_garments else "preserve"
+
+    @model_validator(mode="after")
+    def _completion_only_for_bare(self) -> JobOptions:
+        if self.body_completion is not None and self.base_body != "bare":
+            raise ValueError("bodyCompletion applies only to baseBody: bare")
+        return self
 
     @model_validator(mode="after")
     def _foundation_color_is_a_colour(self) -> JobOptions:
@@ -179,6 +194,13 @@ class CreateJobRequest(BaseModel):
 
     @model_validator(mode="after")
     def _body_art_list(self) -> CreateJobRequest:
+        bare_template = self.outfit is not None and self.outfit.template_id == "body-bare-v1"
+        if bare_template != (self.options.base_body_mode == "bare"):
+            raise ValueError("body-bare-v1 and baseBody=bare must be requested together")
+        if bare_template and (self.body_art or self.body_art_remove or self.body_surface
+                              or self.options.ensure_foundation or self.options.foundation_color
+                              or self.outfit.layers or self.outfit.color):
+            raise ValueError("bare mode accepts no garments, colours, body art or body surface")
         check_items(self.body_art, self.body_art_remove)
         changes_a_look = self.body_art or self.body_art_remove or self.options.foundation_color
         if self.outfit is None and not changes_a_look:
@@ -296,6 +318,7 @@ _REJECTION_REASONS = frozenset(
         FailureReason.INTIMATE_NOT_PERMITTED,
         FailureReason.ADULT_DECLARATION_REQUIRED,
         FailureReason.BODY_INCOMPLETE,
+        FailureReason.BODY_INCOMPLETE_FOR_BARE,
         FailureReason.FOUNDATION_OVER_CLOTHING,
         FailureReason.PAINTED_CLOTHING_SHOWS,
         FailureReason.BODY_ART_NEEDS_LOOK,

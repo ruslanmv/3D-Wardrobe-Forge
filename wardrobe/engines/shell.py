@@ -209,6 +209,13 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
         # BS2. A close-fit block on her skin, against a collision body that already carries the
         # cloth's margin: the profile's close-fit clearance (≈1–1.5 mm) in place of the template's.
         clearance = body_surface.close_fit_clearance_m
+    # VQ. The bodystocking's sleeves read this. A copy of the plan, not a new exported field.
+    # AA. Only for a card that owns its pattern (fit.pattern, which no template had before the
+    # atelier). A "fishnet catsuit" asked of the existing catsuit card builds exactly as it did,
+    # so the looks already made for it stay the looks a new build would make.
+    pattern = str(getattr(context.plan.material, "pattern", "") or "")
+    if pattern and pattern != "none" and template is not None and template.fit.pattern:
+        metadata["pattern"] = pattern
     params = FitParameters(
         measurements=context.measurements,
         clearance_m=clearance,
@@ -434,6 +441,14 @@ def build_fitted_shell(context: PipelineContext) -> ShellResult:
     _light_gusset(mesh, params.forward)
     if kind in SEAM_WELDED_KINDS:
         _weld_seam_normals(mesh)
+
+    if artifact.metadata.get("construction"):
+        # Raised pieces (a zipper, buckles, boning) go on after the radial passes, or those
+        # passes draw them back into the cloth and they disappear. Only a template that
+        # asks for them; every other garment is the mesh it was fitted as.
+        from wardrobe.geometry.dark_fashion import apply_construction
+
+        mesh = apply_construction(mesh, params)
 
     # The shell's UVs are metres of fabric; one pattern tile covers its physical size.
     scale = float(context.plan.material.texture_scale or 0.0)

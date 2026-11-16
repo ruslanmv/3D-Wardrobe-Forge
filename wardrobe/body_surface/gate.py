@@ -42,8 +42,40 @@ def explicit_usage_disallowed(terms) -> bool:
     return False  # a VRM 0.x model says what it says through sexualUssageName
 
 
+#: AF3. The review that a character is clearly adult in design, per exact source file.
+REVIEWS_SCHEMA = "wardrobe.bodySurface.adultDesignReviews.v1"
+REVIEW_FIELDS = ("outcome", "reviewer", "date", "evidence")
+
+
+def design_review(root, source_sha256: str | None) -> dict | None:
+    """The recorded adult-design review of this exact source, or None.
+
+    A declaration (``depictsAdult``) is a statement about a character; whether a stylised design
+    reads as clearly adult is a judgement a person makes looking at it. That judgement is recorded
+    server-side in ``<body surface root>/adult-design-reviews.json``, keyed by the SHA-256 of the
+    reviewed VRM's bytes, so it belongs to the file that was looked at: a caller cannot send it, and
+    an edited or swapped file is not covered. Unreadable or incomplete records count as no review.
+    """
+    import json
+    from pathlib import Path
+
+    if not source_sha256:
+        return None
+    try:
+        data = json.loads((Path(root) / "adult-design-reviews.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if data.get("schema") != REVIEWS_SCHEMA:
+        return None
+    review = (data.get("reviews") or {}).get(source_sha256)
+    if not isinstance(review, dict) or any(not review.get(k) for k in REVIEW_FIELDS):
+        return None
+    return review
+
+
 def evaluate(capability: Capability, terms, *, operator_enabled: bool,
-             depicts_adult: bool) -> SurfaceDecision:
+             depicts_adult: bool, intimate: bool = False,
+             design_reviewed: dict | None = None) -> SurfaceDecision:
     if capability is Capability.BODY_COLLISION:
         return SurfaceDecision(True, "collision body: fitting only, nothing about her is shown differently")
     if capability is Capability.BODY_SURFACE:
@@ -58,8 +90,14 @@ def evaluate(capability: Capability, terms, *, operator_enabled: bool,
     if not depicts_adult:
         return SurfaceDecision(False, "an adult body surface needs the avatar declared as depicting an adult "
                                       "(avatar.depictsAdult)", "adult-declaration")
+    # AF3. Fourth question, for intimate regions only: a person reviewed this exact file's design
+    # and found the character clearly adult. A declaration alone does not open anatomy detail.
+    if intimate and (design_reviewed or {}).get("outcome") != "clearly-adult":
+        return SurfaceDecision(False, "intimate body detail needs a recorded review that this exact avatar "
+                                      "is clearly adult in design (adult-design-reviews.json)",
+                               "adult-design-review")
     return SurfaceDecision(True, "adult body surface permitted: operator enabled, adult declared, "
                                  "model terms allow it")
 
 
-__all__ = ["SurfaceDecision", "evaluate", "explicit_usage_disallowed"]
+__all__ = ["REVIEWS_SCHEMA", "SurfaceDecision", "design_review", "evaluate", "explicit_usage_disallowed"]

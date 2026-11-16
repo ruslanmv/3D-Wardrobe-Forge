@@ -260,6 +260,8 @@ class OutfitPlan(BaseModel):
     @property
     def garments(self) -> list[OutfitPlan]:
         """Every garment to build, inner first: the layers, or this plan alone."""
+        if self.template_id == "body-bare-v1":
+            return []
         return list(self.layers) if self.layers else [self]
 
     def design_sheet(self, template=None, *, removed: list[str] | None = None,
@@ -348,6 +350,12 @@ class LookResult(BaseModel):
     prompt: str | None = None
     plan: OutfitPlan | None = None
     size_bytes: int | None = Field(default=None, alias="sizeBytes")
+    #: BL1. What kind of look this is, for a client that must not guess from a name: the template
+    #: it was made from, "bare" when it is her authored body with nothing on, and the hash of the
+    #: file itself so a client can confirm the asset it loaded is this one. Absent on older looks.
+    template_id: str | None = Field(default=None, alias="templateId")
+    wardrobe_state: str | None = Field(default=None, alias="wardrobeState")
+    output_sha256: str | None = Field(default=None, alias="outputSha256")
     #: Extra views of a hosiery look (thumb, detail, sit, walk, back): name -> URL. Absent otherwise.
     previews: dict[str, str] | None = None
 
@@ -401,6 +409,9 @@ class FitReport(BaseModel):
     #: L8/L9. Each lingerie piece's elastic edges (strain, force and pressure per pose) and
     #: its garment rules (wardrobe.lingerie.report). Absent from a job without lingerie.
     lingerie: dict | None = Field(default=None, exclude_if=lambda v: v is None)
+    #: KL1. A bottom tucked inside a top she keeps: {keptTopHemY, moved, noRoom}. Absent otherwise,
+    #: so a report written before KL1 serialises exactly as it did.
+    kept_top_tuck: dict | None = Field(default=None, alias="keptTopTuck", exclude_if=lambda v: v is None)
     #: DC1. The heel and sole she stands on and the pitch and lift that give them, with the
     #: stance she stood in before. Absent from a job without shoes in it.
     stance: dict | None = Field(default=None, exclude_if=lambda v: v is None)

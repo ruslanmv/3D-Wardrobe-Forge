@@ -1,0 +1,5 @@
+{
+ "schema": "wardrobe.bodySurface.adultDesignReviews.v1",
+ "about": "AF3. Exact avatar files (keyed by the SHA-256 of their bytes) a person reviewed and found clearly adult in design. Intimate body-surface regions open only for these. Each entry needs outcome \"clearly-adult\", reviewer, date and evidence. The library's eight stylised characters are not listed: none is established as clearly adult by review, so none receives intimate detail.",
+ "reviews": {}
+}
