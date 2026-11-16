@@ -770,3 +770,51 @@ async def _optional(store, key: str) -> bytes | None:
 
 
 __all__ = ["router"]
+
+
+# -- CV1. Clothing visibility: Forge's answer for exact bytes; the app only follows it ------------
+_VISIBILITY: dict[tuple, dict] = {}
+
+
+def _visibility(data: bytes, settings, library) -> dict:
+    """``wardrobe.body_surface.visibility.answer``, cached per exact file and per state of the two
+    registries and the operator switch, so a change to any of them is answered afresh."""
+    import hashlib
+
+    from wardrobe.body_surface.visibility import answer
+
+    def stamp(path) -> float:
+        try:
+            return Path(path).stat().st_mtime
+        except OSError:
+            return 0.0
+
+    key = (hashlib.sha256(data).hexdigest(), settings.wardrobe_adult_body_surface,
+           stamp(Path(settings.body_surface_root_path) / "adult-design-reviews.json"),
+           stamp(Path(settings.wardrobe_calibration_root) / "synthetic-references.json"))
+    if key not in _VISIBILITY:
+        _VISIBILITY[key] = answer(data, settings=settings, library=library)
+    return _VISIBILITY[key]
+
+
+@router.get("/visibility/{sha256}")
+async def library_visibility(sha256: str, request: Request, store: StoreDep, settings: SettingsDep) -> dict:
+    """For a library avatar, by its pinned SHA-256: may her clothing be hidden, and which."""
+    library = await _refresh_library(request, store)
+    avatar = next((a for a in library.available() if a.sha256 == sha256.lower()), None)
+    if avatar is None:
+        raise HTTPException(status_code=404, detail={
+            "reason": "unknown-file", "message": "no library avatar has these bytes; POST the file"})
+    return _visibility(Path(avatar.path).read_bytes(), settings, library)
+
+
+@router.post("/visibility")
+async def file_visibility(request: Request, store: StoreDep, settings: SettingsDep,
+                          file: UploadFile = File(...)) -> dict:
+    """For any VRM the app has loaded, sent as bytes: the same answer, for exactly those bytes."""
+    data = await file.read()
+    try:
+        file_safety.check_size(len(data), settings)
+    except WardrobeError as exc:
+        raise http_error_for(exc) from exc
+    return _visibility(data, settings, await _refresh_library(request, store))
