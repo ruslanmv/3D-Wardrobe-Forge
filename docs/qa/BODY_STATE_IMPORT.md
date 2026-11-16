@@ -130,7 +130,7 @@ Rendered in the app, AvatarSample A, as `tools/prebuild.py` requests them (black
 briefs): straight jeans: back and sides clean, the cardigan hangs over the jeans; **the front
 hem band of the cardigan panels is still covered by the jeans** (`noRoom` 6). Pencil skirt: back and
 front opening clean, a thin strip of the high-waisted briefs shows at the top of the opening.
-Status: **improved, not resolved** at the front hem band.
+Status: **improved, not resolved** at the front hem band. Resolved by KL3: `docs/qa/KEPT_TOP_KL3.md`.
 
 ### Regenerating only the affected cached looks (no `PIPELINE_VERSION` bump)
 
