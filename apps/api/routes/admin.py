@@ -291,15 +291,32 @@ async def import_body_state(
 
 @router.delete("/admin/library/{slug}/body-states/{look_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def withdraw_body_state(slug: str, look_id: str, request: Request, admin: AdminDep,
-                              store: StoreDep) -> None:
+                              store: StoreDep, admins: AdminSessionsDep) -> None:
+    """Withdraw an imported body state. 204: withdrawn (also when it already was: repeating is
+    safe). 503: out of her list and blocked, but some files remain; repeat to finish. 404: she
+    has no such import and never withdrew one. The receipt is at ``…/withdrawals``."""
     _signed_in(admin)
     _library_avatar(request, slug)
-    result = await prebuilt.withdraw_import(store, slug, look_id)
+    result = await prebuilt.withdraw_import(store, slug, look_id, withdrawn_by=admins.username or "admin")
     if result is None:
         raise HTTPException(status_code=404, detail="no such imported body state")
     if not result["withdrawn"]:
-        # Out of her list, but some files could not be deleted: they keep their private marker,
-        # so they stay protected. Call again to finish; it is safe to repeat.
+        # Out of her list and no longer served to anyone (WD1: the receipt blocks it), but some
+        # files could not be deleted. Call again to finish; it is safe to repeat, and a restart
+        # resumes it too.
         raise HTTPException(status_code=503, detail={
             "reason": "body_state_withdraw_incomplete", "remaining": result["remaining"],
-            "message": "some files could not be deleted; they are still private. Retry the withdrawal."})
+            "message": "some files could not be deleted; the look is blocked. Retry the withdrawal."})
+    logger.info("body-state import %s withdrawn from %s%s", look_id, slug,
+                " (already was)" if result["repeated"] else "")
+
+
+@router.get("/admin/library/{slug}/withdrawals")
+async def list_withdrawals(slug: str, request: Request, admin: AdminDep, store: StoreDep) -> dict:
+    """WD1. Her withdrawal receipts: what was withdrawn, by whom, when, and what (if anything)
+    still remains to delete. A receipt is kept for good; ``restored`` means the operator
+    imported the same file again afterwards."""
+    _signed_in(admin)
+    _library_avatar(request, slug)
+    receipts = await prebuilt.list_withdrawals(store, slug)
+    return {"slug": slug, "count": len(receipts), "withdrawals": receipts}

@@ -57,6 +57,69 @@ class ObjectStore(ABC):
         data = await asyncio.to_thread(Path(path).read_bytes)
         return await self.put(key, data, content_type=content_type)
 
+    async def list_keys(self, prefix: str) -> list[str]:
+        """WD1. Every key under ``prefix`` (a folder, no trailing slash needed), sorted.
+
+        Only what a withdrawal needs: the receipts under ``withdrawn/``. A store that cannot
+        list answers with nothing, which costs the startup sweep its work and nothing else.
+        """
+        return []
+
+    async def _remove(self, keys: list[str]) -> list[str]:
+        """Delete each of ``keys`` here and return the ones that are still stored afterwards.
+
+        ``delete`` returning is not the file being gone: each key is checked, and a check that
+        fails counts as still there.
+        """
+        remaining = []
+        for key in keys:
+            try:
+                if await self.exists(key):
+                    await self.delete(key)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("could not delete %s: %s", key, exc)
+            try:
+                still = await self.exists(key)
+            except Exception:  # noqa: BLE001 - cannot confirm it is gone: treat it as there
+                still = True
+            if still:
+                remaining.append(key)
+        return remaining
+
+    async def purge(self, keys: list[str], *, then: list[str] | None = None,
+                    replace: dict[str, bytes] | None = None,
+                    unlist: dict[str, str] | None = None) -> list[str]:
+        """WD1. Delete ``keys`` from every place this store keeps them, then ``then``, then write ``replace``.
+
+        Returns what is **not done**: the ``keys`` that could not be confirmed gone; or, when
+        those are all gone, the ``then`` keys that remain; or, when everything is gone, the
+        replacement keys that could not be written. Empty means the whole step happened.
+        Three rules a withdrawal stands on:
+
+        * **Guards go last.** ``then`` (the private marker) is touched only once every one of
+          ``keys`` is confirmed gone, so a file that will not delete keeps what protects it.
+        * **Confirmed, not assumed.** Each key is checked after its deletion.
+        * **Replacements only after.** ``replace`` (the final receipt) is written only when
+          nothing remains, so a receipt never says "withdrawn" over files still stored.
+
+        ``unlist`` (list key -> look id) names the shared lists the look must leave. A store
+        with one copy of everything has nothing to do with it: its list is the caller's to
+        rewrite. The dataset store rewrites the dataset's copy in the same commit.
+
+        Safe to repeat: deleting what is gone and rewriting the same bytes change nothing.
+        """
+        remaining = await self._remove(list(keys)) or await self._remove(list(then or []))
+        if remaining:
+            return remaining
+        unwritten = []
+        for key, data in (replace or {}).items():
+            try:
+                await self.put(key, data, content_type=content_type_for(key))
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("could not write %s: %s", key, exc)
+                unwritten.append(key)
+        return unwritten
+
 
 class LocalObjectStore(ObjectStore):
     """Filesystem-backed store; the default for development and CLI runs."""
@@ -115,6 +178,18 @@ class LocalObjectStore(ObjectStore):
         if self._settings is not None:
             return self._settings.artifact_url(key)
         return f"/v1/assets/{key}"
+
+    async def list_keys(self, prefix: str) -> list[str]:
+        folder = self._path(prefix.rstrip("/"))
+
+        def _list() -> list[str]:
+            if not folder.is_dir():
+                return []
+            root = self.root.resolve()
+            done = [p for p in folder.rglob("*") if p.is_file() and not p.name.endswith(".part")]
+            return sorted(p.resolve().relative_to(root).as_posix() for p in done)
+
+        return await asyncio.to_thread(_list)
 
     def local_path(self, key: str) -> Path:
         """Escape hatch for the Blender worker, which needs real file paths."""
@@ -177,6 +252,16 @@ class S3ObjectStore(ObjectStore):
         except Exception:
             return False
 
+    async def list_keys(self, prefix: str) -> list[str]:
+        validate_storage_key(prefix.rstrip("/"))
+
+        def _list() -> list[str]:
+            pages = self._client.get_paginator("list_objects_v2").paginate(
+                Bucket=self.bucket, Prefix=prefix.rstrip("/") + "/")
+            return sorted(item["Key"] for page in pages for item in page.get("Contents", []))
+
+        return await asyncio.to_thread(_list)
+
     def url_for(self, key: str) -> str:
         """Pre-signed URL so generated avatars are never world-readable."""
         return self._client.generate_presigned_url(
@@ -230,6 +315,8 @@ class HfDatasetObjectStore(LocalObjectStore):
         self._publish_seconds = max(1.0, float(settings.wardrobe_hf_publish_seconds))
         self._pending_entries: set[str] = set()
         self._pending_lists: set[str] = set()
+        #: WD1. Withdrawal receipts written here and not yet in the dataset.
+        self._pending_receipts: set[str] = set()
         self._publish_lock = asyncio.Lock()
         self._timer: asyncio.Task | None = None
         self.published = {"commits": 0, "looks": 0, "failures": 0}
@@ -296,15 +383,133 @@ class HfDatasetObjectStore(LocalObjectStore):
         url = await super().put(key, data, content_type=content_type)
         if self.publishing:
             from wardrobe.storage.dataset_publish import ENTRY, LIST
+            from wardrobe.storage.withdrawals import RECEIPT
 
             if ENTRY.match(key):
                 self._pending_entries.add(key)
             elif LIST.match(key):
                 self._pending_lists.add(key)
+            elif RECEIPT.match(key):
+                # WD1. A receipt is the only thing that keeps a withdrawn look withdrawn after
+                # this disk is gone, so it goes up with the next batch like a list does.
+                self._pending_receipts.add(key)
             else:
                 return url
             self._schedule()
         return url
+
+    async def list_keys(self, prefix: str) -> list[str]:
+        """Local keys and the dataset's: after a restart with empty storage, only the dataset has them."""
+        local = set(await super().list_keys(prefix))
+        folder = prefix.rstrip("/") + "/"
+        remote = {key for key in await self._remote_files() if key.startswith(folder)}
+        return sorted(local | remote)
+
+    async def _list_remote_now(self) -> set[str]:
+        """The dataset's files as they are this moment. Raises when it cannot be asked.
+
+        ``_remote_files`` answers from a listing up to ``LIST_TTL_S`` old and turns a failure
+        into the last good answer: right for serving, wrong for deciding that a file is gone.
+        """
+        import time
+
+        from huggingface_hub import HfApi
+
+        def _list() -> set[str]:
+            return set(HfApi().list_repo_files(self.repo_id, repo_type="dataset"))
+
+        listed = await asyncio.to_thread(_list)
+        async with self._lock:
+            self._remote, self._listed_at, self._ttl = listed, time.monotonic(), self.LIST_TTL_S
+        return listed
+
+    async def _remove_local(self, keys: list[str]) -> list[str]:
+        remaining = []
+        for key in keys:
+            try:
+                await LocalObjectStore.delete(self, key)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("could not delete the local copy of %s: %s", key, exc)
+            try:
+                still = await LocalObjectStore.exists(self, key)
+            except Exception:  # noqa: BLE001 - cannot confirm it is gone: treat it as there
+                still = True
+            if still:
+                remaining.append(key)
+        return remaining
+
+    async def purge(self, keys: list[str], *, then: list[str] | None = None,
+                    replace: dict[str, bytes] | None = None,
+                    unlist: dict[str, str] | None = None) -> list[str]:
+        """WD1. ``ObjectStore.purge`` for a store with two copies: this disk and the dataset.
+
+        Before this, ``delete`` removed the local copy and nothing else. ``exists`` then
+        answered from the dataset's listing and ``get`` downloaded the file again, so on a
+        Space a withdrawn look's files "remained" for ever and were served the whole time.
+
+        The local copies go first (``keys``, and only then ``then``: the marker). Then **one
+        commit** to the dataset: every one of those keys it holds deleted, each list in
+        ``unlist`` (list key -> look id) rewritten from the dataset's own copy without that
+        look, and ``replace`` (the final receipt) added. One commit is all or nothing, so the
+        dataset never holds a receipt saying "withdrawn" beside the files, nor the files
+        without the receipt that blocks them. Only then is ``replace`` written locally.
+
+        A dataset this Forge does not publish to (``wardrobe_hf_publish`` off) cannot be
+        changed from here: files it holds are reported as remaining, honestly, and the look
+        stays blocked by the local receipt for as long as this storage lives.
+        """
+        replace = dict(replace or {})
+        remaining = await self._remove_local(list(keys)) or await self._remove_local(list(then or []))
+        if remaining:
+            return remaining
+        keys = [*keys, *(then or [])]
+        try:
+            remote = await self._list_remote_now()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("dataset %s could not be listed, so nothing is confirmed gone: %s",
+                           self.repo_id, exc)
+            return list(keys)
+        doomed = [key for key in keys if key in remote]
+        if not self.publishing:
+            if doomed:
+                logger.warning("%s still holds %s and this Forge does not publish to it",
+                               self.repo_id, doomed)
+                return doomed
+        elif doomed or replace or any(key in remote for key in (unlist or {})):
+            from wardrobe.storage.dataset_publish import hub_download, withdraw_commit
+
+            def _go() -> dict:
+                from huggingface_hub import HfApi
+
+                return withdraw_commit(HfApi(), self.repo_id, deletes=doomed, replace=replace,
+                                       unlist={k: v for k, v in (unlist or {}).items() if k in remote},
+                                       download=hub_download())
+
+            try:
+                result = await asyncio.to_thread(_go)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("the withdrawal commit to %s failed (nothing changed there): %s",
+                               self.repo_id, exc)
+                self.published["failures"] += 1
+                return doomed or sorted(replace)
+            async with self._lock:
+                if self._remote is not None:
+                    self._remote = (self._remote - set(doomed)) | set(replace)
+            for key in [*result["lists"], *result["listsHeldBack"], *doomed, *replace]:
+                self._shared.pop(key, None)
+            # A list whose dataset copy could not be read goes up with the next batch instead,
+            # where publish() filters it by the receipt that is in the dataset now.
+            self._pending_lists |= set(result["listsHeldBack"])
+            self._pending_receipts -= set(replace)
+            self.published["commits"] += 1
+        unwritten = []
+        for key, data in replace.items():
+            try:
+                await LocalObjectStore.put(self, key, data, content_type=content_type_for(key))
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("could not write %s locally: %s", key, exc)
+                unwritten.append(key)
+        return unwritten
 
     def _schedule(self) -> None:
         """A batch goes up at ``publish_every`` looks, or ``publish_seconds`` after the first."""
@@ -325,17 +530,19 @@ class HfDatasetObjectStore(LocalObjectStore):
         """RU3. Publish what is pending in one commit. Never raises; a failure stays pending."""
         async with self._publish_lock:
             entries, lists = sorted(self._pending_entries), sorted(self._pending_lists)
-            if not entries and not lists:
+            receipts = sorted(self._pending_receipts)
+            if not entries and not lists and not receipts:
                 return None
             self._pending_entries -= set(entries)
             self._pending_lists -= set(lists)
+            self._pending_receipts -= set(receipts)
             from huggingface_hub import HfApi
 
             from wardrobe.storage.dataset_publish import hub_download, publish
 
             def _go() -> dict:
                 return publish(HfApi(), self.repo_id, self.root, entries=entries, lists=lists,
-                               keep_existing=False,
+                               receipts=receipts, keep_existing=False,
                                message=f"forge: {len(entries)} looks made on demand", download=hub_download())
 
             try:
@@ -345,9 +552,11 @@ class HfDatasetObjectStore(LocalObjectStore):
                                len(entries), self.repo_id, exc)
                 self._pending_entries |= set(entries)
                 self._pending_lists |= set(lists)
+                self._pending_receipts |= set(receipts)
                 self.published["failures"] += 1
                 return None
             self._pending_lists |= set(result["heldBack"])
+            self._pending_receipts |= set(result.get("receiptsHeldBack") or [])
             self.published["commits"] += 1 if result["files"] else 0
             self.published["looks"] += len(result["looks"])
             # What just went up exists in the dataset now: no listing round trip to know it.

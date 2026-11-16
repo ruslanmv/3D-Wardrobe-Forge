@@ -310,7 +310,12 @@ Admin session only (`X-Wardrobe-Admin`); details and every refusal in
 - `POST /v1/admin/library/{slug}/body-states` (multipart: `file`, `state` = `lingerie` | `bare`,
   `sourceSha256`, `licence`, `rightsAttested`, optional `sha256`, `name`, `garments`) → `201
   {look, verdict}`; `422 {reason: body_state_*, message, verdict}` with every check's answer.
-- `GET /v1/admin/library/{slug}/body-states`, `DELETE /v1/admin/library/{slug}/body-states/{lookId}`.
+- `GET /v1/admin/library/{slug}/body-states`, `DELETE /v1/admin/library/{slug}/body-states/{lookId}`
+  (WD1: `204` withdrawn, also when it already was; `503 body_state_withdraw_incomplete` with
+  `remaining`, repeat to finish; `404` never hers).
+- `GET /v1/admin/library/{slug}/withdrawals` → `{slug, count, withdrawals}`: the withdrawal
+  receipts. A withdrawn import is not listed and not served to anyone, across restarts and
+  dataset publishes; see `docs/qa/ASSET_WITHDRAWAL.md`.
 - `POST /v1/admin/grants {slugs, ttlSeconds, label}` → `201 {token, header, id, slugs, expires}`;
   `409 grants_unavailable` without `WARDROBE_GRANT_SECRET`.
 

@@ -46,7 +46,9 @@ Accepted: the private marker is written first (naming her wardrobe), then `look.
 with `origin: operator-import`, `wardrobeState`, `sourceSha256`, `outputSha256` and the garments
 read from the file. All of it is in the store, so it survives a restart (tested with a new
 process over the same storage). `GET` lists her imports; `DELETE …/{lookId}` withdraws one (list
-entry, files, marker last). A re-upload of the same bytes is the same look.
+entry, files, marker last). A re-upload of the same bytes is the same look. Since WD1 a withdrawal
+leaves a receipt and stays withdrawn across restarts and dataset publishes:
+`docs/qa/ASSET_WITHDRAWAL.md`.
 
 Real asset (local Forge, AvatarSample A, a black satin chemise Forge built): all 11 checks pass,
 83 face/hair primitives within tolerance, 54 bones, 15 expressions, garments

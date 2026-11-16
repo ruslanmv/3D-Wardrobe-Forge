@@ -57,6 +57,14 @@ async def lifespan(app: FastAPI):
         logger.exception("avatar library failed to load; the Studio will offer no avatars")
         library = AvatarLibrary(root=settings.wardrobe_library_root, problem=f"library failed to load: {exc}")
     app.state.library = library
+    # WD1. A withdrawal a failure or a restart cut short is carried on before anything is
+    # served; one that finished is re-enforced if its files have come back. Never fatal.
+    try:
+        from wardrobe.pipeline import prebuilt
+
+        await prebuilt.resume_withdrawals(orchestrator.store)
+    except Exception:  # pragma: no cover - startup must not fail on this
+        logger.exception("resuming withdrawals failed; pending ones stay blocked by their receipts")
     try:
         yield
     finally:
