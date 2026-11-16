@@ -6,7 +6,7 @@ for **any local VRM 0.x or 1.0**, without pinning the model in the library or
 asking a user to pretend they already have an operator declaration.
 
 ```bash
-python tools/vrm_compatibility.py /path/to/character.vrm > /tmp/character-readiness.json
+python -m tools.vrm_compatibility /path/to/character.vrm > /tmp/character-readiness.json
 python -m pytest -q tests/unit/test_vrm_compatibility.py
 ```
 
