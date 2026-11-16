@@ -16,6 +16,27 @@ it and who has to act:
                        (age-ambiguous, appears to be a minor). That finding is kept for these bytes.
 * ``incomplete``    — the character is cleared but the authored body is not closed under her
                        clothes; a completed source file is needed (or BR1's opt-in completion).
+* ``needs-body-state`` — CG4. The character is cleared and her body is closed, but her clothing is
+                       painted onto her skin texture (CV1 ``painted-on``): there is no garment
+                       mesh to take off, so she needs a separate bare body-state file, imported
+                       through the operator's body-state import (which reviews that file too).
+
+CG4. Two things this module used to fold into one status are now said apart, because they have
+different owners and one is not a verdict at all:
+
+* ``reviewState`` is ``pending`` when nobody has looked — work still to do, never a rejection —
+  and otherwise the finding a person recorded. Only a recorded ``age-ambiguous``,
+  ``appears-minor`` or ``not-assessable`` blocks a file; an empty registry never does.
+* ``bodyState`` is the body question alone, from CV1's ``clothing_structure.analyze`` on the
+  exact file: ``complete`` (separate garments over a closed body, or no clothing), ``painted-on``,
+  ``body-missing`` (with the bands), or ``not-measured``. An accepted bare body-state import for
+  the file answers ``painted-on`` and ``body-missing`` (``bodyStateFiles``).
+
+And one source of the licence answer it used to miss: the library's own provenance record. A
+pinned library file whose record grants modification (the CC0 samples: CC0 waives every right,
+``LICENSE_CONDITIONS``) has the same answer here that the dressing pipeline already uses
+(``LibraryAvatar.avatar_input``), so the audit no longer asks the creator for a licence the
+library already holds. It holds only for the pinned bytes: a changed file is asked again.
 
 What this never does: infer a character's age from anything — not from the person using the app
 (a user's "I am an adult" is about the user), not from an operator's declaration, not from the
@@ -58,12 +79,56 @@ def _licence_url_says(url: str | None, key: str) -> str | None:
     return (parse_qs(urlparse(url).query).get(key) or [None])[0]
 
 
+def measure_body_state(path: Path) -> dict:
+    """CG4. The body question for one exact file: CV1's structure, and the old one-line result.
+
+    Nothing is changed. Slow (it reads her skin texture), so callers cache it by SHA-256.
+    """
+    from wardrobe.body_surface.clothing_structure import analyze
+    from wardrobe.vrm.document import GltfDocument
+    from wardrobe.vrm.inspect import inspect_document
+    from wardrobe.vrm.measure import measure_body
+
+    doc = GltfDocument.from_path(path)
+    structure = analyze(doc, measure_body(doc, inspect_document(doc)))
+    missing = structure.get("missingBands") or []
+    result = "built" if structure.get("bodyComplete") else f"refused: body incomplete ({', '.join(missing)})"
+    return {"result": result, "structure": structure}
+
+
+def _body_state(body: dict | None) -> dict:
+    """CG4. ``complete``, ``painted-on``, ``body-missing`` or ``not-measured``, with what answers it."""
+    structure = (body or {}).get("structure")
+    files = int((body or {}).get("bodyStateFiles") or 0)
+    if not structure:
+        result = (body or {}).get("result")
+        if result is None:
+            state = "not-measured"
+        else:
+            state = "complete" if str(result).startswith("built") else "body-missing"
+        return {"state": state, "verdict": None, "missingBands": [], "paintedShare": None,
+                "bodyStateFiles": files, "satisfied": state == "complete" or files > 0}
+    verdict = structure.get("verdict")
+    if verdict == "separable-body-missing" or not structure.get("bodyComplete", True):
+        state = "body-missing"
+    elif verdict == "painted-on":
+        state = "painted-on"
+    else:
+        state = "complete"
+    return {"state": state, "verdict": verdict, "missingBands": structure.get("missingBands") or [],
+            "paintedShare": structure.get("paintedShare"), "bodyStateFiles": files,
+            "satisfied": state == "complete" or files > 0}
+
+
 def status(path: Path, *, slug: str | None, depicts_adult: bool, pinned_sha256: str | None,
-           settings, body: dict | None = None) -> dict:
+           settings, body: dict | None = None, library_conditions: dict | None = None) -> dict:
     """Every answer for this exact file, the source of each, and what would change a "no".
 
-    ``body`` is the geometry result when the caller measured it (``tools/audit/bare_visibility.py``);
-    without it body completeness is reported as not measured, never as complete.
+    ``body`` is the geometry result when the caller measured it (``measure_body_state``, and
+    ``bodyStateFiles`` when it counted accepted body-state imports); without it body completeness
+    is reported as not measured, never as complete. ``library_conditions`` is the library record's
+    grant for the pinned file (``LibraryAvatar.granted_conditions``); it is ignored for any other
+    bytes.
     """
     from wardrobe.vrm.document import GltfDocument
     from wardrobe.vrm.inspect import inspect_document
@@ -98,26 +163,43 @@ def status(path: Path, *, slug: str | None, depicts_adult: bool, pinned_sha256: 
         blocked.append(f"reviewed: {review.get('outcome')} ({review.get('reviewer')}, {review.get('date')})")
         need("creator", "a different character, adult by design; this file's finding stands for these bytes")
     elif review is None:
-        need("independent reviewer", "review these exact bytes (tools/body_surface/review_packet.py, then "
+        need("independent reviewer", "review these exact bytes (Studio ▸ Character review, or "
                                      "tools/body_surface/gates.py record) and record the finding")
-    if meta["modification"] in (None, "unknown", "prohibited"):
-        said = _licence_url_says(url, "modification")
-        if said != "allow":
-            need("creator", "a licence that permits modification (the file's meta says "
-                            f"{meta['modification']!r})")
+    # CG4. Where the modification answer came from: the file, its licence URL, or the library's
+    # provenance record for exactly these pinned bytes.
+    modification_source = None
+    if meta["modification"] not in (None, "unknown", "prohibited"):
+        modification_source = "file"
+    elif _licence_url_says(url, "modification") == "allow":
+        modification_source = "licence URL"
+    elif (meta["modification"] != "prohibited" and library_conditions
+          and str(library_conditions.get("modification", "")).lower() == "allow"
+          and pinned_sha256 and pinned_sha256 == sha):
+        modification_source = "library record"
+    if modification_source is None:
+        need("creator", "a licence that permits modification (the file's meta says "
+                        f"{meta['modification']!r})")
 
     cleared = answers.checks["design-clearance"]["passed"]
     body_state = (body or {}).get("result")
-    open_body = body_state is not None and not str(body_state).startswith("built")
+    body_answer = _body_state(body)
+    open_body = body_answer["state"] == "body-missing" and not body_answer["satisfied"]
+    painted = body_answer["state"] == "painted-on" and not body_answer["satisfied"]
     if open_body:
         need("licensed 3D artist", "a completed source file with the body closed under the clothes "
                                    "(docs/qa/body-state-specs/), or BR1's opt-in completion")
+    if painted:
+        need("licensed 3D artist", "a bare body-state file for this character (the clothing is painted on "
+                                   "the skin: no garment mesh to take off), imported through the Studio's "
+                                   "body-state import, where that file is reviewed too")
     if blocked:
         state = "blocked"
     elif not cleared or not depicts_adult or any(r["owner"] == "creator" for r in requirements):
         state = "needs-review"
     elif open_body:
         state = "incomplete"
+    elif painted:
+        state = "needs-body-state"
     else:
         state = "eligible"
     return {
@@ -127,6 +209,11 @@ def status(path: Path, *, slug: str | None, depicts_adult: bool, pinned_sha256: 
         "licenceUrlSays": {k: _licence_url_says(url, k) for k in ("sexual_expression", "modification")},
         "operatorDeclaration": depicts_adult,
         "review": review,
+        "reviewState": "pending" if review is None else review.get("outcome"),
+        "licence": {"sexualUse": not (sexual_usage_disallowed(terms) or explicit_usage_disallowed(terms)),
+                    "modification": modification_source is not None,
+                    "modificationSource": modification_source},
+        "bodyState": body_answer,
         "answers": {k: {"passed": v["passed"], "why": v.get("why", "")} for k, v in answers.checks.items()
                     if k != "operator-switch"},
         "body": body_state or "not measured",
@@ -181,4 +268,4 @@ def record_review(registry: Path, *, file: Path, sha256: str, outcome: str, revi
     return entry
 
 
-__all__ = ["CLEARED", "REVIEW_OUTCOMES", "record_review", "status"]
+__all__ = ["CLEARED", "REVIEW_OUTCOMES", "measure_body_state", "record_review", "status"]

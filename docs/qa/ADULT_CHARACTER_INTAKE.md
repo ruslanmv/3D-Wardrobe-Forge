@@ -47,7 +47,20 @@ clothed pictures. This sheet is how such a file comes in.
 
 6. Hands the packet to a reviewer. The reviewer, and only the reviewer, writes the entry in
    `assets/body_surface/adult-design-reviews.json` under the file's SHA-256 and commits it under
-   their own name. Any finding other than `clearly-adult` is not entered.
+   their own name.
+
+   CG4. The reviewer can do this in the Studio instead of a terminal: **Settings ▸ Private mode ▸
+   Character review** (`/studio/review.html`, admin session only). The page fetches the
+   character's exact file, hashes it in the browser, renders those same bytes, and offers the
+   form only when the hash equals the library pin. The reviewer picks the outcome (none is
+   pre-selected), types their own name and what they looked at, and ticks that they examined
+   the model themselves. `POST /v1/admin/reviews/{slug}` checks the hash against the file on
+   disk again and writes through `character_gates.record_review`. Every outcome is recorded as
+   found: `age-ambiguous`, `appears-minor` and `not-assessable` block those bytes for good, and
+   a character nobody has reviewed stays `pending`, which is work to do, not a rejection.
+   Judge the design itself: an anime art style alone is not a reason for `age-ambiguous`, and a
+   declared age alone is not evidence of an adult design. On a disk that does not persist,
+   commit the registry afterwards.
 
 From there the file follows Phases 1 to 3 of the handoff unchanged: build into a private
 directory with `WARDROBE_ADULT_BODY_SURFACE=true` on the local command only, packet of the

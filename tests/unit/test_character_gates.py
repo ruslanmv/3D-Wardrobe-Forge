@@ -137,3 +137,55 @@ def test_the_library_listing_gives_every_client_one_answer_per_exact_file(settin
                      evidence="looked", date="2026-11-16")
     assert body_state_status(settings, sha) == {"status": "cleared", "requirement": None,
                                                 "designReview": {"outcome": "clearly-adult", "date": "2026-11-16"}}
+
+
+# CG4. The library record's licence, the review state and the body, each said apart.
+
+def silent_on_modification(doc) -> None:
+    allow(doc)
+    doc.gltf["extensions"]["VRMC_vrm"]["meta"].pop("modification", None)
+
+
+def test_the_library_record_answers_modification_for_its_pinned_bytes_only(vrm_bytes, settings, registry, tmp_path):
+    data = with_head(edited(vrm_bytes, silent_on_modification))
+    assert cg.status(write(tmp_path, data, "x.vrm"), slug=None, depicts_adult=True, pinned_sha256=None,
+                     settings=settings)["licence"]["modification"] is False
+    path = write(tmp_path, data, "a.vrm")
+    sha = hashlib.sha256(data).hexdigest()
+    cc0 = {"modification": "allow", "redistribution": "allow"}
+    pinned = cg.status(path, slug="a", depicts_adult=True, pinned_sha256=sha, settings=settings,
+                       library_conditions=cc0)
+    assert pinned["licence"]["modificationSource"] == "library record"
+    assert not any(r["owner"] == "creator" for r in pinned["requirements"])
+    # Another file under the same record is asked again.
+    other = write(tmp_path, data + b" ", "b.vrm")
+    changed = cg.status(other, slug="a", depicts_adult=True, pinned_sha256=sha, settings=settings,
+                        library_conditions=cc0)
+    assert changed["status"] == "blocked"  # differs from the pin
+
+
+def test_a_missing_review_is_pending_and_a_recorded_one_is_its_outcome(vrm_bytes, settings, registry, tmp_path):
+    data = with_head(edited(vrm_bytes, allow))
+    path = write(tmp_path, data, "a.vrm")
+    assert status_of(path, settings)["reviewState"] == "pending"
+    cg.record_review(registry, file=path, sha256=hashlib.sha256(data).hexdigest(), outcome="age-ambiguous",
+                     reviewer="A Person", evidence="looked", date="2026-11-16")
+    assert status_of(path, settings)["reviewState"] == "age-ambiguous"
+
+
+@pytest.mark.parametrize("structure, files, expected_state, expected_status", [
+    ({"verdict": "separable-complete", "bodyComplete": True}, 0, "complete", "eligible"),
+    ({"verdict": "painted-on", "bodyComplete": True, "paintedShare": 0.3}, 0, "painted-on", "needs-body-state"),
+    ({"verdict": "painted-on", "bodyComplete": True, "paintedShare": 0.3}, 1, "painted-on", "eligible"),
+    ({"verdict": "separable-body-missing", "bodyComplete": False, "missingBands": ["upper"]}, 0,
+     "body-missing", "incomplete"),
+])
+def test_the_body_is_tracked_on_its_own(vrm_bytes, settings, registry, tmp_path, structure, files, expected_state,
+                                        expected_status):
+    data = with_head(edited(vrm_bytes, allow))
+    path = write(tmp_path, data, "a.vrm")
+    cg.record_review(registry, file=path, sha256=hashlib.sha256(data).hexdigest(), outcome="clearly-adult",
+                     reviewer="A Person", evidence="looked", date="2026-11-16")
+    row = status_of(path, settings, body={"result": "built", "structure": structure, "bodyStateFiles": files})
+    assert row["bodyState"]["state"] == expected_state
+    assert row["status"] == expected_status
