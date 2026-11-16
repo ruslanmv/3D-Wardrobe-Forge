@@ -88,6 +88,46 @@ def test_every_slot_has_a_row_and_none_is_reported_done(tool, sheet):
     assert "| missing | not run | not run | not run |" in text
 
 
+def test_a_file_that_prohibits_modification_is_not_read_as_permitting_it(tool, sheet):
+    """Review finding: every answer but ``unknown`` counted as a grant, so a prohibition lost
+    its step in the checklist. It is its own answer: nothing may be commissioned from that file."""
+    spec, _ = sheet
+    assert tool.modification_rights(spec)[1] == "granted"
+    refused = {**spec, "licenceInFile": {**spec["licenceInFile"], "modification": "prohibited"}}
+    assert tool.modification_rights(refused)[1] == "prohibited"
+    assert tool.blockers(refused) == [
+        ("This source may not be modified: commission a replacement for the slot (route 2)", "operator")]
+    text = tool.markdown(refused)
+    assert "**prohibited**" in text and "its terms prohibit modification" in text
+    silent = {**spec, "licenceInFile": {**spec["licenceInFile"], "modification": "unknown"},
+              "libraryRecord": {**spec["libraryRecord"], "conditions": None}}
+    assert tool.modification_rights(silent)[1] == "undocumented"
+    assert tool.blockers(silent)[0][0].startswith("Document the right to modify")
+    recorded_no = {**silent, "libraryRecord": {**spec["libraryRecord"], "conditions": {"modification": "disallow"}}}
+    assert tool.modification_rights(recorded_no)[1] == "prohibited"
+
+
+def test_a_file_with_no_readiness_record_is_unknown_not_missing_her_chest(tool, sheet):
+    """Review finding: no record was read as incomplete, and the sheet then described
+    AvatarSample_O's deleted chest for any file: a replacement, or an artist's completed source."""
+    spec, _ = sheet
+    assert tool.body_state(spec) == "incomplete" and "chest is deleted" in tool.markdown(spec)
+    other = {**spec, "readiness": None,
+             "file": {**spec["file"], "sha256": "f" * 64}}  # a new exact file: another hash, no row
+    assert tool.body_state(other) == "unknown"
+    text = tool.markdown(other)
+    assert "Body completeness is not known for this file" in text
+    assert "chest is deleted" not in text and "Missing surface" not in text
+    assert "Do not commission geometry on this sheet alone" in text
+    actions = " ".join(action for action, _ in tool.blockers(other))
+    assert "Measure whether the authored body is complete" in actions and "missing body geometry" not in actions
+    # Recorded incomplete, with nothing written down about what: said, not borrowed from her.
+    undescribed = {**other, "readiness": {"body": "incomplete", "skin": "n/a", "status": "blocked-geometry"}}
+    assert "not written down for this file" in tool.markdown(undescribed)
+    assert "chest is deleted" not in tool.markdown(undescribed)
+    assert tool.body_state({**spec, "readiness": {"body": "complete"}}) == "complete"
+
+
 # -- the pre-flight, on the generated body -------------------------------------------------------
 def permitting(doc) -> None:
     doc.gltf["extensions"]["VRMC_vrm"]["meta"]["allowExcessivelySexualUsage"] = True
@@ -146,7 +186,9 @@ def test_a_moved_joint_or_a_wrong_stated_hash_is_refused_on_structure(tool, deli
 def test_the_command_line_exits_by_the_verdict(tool, delivery, monkeypatch, capsys):
     state = edited(delivery["body"], touch)
     path = delivery["write"]("state.vrm", state)
-    monkeypatch.setattr(tool.AvatarLibrary, "from_directory", classmethod(lambda cls, root: delivery["library"]))
+    # The deployment's own library, as the API loads it (review finding: the bundled library
+    # was loaded instead, where this slug does not exist).
+    delivery["settings"].wardrobe_library_root = str(delivery["source"].parent)
     monkeypatch.setattr(tool, "Settings", lambda *a, **k: delivery["settings"])
     assert tool.main(["--preflight", "--slug", "mira", "--candidate", str(path), "--state", "bare"]) == 1
     assert "REFUSED (not-permitted" in capsys.readouterr().out

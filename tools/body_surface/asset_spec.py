@@ -155,34 +155,81 @@ def _table(head: list[str], rows: list[list]) -> str:
     return "\n".join(out) + "\n"
 
 
-def _modification(spec: dict) -> tuple[str, bool]:
-    """What documents the right to modify, and whether the file itself states it."""
-    in_file = spec["licenceInFile"].get("modification")
+#: The file's own answers that grant the right to modify (``ModificationPermission``), and
+#: the library's recorded ones. Anything else is not a grant: ``unknown`` is silence, and
+#: ``prohibited`` is a no.
+GRANTS_IN_FILE = ("allowed", "allowed_with_redistribution")
+REFUSALS = ("prohibited", "disallow", "disallowed")
+
+
+def modification_rights(spec: dict) -> tuple[str, str]:
+    """What documents the right to modify: (sentence, ``granted`` | ``prohibited`` | ``undocumented``).
+
+    Review finding on AS1: every answer but ``unknown`` was read as a grant, so a file that
+    says ``prohibited`` lost its "document the right to modify" step, in a checklist whose
+    point is that a body state is a modified file. A prohibition is its own answer: no body
+    state of that file may be commissioned at all, and the slot goes to a replacement.
+    """
+    in_file = str(spec["licenceInFile"].get("modification") or "unknown")
     url = spec["licenceInFile"].get("licenseUrl") or ""
     conditions = spec["libraryRecord"]["conditions"] or {}
-    if in_file and in_file != "unknown":
-        return f"the file states it: `{in_file}`", True
+    recorded = str(conditions.get("modification") or "")
+    if in_file in REFUSALS or "modification=disallow" in url or recorded in REFUSALS:
+        where = (f"the file states `{in_file}`" if in_file in REFUSALS
+                 else f"the recorded terms say `{recorded or 'disallow'}`")
+        return (f"**prohibited**: {where}. No modified file, and so no body state, may be made from "
+                "this source; the slot is filled by a replacement (route 2)"), "prohibited"
+    if in_file in GRANTS_IN_FILE:
+        return f"the file states it: `{in_file}`", "granted"
     if "modification=allow" in url:
-        return "the file states it through its licence URL (`modification=allow`)", True
-    recorded = f"the library records `{conditions.get('modification')}`" if conditions.get("modification") \
+        return "the file states it through its licence URL (`modification=allow`)", "granted"
+    noted = f"the library records `{recorded}`" if recorded \
         else f"the library records the licence as `{spec['libraryRecord']['licence']}`"
-    return (f"**the file does not state it** (`{in_file}`); {recorded}. The operator must hold the "
-            "creator's terms in writing before commissioning a modified file"), False
+    return (f"**the file does not state it** (`{in_file}`); {noted}. The operator must hold the "
+            "creator's terms in writing before commissioning a modified file"), "undocumented"
+
+
+def body_state(spec: dict) -> str:
+    """``complete`` | ``incomplete`` | ``unknown``, from the readiness record for this exact hash.
+
+    Review finding on AS1: no record was read as "incomplete", and the sheet then described
+    AvatarSample_O's deleted chest for whatever file it was given: a replacement character, or
+    an artist's completed source, has a new hash and no row in the committed report. Unknown is
+    unknown; incomplete is only what a record says.
+    """
+    recorded = (spec["readiness"] or {}).get("body")
+    return recorded if recorded in ("complete", "incomplete") else "unknown"
+
+
+#: What is missing, for a source where that was established and written down: by exact hash.
+MISSING_SURFACE = {
+    "e5c0395b59b636e6e0731ba872f4885d1bf1b69eba5f2904e68c16bd105e1697":
+        "`docs/STYLING.md` records why: her chest is deleted from the mesh under the dress and a band "
+        "of skin is cut away by alpha.",
+}
 
 
 def blockers(spec: dict) -> list[tuple[str, str]]:
     """What stands between this slot and an accepted body state: (what, who), in order."""
     out = []
-    if not _modification(spec)[1]:
+    rights = modification_rights(spec)[1]
+    if rights == "prohibited":
+        # Nothing after this applies to the file: the slot is a replacement's, from step 1.
+        return [("This source may not be modified: commission a replacement for the slot (route 2)",
+                 "operator")]
+    if rights != "granted":
         out.append(("Document the right to modify this file (creator's terms in writing)", "operator"))
     if not spec["reviewRecorded"]:
         out.append((f"Review the exact source file `{spec['file']['sha256'][:12]}…` and record the "
                     "finding; only `clearly-adult` opens route 1, any other finding means route 2",
                     "independent reviewer"))
-    readiness = spec["readiness"] or {}
-    if readiness.get("body") != "complete":
+    body = body_state(spec)
+    if body == "incomplete":
         out.append(("Supply the missing body geometry as a new source file (its own hash, its own review)",
                     "licensed 3D artist"))
+    elif body == "unknown":
+        out.append(("Measure whether the authored body is complete (`tools/audit/bare_readiness.py`): "
+                    "there is no readiness record for this exact file", "operator"))
     out.append(("Build (`body-bare-v1`) or deliver the completed body-state VRM; pass the pre-flight",
                 "operator / licensed 3D artist"))
     out.append(("Review the exact output file and record the finding", "independent reviewer"))
@@ -198,8 +245,8 @@ def markdown(spec: dict) -> str:
     file, slug, sha = spec["file"], spec["slug"], spec["file"]["sha256"]
     licence, record = spec["licenceInFile"], spec["libraryRecord"]
     readiness = spec["readiness"] or {}
-    modification, _ = _modification(spec)
-    complete = readiness.get("body") == "complete"
+    modification, _ = modification_rights(spec)
+    body = body_state(spec)
     separate = sorted({g["slot"] + (" (dress length)" if g["dressLength"] else "") for g in spec["garments"]})
     lines = [
         f"# {spec['name']}: body-state asset specification",
@@ -263,12 +310,21 @@ def markdown(spec: dict) -> str:
         lines += [_table(["Slot", "Material", "Mesh # primitive", "Triangles"], [
             [g["slot"] + (" (dress length)" if g["dressLength"] else ""), f"`{g['material']}`",
              f"`{g['mesh']}` # {g['primitive']}", g["triangles"]] for g in spec["garments"]])]
-    if not complete:
+    if body == "incomplete":
         lines += [
-            "**Missing surface.** The authored body is not closed: `body-bare-v1` refuses this file "
-            "(`body-incomplete-for-bare`), correctly. `docs/STYLING.md` records why: her chest is deleted "
-            "from the mesh under the dress and a band of skin is cut away by alpha. Route 1 therefore needs "
-            "an artist's completed *source* file first (section 6).",
+            "**Missing surface.** The readiness record says the authored body is not closed: `body-bare-v1` "
+            "refuses this file (`body-incomplete-for-bare`), correctly. "
+            + MISSING_SURFACE.get(sha, "What is missing is not written down for this file; measure it "
+                                       "before commissioning.")
+            + " Route 1 therefore needs an artist's completed *source* file first (section 6).",
+            "",
+        ]
+    elif body == "unknown":
+        lines += [
+            "**Body completeness is not known for this file.** The committed readiness report has no row "
+            "for this hash (it covers the files it was generated from). Nothing here says the body is "
+            "incomplete, and nothing says it is complete: run `tools/audit/bare_readiness.py` on a "
+            "library that holds this file before commissioning any geometry.",
             "",
         ]
     lines += [
@@ -294,11 +350,14 @@ def markdown(spec: dict) -> str:
                  i["morphTargets"]] for i in spec["identity"]]),
         "## 6. What the artist delivers",
         "",
-        "**Route 1: this character, with a complete body.** Closed until a `clearly-adult` review of "
-        f"`{sha}` is recorded; the commission cites that entry.",
+        "**Route 1: this character, with a complete body.** "
+        + ("**Closed for this source: its terms prohibit modification.** What follows does not apply; "
+           "see route 2." if modification_rights(spec)[1] == "prohibited"
+           else f"Closed until a `clearly-adult` review of `{sha}` is recorded; the commission cites that "
+                "entry."),
         "",
     ]
-    if complete:
+    if body == "complete":
         lines += [
             "- Nothing needs to be authored for the body-state file to exist: the authored body is complete, "
             "and `body-bare-v1` removes her garments and restores painted skin without adding surface. An "
@@ -306,13 +365,18 @@ def markdown(spec: dict) -> str:
             "detail is the artist's own work, under the artist's rights, and is what the output review "
             "looks at.",
         ]
+    elif body == "incomplete":
+        lines += [
+            "- First a completed **source** file: the same character with the missing surface (section 4) "
+            "restored as part of the body mesh and any alpha-cut band of skin made solid, skin weights "
+            "continuous with the surrounding body, UVs on the existing body material, nothing else changed "
+            "(section 5 applies to it against this file). It is a new exact file: pinned in the library "
+            "under its own hash, and reviewed as such.",
+        ]
     else:
         lines += [
-            "- First a completed **source** file: the same character with the deleted chest surface restored "
-            "as part of the body mesh and the alpha-cut band made solid, skin weights continuous with the "
-            "surrounding torso, UVs on the existing body material, nothing else changed (section 5 applies "
-            "to it against this file). It is a new exact file: pinned in the library under its own hash, "
-            "and reviewed as such.",
+            "- Whether anything must be authored is not known until the body's completeness is measured "
+            "(section 4). Do not commission geometry on this sheet alone.",
         ]
     lines += [
         "- The body-state file: every garment mesh in section 4 absent, no other clothing, the body closed "
@@ -531,7 +595,12 @@ def main(argv=None) -> int:
     parser.add_argument("--json", type=Path, default=None)
     args = parser.parse_args(argv)
     settings = Settings(_env_file=None) if not args.preflight else Settings()
-    library = AvatarLibrary.from_directory(ROOT / "assets" / "library")
+    # The sheets describe the repository's own library. A pre-flight answers for a deployment:
+    # the API loads ``settings.wardrobe_library_root`` (apps/api/main.py), and checked against
+    # the bundled library instead, a deployed slug was "not in the library" or was held to
+    # another source file and another declaration than the import would use.
+    library = AvatarLibrary.from_directory(
+        settings.wardrobe_library_root if args.preflight else ROOT / "assets" / "library")
     if args.preflight:
         if not args.slug or args.candidate is None or not args.candidate.is_file():
             raise SystemExit("--preflight needs --slug and --candidate <file.vrm>")
