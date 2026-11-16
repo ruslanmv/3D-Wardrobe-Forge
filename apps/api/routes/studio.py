@@ -146,18 +146,43 @@ def _dressable(request: Request, slug: str, admin) -> tuple[LibraryAvatar, bool]
     return avatar, False
 
 
+def body_state_status(settings, sha256: str | None) -> dict:
+    """CG1. The bare body state's character answer for this exact file, from the review registry.
+
+    One answer for every client: ``cleared`` (a person found these bytes clearly adult),
+    ``blocked`` (a person recorded another finding: it stands for these bytes) or ``needs-review``
+    (nothing recorded; missing is never read as a yes). The model's own terms and the operator's
+    switch are still asked by the job itself; this is only the question a client cannot answer.
+    """
+    from wardrobe.body_surface.character_gates import CLEARED
+    from wardrobe.body_surface.gate import design_review
+
+    review = design_review(settings.body_surface_root_path, sha256) if sha256 else None
+    if review is None:
+        return {"status": "needs-review", "designReview": None,
+                "requirement": "a person's review of this exact file (tools/body_surface/gates.py)"}
+    if review.get("outcome") == CLEARED:
+        return {"status": "cleared", "designReview": {"outcome": CLEARED, "date": review.get("date")},
+                "requirement": None}
+    return {"status": "blocked",
+            "designReview": {"outcome": review.get("outcome"), "date": review.get("date")},
+            "requirement": "a different character, adult by design (docs/qa/ADULT_CHARACTER_INTAKE.md)"}
+
+
 @router.get("/library")
-async def list_library(request: Request, admin: AdminDep, store: StoreDep) -> dict:
+async def list_library(request: Request, admin: AdminDep, store: StoreDep, settings: SettingsDep) -> dict:
     """Every library avatar, with provenance and whether it can be used.
 
     ``declaredBy`` says where an adult declaration came from: ``operator`` (the
     deployment's policy file, for everyone) or ``session`` (this admin session only).
+    ``bodyState`` (CG1) is the character answer for the bare body state, per exact file.
     """
     listing = (await _refresh_library(request, store)).to_dict()
     for entry in listing.get("avatars", []):
         entry["declaredBy"] = "operator" if entry.get("depictsAdult") else None
         if admin is not None and entry["slug"] in admin.declared and not entry.get("depictsAdult"):
             entry["depictsAdult"], entry["declaredBy"] = True, "session"
+        entry["bodyState"] = body_state_status(settings, entry.get("sha256"))
     return listing
 
 
