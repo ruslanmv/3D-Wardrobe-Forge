@@ -6,6 +6,9 @@ work**, and no adult-design review was written. Nothing below changes that; it s
 software already does, how it was tested, and the smallest set of things an authorized person
 must bring for the first dressed → bare → dressed acceptance to be run.
 
+Where each of the eight library characters stands, file by file, is in
+`docs/qa/BODY_STATE_CHARACTERS.md`.
+
 ## Two results, kept apart
 
 **Engineering.** The route from a reviewed file to a restored character exists and is tested

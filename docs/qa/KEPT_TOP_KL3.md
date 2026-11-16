@@ -83,11 +83,16 @@ degenerate triangle.
 look. For AvatarSample A's straight jeans KL1 had front 20.0, left hip 3.3, back 8.2, right hip
 2.9 cm2.
 
-**Seams**: vertices that share a position in the unfitted shell share one after it (0.0 mm),
-except one pair on AvatarSample C's shorts (1.8 mm, top of the waistband, under her top; KL1:
-0.3 mm) and one on her slim trousers (0.12 mm). The pass itself now moves seam twins together
-(`test_a_seams_two_vertices_stay_in_one_place`); these two come from a later step and were not
-traced.
+**Seams**: closed. Measured inside each build (`tools/inspect/kept_top_trace.py`, positions
+immediately before and after the pass, then the exported file): 5,951 seam pairs over the 21
+looks, 0.0 mm apart after the pass on every bottom and every foundation; 0 turned and 0
+degenerate triangles; the 12 exported leg garments are byte for byte what the pass left (the 9
+skirts are exported with more vertices and cannot be laid side by side). *Correction:* this
+section first reported two pairs parted on AvatarSample C (1.8 mm, 0.12 mm). That came from
+comparing against a second build made with the pass off, whose shell differs by up to 13 mm;
+the pair was 1.8135 mm apart before the pass and 1.8135 mm after it. The figures below that
+compare the two builds (edges, turned triangles) carry the same caveat; inside one build, 18 of
+168,268 edges are past 1.5x, 17 of them on AvatarSample B's four leg garments (longest 2.36x).
 
 **Waistband**: moved with the rest where her top covers it (A: up to 56 mm, to get under the
 cardigan the shell had been built outside of); never a height change.
@@ -168,8 +173,11 @@ avatars present). `tests/unit/test_kept_top_bottoms.py` (3), `test_cache_key_sta
 
 ## Not done
 
-- No look was rendered in a pose or in motion.
-- The two seam pairs above, and the step under AvatarSample B's jacket hem.
+- **Movement is not accepted.** One look was rendered moving in the app (AvatarSample A, blue
+  straight jeans, the walk clip): in a stride the denim came through the lower front of her
+  cardigan, which at rest hangs over it. The bottom is fitted under the top and still bound to
+  her leg bones, where the top follows her hips. Not fixed here.
+- The step under AvatarSample B's jacket hem (the stretched edges above).
 - A small blue spike at the side of AvatarSample A's jeans, visible in both rows of the
   picture: it is in the unfitted shell and is not this pass's.
 - The cached looks in the deployed dataset are not rebuilt; that is the operator's run of the

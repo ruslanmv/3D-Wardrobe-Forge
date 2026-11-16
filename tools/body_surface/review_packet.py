@@ -4,6 +4,7 @@
     python tools/body_surface/review_packet.py --slug avatar-sample-a --out /tmp/review/avatar-sample-a
     python tools/body_surface/review_packet.py --file candidate.vrm --out /tmp/review/candidate \\
         [--sheets DIR]   # clothed reference pictures of this exact file, to list with their hashes
+    python tools/body_surface/review_packet.py --inventory   # one row per library character, to stdout
 
 The bare body state (``body-bare-v1``, and a ``bare`` import) opens only for an exact file a
 *person* has reviewed and found clearly adult in design: ``design-clearance`` in
@@ -255,19 +256,101 @@ def markdown(p: dict) -> str:
     return "\n".join(lines)
 
 
+def inventory(library: AvatarLibrary, settings: Settings) -> list[dict]:
+    """RP2. One row per library character: the same facts as a packet, side by side.
+
+    For the question "where does each of the eight stand": the exact file, what it says about
+    modification and sexual expression, the declaration, whether a review of that exact file
+    is recorded, its rig, expressions, face and hair, and its clothing. A character whose file
+    is not on this disk has a row that says so. Like the packet, it reads clothed source
+    files only and decides nothing; whether the authored body is complete under the clothing
+    is not measured here (that is the bare pipeline's own refusal, ``body-incomplete-for-bare``).
+    """
+    rows = []
+    for entry in sorted(library.avatars, key=lambda item: item.slug):
+        row = {"slug": entry.slug, "name": entry.name, "libraryPin": entry.sha256, "present": False,
+               "creator": entry.creator, "libraryLicence": entry.license, "source": entry.source,
+               "recordedConditions": entry.license_conditions,
+               "operatorAttestsModification": entry.user_attests_modification_allowed}
+        path = Path(entry.path) if entry.path else None
+        if path is not None and path.is_file():
+            made = packet(path, slug=entry.slug, library=library, settings=settings)
+            checks = made["eligibilityNow"]["checks"]
+            licence = made["whatTheFileSays"]["licence"]
+            row.update({
+                "present": True,
+                "sha256": made["file"]["sha256"],
+                "matchesLibraryPin": made["file"]["matchesLibraryPin"],
+                "spec": made["whatTheFileSays"]["spec"],
+                "authors": licence.get("authors"),
+                "modification": licence.get("modification"),
+                "authorPermitsSexualExpression": checks["author-permission"]["passed"],
+                "declaredAdultByOperator": made["operatorDeclaration"]["depictsAdult"],
+                "reviewRecorded": checks["design-clearance"]["passed"],
+                "humanoidBones": made["identity"]["humanoidBones"],
+                "expressions": len(made["identity"]["expressions"] or []),
+                "faceAndHairPrimitives": made["identity"]["faceAndHairPrimitives"],
+                "clothingAsAuthored": made["clothingAsAuthored"],
+            })
+        rows.append(row)
+    return rows
+
+
+INVENTORY_COLUMNS = (
+    "Character", "Source SHA-256 (= library pin)", "Spec", "Authors in the file",
+    "Library's record: licence, creator, recorded conditions", "Modification, as the file states it",
+    "File permits sexual expression", "Operator declaration", "Review of this exact file",
+    "Humanoid bones", "Expressions", "Face and hair primitives", "Separate clothing meshes")
+
+
+def inventory_markdown(rows: list[dict]) -> str:
+    lines = ["| " + " | ".join(INVENTORY_COLUMNS) + " |", "|" + "---|" * len(INVENTORY_COLUMNS)]
+    for row in rows:
+        conditions = ", ".join(f"{k}: {v}" for k, v in sorted((row["recordedConditions"] or {}).items()))
+        record = "; ".join(part for part in (row["libraryLicence"], row["creator"], conditions) if part)
+        if not row["present"]:
+            absent = f"not on this disk (pin `{row['libraryPin']}`)"
+            cells = [row["name"], absent, "—", "—", record, *["—"] * 8]
+        else:
+            cells = [
+                row["name"],
+                f"`{row['sha256']}`" + ("" if row["matchesLibraryPin"] else " **(not the library pin)**"),
+                row["spec"],
+                ", ".join(row["authors"] or []) or "—",
+                record,
+                row["modification"],
+                "yes" if row["authorPermitsSexualExpression"] else "no",
+                "declared adult" if row["declaredAdultByOperator"] else "none",
+                "recorded" if row["reviewRecorded"] else "**none recorded**",
+                row["humanoidBones"], row["expressions"], row["faceAndHairPrimitives"],
+                ", ".join(row["clothingAsAuthored"]) or "none (clothing is painted on the body)",
+            ]
+        lines.append("| " + " | ".join(str(cell) for cell in cells) + " |")
+    return "\n".join(lines) + "\n"
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--slug", help="a library avatar")
     parser.add_argument("--file", type=Path, help="any VRM file (a candidate that is not in the library)")
-    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--out", type=Path)
     parser.add_argument("--sheets", type=Path, default=None, help="folder of clothed reference pictures")
+    parser.add_argument("--inventory", action="store_true",
+                        help="print one row per library character (reads only; writes nothing)")
     args = parser.parse_args(argv)
-    if bool(args.slug) == bool(args.file):
-        raise SystemExit("name a library avatar (--slug) or a file (--file), one of them")
     settings = Settings(_env_file=None)
     library = AvatarLibrary.from_directory(ROOT / "assets" / "library")
+    if args.inventory:
+        if args.slug or args.file or args.out:
+            raise SystemExit("--inventory takes no other option")
+        print(inventory_markdown(inventory(library, settings)), end="")
+        return 0
+    if bool(args.slug) == bool(args.file):
+        raise SystemExit("name a library avatar (--slug) or a file (--file), one of them")
+    if args.out is None:
+        raise SystemExit("--out is required")
     if args.slug:
         entry = library.get(args.slug)
         if entry is None or entry.path is None or not Path(entry.path).is_file():
