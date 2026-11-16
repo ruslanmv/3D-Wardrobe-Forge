@@ -397,6 +397,11 @@ async def test_o_reconstruction_is_opt_in_switched_tagged_private_and_never_regi
     proxies = [m for m in output.meshes if ((m.get("extras") or {}).get("wardrobeForge") or {}).get("kind")
                == "bodyProxy" or "bodyProxy" in ((m.get("extras") or {}).get("wardrobeForge") or {})]
     assert len(proxies) == 1, "the patch is one mesh of its own"
+    # BR2. Her own skin mesh is not the one tagged, and the join was measured for the reviewer.
+    skin_mesh = next(m for m in output.meshes if any("Body_00_SKIN" in output.materials[p["material"]]["name"]
+                                                     for p in m["primitives"]))
+    assert "bodyProxy" not in ((skin_mesh.get("extras") or {}).get("wardrobeForge") or {})
+    assert {"gapMm", "overlap", "normals", "weights", "colour", "posed"} <= set(completion["join"])
     assert built.request.options.private
     assert await prebuilt.ready_looks(store, "test-avatar", include_private=True) == []
     assert await prebuilt.ready_looks(store, "vroid-avatar-sample-o", include_private=True) == []

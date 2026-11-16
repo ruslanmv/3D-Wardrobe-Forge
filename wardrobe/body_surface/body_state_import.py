@@ -328,7 +328,10 @@ def check(data: bytes, original: bytes, *, state: str, source_sha256: str,
                     for item in [*doc.meshes, *doc.nodes])
         checks["body-state"] = {"passed": integrity.get("complete") and not clothing,
                                 "integrity": integrity, "clothingRemains": [g.slot for g in clothing],
-                                "reconstructed": proxy}
+                                "reconstructed": proxy,
+                                # BR2. Which bands Forge filled, as the file itself says.
+                                "reconstructedRegions": list(((doc.gltf.get("extras") or {}).get(
+                                    "wardrobeForge") or {}).get("reconstructedRegions") or [])}
         if clothing:
             return refuse("clothing-remains", "a bare import still has detected clothing: "
                           + ", ".join(sorted({g.slot for g in clothing})))
