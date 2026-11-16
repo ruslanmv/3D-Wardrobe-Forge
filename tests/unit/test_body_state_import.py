@@ -70,12 +70,37 @@ def test_a_bare_state_with_every_clearance_is_accepted(body, body_state, setting
     assert verdict.checks["body-state"]["integrity"]["complete"] is True
 
 
-def test_bare_needs_a_review_of_both_exact_files(body, body_state, settings):
+def reshape(doc) -> None:
+    """One vertex of her body moved 1 mm: a surface the reviewed file does not have."""
+    import numpy as np
+
+    primitive = doc.meshes[0]["primitives"][0]
+    points = doc.read_accessor(primitive["attributes"]["POSITION"]).astype(np.float32).copy()
+    points[0, 2] += 0.001
+    primitive["attributes"]["POSITION"] = doc.add_accessor(points, include_bounds=True)
+
+
+def test_a_bare_file_that_reshapes_her_needs_its_own_review(body, settings):
     clear_design_for_test(settings, body)  # her file reviewed, the import not
-    verdict = run(body_state, body, settings)
+    verdict = run(edited(body, reshape), body, settings)
     assert verdict.reason == "not-permitted"
     assert verdict.checks["eligibility-source"]["passed"] is True
     assert verdict.checks["eligibility-import"]["refusedBy"] == "design-clearance"
+    assert verdict.checks["eligibility-import"]["derivedFromReviewedSource"]["notInReviewedSource"] == 1
+
+
+def test_a_bare_file_with_only_her_own_surfaces_is_covered_by_her_review(body, body_state, settings):
+    """CG1. Her reviewed file with nothing added: the source's review covers it, without a second."""
+    clear_design_for_test(settings, body)
+    verdict = run(body_state, body, settings)
+    assert verdict.accepted, verdict.message
+    assert verdict.checks["eligibility-import"]["derivedFromReviewedSource"]["passed"] is True
+
+
+def test_without_a_review_of_her_file_nothing_is_derived(body, body_state, settings):
+    verdict = run(body_state, body, settings)
+    assert verdict.reason == "not-permitted"
+    assert verdict.checks["eligibility-source"]["refusedBy"] == "design-clearance"
 
 
 def test_bare_needs_the_operator_switch_and_the_declaration(body, body_state, settings):

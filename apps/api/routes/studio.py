@@ -146,18 +146,43 @@ def _dressable(request: Request, slug: str, admin) -> tuple[LibraryAvatar, bool]
     return avatar, False
 
 
+def body_state_status(settings, sha256: str | None) -> dict:
+    """CG1. The bare body state's character answer for this exact file, from the review registry.
+
+    One answer for every client: ``cleared`` (a person found these bytes clearly adult),
+    ``blocked`` (a person recorded another finding: it stands for these bytes) or ``needs-review``
+    (nothing recorded; missing is never read as a yes). The model's own terms and the operator's
+    switch are still asked by the job itself; this is only the question a client cannot answer.
+    """
+    from wardrobe.body_surface.character_gates import CLEARED
+    from wardrobe.body_surface.gate import design_review
+
+    review = design_review(settings.body_surface_root_path, sha256) if sha256 else None
+    if review is None:
+        return {"status": "needs-review", "designReview": None,
+                "requirement": "a person's review of this exact file (tools/body_surface/gates.py)"}
+    if review.get("outcome") == CLEARED:
+        return {"status": "cleared", "designReview": {"outcome": CLEARED, "date": review.get("date")},
+                "requirement": None}
+    return {"status": "blocked",
+            "designReview": {"outcome": review.get("outcome"), "date": review.get("date")},
+            "requirement": "a different character, adult by design (docs/qa/ADULT_CHARACTER_INTAKE.md)"}
+
+
 @router.get("/library")
-async def list_library(request: Request, admin: AdminDep, store: StoreDep) -> dict:
+async def list_library(request: Request, admin: AdminDep, store: StoreDep, settings: SettingsDep) -> dict:
     """Every library avatar, with provenance and whether it can be used.
 
     ``declaredBy`` says where an adult declaration came from: ``operator`` (the
     deployment's policy file, for everyone) or ``session`` (this admin session only).
+    ``bodyState`` (CG1) is the character answer for the bare body state, per exact file.
     """
     listing = (await _refresh_library(request, store)).to_dict()
     for entry in listing.get("avatars", []):
         entry["declaredBy"] = "operator" if entry.get("depictsAdult") else None
         if admin is not None and entry["slug"] in admin.declared and not entry.get("depictsAdult"):
             entry["depictsAdult"], entry["declaredBy"] = True, "session"
+        entry["bodyState"] = body_state_status(settings, entry.get("sha256"))
     return listing
 
 
@@ -745,3 +770,51 @@ async def _optional(store, key: str) -> bytes | None:
 
 
 __all__ = ["router"]
+
+
+# -- CV1. Clothing visibility: Forge's answer for exact bytes; the app only follows it ------------
+_VISIBILITY: dict[tuple, dict] = {}
+
+
+def _visibility(data: bytes, settings, library) -> dict:
+    """``wardrobe.body_surface.visibility.answer``, cached per exact file and per state of the two
+    registries and the operator switch, so a change to any of them is answered afresh."""
+    import hashlib
+
+    from wardrobe.body_surface.visibility import answer
+
+    def stamp(path) -> float:
+        try:
+            return Path(path).stat().st_mtime
+        except OSError:
+            return 0.0
+
+    key = (hashlib.sha256(data).hexdigest(), settings.wardrobe_adult_body_surface,
+           stamp(Path(settings.body_surface_root_path) / "adult-design-reviews.json"),
+           stamp(Path(settings.wardrobe_calibration_root) / "synthetic-references.json"))
+    if key not in _VISIBILITY:
+        _VISIBILITY[key] = answer(data, settings=settings, library=library)
+    return _VISIBILITY[key]
+
+
+@router.get("/visibility/{sha256}")
+async def library_visibility(sha256: str, request: Request, store: StoreDep, settings: SettingsDep) -> dict:
+    """For a library avatar, by its pinned SHA-256: may her clothing be hidden, and which."""
+    library = await _refresh_library(request, store)
+    avatar = next((a for a in library.available() if a.sha256 == sha256.lower()), None)
+    if avatar is None:
+        raise HTTPException(status_code=404, detail={
+            "reason": "unknown-file", "message": "no library avatar has these bytes; POST the file"})
+    return _visibility(Path(avatar.path).read_bytes(), settings, library)
+
+
+@router.post("/visibility")
+async def file_visibility(request: Request, store: StoreDep, settings: SettingsDep,
+                          file: UploadFile = File(...)) -> dict:
+    """For any VRM the app has loaded, sent as bytes: the same answer, for exactly those bytes."""
+    data = await file.read()
+    try:
+        file_safety.check_size(len(data), settings)
+    except WardrobeError as exc:
+        raise http_error_for(exc) from exc
+    return _visibility(data, settings, await _refresh_library(request, store))

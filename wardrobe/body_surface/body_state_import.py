@@ -205,6 +205,25 @@ def _structure(data: bytes):
     return doc, info, None
 
 
+def _same_surfaces(doc: GltfDocument, base: GltfDocument) -> dict:
+    """CG1. Whether every surface ``doc`` draws is, vertex for vertex, one ``base`` has."""
+    import hashlib
+
+    def drawn(document: GltfDocument) -> list[str]:
+        out = []
+        for ni in document.mesh_nodes():
+            for primitive in document.meshes[document.nodes[ni]["mesh"]].get("primitives", []):
+                accessor = (primitive.get("attributes") or {}).get("POSITION")
+                if accessor is not None:
+                    out.append(hashlib.sha256(document.read_accessor(accessor).astype("<f4").tobytes()).hexdigest())
+        return out
+
+    theirs = set(drawn(base))
+    ours = drawn(doc)
+    new = [h for h in ours if h not in theirs]
+    return {"passed": bool(ours) and not new, "surfaces": len(ours), "notInReviewedSource": len(new)}
+
+
 def check(data: bytes, original: bytes, *, state: str, source_sha256: str,
           declared_sha256: str | None = None, operator_enabled: bool, depicts_adult: bool,
           review_root, reference_root) -> ImportVerdict:
@@ -357,6 +376,19 @@ def check(data: bytes, original: bytes, *, state: str, source_sha256: str,
         else:
             failed = verdict.refused_by
             checks[label] = {"passed": verdict.allowed, **verdict.to_dict()}
+            # CG1. The source is cleared and this file adds no geometry to it: every surface it draws
+            # is one of the reviewed file's own, vertex for vertex, and nothing is Forge-made. It is
+            # the reviewed character with clothing taken off (face, hair, rig and expressions were
+            # checked identical above), so the source's review covers it. Asking a second person to
+            # review the same body again was a repeat of a review already made. A file that adds or
+            # reshapes any surface — an artist's completion, BR1's patch — still needs its own.
+            if (label == "eligibility-import" and failed == "design-clearance"
+                    and checks["eligibility-source"]["passed"] and not proxy):
+                derived = _same_surfaces(doc, base)
+                checks[label]["derivedFromReviewedSource"] = derived
+                if derived["passed"]:
+                    failed = None
+                    checks[label]["passed"] = True
         if failed:
             return refuse("not-permitted", f"{label.split('-')[1]} file: {verdict.checks[failed]['why']}")
 
