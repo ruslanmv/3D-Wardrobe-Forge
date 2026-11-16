@@ -56,7 +56,8 @@ def test_the_sheet_names_the_exact_file_and_what_the_import_holds_a_delivery_to(
     assert all(b["node"] and len(b["restMm"]) == 3 for b in spec["bones"])
     assert len(spec["expressions"]) == 14 and spec["identity"]
     assert all(i["vertices"] > 0 for i in spec["identity"])
-    assert {g["slot"] for g in spec["garments"]} == {"shoes", "tops"}
+    # BR2: her collar and cuff (``…_Onepiece_00_CLOTH_01/_02``) are clothing too.
+    assert {g["slot"] for g in spec["garments"]} == {"shoes", "tops", "onepiece"}
 
 
 def test_the_sheet_reports_the_registries_and_makes_no_finding(tool, sheet):
