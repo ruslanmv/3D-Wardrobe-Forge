@@ -9,7 +9,15 @@ before KL1 are still served as they were. This tool names exactly the ones KL1 c
 * a listed, public, fresh look of hers whose template is in ``UNDER_TOP_CATEGORIES``
   (trousers, shorts, skirt) — a one-template look; an outfit of several garments with a top
   replaces her top and is not affected;
-* built before KL1: its fit report has no ``keptTopTuck`` (a look built with KL1 has one).
+* built before the current rules: its fit report has no ``keptTopTuck`` (before KL1), or one
+  without ``version`` or with a lower one than ``kept_layers.VERSION`` (KL1 left the front-hem
+  band; KL3 is version 3).
+
+KL2/KL3 add one more kind, on any character: a listed look whose stored report says the old
+pass *moved* something (``keptTopTuck.moved > 0``, version below the current one). That is how
+a waspie or a guêpière layered over a Forge bralette is found: KL1 took the bralette for a kept
+top and pulled them into her (KL2), on avatars with no top of their own. Private looks are
+listed too (``private: true``); rebuilding those needs ``tools/prebuild.py --admin-token-file``.
 
 It reads only. It prints the pairs and one ``tools/prebuild.py`` command per character, for a
 fresh local Forge with KL1, followed by ``tools/publish_prebuilt.py --overwrite``. That replaces
@@ -30,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from wardrobe.config import get_settings  # noqa: E402
 from wardrobe.domain.garments import TemplateCatalog  # noqa: E402
-from wardrobe.geometry.kept_layers import OVER_SLOTS, UNDER_TOP_CATEGORIES  # noqa: E402
+from wardrobe.geometry.kept_layers import OVER_SLOTS, UNDER_TOP_CATEGORIES, VERSION  # noqa: E402
 from wardrobe.library import AvatarLibrary  # noqa: E402
 from wardrobe.vrm.document import GltfDocument  # noqa: E402
 from wardrobe.vrm.garment_inventory import garment_inventory  # noqa: E402
@@ -40,37 +48,73 @@ def keeps_a_top(path: Path) -> bool:
     return any(g.slot in OVER_SLOTS for g in garment_inventory(GltfDocument.from_path(path)))
 
 
-def built_before_kl1(entries: Path | None, key: str | None) -> bool | None:
-    """True/False from the stored record's fit report; None when there is no entry to read."""
+def stored_tuck(entries: Path | None, key: str | None) -> tuple[bool, dict | None]:
+    """(entry read, its ``keptTopTuck`` or None). No entry to read: (False, None)."""
     if entries is None or not key:
-        return None
+        return False, None
     path = entries / "prebuilt" / f"{key}.json"
     try:
         record = json.loads(path.read_text(encoding="utf-8"))["record"]
     except (OSError, ValueError, KeyError):
-        return None
-    return "keptTopTuck" not in (record.get("fitReport") or {})
+        return False, None
+    tuck = (record.get("fitReport") or {}).get("keptTopTuck")
+    return True, tuck if isinstance(tuck, dict) else None
+
+
+def built_before_kl1(entries: Path | None, key: str | None) -> bool | None:
+    """True/False from the stored record's fit report; None when there is no entry to read."""
+    read, tuck = stored_tuck(entries, key)
+    return None if not read else tuck is None
+
+
+def stale(entries: Path | None, key: str | None) -> tuple[bool | None, str]:
+    """Whether a look that the pass applies to was built by older rules, and how that is known.
+
+    None: no entry to read, so it cannot be told (listed, as before KL3: rebuilding a look that
+    was current costs one build; missing one that was not leaves the defect in the cache).
+    """
+    read, tuck = stored_tuck(entries, key)
+    if not read:
+        return None, "no entry read"
+    if tuck is None:
+        return True, "fit report has no keptTopTuck (built before KL1)"
+    version = tuck.get("version") or 1
+    if version < VERSION:
+        return True, f"keptTopTuck version {version}, current is {VERSION}"
+    return False, ""
 
 
 def affected(library: AvatarLibrary, catalog: TemplateCatalog, lists: Path,
-             entries: Path | None) -> list[dict]:
+             entries: Path | None, *, include_private: bool = True) -> list[dict]:
     under = {t.id for t in catalog.all() if t.category in UNDER_TOP_CATEGORIES and not t.is_body_mode}
     out = []
     for avatar in library.available():
-        if not keeps_a_top(avatar.path):
-            continue
         listed = lists / "prebuilt" / "wardrobes" / f"{avatar.slug}.json"
         if not listed.is_file():
             continue
+        keeps = keeps_a_top(avatar.path)
         for item in json.loads(listed.read_text(encoding="utf-8")).get("looks", []):
-            if item.get("private") or item.get("plan") or item.get("templateId") not in under:
+            if item.get("private") and not include_private:
                 continue
-            before = built_before_kl1(entries, item.get("key"))
-            if before is False:
-                continue  # already built with KL1
-            out.append({"slug": avatar.slug, "templateId": item["templateId"], "color": item.get("color"),
+            if item.get("origin") == "operator-import":
+                continue  # an imported file is not built by Forge: nothing to rebuild
+            evidence = None
+            if keeps and not item.get("plan") and item.get("templateId") in under:
+                # Her own top stays on under this bottom: every such look is fitted by the pass.
+                old, why = stale(entries, item.get("key"))
+                evidence = why if old is not False else None
+            if evidence is None:
+                # Anything else the old pass moved: a piece tucked under a foundation (KL2), an
+                # outfit of several garments over a kept top.
+                read, tuck = stored_tuck(entries, item.get("key"))
+                version = (tuck or {}).get("version") or 1
+                if read and tuck and version < VERSION and int(tuck.get("moved") or 0) > 0:
+                    evidence = f"keptTopTuck version {version} moved {tuck['moved']} vertices"
+            if evidence is None:
+                continue
+            out.append({"slug": avatar.slug, "templateId": item.get("templateId"), "color": item.get("color"),
                         "lookId": item.get("lookId"), "key": item.get("key"),
-                        "evidence": "fit report has no keptTopTuck" if before else "no entry read"})
+                        "private": bool(item.get("private")), "plan": item.get("plan"), "evidence": evidence})
     return out
 
 
@@ -81,23 +125,35 @@ def main(argv=None) -> int:
     parser.add_argument("--entries", type=Path, help="Root holding prebuilt/<key>.json (to skip KL1 builds)")
     parser.add_argument("--forge", default="http://127.0.0.1:8090")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--public-only", action="store_true", help="Leave private looks out of the list")
     opts = parser.parse_args(argv)
     settings = get_settings()
     library = AvatarLibrary.from_directory(settings.wardrobe_library_root)
     catalog = TemplateCatalog.from_directory(settings.wardrobe_template_root)
-    pairs = affected(library, catalog, opts.lists, opts.entries)
+    pairs = affected(library, catalog, opts.lists, opts.entries, include_private=not opts.public_only)
     if opts.json:
         print(json.dumps(pairs, indent=2))
         return 0
     for p in pairs:
-        print(f"{p['slug']:24} {p['templateId']:28} {str(p['color']):10} {p['lookId']}  ({p['evidence']})")
-    by_slug: dict[str, set[str]] = {}
+        mark = " private" if p["private"] else ""
+        print(f"{p['slug']:24} {str(p['templateId']):28} {str(p['color']):10} {p['lookId']}{mark}  "
+              f"({p['evidence']})")
+    by_slug: dict[tuple[str, bool], set[str]] = {}
+    outfits = 0
     for p in pairs:
-        by_slug.setdefault(p["slug"], set()).add(p["templateId"])
-    print(f"\n{len(pairs)} looks on {len(by_slug)} characters. Rebuild only these, on a fresh local Forge:")
-    for slug, templates in sorted(by_slug.items()):
+        if p["templateId"] and not p["plan"]:
+            by_slug.setdefault((p["slug"], p["private"]), set()).add(p["templateId"])
+        else:
+            outfits += 1
+    print(f"\n{len(pairs)} looks on {len({p['slug'] for p in pairs})} characters. Rebuild only these, on a "
+          "fresh local Forge:")
+    for (slug, private), templates in sorted(by_slug.items()):
+        token = " --admin-token-file <file>" if private else ""
         for template in sorted(templates):
-            print(f"python tools/prebuild.py --forge {opts.forge} --slugs {slug} --only {template}")
+            print(f"python tools/prebuild.py --forge {opts.forge} --slugs {slug} --only {template}{token}")
+    if outfits:
+        print(f"# {outfits} of them are outfits of several garments: rebuild those from their own recipes "
+              "(tools/prebuild.py --outfits), the keys above name them")
     print("python tools/publish_prebuilt.py --root <the local Forge's storage> --repo <dataset> --overwrite")
     return 0
 
