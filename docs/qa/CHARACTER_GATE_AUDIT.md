@@ -134,5 +134,7 @@ only once a `clearly-adult` review of `e5c0395b…1697` is recorded.
    with `python tools/body_surface/asset_spec.py --preflight --slug
    vroid-avatar-sample-o --candidate <file.vrm> --state bare --sha256 <sha256>`.
 
-The alternative is BR1's opt-in completion, which closes the body itself and
-needs no artist.
+BR1's opt-in completion (`WARDROBE_BARE_BODY_COMPLETION`) can fill the upper
+band with a featureless proxy patch. Its output is tagged reconstructed and is
+never registered, so no app can serve it (`docs/qa/BODY_STATE_CHARACTERS.md`).
+It does not replace the artist's file.
