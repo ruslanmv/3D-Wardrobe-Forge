@@ -106,3 +106,26 @@ def test_the_tool_writes_outside_the_repository_and_never_the_registry(library, 
     written = (tmp_path / "packet" / "packet.md").read_text()
     assert "records no finding" in written and '"outcome": ""' in written
     assert json.loads((tmp_path / "packet" / "packet.json").read_text())["reviewEntry"]["entry"]["reviewer"] == ""
+
+
+def test_the_inventory_lists_every_library_character_and_decides_nothing(library):
+    """RP2. One row per character, from the clothed source files. No row says a review exists
+    (the registry is empty), a file that is not on this disk gets a row that says so, and the
+    registry is not touched."""
+    tool = _tool()
+    before = REGISTRY.read_bytes()
+    rows = tool.inventory(library, Settings(_env_file=None))
+    assert {row["slug"] for row in rows} == {avatar.slug for avatar in library.avatars} and len(rows) == 8
+    here = [row for row in rows if row["present"]]
+    assert SLUG in {row["slug"] for row in here}
+    for row in here:
+        assert row["sha256"] == row["libraryPin"] and row["matchesLibraryPin"]
+        assert row["reviewRecorded"] is False
+        assert row["humanoidBones"] >= 15 and row["expressions"] > 0 and row["faceAndHairPrimitives"] > 0
+    table = tool.inventory_markdown(rows)
+    assert table.count("\n") == len(rows) + 2 and "none recorded" in table
+    assert "clearly" not in table.lower()  # it reports a record's absence, never a finding
+    for row in rows:
+        if not row["present"]:
+            assert "not on this disk" in table
+    assert REGISTRY.read_bytes() == before
