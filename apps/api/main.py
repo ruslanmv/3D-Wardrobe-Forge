@@ -12,6 +12,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from apps.api.dependencies import SettingsDep, key_status, require_api_key
+from apps.api.routes.access import router as access_router
 from apps.api.routes.admin import router as admin_router
 from apps.api.routes.avatars import router as avatars_router
 from apps.api.routes.body_art import router as body_art_router
@@ -111,6 +112,7 @@ app.include_router(wardrobes_router, prefix="/v1", dependencies=api_dependencies
 app.include_router(generate_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(studio_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(admin_router, prefix="/v1", dependencies=api_dependencies)
+app.include_router(access_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(body_art_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(body_surface_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(outfits_router, prefix="/v1", dependencies=api_dependencies)

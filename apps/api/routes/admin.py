@@ -18,7 +18,7 @@ from wardrobe.body_art.custom import MAX_BYTES, CustomArtError, is_custom
 from wardrobe.body_art.raster import artwork_png
 from wardrobe.body_surface import body_state_import
 from wardrobe.pipeline import prebuilt
-from wardrobe.policy import grants
+from wardrobe.policy import grants, revocations
 
 logger = logging.getLogger(__name__)
 
@@ -320,3 +320,68 @@ async def list_withdrawals(slug: str, request: Request, admin: AdminDep, store: 
     _library_avatar(request, slug)
     receipts = await prebuilt.list_withdrawals(store, slug)
     return {"slug": slug, "count": len(receipts), "withdrawals": receipts}
+
+
+# ----------------------------------------------------------------------
+# AC1. Taking access back: one capability or grant by id, or an account.
+# ----------------------------------------------------------------------
+class Revocation(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    #: A token to revoke (its ``jti``), by presenting the token itself, so its expiry is known
+    #: and an id is never revoked on a guess.
+    token: str | None = Field(default=None, max_length=4096)
+    #: An account to revoke: every capability it holds, and every one it asks for, until restored.
+    subject: str | None = Field(default=None, min_length=1, max_length=128)
+    reason: str = Field(default="", max_length=200)
+
+
+@router.get("/admin/access/revocations")
+async def list_revocations(admin: AdminDep, store: StoreDep) -> dict:
+    _signed_in(admin)
+    data = await revocations.load(store, fresh=True)
+    if data is None:
+        raise HTTPException(status_code=500, detail={"reason": "revocations_unreadable",
+                                                     "message": "the revocation list cannot be read; "
+                                                                "every grant is refused until it can"})
+    return {"ids": data["ids"], "subjects": data["subjects"]}
+
+
+@router.post("/admin/access/revocations", status_code=status.HTTP_201_CREATED)
+async def revoke_access(body: Revocation, admin: AdminDep, admins: AdminSessionsDep, store: StoreDep,
+                        settings: SettingsDep) -> dict:
+    """Revoke a token (operator grant or account capability) or an account. Effective at once here,
+    within ``revocations.CACHE_S`` seconds in another process on the same storage."""
+    _signed_in(admin)
+    if (body.token is None) == (body.subject is None):
+        raise HTTPException(status_code=422, detail={"reason": "revocation_invalid",
+                                                     "message": "name a token or a subject, one of them"})
+    by = admins.username or "admin"
+    try:
+        if body.subject is not None:
+            entry = await revocations.revoke_subject(store, body.subject, by=by, reason=body.reason)
+            logger.info("account %s revoked by %s", body.subject, by)
+            return {"subject": body.subject, **entry}
+        grant = grants.verify(settings.wardrobe_grant_secret, body.token)
+        if grant is None:
+            raise HTTPException(status_code=422, detail={"reason": "grant_invalid",
+                                                         "message": "not a live grant of this deployment"})
+        entry = await revocations.revoke_id(store, grant.id, expires=grant.expires, by=by, reason=body.reason)
+    except ValueError as error:
+        raise HTTPException(status_code=500, detail={"reason": "revocations_unreadable",
+                                                     "message": str(error)}) from None
+    logger.info("grant %s revoked by %s", grant.id, by)
+    return {"id": grant.id, **entry}
+
+
+@router.delete("/admin/access/revocations/subjects/{subject:path}", status_code=status.HTTP_204_NO_CONTENT)
+async def restore_access(subject: str, admin: AdminDep, store: StoreDep) -> None:
+    """Give an account its access back: it may be issued capabilities again."""
+    _signed_in(admin)
+    try:
+        found = await revocations.restore_subject(store, subject)
+    except ValueError as error:
+        raise HTTPException(status_code=500, detail={"reason": "revocations_unreadable",
+                                                     "message": str(error)}) from None
+    if not found:
+        raise HTTPException(status_code=404, detail="that account is not revoked")

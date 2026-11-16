@@ -319,6 +319,13 @@ Admin session only (`X-Wardrobe-Admin`); details and every refusal in
 - `POST /v1/admin/grants {slugs, ttlSeconds, label}` → `201 {token, header, id, slugs, expires}`;
   `409 grants_unavailable` without `WARDROBE_GRANT_SECRET`.
 
+- `GET /v1/access`, `POST /v1/access/capabilities {avatars, ttlSeconds?}` with
+  `X-Wardrobe-Identity` → `201 {token, header, expiresIn, subject, slugs, expires}`: a short-lived
+  capability for the verified account (AC1). `503 account_access_unavailable` unless the
+  deployment configures an identity verifier. Revocation: `GET`/`POST
+  /v1/admin/access/revocations`, `DELETE /v1/admin/access/revocations/subjects/{subject}`.
+  See `docs/ACCOUNT_ACCESS.md`.
+
 A consumer sends the grant as `X-Wardrobe-Grant`. It reads private looks of the avatars it names
 through `GET /v1/wardrobes/{slug}`, `GET /v1/library/{slug}/prebuilt` and `/v1/assets/looks/…`,
 and nothing else.

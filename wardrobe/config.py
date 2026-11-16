@@ -117,6 +117,23 @@ class Settings(BaseSettings):
     #: fetch one avatar's private looks, instead of the admin token. Empty: no grants, private
     #: looks stay admin-only. A secret, at least 32 characters; rotating it revokes every grant.
     wardrobe_grant_secret: str = ""
+    #: AC1. Who may be issued an account capability (wardrobe.policy.identity). Empty: nobody,
+    #: and the operator grants above are the only grants. "assertion": a trusted backend's
+    #: signed statement, checked with WARDROBE_IDENTITY_SECRET. "package.module:factory": the
+    #: deployment's own verifier. Anything that cannot be loaded is treated as empty.
+    wardrobe_identity_verifier: str = ""
+    #: Shared with the backend that signs identity assertions; never sent to a browser, never
+    #: equal to the grant secret. At least 32 characters.
+    wardrobe_identity_secret: str = ""
+    #: The `aud` an assertion must carry: this Forge. An assertion made for another service fails.
+    wardrobe_identity_audience: str = "wardrobe-forge"
+    #: Comma-separated `iss` values accepted. Empty: any issuer that holds the secret.
+    wardrobe_identity_issuers: str = ""
+    #: How long an account capability lasts, seconds (30 to 900).
+    wardrobe_capability_ttl_s: int = 300
+    #: Comma-separated account ids whose capabilities are refused (survives a lost disk; the
+    #: store's list, written from /v1/admin/access/revocations, does not).
+    wardrobe_account_revoked: str = ""
     #: BI2. Grant ids revoked before they expire, comma separated.
     wardrobe_grant_revoked: str = ""
 

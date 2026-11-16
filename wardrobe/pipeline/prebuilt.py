@@ -304,11 +304,22 @@ async def _not_withdrawn(store: ObjectStore, looks: list[dict]) -> list[dict]:
     return kept
 
 
-async def ready_looks(store: ObjectStore, wardrobe_id: str, *, include_private: bool) -> list[dict]:
-    """The fresh prebuilt looks listed for a wardrobe; private ones only when asked for."""
+#: AC1. "Whoever's": what an admin session passes as the reader of account-bound looks.
+ANY_ACCOUNT = object()
+
+
+async def ready_looks(store: ObjectStore, wardrobe_id: str, *, include_private: bool,
+                      account=ANY_ACCOUNT) -> list[dict]:
+    """The fresh prebuilt looks listed for a wardrobe; private ones only when asked for.
+
+    AC1. A list item that names an ``account`` is that account's look: listed to it (and to an
+    admin session, ``ANY_ACCOUNT``), to nobody else, even a reader of her other private looks.
+    """
     listed = await read_list(store, wardrobe_id)
     looks = [item.copy() for item in listed.get("looks", []) if isinstance(item, dict)]
     visible = [item for item in looks if include_private or not item.get("private")]
+    if account is not ANY_ACCOUNT:
+        visible = [item for item in visible if not item.get("account") or item["account"] == account]
     # Index entries can outlive a preview that CI never uploaded. Avoid advertising
     # known-missing generated previews, without altering legitimate external URLs.
     for item in visible:
@@ -328,7 +339,8 @@ async def ready_looks(store: ObjectStore, wardrobe_id: str, *, include_private: 
     return visible
 
 
-async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, include_private: bool):
+async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, include_private: bool,
+                        account=ANY_ACCOUNT):
     """Her wardrobe with every prebuilt look in it, whether or not this process made them.
 
     A Space keeps its wardrobe manifests in memory or on local disk; the prebuilt looks were
@@ -338,7 +350,7 @@ async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, inclu
     """
     from wardrobe.domain.manifests import WardrobeLook, WardrobeManifest
 
-    looks = await ready_looks(store, wardrobe_id, include_private=include_private)
+    looks = await ready_looks(store, wardrobe_id, include_private=include_private, account=account)
     if manifest is None and not looks:
         return None
     merged = manifest.model_copy(deep=True) if manifest is not None else WardrobeManifest.empty(wardrobe_id)

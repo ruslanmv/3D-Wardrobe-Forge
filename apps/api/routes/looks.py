@@ -13,6 +13,7 @@ from apps.api.grants import GrantDep
 from wardrobe.domain.garments import GarmentTemplate
 from wardrobe.domain.jobs import private_marker
 from wardrobe.domain.looks import LookResult
+from wardrobe.policy import revocations
 from wardrobe.policy.file_safety import validate_storage_key
 from wardrobe.storage import withdrawals
 from wardrobe.storage.object_store import content_type_for
@@ -63,6 +64,9 @@ async def get_asset(key: str, store: StoreDep, admin: AdminDep, grant: GrantDep)
         # through /v1/admin/library/{slug}/withdrawals, never as an asset.
         if parts[0] == withdrawals.PREFIX and admin is None:
             raise KeyError(key)
+        # AC1. The revocation list names accounts; it is nobody's asset, an admin's included.
+        if parts[0] == revocations.PREFIX:
+            raise KeyError(key)
         in_a_look = len(parts) > 2 and parts[0] == "looks"
         # WD1. A withdrawn look is served to no one, admin and grant included, from the
         # moment its receipt is written: the dataset store would otherwise download a file
@@ -74,10 +78,12 @@ async def get_asset(key: str, store: StoreDep, admin: AdminDep, grant: GrantDep)
             if grant is None:
                 raise KeyError(key)
             try:
-                owner = json.loads(await store.get(marker)).get("wardrobeId")
+                stated = json.loads(await store.get(marker))
+                owner, account = stated.get("wardrobeId"), stated.get("account")
             except (ValueError, AttributeError):
-                owner = None
-            if not grant.covers(owner):
+                owner, account = None, None
+            # AC1. A marker that names an account is read only by that account's capability.
+            if not grant.covers(owner, account if isinstance(account, str) and account else None):
                 raise KeyError(key)
         data = await store.get(key)
     except (ValueError, OSError, KeyError):
