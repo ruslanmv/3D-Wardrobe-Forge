@@ -135,13 +135,14 @@ class _Withdrawn:
     A look is withdrawn when the newer of its two receipts (this root's, the dataset's) says
     so. Only an imported body state can be withdrawn, so only those are looked up in the
     dataset: one small request per import per publish, none for a wardrobe without imports.
-    ``unknown`` collects looks whose dataset receipt could not be read; a list naming one is
-    held back, because uploading it might be the upload that restores a withdrawn look.
+    ``unknown`` collects looks whose dataset receipt could not be read. A list naming one is
+    held back and none of that look's files are sent, because either could be the upload that
+    restores a withdrawn look.
     """
 
     def __init__(self, root: Path, repo: str, download):
         self.root, self.repo, self.download = root, repo, download
-        self._known: dict[str, bool] = {}
+        self._known: dict[tuple[str, bool], bool] = {}
         self.unknown: set[str] = set()
 
     def __call__(self, item: dict) -> bool:
@@ -150,18 +151,19 @@ class _Withdrawn:
         look_id = item.get("lookId") if isinstance(item, dict) else None
         if not isinstance(look_id, str) or not look_id:
             return False
-        if look_id in self._known:
-            return self._known[look_id]
+        asked = item.get("origin") == "operator-import" and self.download is not None
+        if (look_id, asked) in self._known:
+            return self._known[look_id, asked]
         local = _local_receipt(self.root, look_id)
         remote = None
-        if item.get("origin") == "operator-import" and self.download is not None:
+        if asked:
             try:
                 remote = _remote_receipt(self.download, self.repo, look_id)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("the dataset's receipt for %s could not be read: %s", look_id, exc)
                 self.unknown.add(look_id)
-        self._known[look_id] = blocks(newer(local, remote))
-        return self._known[look_id]
+        self._known[look_id, asked] = blocks(newer(local, remote))
+        return self._known[look_id, asked]
 
 
 def withdraw_commit(api, repo: str, *, deletes: Iterable[str], replace: dict[str, bytes],
@@ -346,10 +348,15 @@ def publish(api, repo: str, root: Path, *, entries: Iterable[str] | None = None,
         if remote is None or newer(parse(raw), remote) is not remote:
             sent_receipts[key] = raw
 
-    # A look withdrawn while its files were being gathered above is not sent after all.
-    blocked = {f"looks/{look}/" for look in set(withdrawn_held)}
+    # A look withdrawn while its files were being gathered above is not sent after all. Nor is
+    # one whose dataset receipt could not be read: its list was held back above, but its files
+    # were already in `files`, and a root that still held a withdrawn import's folder (CI's,
+    # or a Space's disk from before the withdrawal) sent the deleted VRM back to the dataset on
+    # the one day the receipt could not be downloaded. It waits for a publish that can ask.
+    unsent = set(withdrawn_held) | withdrawn.unknown
+    blocked = {f"looks/{look}/" for look in unsent}
     uploaded = [key for key in dict.fromkeys(files) if not any(key.startswith(b) for b in blocked)]
-    looks = [look for look in looks if look not in set(withdrawn_held)]
+    looks = [look for look in looks if look not in unsent]
     operations = [CommitOperationAdd(path_in_repo=key, path_or_fileobj=str(root / key)) for key in uploaded]
     operations += [CommitOperationAdd(path_in_repo=key, path_or_fileobj=data) for key, data in merged.items()]
     operations += [CommitOperationAdd(path_in_repo=key, path_or_fileobj=data)
@@ -362,7 +369,7 @@ def publish(api, repo: str, root: Path, *, entries: Iterable[str] | None = None,
             "verifiedPrivate": verified_private, "refusedPrivate": refused_private,
             "unavailable": sorted(set(unavailable)),
             "withdrawn": sorted(set(withdrawn_held)), "receipts": sorted(sent_receipts),
-            "receiptsHeldBack": receipts_held}
+            "receiptsHeldBack": receipts_held, "receiptUnreadable": sorted(withdrawn.unknown)}
 
 
 def hub_download(token: str | None = None):

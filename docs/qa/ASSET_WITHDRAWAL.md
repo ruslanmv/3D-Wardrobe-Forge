@@ -79,7 +79,41 @@ drives the HTTP API on `HfDatasetObjectStore` over the same fixture.
 | Re-import lifts the receipt | `test_importing_the_same_file_again_is_what_lifts_a_receipt` |
 | Read-only dataset | `test_a_dataset_this_forge_cannot_write_reports_its_copies_as_remaining` |
 | Marker last (local store) | `test_purge_deletes_the_guard_only_when_what_it_guards_is_gone`, `test_a_failed_vrm_deletion_keeps_the_marker_and_a_retry_finishes` |
-| Attempted retrieval, over HTTP, across restarts | `test_withdrawal_api.py` (both tests) |
+| Attempted retrieval, over HTTP, across restarts | `test_withdrawal_api.py` (first two tests) |
+
+### Found in review of WD1, and fixed
+
+Two defects, each reproduced by a failing test before the fix (16 new tests failed on the
+unfixed code across these two and the revocation fix in `docs/ACCOUNT_ACCESS.md`).
+
+**A local receipt hid the dataset's.** `withdrawals.read` asked the store with `get`, and the
+dataset store answers `get` from its own disk whenever it has the file. A Forge that had once
+downloaded a receipt as `restored` never saw another Forge withdraw the look again: it kept
+listing it and serving the VRM from its disk for as long as that disk lived. Now `read` takes
+this store's copy **and** the shared one (`ObjectStore.read_shared`) and the one written last
+decides. The shared copy is the dataset's as it was at most `LIST_TTL_S` (10 minutes) ago, or
+it is "cannot tell": when the dataset cannot be listed, or the receipt cannot be downloaded,
+`read_shared` raises and the import is served to no one (a remembered answer is not used; a
+failure is remembered for `RETRY_S`, 30 s, so an outage costs one request per receipt per half
+minute). Only an operator import can be withdrawn (`can_be_withdrawn`), so no other look is
+refused for this reason or costs a lookup.
+
+**An unreadable receipt held back the list but not the files.** `publish` held back a wardrobe
+list naming an import whose dataset receipt could not be downloaded, and still uploaded that
+import's folder: a root that still held a withdrawn import's files put the deleted VRM back.
+Now neither goes up (`receiptUnreadable` in the result) and both wait for a publish that can
+ask; then a withdrawn or pending or unparseable receipt blocks, and an import that was never
+withdrawn goes up whole.
+
+| Case | Test |
+|---|---|
+| Another Forge's withdrawal reaches a reader holding a `restored` receipt and a cached VRM | `test_another_forges_withdrawal_reaches_a_reader_holding_a_restored_receipt` |
+| The same over HTTP, a running Forge and then its restart on the stale disk | `test_another_forges_withdrawal_stops_a_running_forge_serving_its_cached_copy` |
+| A reading is never older than the listing; the hub down means refused | `test_a_reading_of_the_shared_receipt_is_never_older_than_the_listing`, `test_a_forge_that_cannot_reach_the_dataset_serves_no_import_it_cannot_vouch_for` |
+| Shared receipt cannot be downloaded | `test_a_shared_receipt_that_cannot_be_read_blocks_the_look` |
+| Files and list both held back; retry sends an import that was never withdrawn | `test_an_imports_files_are_held_back_with_its_list_while_its_receipt_cannot_be_read` |
+| Retry when the receipt says withdrawn / pending / is not a receipt | `test_after_the_error_passes_a_withdrawn_import_still_does_not_go_up` (3 cases) |
+| The Space's own batch | `test_the_space_itself_holds_an_import_back_while_its_receipt_cannot_be_read` |
 
 ## Limits, stated
 
@@ -87,10 +121,18 @@ drives the HTTP API on `HfDatasetObjectStore` over the same fixture.
   `CommitOperationAdd` in one `create_commit`, which the hub applies atomically; that was run
   against the in-memory fixture only. Verifying on the deployed dataset needs `HF_TOKEN` and is
   outstanding.
-- **Another running Forge on the same dataset** learns of a withdrawal when its dataset listing
-  refreshes (`LIST_TTL_S`, 10 minutes), and keeps any copy of the VRM it already downloaded on
-  its own disk until its next start's sweep. It stops listing and serving the look once it sees
-  the receipt.
+- **Another running Forge on the same dataset** learns of a withdrawal when its view of the
+  dataset refreshes: at most `LIST_TTL_S` (10 minutes) later. That window is the freshness
+  guarantee, and it is not zero: for up to ten minutes after one Forge withdraws a look, another
+  that was already serving it may still do so. After that it serves it to no one, whether or
+  not it can reach the dataset. It keeps the bytes it had downloaded on its own disk, unserved,
+  until its next start's sweep. A shorter window is a smaller `LIST_TTL_S` (one listing request
+  per window); an immediate one would need the Forges to notify each other, which they do not.
+- **A Forge that cannot reach the dataset serves no imported body state** once its last view is
+  older than `LIST_TTL_S`. That is the price of the rule above; every other look is unaffected.
+- **Receipts are compared by their `updatedAt`**, written by each Forge's own clock. Two Forges
+  whose clocks disagree by more than the time between a restore and a withdrawal could order
+  them wrongly; a tie goes to the blocking receipt.
 - **A withdrawal that never reached the dataset and whose disk was then lost** is lost: there
   was nowhere durable to record it. The operator was answered 503, not 204.
 - **A dataset this Forge cannot write** (`WARDROBE_HF_PUBLISH=false`): its copies are reported as

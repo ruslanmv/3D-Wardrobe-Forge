@@ -29,6 +29,18 @@ States, and the only moves between them:
 
 ``restored`` is the operator's own act (``prebuilt.register_import``), never a merge's. An
 unreadable receipt counts as ``pending``: a look is never served on a receipt nobody can read.
+
+Two copies of a receipt can exist: this store's and the one every Forge shares (the dataset's).
+``read`` takes both and the one written last decides (``newer``). Reading only this store's
+was the hole: the dataset store answers ``get`` from its local file whenever it has one, so a
+Forge that had once downloaded a receipt as ``restored`` never saw another Forge withdraw the
+look again, and went on listing it and serving its cached VRM for as long as its disk lived.
+The shared copy is re-read as often as the dataset's listing is (``LIST_TTL_S``, ten minutes):
+that is the longest another Forge's withdrawal can take to reach a running one. It is never
+older than that: when the dataset cannot be listed, or the receipt cannot be downloaded, the
+answer is "cannot tell" and every import is refused until it can be asked again
+(``ObjectStore.read_shared``). Only an operator's import can be withdrawn
+(``can_be_withdrawn``), so no other look is ever refused for that reason, or costs a lookup.
 """
 
 from __future__ import annotations
@@ -50,8 +62,17 @@ PENDING, WITHDRAWN, RESTORED = "pending", "withdrawn", "restored"
 MAX_HISTORY = 40
 
 
+#: An imported body state's look id (``prebuilt.import_look_id``): the only kind of look a
+#: withdrawal applies to (``prebuilt.withdraw_import`` refuses every other id).
+IMPORT_ID = "import-"
+
+
 def receipt_key(look_id: str) -> str:
     return f"{PREFIX}/{look_id}.json"
+
+
+def can_be_withdrawn(look_id: str) -> bool:
+    return isinstance(look_id, str) and look_id.startswith(IMPORT_ID)
 
 
 def look_of_receipt(key: str) -> str | None:
@@ -91,23 +112,33 @@ def newer(a: dict | None, b: dict | None) -> dict | None:
 
 
 async def read(store, look_id: str) -> dict | None:
-    """The look's receipt as this store has it, or None. Never raises.
+    """The look's receipt, or None: the newer of this store's copy and the shared one. Never raises.
 
-    Not being able to tell is not "no receipt": if the store says the receipt exists and it
-    cannot be read, the look is treated as withdrawn until it can.
+    Not being able to tell is not "no receipt": if either copy exists and cannot be read, the
+    look is treated as withdrawn until it can.
     """
+    if not can_be_withdrawn(look_id):
+        return None
     key = receipt_key(look_id)
+    unreadable = {"schemaVersion": SCHEMA_VERSION, "state": PENDING, "unreadable": True, "lookId": look_id}
     try:
-        if not await store.exists(key):
-            return None
+        present = await store.exists(key)
     except Exception as exc:  # noqa: BLE001
         logger.warning("could not check %s: %s", key, exc)
         return None
+    own = None
+    if present:
+        try:
+            own = parse(await store.get(key))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("%s exists and could not be read (%s): its look stays withdrawn", key, exc)
+            return unreadable
     try:
-        return parse(await store.get(key))
+        shared = parse(await store.read_shared(key))
     except Exception as exc:  # noqa: BLE001
-        logger.warning("%s exists and could not be read (%s): its look stays withdrawn", key, exc)
-        return {"schemaVersion": SCHEMA_VERSION, "state": PENDING, "unreadable": True, "lookId": look_id}
+        logger.warning("the shared copy of %s could not be read (%s): its look stays withdrawn", key, exc)
+        return unreadable
+    return newer(own, shared)
 
 
 async def is_withdrawn(store, look_id: str) -> bool:
@@ -166,6 +197,6 @@ def dumps(receipt: dict) -> bytes:
     return json.dumps(receipt, sort_keys=True).encode("utf-8")
 
 
-__all__ = ["PENDING", "PREFIX", "RECEIPT", "RESTORED", "WITHDRAWN", "begin", "blocks", "completed", "dumps",
-           "event", "failed", "is_withdrawn", "look_of_receipt", "newer", "parse", "read", "receipt_key",
-           "restored"]
+__all__ = ["IMPORT_ID", "PENDING", "PREFIX", "RECEIPT", "RESTORED", "WITHDRAWN", "begin", "blocks",
+           "can_be_withdrawn", "completed", "dumps", "event", "failed", "is_withdrawn", "look_of_receipt",
+           "newer", "parse", "read", "receipt_key", "restored"]

@@ -53,6 +53,31 @@ class ObjectStore(ABC):
         """
         return None
 
+    async def read_shared(self, key: str) -> bytes | None:
+        """WD1. ``get_shared`` for a file that decides whether something is served.
+
+        ``get_shared`` answers None both when there is no shared copy and when there is one
+        that could not be read, which is right for a list (the local one is merged alone) and
+        wrong for a withdrawal receipt: "could not ask" must not read as "not withdrawn".
+        This raises when the shared copy exists and no reading of it is to be had.
+        """
+        return None
+
+    async def read_versioned(self, key: str) -> tuple[bytes | None, str | None] | None:
+        """AC1. ``(bytes, version)`` for a store that can write on condition, else None.
+
+        A store shared by several processes with no disk between them (S3) cannot take a
+        lock file. What it can do is refuse a write when the object changed since it was
+        read: ``put_if_unchanged`` with the version returned here. ``(None, None)`` is "no
+        such object". None means this store has no such thing (it has a disk: lock that).
+        """
+        return None
+
+    async def put_if_unchanged(self, key: str, data: bytes, version: str | None, *,
+                               content_type: str | None = None) -> bool:
+        """Write ``data`` only if the object is still the ``version`` read. False: it changed."""
+        raise NotImplementedError
+
     async def put_path(self, key: str, path: str | Path, *, content_type: str | None = None) -> str:
         data = await asyncio.to_thread(Path(path).read_bytes)
         return await self.put(key, data, content_type=content_type)
@@ -252,6 +277,42 @@ class S3ObjectStore(ObjectStore):
         except Exception:
             return False
 
+    @staticmethod
+    def _refusal(exc: Exception) -> tuple[str, int]:
+        """The error code and HTTP status of a botocore ``ClientError``, without importing it."""
+        response = getattr(exc, "response", None) or {}
+        code = str((response.get("Error") or {}).get("Code") or "")
+        return code, int((response.get("ResponseMetadata") or {}).get("HTTPStatusCode") or 0)
+
+    async def read_versioned(self, key: str) -> tuple[bytes | None, str | None] | None:
+        validate_storage_key(key)
+        try:
+            response = await asyncio.to_thread(self._client.get_object, Bucket=self.bucket, Key=key)
+        except Exception as exc:
+            code, http = self._refusal(exc)
+            if code in ("NoSuchKey", "404") or http == 404:
+                return None, None
+            raise
+        return await asyncio.to_thread(response["Body"].read), response.get("ETag")
+
+    async def put_if_unchanged(self, key: str, data: bytes, version: str | None, *,
+                               content_type: str | None = None) -> bool:
+        """AC1. S3's conditional write: ``If-Match`` the ETag read, or ``If-None-Match: *`` for
+        an object that was not there. AWS S3, R2 and current MinIO honour both; a service that
+        ignores them accepts the write, which is what an unconditional ``put`` did before."""
+        validate_storage_key(key)
+        condition = {"IfMatch": version} if version else {"IfNoneMatch": "*"}
+        try:
+            await asyncio.to_thread(
+                self._client.put_object, Bucket=self.bucket, Key=key, Body=data,
+                ContentType=content_type or content_type_for(key), **condition)
+        except Exception as exc:
+            code, http = self._refusal(exc)
+            if code in ("PreconditionFailed", "ConditionalRequestConflict") or http in (409, 412):
+                return False
+            raise
+        return True
+
     async def list_keys(self, prefix: str) -> list[str]:
         validate_storage_key(prefix.rstrip("/"))
 
@@ -306,9 +367,13 @@ class HfDatasetObjectStore(LocalObjectStore):
         self._remote: set[str] | None = None
         self._listed_at = 0.0
         self._ttl = self.LIST_TTL_S
+        #: WD1. The last attempt to list the dataset failed: ``_remote`` is the listing before it.
+        self._list_stale = False
         self._lock = asyncio.Lock()
         #: RU2. key -> (read at, bytes) for get_shared.
         self._shared: dict[str, tuple[float, bytes]] = {}
+        #: WD1. key -> when its shared copy last could not be read (asked again after RETRY_S).
+        self._shared_failed: dict[str, float] = {}
         #: RU3. Entries and wardrobe lists written here and not yet in the dataset.
         self.publishing = bool(settings.wardrobe_hf_publish)
         self._publish_every = max(1, int(settings.wardrobe_hf_publish_every))
@@ -334,7 +399,9 @@ class HfDatasetObjectStore(LocalObjectStore):
                 try:
                     self._remote = await asyncio.to_thread(_list)
                     self._ttl = self.LIST_TTL_S
+                    self._list_stale = False
                 except Exception as exc:  # an unreachable dataset is an empty one, not a dead Forge
+                    self._list_stale = True
                     # A blip must not hide the whole dataset for LIST_TTL_S: keep the last good
                     # listing, and ask again after RETRY_S instead of ten minutes.
                     logger.warning("dataset %s could not be listed: %s", self.repo_id, exc)
@@ -421,6 +488,7 @@ class HfDatasetObjectStore(LocalObjectStore):
         listed = await asyncio.to_thread(_list)
         async with self._lock:
             self._remote, self._listed_at, self._ttl = listed, time.monotonic(), self.LIST_TTL_S
+            self._list_stale = False
         return listed
 
     async def _remove_local(self, keys: list[str]) -> list[str]:
@@ -497,6 +565,7 @@ class HfDatasetObjectStore(LocalObjectStore):
                     self._remote = (self._remote - set(doomed)) | set(replace)
             for key in [*result["lists"], *result["listsHeldBack"], *doomed, *replace]:
                 self._shared.pop(key, None)
+                self._shared_failed.pop(key, None)
             # A list whose dataset copy could not be read goes up with the next batch instead,
             # where publish() filters it by the receipt that is in the dataset now.
             self._pending_lists |= set(result["listsHeldBack"])
@@ -581,13 +650,35 @@ class HfDatasetObjectStore(LocalObjectStore):
         Downloaded into a private folder and never onto the local path: the local file may be
         newer (a look this Space just made) and the merge, not the download, decides.
         """
+        return await self._shared_copy(key, strict=False)
+
+    async def read_shared(self, key: str) -> bytes | None:
+        """WD1. The dataset's copy, no older than ``LIST_TTL_S``, or an error. Never a guess.
+
+        ``get_shared`` falls back: an old listing when the dataset cannot be listed, the last
+        reading when the file cannot be downloaded, None when there is neither. For a list
+        that is the right kindness. For a withdrawal receipt each of those is a way to serve
+        a look another Forge has withdrawn, so here each raises: the answer is the dataset's
+        copy as it was at most ``LIST_TTL_S`` ago, or it is "cannot tell" and the caller
+        refuses. A failure is remembered for ``RETRY_S`` so an outage costs one request per
+        receipt per half minute, not one per download asked for.
+        """
+        return await self._shared_copy(key, strict=True)
+
+    async def _shared_copy(self, key: str, *, strict: bool) -> bytes | None:
         import time
 
         cached = self._shared.get(key)
         if cached is not None and time.monotonic() - cached[0] < self._ttl:
             return cached[1]
-        if key not in await self._remote_files():
+        remote = await self._remote_files()
+        if strict and self._list_stale:
+            raise RuntimeError(f"dataset {self.repo_id} could not be listed: is {key} there? unknown")
+        if key not in remote:
             return None
+        failed = self._shared_failed.get(key)
+        if strict and failed is not None and time.monotonic() - failed < self.RETRY_S:
+            raise RuntimeError(f"the dataset copy of {key} could not be read a moment ago")
         from huggingface_hub import hf_hub_download
 
         def _download() -> bytes:
@@ -602,7 +693,11 @@ class HfDatasetObjectStore(LocalObjectStore):
             data = await asyncio.to_thread(_download)
         except Exception as exc:
             logger.warning("dataset copy of %s could not be read: %s", key, exc)
+            self._shared_failed[key] = time.monotonic()
+            if strict:
+                raise
             return cached[1] if cached is not None else None
+        self._shared_failed.pop(key, None)
         self._shared[key] = (time.monotonic(), data)
         return data
 

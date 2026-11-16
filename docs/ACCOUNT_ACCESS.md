@@ -92,19 +92,38 @@ The capability is sent as `X-Wardrobe-Grant`, exactly like a BI2 grant, to
 
 ## Tests
 
-`tests/unit/test_identity.py` (47): capability bounds and binding, a signed over-long token
+`tests/unit/test_identity.py` (52): capability bounds and binding, a signed over-long token
 refused, the assertion verifier against expired / future / over-long / wrong audience / wrong
 issuer / unsigned / `alg: none` / another algorithm / tampered / swapped-body tokens, every
 misconfiguration loading as `DenyAll`, a raising or lying verifier, revocation by id, by account,
 across a new process, expiry of entries, an unreadable list.
 
-`tests/integration/test_account_access.py` (12), with a **controlled test identity provider**
+`tests/integration/test_account_access.py` (13), with a **controlled test identity provider**
 (`ControlledIdentityProvider`, a table of credentials plugged in at
 `identity_verifier_dependency`): no verifier → nobody; unverified and provider-down → 401;
 short-lived and bound; identity never from the body, an admin session or a grant, and no secret
 in any response; unrelated avatars; cross-account looks; not vouched adult; expiry by the clock;
 revocation by token and by account, at once, and restore; writes nothing; the built-in assertion
 verifier end to end.
+
+### Found in review of AC1, and fixed: concurrent revocations were lost
+
+Each change read the whole list, edited it and wrote the whole list, with nothing between the
+read and the write. Changes that overlapped each read the same list and the last write dropped
+the others: ten accounts revoked at once left one on the list, each revocation acknowledged to
+the operator. Reproduced before the fix; now every change is one step (`revocations._change`):
+
+| Storage | How the step is kept whole | Tested |
+|---|---|---|
+| Local disk, one process | an asyncio lock per store | `test_revocations_asked_for_at_once_are_all_kept`, `test_a_hundred_changes_at_once_lose_nothing` (100 mixed changes), and over HTTP `test_revocations_posted_at_the_same_moment_are_all_recorded` (24 requests at once, then a restart) |
+| Local disk, several processes (workers, a script); the dataset store, whose list is on its local disk | `flock` on `access/revocations.lock` | `test_revocations_from_several_processes_are_all_kept` (six real processes) |
+| S3, any number of processes | each write is conditional on the version read (`If-Match` the ETag, `If-None-Match: *` for a new list); a refused write is redone on the list as the other process left it, up to 25 times, and then the operator is answered an error, not a 201 | `test_two_processes_on_s3_revoking_at_once_keep_both`, `test_a_change_that_can_never_be_written_is_an_error_not_an_acknowledgement` |
+
+Limits: the S3 path was run against an in-memory bucket that enforces the conditions as S3
+documents them, not against a real service. AWS S3, Cloudflare R2 and current MinIO honour
+conditional writes; a service that ignores the header accepts the write, which leaves the turn
+per process (as before the fix). It needs a boto3 recent enough to send `IfMatch` on
+`PutObject`. On Windows there is no `flock`: the turn is per process.
 
 ## Outstanding: deployment dependencies, not done here
 

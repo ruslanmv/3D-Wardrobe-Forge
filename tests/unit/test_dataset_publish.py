@@ -27,6 +27,8 @@ class FakeHub:
         self.fail_next = False
         #: WD1. Downloads of these paths fail (not "not found": the hub cannot be asked).
         self.unreadable: set[str] = set()
+        #: WD1. Listing the dataset fails (the hub is unreachable).
+        self.list_fails = False
         #: BI4. What the hub answers for visibility: True, False, or None (it cannot be asked).
         self.private = None
         hub = self
@@ -41,6 +43,8 @@ class FakeHub:
                 return types.SimpleNamespace(private=hub.private)
 
             def list_repo_files(self, repo_id, repo_type):
+                if hub.list_fails:
+                    raise RuntimeError("the hub is unreachable")
                 return list(hub.files)
 
             def create_commit(self, repo_id, repo_type, operations, commit_message):
@@ -558,6 +562,152 @@ def test_a_list_is_held_back_while_a_receipt_cannot_be_read(tmp_path, hub):
     hub.unreadable.add(RECEIPT)
     result = dp.publish(hub.module.HfApi(), "me/looks", root, download=dp.hub_download())
     assert result["heldBack"] == [MIRA] and MIRA not in hub.files
+
+
+def test_an_imports_files_are_held_back_with_its_list_while_its_receipt_cannot_be_read(tmp_path, hub):
+    """Review finding on WD1: the list was held back and the files were not. A stale root that
+    still holds a withdrawn import's files, on a day the dataset's receipt cannot be downloaded,
+    put the deleted VRM back in the dataset. Nothing of that look goes up until the receipt can
+    be read; another look in the same batch still does."""
+    hub.private = True
+    root = tmp_path / "root"
+    _list_with(root, [_import(root, LOOK)])
+    _finished_look(root, "k1", "look_other")
+    hub.unreadable.add(RECEIPT)
+    result = dp.publish(hub.module.HfApi(), "me/looks", root, download=dp.hub_download())
+    sent = [name for commit in hub.commits for name in commit]
+    assert not [name for name in sent if name.startswith(f"looks/{LOOK}/")]
+    assert not set(FILES) & set(hub.files)
+    assert result["heldBack"] == [MIRA] and result["receiptUnreadable"] == [LOOK]
+    assert LOOK not in result["looks"] and not [name for name in result["uploaded"] if LOOK in name]
+    assert "looks/look_other/look.vrm" in sent and result["looks"] == ["look_other"]
+
+    # The hub answers again, and the import was never withdrawn: the same publish sends it whole.
+    hub.unreadable.clear()
+    again = dp.publish(hub.module.HfApi(), "me/looks", root, download=dp.hub_download())
+    assert again["receiptUnreadable"] == [] and again["heldBack"] == [] and LOOK in again["looks"]
+    assert set(FILES) <= set(hub.files) and _hub_lists(hub) == [LOOK]
+
+
+@pytest.mark.parametrize("receipt", ["withdrawn", "pending", "not json"])
+def test_after_the_error_passes_a_withdrawn_import_still_does_not_go_up(tmp_path, hub, receipt):
+    """The retry, when the receipt that could not be read says withdrawn (or pending, or is
+    not a receipt at all: bytes nobody can read as one block the look)."""
+    from wardrobe.storage import withdrawals
+
+    hub.private = True
+    root = tmp_path / "root"
+    _list_with(root, [_import(root, LOOK)])
+    begun = withdrawals.begin(None, look_id=LOOK, wardrobe_id="mira", files=FILES, by="admin")
+    hub.files[RECEIPT] = {"withdrawn": withdrawals.dumps(withdrawals.completed(begun)),
+                          "pending": withdrawals.dumps(begun), "not json": b"{ not a receipt"}[receipt]
+    hub.unreadable.add(RECEIPT)
+    first = dp.publish(hub.module.HfApi(), "me/looks", root, download=dp.hub_download())
+    assert first["receiptUnreadable"] == [LOOK] and hub.commits == []
+    hub.unreadable.clear()
+    second = dp.publish(hub.module.HfApi(), "me/looks", root, download=dp.hub_download())
+    assert second["withdrawn"] == [LOOK] and second["looks"] == [] and second["receiptUnreadable"] == []
+    assert not [name for commit in hub.commits for name in commit if name.startswith("looks/")]
+    assert not set(FILES) & set(hub.files) and _hub_lists(hub) == []
+
+
+async def test_the_space_itself_holds_an_import_back_while_its_receipt_cannot_be_read(tmp_path, settings, hub):
+    """The same rule on the Space's own batch (``flush``), then the retry that sends it."""
+    hub.private = True
+    store = _store(tmp_path, settings, wardrobe_hf_publish_every=100, wardrobe_hf_publish_seconds=3600)
+    await prebuilt.register_import(
+        store, "mira", b"imported vrm bytes", verdict={"accepted": True}, state="lingerie", name="Chemise",
+        source_sha256="a" * 64, output_sha256="b" * 64, imported_by="admin", provenance={},
+        vrm_url=f"/v1/assets/looks/{LOOK}/look.vrm", garments=["under-chemise-satin-v1"])
+    hub.unreadable.add(RECEIPT)
+    await store.flush()
+    assert not set(FILES) & set(hub.files) and MIRA not in hub.files
+    hub.unreadable.clear()
+    assert await store.flush() is not None
+    assert set(FILES) <= set(hub.files) and _hub_lists(hub) == [LOOK]
+
+
+async def test_another_forges_withdrawal_reaches_a_reader_holding_a_restored_receipt(tmp_path, settings, hub):
+    """Review finding on WD1: ``get`` answers from the local file whenever there is one, so a
+    reader that had downloaded the receipt as ``restored`` never saw the dataset's copy change:
+    the look stayed listed, and its cached VRM stayed served, for as long as that disk lived.
+    The shared copy is read too and the one written last decides."""
+    from wardrobe.storage import withdrawals
+    from wardrobe.storage.object_store import HfDatasetObjectStore
+
+    writer = await _imported(tmp_path, settings, hub)
+    assert (await prebuilt.withdraw_import(writer, "mira", LOOK))["withdrawn"]
+    writer = await _imported(tmp_path, settings, hub)  # imported again: the receipt says restored
+    assert json.loads(hub.files[RECEIPT])["state"] == "restored"
+
+    def _reader():
+        update = {"wardrobe_hf_dataset": "me/looks", "wardrobe_hf_publish": False}
+        return HfDatasetObjectStore(tmp_path / "reader", settings.model_copy(update=update))
+
+    reader = _reader()
+    listed = await prebuilt.ready_looks(reader, "mira", include_private=True)
+    assert [item["lookId"] for item in listed] == [LOOK]
+    assert await reader.get(FILES[0]) == b"imported vrm bytes"  # the VRM is on the reader's disk now
+    assert json.loads((reader.root / RECEIPT).read_text())["state"] == "restored"
+
+    assert (await prebuilt.withdraw_import(writer, "mira", LOOK))["withdrawn"]
+    assert json.loads(hub.files[RECEIPT])["state"] == "withdrawn"
+    # The reader's next look at the dataset (LIST_TTL_S later; here, at once).
+    reader._remote, reader._shared = None, {}
+    assert await withdrawals.is_withdrawn(reader, LOOK)
+    assert await prebuilt.ready_looks(reader, "mira", include_private=True) == []
+    # And after a restart over the same disk, which still holds the old receipt and the VRM.
+    again = _reader()
+    assert (again.root / FILES[0]).is_file()
+    assert await withdrawals.is_withdrawn(again, LOOK)
+
+
+async def test_a_reading_of_the_shared_receipt_is_never_older_than_the_listing(tmp_path, settings, hub):
+    """Freshness: once ``LIST_TTL_S`` has passed, a last reading is not an answer. The dataset
+    cannot be listed, or the receipt cannot be downloaded: the import is refused, however
+    recently it was fine, until the dataset can be asked again. No other look is touched."""
+    from wardrobe.storage import withdrawals
+    from wardrobe.storage.object_store import HfDatasetObjectStore
+
+    writer = await _imported(tmp_path, settings, hub)
+    assert (await prebuilt.withdraw_import(writer, "mira", LOOK))["withdrawn"]
+    await _imported(tmp_path, settings, hub)  # restored
+    update = {"wardrobe_hf_dataset": "me/looks", "wardrobe_hf_publish": False}
+    reader = HfDatasetObjectStore(tmp_path / "reader", settings.model_copy(update=update))
+    assert not await withdrawals.is_withdrawn(reader, LOOK)  # read once, as restored, and cached
+
+    reader._remote, reader._shared = None, {}  # LIST_TTL_S later ...
+    hub.list_fails = True  # ... the hub cannot be listed
+    assert await withdrawals.is_withdrawn(reader, LOOK)
+    assert await prebuilt.ready_looks(reader, "mira", include_private=True) == []
+    # An import that was never withdrawn is refused too: nobody can say it was not, elsewhere.
+    assert await withdrawals.is_withdrawn(reader, "import-" + "c" * 24)
+    # A look that cannot be withdrawn at all costs no question and is never refused for this.
+    assert not await withdrawals.is_withdrawn(reader, "look_prebuilt")
+    hub.list_fails = False
+    reader._listed_at = -1e9  # the retry (RETRY_S later)
+    assert not await withdrawals.is_withdrawn(reader, LOOK)
+    assert not await withdrawals.is_withdrawn(reader, "import-" + "c" * 24)
+
+
+async def test_a_shared_receipt_that_cannot_be_read_blocks_the_look(tmp_path, settings, hub):
+    """The same rule as for a local one: nobody can tell, so it is not served."""
+    from wardrobe.storage import withdrawals
+    from wardrobe.storage.object_store import HfDatasetObjectStore
+
+    writer = await _imported(tmp_path, settings, hub)
+    assert (await prebuilt.withdraw_import(writer, "mira", LOOK))["withdrawn"]
+    await _imported(tmp_path, settings, hub)
+    update = {"wardrobe_hf_dataset": "me/looks", "wardrobe_hf_publish": False}
+    reader = HfDatasetObjectStore(tmp_path / "reader", settings.model_copy(update=update))
+    assert not await withdrawals.is_withdrawn(reader, LOOK)
+    reader._remote, reader._shared = None, {}
+    hub.unreadable.add(RECEIPT)
+    assert await withdrawals.is_withdrawn(reader, LOOK)
+    hub.unreadable.clear()
+    assert await withdrawals.is_withdrawn(reader, LOOK)  # not asked again for RETRY_S ...
+    reader._shared_failed.clear()  # ... and then
+    assert not await withdrawals.is_withdrawn(reader, LOOK)
 
 
 async def test_importing_the_same_file_again_is_what_lifts_a_receipt(tmp_path, settings, hub):

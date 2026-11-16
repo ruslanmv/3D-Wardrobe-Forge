@@ -370,3 +370,33 @@ def test_a_trusted_backends_assertion_is_exchanged_for_a_capability(env, monkeyp
         # Misconfigured (the same secret for both): no capabilities at all.
         settings.wardrobe_identity_secret = SECRET
         assert capability(client, assertion(SECRET), "mira").status_code == 503
+
+
+def test_revocations_posted_at_the_same_moment_are_all_recorded(env):
+    """Review finding on AC1, over HTTP: twenty-four admin requests at once (accounts and tokens),
+    every one answered 201, and every one on the list afterwards and after a restart."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from wardrobe.policy import revocations
+    from wardrobe.storage.object_store import LocalObjectStore
+
+    with env["client"]() as client:
+        headers, _look_id, url = private_look(client, env, "mira")
+        tokens = [capability(client, "session-carol", "mira").json()["token"] for _ in range(12)]
+        assert client.get(f"/v1/{url}", headers={grants.HEADER: tokens[0]}).status_code == 200
+        bodies = [{"subject": f"acct-{n}"} for n in range(12)] + [{"token": token} for token in tokens]
+        with ThreadPoolExecutor(max_workers=12) as pool:
+            answers = list(pool.map(
+                lambda body: client.post("/v1/admin/access/revocations", headers=headers, json=body), bodies))
+        assert [answer.status_code for answer in answers] == [201] * 24, [a.text for a in answers]
+        recorded = client.get("/v1/admin/access/revocations", headers=headers).json()
+        assert set(recorded["subjects"]) == {f"acct-{n}" for n in range(12)}
+        assert set(recorded["ids"]) == {answer.json()["id"] for answer in answers[12:]} and len(recorded["ids"]) == 12
+        # Every one of those tokens is dead now.
+        for token in tokens:
+            assert client.get(f"/v1/{url}", headers={grants.HEADER: token}).status_code == 404
+        root = env["store"].root
+    restarted = LocalObjectStore(root, env["settings"])
+    with env["client"]() as client:
+        data = client.portal.call(lambda: revocations.load(restarted, fresh=True))
+    assert set(data["subjects"]) == {f"acct-{n}" for n in range(12)} and len(data["ids"]) == 12

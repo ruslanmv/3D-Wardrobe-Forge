@@ -256,6 +256,173 @@ async def test_an_expired_revocation_is_dropped_and_a_live_one_kept(tmp_path, se
     assert set(data["ids"]) == {"live"}
 
 
+async def test_revocations_asked_for_at_once_are_all_kept(tmp_path, settings):
+    """Review finding on AC1: each change read the whole list, then wrote the whole list, with
+    nothing between them. Ten at once each read the same list and all but the last writes were
+    lost: an account the operator had been told was revoked kept its access."""
+    import asyncio
+
+    store = LocalObjectStore(tmp_path / "store", settings)
+    subjects = [f"acct-{n}" for n in range(10)]
+    await asyncio.gather(*(revocations.revoke_subject(store, subject, by="admin") for subject in subjects))
+    assert set((await revocations.load(store, fresh=True))["subjects"]) == set(subjects)
+    # Mixed: ids, another account and a restoration, together.
+    soon = int(time.time()) + 500
+    await asyncio.gather(
+        *(revocations.revoke_id(store, f"grant-{n}", expires=soon, by="admin") for n in range(10)),
+        revocations.revoke_subject(store, "acct-late", by="admin"),
+        revocations.restore_subject(store, "acct-0"))
+    data = await revocations.load(store, fresh=True)
+    assert set(data["ids"]) == {f"grant-{n}" for n in range(10)}
+    assert set(data["subjects"]) == (set(subjects) - {"acct-0"}) | {"acct-late"}
+    # After a restart: a new process over the same disk, nothing kept in memory.
+    again = LocalObjectStore(tmp_path / "store", settings)
+    _, kept = grants.mint(GRANT_SECRET, slugs=["mira"], ttl_s=300, subject="acct-7")
+    _, back = grants.mint(GRANT_SECRET, slugs=["mira"], ttl_s=300, subject="acct-0")
+    assert await revocations.revoked(again, settings, kept) and not await revocations.revoked(again, settings, back)
+    assert (await revocations.load(again, fresh=True)) == data
+
+
+async def test_a_hundred_changes_at_once_lose_nothing(tmp_path, settings):
+    """The stress case: accounts and tokens revoked and accounts restored, all at once."""
+    import asyncio
+
+    store = LocalObjectStore(tmp_path / "store", settings)
+    soon = int(time.time()) + 500
+    await asyncio.gather(*(revocations.revoke_subject(store, f"old-{n}", by="admin") for n in range(20)))
+    await asyncio.gather(
+        *(revocations.revoke_subject(store, f"acct-{n}", by="admin") for n in range(40)),
+        *(revocations.revoke_id(store, f"grant-{n}", expires=soon, by="admin") for n in range(40)),
+        *(revocations.restore_subject(store, f"old-{n}") for n in range(20)))
+    data = await revocations.load(LocalObjectStore(tmp_path / "store", settings), fresh=True)
+    assert set(data["subjects"]) == {f"acct-{n}" for n in range(40)}
+    assert set(data["ids"]) == {f"grant-{n}" for n in range(40)}
+
+
+class _Bucket:
+    """An S3 bucket in memory that honours ``If-Match`` / ``If-None-Match`` as S3 does, shared by
+    every client made while it is installed: two ``S3ObjectStore`` objects are two processes."""
+
+    class Refused(Exception):
+        def __init__(self, code, http):
+            super().__init__(code)
+            self.response = {"Error": {"Code": code}, "ResponseMetadata": {"HTTPStatusCode": http}}
+
+    def __init__(self):
+        import threading
+
+        self.objects: dict[str, tuple[bytes, str]] = {}
+        self.refused = 0
+        self.guard = threading.Lock()
+        self.serial = 0
+
+    def client(self, *args, **kwargs):
+        return self
+
+    def head_object(self, Bucket, Key):
+        if Key not in self.objects:
+            raise self.Refused("404", 404)
+        return {}
+
+    def get_object(self, Bucket, Key):
+        import io
+
+        with self.guard:
+            if Key not in self.objects:
+                raise self.Refused("NoSuchKey", 404)
+            body, etag = self.objects[Key]
+        time.sleep(0.002)  # a network: other writers get in between a read and its write
+        return {"Body": io.BytesIO(body), "ETag": etag}
+
+    def put_object(self, Bucket, Key, Body, ContentType=None, IfMatch=None, IfNoneMatch=None):
+        time.sleep(0.002)
+        with self.guard:
+            held = self.objects.get(Key)
+            if (IfNoneMatch == "*" and held is not None) or (IfMatch is not None and (held or (0, 0))[1] != IfMatch):
+                self.refused += 1
+                raise self.Refused("PreconditionFailed", 412)
+            self.serial += 1
+            self.objects[Key] = (bytes(Body), f'"etag-{self.serial}"')
+        return {}
+
+
+@pytest.fixture
+def bucket(monkeypatch):
+    import sys
+    import types
+
+    held = _Bucket()
+    monkeypatch.setitem(sys.modules, "boto3", types.SimpleNamespace(client=held.client))
+    return held
+
+
+def _s3(settings):
+    from wardrobe.storage.object_store import S3ObjectStore
+
+    return S3ObjectStore(settings.model_copy(update={"s3_bucket": "forge"}))
+
+
+async def test_two_processes_on_s3_revoking_at_once_keep_both(settings, bucket):
+    """No disk, so no lock file: each write names the version it read, a refused write is done
+    again on what the other process wrote. Three stores are three Forge processes on one bucket."""
+    import asyncio
+
+    stores = [_s3(settings) for _ in range(3)]
+    soon = int(time.time()) + 500
+    await asyncio.gather(
+        *(revocations.revoke_subject(stores[n % 3], f"acct-{n}", by="admin") for n in range(12)),
+        *(revocations.revoke_id(stores[n % 3], f"grant-{n}", expires=soon, by="admin") for n in range(12)))
+    assert bucket.refused > 0  # the race happened, and was caught by the condition
+    data = await revocations.load(_s3(settings), fresh=True)  # a fourth process, after the fact
+    assert set(data["subjects"]) == {f"acct-{n}" for n in range(12)}
+    assert set(data["ids"]) == {f"grant-{n}" for n in range(12)}
+    assert await revocations.restore_subject(stores[0], "acct-3")
+    assert not await revocations.restore_subject(stores[1], "acct-3")
+    assert "acct-3" not in (await revocations.load(stores[2], fresh=True))["subjects"]
+
+
+async def test_a_change_that_can_never_be_written_is_an_error_not_an_acknowledgement(settings, bucket, monkeypatch):
+    """If the list keeps changing under a change, the operator is told it was not written."""
+    store = _s3(settings)
+    await revocations.revoke_subject(store, "acct-first", by="admin")
+
+    async def always_changed(key, data, version, *, content_type=None):
+        return False
+
+    monkeypatch.setattr(store, "put_if_unchanged", always_changed)
+    with pytest.raises(ValueError, match="kept changing"):
+        await revocations.revoke_subject(store, "acct-second", by="admin")
+    assert set((await revocations.load(_s3(settings), fresh=True))["subjects"]) == {"acct-first"}
+
+
+def _revoke_from_another_process(root: str, subject: str) -> None:
+    import asyncio
+
+    from wardrobe.config import Settings
+
+    store = LocalObjectStore(root, Settings())
+    asyncio.run(revocations.revoke_subject(store, subject, by="admin"))
+
+
+def test_revocations_from_several_processes_are_all_kept(tmp_path):
+    """Two Forge processes over one disk (two workers, or the API and a maintenance script)."""
+    import asyncio
+    import multiprocessing
+
+    from wardrobe.config import Settings
+
+    root = str(tmp_path / "store")
+    context = multiprocessing.get_context("spawn")
+    workers = [context.Process(target=_revoke_from_another_process, args=(root, f"acct-{n}")) for n in range(6)]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(60)
+    assert [worker.exitcode for worker in workers] == [0] * 6
+    data = asyncio.run(revocations.load(LocalObjectStore(root, Settings()), fresh=True))
+    assert set(data["subjects"]) == {f"acct-{n}" for n in range(6)}
+
+
 async def test_an_unreadable_revocation_list_refuses_every_grant(tmp_path, settings):
     """Fail closed: if nobody can tell whether a token was taken back, it was."""
     store = LocalObjectStore(tmp_path / "store", settings)

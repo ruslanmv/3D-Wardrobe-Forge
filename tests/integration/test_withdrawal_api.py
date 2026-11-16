@@ -57,8 +57,8 @@ def space(hub, monkeypatch, tmp_path, settings, vrm_bytes, template_catalog):
         write_library(tmp_path / "library", {"Mira.vrm": mira, "Nora.vrm": with_head(vrm_bytes)}))
     app.dependency_overrides[settings_dependency] = lambda: settings
 
-    def start():
-        store = HfDatasetObjectStore(tmp_path / "disk", settings)
+    def start(disk: str = "disk"):
+        store = HfDatasetObjectStore(tmp_path / disk, settings)
         orchestrator = Orchestrator(settings=settings, store=store, catalog=template_catalog)
         admins = AdminSessions(PASSWORD, ttl_hours=1)
         app.dependency_overrides[admin_sessions_dependency] = lambda: admins
@@ -164,3 +164,79 @@ def test_a_restart_carries_an_interrupted_withdrawal_on_and_undoes_a_stale_resto
         # ... and startup deleted them again: the receipt outlived the restore.
         assert not [name for name in hub.files if name.startswith(f"looks/{look_id}/")]
         assert look_id not in json.dumps(json.loads(hub.files[list_key])["looks"])
+
+
+def test_another_forges_withdrawal_stops_a_running_forge_serving_its_cached_copy(space, hub):
+    """Review finding on WD1, over HTTP, with two Forges on one dataset.
+
+    The second Forge has served the look: its VRM and its receipt (``restored``) are on its own
+    disk. The first Forge withdraws the look again. Before the fix the second one never looked
+    at the dataset's receipt again, because it had a local one, and went on listing the look and
+    serving the VRM from its disk. Now it hears within ``LIST_TTL_S``; and when it cannot ask
+    the dataset at all, it serves the import to no one rather than guess.
+    """
+    first, first_store = space["start"]()
+    with first:
+        headers, look_id, url = _import_and_publish(first, first_store, space, hub)
+        assert first.delete(f"/v1/admin/library/mira/body-states/{look_id}", headers=headers).status_code == 204
+        _import_and_publish(first, first_store, space, hub)  # the operator puts it back
+    receipt = f"withdrawn/{look_id}.json"
+    assert json.loads(hub.files[receipt])["state"] == "restored"
+
+    second, second_store = space["start"]("second-disk")
+    with second:
+        headers = sign_in(second)
+        grant = grant_for(second, headers, "mira")
+        assert look_id in _listed(second, grant) and second.get(f"/v1/{url}", headers=grant).status_code == 200
+        cached = second_store.root / "looks" / look_id / "look.vrm"
+        assert cached.is_file() and json.loads((second_store.root / receipt).read_text())["state"] == "restored"
+
+        # The first Forge (another process: its own store, its own disk) withdraws the look.
+        result = second.portal.call(prebuilt.withdraw_import, first_store, "mira", look_id)
+        assert result["withdrawn"] and json.loads(hub.files[receipt])["state"] == "withdrawn"
+        assert cached.is_file()  # the second Forge's disk still holds every byte
+
+        def a_listing_later():
+            second_store._remote, second_store._shared = None, {}
+
+        a_listing_later()
+        for who in ({}, grant, headers):
+            assert second.get(f"/v1/{url}", headers=who).status_code == 404
+        assert look_id not in _listed(second, grant) and look_id not in _listed(second, headers)
+        assert second.get("/v1/library/mira/prebuilt", headers=grant).json()["count"] == 0
+
+        # The dataset cannot be asked: still nobody, and not because of a remembered answer.
+        a_listing_later()
+        hub.list_fails = True
+        for who in ({}, grant, headers):
+            assert second.get(f"/v1/{url}", headers=who).status_code == 404
+        hub.list_fails = False
+
+    # The second Forge restarts over the same disk (old receipt, cached VRM): the same answer.
+    second, second_store = space["start"]("second-disk")
+    with second:
+        headers = sign_in(second)
+        assert look_id not in _listed(second, headers)
+        assert second.get(f"/v1/{url}", headers=headers).status_code == 404
+
+
+def test_a_forge_that_cannot_reach_the_dataset_serves_no_import_it_cannot_vouch_for(space, hub):
+    """A restored import on a Forge whose view of the dataset has aged out while the hub is
+    down: refused until the hub answers, then served again. A look that is not an import is
+    served throughout."""
+    client, store = space["start"]()
+    with client:
+        headers, look_id, url = _import_and_publish(client, store, space, hub)
+        grant = grant_for(client, headers, "mira")
+        client.portal.call(store.put, "looks/look_public/look.vrm", b"a public look")
+        assert client.get(f"/v1/{url}", headers=grant).status_code == 200
+        store._remote, store._shared = None, {}
+        hub.list_fails = True
+        assert client.get(f"/v1/{url}", headers=grant).status_code == 404
+        assert client.get(f"/v1/{url}", headers=headers).status_code == 404
+        assert look_id not in _listed(client, grant)
+        assert client.get("/v1/assets/looks/look_public/look.vrm").status_code == 200
+        hub.list_fails = False
+        store._listed_at = -1e9  # RETRY_S later
+        assert client.get(f"/v1/{url}", headers=grant).status_code == 200
+        assert look_id in _listed(client, grant)
