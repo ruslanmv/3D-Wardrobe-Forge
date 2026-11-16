@@ -63,11 +63,20 @@ def _subdivide(document: GltfDocument, primitive: dict, passes: int) -> None:
     primitive["indices"] = document.add_accessor(triangles.astype(np.uint32).reshape(-1, 1))
 
 
-def deleted_chest(band: tuple[float, float] = (0.25, 0.55)) -> GltfDocument:
+def deleted_chest(band: tuple[float, float] = (0.25, 0.55), bulge_m: float = 0.0,
+                  keep: list | None = None) -> GltfDocument:
     """The calibration body wearing a VRoid-style top, its skin deleted under the top across
-    ``band`` (fractions of spine → neck), only round her torso (her arms are left whole)."""
+    ``band`` (fractions of spine → neck), only round her torso (her arms are left whole).
+
+    ``bulge_m`` (BR3) raises two smooth, featureless mounds on the front of the chest, that high,
+    before anything is deleted: a curved surface for the patch to reproduce, not a flat one. The
+    top shares the body's positions, so it carries the same shape over the hole, as a fitted
+    garment does. ``keep``, when given, receives the deleted triangles' corners (world positions):
+    the surface the patch is judged against."""
     document = GltfDocument.from_bytes(build_vrm(CALIBRATION_BODIES[1], spec="VRM1"))
-    _subdivide(document, document.meshes[0]["primitives"][0], 2)
+    _subdivide(document, document.meshes[0]["primitives"][0], 2 if not bulge_m else 3)
+    if bulge_m:
+        _bulge(document, bulge_m, band)
     buffer = io.BytesIO()
     from PIL import Image
 
@@ -87,9 +96,27 @@ def deleted_chest(band: tuple[float, float] = (0.25, 0.55)) -> GltfDocument:
     centre = points[triangles].mean(axis=1)
     radial = np.hypot(centre[:, 0] - bones["hips"][0], centre[:, 2] - bones["hips"][2])
     gone = (centre[:, 1] > low) & (centre[:, 1] < high) & (radial < 0.2)
+    if keep is not None:
+        keep.append(points[triangles[gone]].astype(np.float64))
     body["indices"] = document.add_accessor(triangles[~gone].reshape(-1, 1))
     document.invalidate_cache()
     return GltfDocument.from_bytes(document.to_bytes())
+
+
+def _bulge(document: GltfDocument, height: float, band: tuple[float, float]) -> None:
+    """Two smooth mounds on the front of the chest, centred in the band, ``height`` metres high."""
+    bones = measure_body(document, inspect_document(document)).bone_positions
+    body = document.meshes[0]["primitives"][0]
+    points = document.read_accessor(body["attributes"]["POSITION"]).astype(np.float64)
+    centre_y = bones["spine"][1] + (bones["neck"][1] - bones["spine"][1]) * (band[0] + band[1]) / 2
+    front = points[:, 2] > bones["hips"][2]
+    lift = np.zeros(len(points))
+    for side in (-1, 1):
+        dx, dy = points[:, 0] - side * 0.075, points[:, 1] - centre_y
+        lift += height * np.exp(-(dx**2 + dy**2) / (2 * 0.035**2))
+    points[:, 2] += np.where(front, lift, 0.0)
+    body["attributes"]["POSITION"] = document.add_accessor(points.astype(np.float32), include_bounds=True)
+    document.invalidate_cache()
 
 
 def rig_top_like_cloth(document: GltfDocument, bone: str = "chest") -> GltfDocument:

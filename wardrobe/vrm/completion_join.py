@@ -32,7 +32,7 @@ import numpy as np
 from wardrobe.engines.geometry_checks import POSE_TESTS
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.measure import BodyMeasurements
-from wardrobe.vrm.painted_clothing import TORSO_RADIUS_M, _image, _triangles
+from wardrobe.vrm.painted_clothing import _image, _triangles
 
 #: Closer than this to her skin, a patch face fights it for depth.
 ZFIGHT_M = 0.0005
@@ -240,33 +240,42 @@ def measure_join(document: GltfDocument, measurements: BodyMeasurements, info=No
     representative = np.zeros(weld.max() + 1, dtype=np.int64)
     representative[weld] = np.arange(len(weld))
     rim = representative[open_ids]
-    low, high = patch_p[:, 1].min() - RIM_MARGIN_M, patch_p[:, 1].max() + RIM_MARGIN_M
-    hips = measurements.bone_positions.get("hips")
-    axis_x, axis_z = (float(hips[0]), float(hips[2])) if hips is not None else (0.0, 0.0)
-    radial = np.hypot(skin_p[rim, 0] - axis_x, skin_p[rim, 2] - axis_z)
-    rim = rim[(skin_p[rim, 1] >= low) & (skin_p[rim, 1] <= high) & (radial < TORSO_RADIUS_M)]
+    # Her normal at a split rim vertex is the mean of its copies (the side each copy draws).
+    grouped = np.zeros((weld.max() + 1, 3))
+    np.add.at(grouped, weld, skin_n)
+    skin_n_rim = grouped[weld] / np.maximum(np.linalg.norm(grouped[weld], axis=1, keepdims=True), 1e-12)
+    # BR3. Rim vertices and her nearby skin are taken in the patch's own box, grown by a margin: a
+    # band up her torso and a band round a forearm alike (height and her vertical axis only fit the
+    # torso).
+    box_low, box_high = patch_p.min(axis=0) - RIM_MARGIN_M, patch_p.max(axis=0) + RIM_MARGIN_M
+    rim = rim[((skin_p[rim] >= box_low) & (skin_p[rim] <= box_high)).all(axis=1)]
 
     patch_tris = patch_p[patch_f]
     gap, nearest_face = closest_on_triangles(skin_p[rim], patch_tris)
 
     # Skin near the patch only: a whole body's triangles are not needed to measure a band.
-    centre_y = skin_p[skin_f].mean(axis=1)[:, 1]
-    near = skin_f[(centre_y >= low - 0.03) & (centre_y <= high + 0.03)]
+    centre = skin_p[skin_f].mean(axis=1)
+    near = skin_f[((centre >= box_low - 0.03) & (centre <= box_high + 0.03)).all(axis=1)]
     under, under_face = closest_on_triangles(patch_p, skin_p[near])
     # In front of her skin: over the nearest skin face (its nearest point inside the face, not on
     # an edge — past the rim's edge a vertex is in the hole, not in front of anything), on its
     # outer side (her own normals say which side is out), and close enough to be that face's.
     in_front = np.zeros(len(patch_p), dtype=bool)
+    # BR3. "Over one of her faces": the nearest point of her skin is inside a face, not on its edge,
+    # and the vertex is not one of hers. A patch stitched to her rim shares her rim vertices (distance
+    # 0) and leaves her edge at her slope (nearest point on her edge): neither is an overlap.
+    over_face = np.zeros(len(patch_p), dtype=bool)
     if len(near):
         tri = skin_p[near][under_face]
         plane = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
         plane /= np.maximum(np.linalg.norm(plane, axis=1, keepdims=True), 1e-12)
         plane *= np.sign((plane * skin_n[near][under_face].sum(axis=1)).sum(axis=1))[:, None]
         signed = ((patch_p - tri[:, 0]) * plane).sum(axis=1)
-        in_front = (signed > 0) & (np.abs(np.abs(signed) - under) < 1e-5) & (under < 0.005)
+        over_face = (np.abs(np.abs(signed) - under) < 1e-5) & (under > 1e-6)
+        in_front = (signed > 0) & over_face & (under < 0.005)
     patch_area = 0.5 * np.linalg.norm(np.cross(patch_tris[:, 1] - patch_tris[:, 0],
                                                patch_tris[:, 2] - patch_tris[:, 0]), axis=1)
-    face_under = under[patch_f].max(axis=1) < 0.005
+    face_under = (under[patch_f].max(axis=1) < 0.005) & over_face[patch_f].any(axis=1)
 
     # Normals: hers at the rim against the patch's stored normal at the nearest patch corner.
     corner = patch_f[nearest_face]
@@ -274,7 +283,7 @@ def measure_join(document: GltfDocument, measurements: BodyMeasurements, info=No
     if len(rim):
         closest = np.argmin(np.linalg.norm(patch_p[corner] - skin_p[rim][:, None, :], axis=2), axis=1)
         pick = corner[np.arange(len(rim)), closest]
-    seam_angle = _angle_deg(skin_n[rim], patch_n[pick]) if len(rim) else np.array([])
+    seam_angle = _angle_deg(skin_n_rim[rim], patch_n[pick]) if len(rim) else np.array([])
     geometric = _vertex_normals(patch_p, patch_f)
     stored_vs_surface = _angle_deg(patch_n, geometric)
     # Between neighbours along every patch edge: a step in shading inside the patch, or where the
@@ -313,7 +322,8 @@ def measure_join(document: GltfDocument, measurements: BodyMeasurements, info=No
         "patchVertices": int(len(patch_p)),
         "gapMm": _stats(gap, 1000.0),
         "overlap": {
-            "zFightVertices": int((under < ZFIGHT_M).sum()),
+            "zFightVertices": int((over_face & (under < ZFIGHT_M)).sum()),
+            "sharedRimVertices": int((under <= 1e-6).sum()),
             "inFrontOfSkinVertices": int(in_front.sum()),
             "underSkinCm2": round(float(patch_area[face_under].sum()) * 1e4, 1),
             "nearestSkinMm": _stats(under, 1000.0),
@@ -338,9 +348,43 @@ def measure_join(document: GltfDocument, measurements: BodyMeasurements, info=No
             posed[pose] = {"gapMm": _stats(moved, 1000.0), "changeMm": change}
         report["posed"] = posed
 
+    report["outline"] = _outline(document, proxy_material, patch_p, patch_n, patch_uv,
+                                 np.where(over_face, under, np.inf), skin_p, near, cache)
     report["material"] = _material_diff(skin_material, proxy_material)
     report["tags"] = _tags(document, proxy_parts)
     return report
+
+
+def _outline(document, material: dict, patch_p, patch_n, patch_uv, under, skin_p, near, cache) -> dict:
+    """BR3. Where the patch's MToon outline shell lands, for the patch vertices under her skin.
+
+    MToon draws an outline by pushing a copy of the surface out along its normals (the width
+    factor, times a per-texel multiplier) and drawing its back faces. Under her skin that shell
+    must stay under her skin; one that reaches her surface shows through it as a black sliver,
+    which is what the app's renderer showed along both seams. ``underSkinWidthMax`` is the largest
+    multiplier there (0 means no shell at all); ``shellNearSkinVertices`` counts shells, at the
+    factor's world width, within ``ZFIGHT_M`` of her surface or in front of it.
+    """
+    mtoon = (material.get("extensions") or {}).get("VRMC_materials_mtoon") or {}
+    mode = mtoon.get("outlineWidthMode", "none")
+    hidden = under < 0.006
+    if mode == "none" or not hidden.any():
+        return {"mode": mode, "underSkinWidthMax": 0.0, "shellNearSkinVertices": 0}
+    multiplier = np.ones(len(patch_p))
+    index = (mtoon.get("outlineWidthMultiplyTexture") or {}).get("index")
+    if index is not None:
+        image = _image(document, int(index), cache)
+        if image is not None:
+            h, w = image.shape[:2]
+            px = np.clip(((patch_uv[:, 0] % 1.0) * w).astype(int), 0, w - 1)
+            py = np.clip(((patch_uv[:, 1] % 1.0) * h).astype(int), 0, h - 1)
+            multiplier = image[py, px, 1].astype(np.float64) / 255.0
+    width = float(mtoon.get("outlineWidthFactor", 0.0))
+    shell = patch_p[hidden] + patch_n[hidden] * (width * multiplier[hidden])[:, None]
+    distance = closest_on_triangles(shell, skin_p[near])[0] if len(near) else np.full(len(shell), np.inf)
+    return {"mode": mode, "widthFactor": width,
+            "underSkinWidthMax": round(float(multiplier[hidden].max()), 3),
+            "shellNearSkinVertices": int((distance < ZFIGHT_M).sum()) if mode == "worldCoordinates" else None}
 
 
 def _material_diff(skin: dict, proxy: dict) -> dict:
