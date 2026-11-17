@@ -211,3 +211,30 @@ def test_findings_recorded_at_once_are_all_kept(vrm_bytes, registry, tmp_path):
         list(pool.map(one, files))
     kept = json.loads(registry.read_text(encoding="utf-8"))["reviews"]
     assert {sha for _, sha in files} <= set(kept)
+
+
+def test_a_pending_listing_is_not_a_review_and_a_finding_moves_the_file_out(vrm_bytes, settings, registry, tmp_path):
+    """The registry lists files waiting for a review under "pending". That clears nothing (the gate
+    reads only "reviews"), and recording a finding takes the file off the list."""
+    import json
+
+    data = with_head(edited(vrm_bytes, allow))
+    path = write(tmp_path, data, "a.vrm")
+    sha = hashlib.sha256(data).hexdigest()
+    content = json.loads(registry.read_text(encoding="utf-8"))
+    content.setdefault("pending", {})[sha] = {"name": "Fixture", "slug": "fixture", "status": "unreviewed"}
+    registry.write_text(json.dumps(content), encoding="utf-8")
+    assert status_of(path, settings)["status"] == "needs-review"
+    cg.record_review(registry, file=path, sha256=sha, outcome="clearly-adult", reviewer="A Person",
+                     evidence="looked", date="2026-11-17")
+    after = json.loads(registry.read_text(encoding="utf-8"))
+    assert sha in after["reviews"] and sha not in after["pending"]
+
+
+def test_the_committed_registry_lists_every_library_file_as_pending_and_reviews_none_of_them():
+    import json
+
+    content = json.loads((Path(__file__).resolve().parents[2] / "assets/body_surface/adult-design-reviews.json")
+                         .read_text(encoding="utf-8"))
+    assert len(content["pending"]) == 9 and all(v["status"] == "unreviewed" for v in content["pending"].values())
+    assert not set(content["pending"]) & set(content["reviews"])

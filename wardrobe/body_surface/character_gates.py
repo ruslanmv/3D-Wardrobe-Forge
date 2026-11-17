@@ -272,6 +272,10 @@ def record_review(registry: Path, *, file: Path, sha256: str, outcome: str, revi
         if actual in reviews:
             raise ValueError("a finding is already recorded for these bytes; it is not replaced")
         reviews[actual] = entry
+        # Off the "waiting for a review" list: it has one now.
+        pending = content.get("pending")
+        if isinstance(pending, dict):
+            pending.pop(actual, None)
         fd, tmp = tempfile.mkstemp(prefix=".reviews-", suffix=".json", dir=path.parent)
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as handle:

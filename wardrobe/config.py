@@ -117,6 +117,9 @@ class Settings(BaseSettings):
     #: CG5: on by default, so AvatarSample_O's bare look builds as her body-state file does; a
     #: request still has to ask for it, and the file still says it is reconstructed.
     wardrobe_bare_body_completion: bool = True
+    #: CG6. Forge builds and imports a character's bare body-state file itself (at startup and
+    #: after a review is recorded), through the same import check as an upload. Off: only uploads.
+    wardrobe_auto_body_states: bool = True
     #: BI2. Signs read grants (wardrobe.policy.grants): what a companion app holds to list and
     #: fetch one avatar's private looks, instead of the admin token. Empty: no grants, private
     #: looks stay admin-only. A secret, at least 32 characters; rotating it revokes every grant.
