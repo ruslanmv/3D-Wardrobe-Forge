@@ -17,7 +17,7 @@ every rule an upload meets still holds here, the review above all: before a pers
 ``clearly-adult`` for her file the check refuses and nothing happens; a file that adds surface
 (O's chest patch) still needs its own review of the built bytes, and until then it is refused too.
 The refusal is logged and retried at the next trigger. Characters whose garments are real meshes
-(A, B, C, Model Girl) need no file: Forge's bare look takes those off.
+(A, B, C, Model Girl) get one too, built the same way: the app needs a bare look in her wardrobe.
 
 The import record says what made it (``importedBy: forge-auto (CG6)``) and the provenance names
 the library's own licence record and source for her pinned file: Forge derived it from that file
@@ -82,9 +82,12 @@ def _prepare(avatar, settings, declared_adult: bool) -> dict:
     from wardrobe.body_surface import body_state_import
     from wardrobe.body_surface.character_gates import _body_state, measure_body_state
 
-    # The gate's own reading of her body (CG4), so this and the audit never disagree.
+    # The gate's own reading of her body (CG4), so this and the audit never disagree. Every
+    # measured body gets a bare look: the app's "everything off" answers only from a bare look in
+    # her wardrobe (OutfitDecisionEngine.undressPlan), and a character whose garments are real
+    # meshes (A, B, C, Model Girl) had none until someone happened to ask Forge to build one.
     kind = _body_state(measure_body_state(avatar.path))["state"]
-    if kind not in NEEDS_FILE:
+    if kind not in NEEDS_FILE | {"complete"}:
         return {"status": "not-needed", "body": kind}
     original = avatar.path.read_bytes()
     data = build_file(original)
