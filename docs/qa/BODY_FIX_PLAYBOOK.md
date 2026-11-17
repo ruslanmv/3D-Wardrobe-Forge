@@ -12,6 +12,32 @@ gate. Per-character numbers (bones, expressions, face and hair primitives) are i
 | VRoid Male | default briefs painted on | Route A or B |
 | AvatarSample_O | chest deleted from the mesh under the dress | Route C, then A |
 
+## Route 0 first: build the file automatically (CG5, minutes, no artist)
+
+Forge already does Route A's skin painting (`skin_restore`, the readiness report's
+`restoration-completed`) and Route C's chest fill (BR1's BC1 patch) inside every bare look.
+`build_body_state.py` writes that result to a file and pre-flights it:
+
+```bash
+python tools/fetch_library.py          # the two VRoid bodies are not in git
+python tools/body_surface/build_body_state.py --all --out <private dir> --json <private dir>/report.json
+```
+
+Measured 2026-11-17 on the four exact library files, about 20 s in all: every output passes all
+nine structural checks (closed in all six bands, no clothing left, rig, expressions, face and
+hair, metadata kept), and the build is byte-for-byte deterministic. O's file says it is
+reconstructed (`reconstruction: bc1-proxy`, regions `upper`) so a reviewer can tell.
+
+What remains is only what was always a person's job, and nothing here automates it:
+
+1. A `clearly-adult` review of each source file and of each output's exact bytes (Studio ▸
+   Character review), by an independent reviewer.
+2. The operator's licence and rights statement, and `WARDROBE_ADULT_BODY_SURFACE` on the server.
+3. Import in the Studio, then `gates.py audit` and the app checks (Phase 4 below).
+
+Use Routes A to C only if the reviewer finds the automatic skin or patch not good enough (O's
+patch is featureless by construction), or for Route B's real garments long term.
+
 ## The rule every route follows
 
 Change the body, never the identity. A delivered file keeps the same skeleton (bone names, rest
