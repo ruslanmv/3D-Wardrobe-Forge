@@ -38,13 +38,27 @@ def tool():
     return module
 
 
+def _without_reviews(folder: Path) -> Settings:
+    """Settings over a copy of the body-surface folder whose registry holds no review: the sheet
+    is checked for an unreviewed file, whatever the operator's committed registry records."""
+    import shutil
+
+    root = folder / "body_surface"
+    shutil.copytree(ROOT / "assets" / "body_surface", root)
+    data = json.loads((root / "adult-design-reviews.json").read_text(encoding="utf-8"))
+    data["reviews"] = {}
+    (root / "adult-design-reviews.json").write_text(json.dumps(data), encoding="utf-8")
+    return Settings(_env_file=None, wardrobe_body_surface_root=str(root))
+
+
 @pytest.fixture(scope="module")
-def sheet(tool):
+def sheet(tool, tmp_path_factory):
     library = AvatarLibrary.from_directory(ROOT / "assets" / "library")
     entry = library.get(SLUG)
     if entry is None or entry.path is None:
         pytest.skip("library file not present")
-    return tool.specification(Path(entry.path), SLUG, library, Settings(_env_file=None)), entry
+    settings = _without_reviews(tmp_path_factory.mktemp("registry"))
+    return tool.specification(Path(entry.path), SLUG, library, settings), entry
 
 
 def test_the_sheet_names_the_exact_file_and_what_the_import_holds_a_delivery_to(sheet):
