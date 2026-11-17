@@ -24,9 +24,17 @@
             <h1>Character review</h1>
         </header>
 
-        <p class="review-locked" id="review-locked" hidden>
-            Character review is for an admin session. Log in from the Studio's Settings, then come back here.
-        </p>
+        <!-- CG9. Signing in here: the admin session lives in this tab only, so a review link opened
+             in a new tab always arrived signed out, with nothing to do but go back. -->
+        <form class="review-signin" id="review-locked" hidden autocomplete="on">
+            <p>Character review is for an admin session. Log in to continue.</p>
+            <label>Username <input id="review-signin-username" name="username" autocomplete="username"
+                                   autocapitalize="none" spellcheck="false" required /></label>
+            <label>Password <input id="review-signin-password" name="password" type="password"
+                                   autocomplete="current-password" required /></label>
+            <button type="submit" class="primary" id="review-signin-submit">Log in</button>
+            <p class="form-error" id="review-signin-error" role="alert" hidden></p>
+        </form>
         <p class="form-error" id="review-error" role="alert" hidden></p>
 
         <main class="review-main" id="review-main" hidden>

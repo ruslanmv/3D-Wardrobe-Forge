@@ -197,3 +197,21 @@
 .review-locked {
     color: var(--muted);
 }
+
+/* CG9. Signing in on this page. */
+.review-signin {
+    display: grid;
+    gap: 10px;
+    max-width: 360px;
+    margin: 24px 16px;
+}
+.review-signin label {
+    display: grid;
+    gap: 4px;
+}
+.review-signin button {
+    justify-self: start;
+}
+.review-signin[hidden] {
+    display: none;
+}
