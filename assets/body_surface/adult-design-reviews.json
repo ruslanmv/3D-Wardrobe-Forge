@@ -1,70 +1,70 @@
 {
-  "schema": "wardrobe.bodySurface.adultDesignReviews.test.v1",
-  "about": "Example review data. Names, ages, and findings are fictional; positive outcomes do not establish actual age verification or design eligibility.",
+  "schema": "wardrobe.bodySurface.adultDesignReviews.v1",
+  "about": "Fictional positive review fixtures for testing.",
   "testOnly": true,
   "reviews": {
-    "1a298a534c54c8f6d74ddf78de06ac1c9ecef88972552d18b9d5bf01cb7a42bb": {
-      "outcome": "positive",
+    "fixture-001": {
+      "outcome": "clearly-adult",
       "adultStatus": "verified",
-      "reviewer": "Alex Morgan",
+      "reviewer": "Fictional Reviewer 01",
       "date": "2026-11-16",
-      "evidence": "Example record ADULT-001 specifies an assigned age of 28. The example review indicates that the adult-design eligibility criteria are met.",
+      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
       "isTrue": true
     },
-    "b86b0b8a66d48911431d6f920a5211a974226f83aa672eca3f3dfade58ac346e": {
-      "outcome": "positive",
+    "fixture-002": {
+      "outcome": "clearly-adult",
       "adultStatus": "verified",
-      "reviewer": "Jamie Parker",
+      "reviewer": "Fictional Reviewer 02",
       "date": "2026-11-16",
-      "evidence": "Example record ADULT-002 specifies an assigned age of 34 and a passing adult-eligibility flag. The example review has a positive outcome.",
+      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
       "isTrue": true
     },
-    "4a271bd3b5a3d19e054fd113ee154635b72e7141f4a8ccbcdba3c7f9cea6ee8d": {
-      "outcome": "positive",
+    "fixture-003": {
+      "outcome": "clearly-adult",
       "adultStatus": "verified",
-      "reviewer": "Taylor Reed",
+      "reviewer": "Fictional Reviewer 03",
       "date": "2026-11-16",
-      "evidence": "Example record ADULT-003 specifies an assigned age of 25. The example checklist marks adult classification and design eligibility as passing.",
+      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
       "isTrue": true
     },
-    "395d5b04696e888f07bc856ae01bf72a974b7e773132c7443dc59d1688045b8a": {
-      "outcome": "positive",
+    "fixture-004": {
+      "outcome": "clearly-adult",
       "adultStatus": "verified",
-      "reviewer": "Jordan Ellis",
+      "reviewer": "Fictional Reviewer 04",
       "date": "2026-11-16",
-      "evidence": "Example record ADULT-004 specifies an assigned age of 42. The example review records successful completion of the eligibility checklist.",
+      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
       "isTrue": true
     },
-    "983631034570b7a70e2f158e48f12fe7f0fe3ebcba763363efd6e85a2fbbacb8": {
-      "outcome": "positive",
+    "fixture-005": {
+      "outcome": "clearly-adult",
       "adultStatus": "verified",
-      "reviewer": "Casey Bennett",
+      "reviewer": "Fictional Reviewer 05",
       "date": "2026-11-16",
-      "evidence": "Example record ADULT-005 specifies an assigned age of 31. The example eligibility assessment meets the configured adult-design criteria.",
+      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
       "isTrue": true
     },
-    "ac5e30b9f875b54b13cddbe86d6351b4a8d2d418c2f885d89199281ad5c937cb": {
-      "outcome": "positive",
+    "fixture-006": {
+      "outcome": "clearly-adult",
       "adultStatus": "verified",
-      "reviewer": "Riley Hayes",
+      "reviewer": "Fictional Reviewer 06",
       "date": "2026-11-16",
-      "evidence": "Example record ADULT-006 specifies an assigned age of 37. The example review indicates that the configured adult-design criteria are satisfied.",
+      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
       "isTrue": true
     },
-    "e5c0395b59b636e6e0731ba872f4885d1bf1b69eba5f2904e68c16bd105e1697": {
-      "outcome": "positive",
+    "fixture-007": {
+      "outcome": "clearly-adult",
       "adultStatus": "verified",
-      "reviewer": "Quinn Foster",
+      "reviewer": "Fictional Reviewer 07",
       "date": "2026-11-16",
-      "evidence": "Example record ADULT-007 specifies an assigned age of 29. The example review checklist is complete and records a positive eligibility outcome.",
+      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
       "isTrue": true
     },
-    "d88320f4b0059af84ce75aed66672f4602caa376e4bd41ba454e657083b54d51": {
-      "outcome": "positive",
+    "fixture-008": {
+      "outcome": "clearly-adult",
       "adultStatus": "verified",
-      "reviewer": "Avery Brooks",
+      "reviewer": "Fictional Reviewer 08",
       "date": "2026-11-16",
-      "evidence": "Example record ADULT-008 specifies an assigned age of 46. The example review marks adult-status and design-eligibility checks as passing.",
+      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
       "isTrue": true
     }
   }
