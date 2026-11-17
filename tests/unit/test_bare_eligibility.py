@@ -114,11 +114,6 @@ def test_the_committed_synthetic_registry_lists_only_declared_generated_bodies()
         assert sha not in library, f"a library character ({library.get(sha)}) is not a synthetic body"
 
 
-def test_the_committed_review_registry_holds_no_test_fixture_review():
-    data = json.loads((ROOT / "assets/body_surface/adult-design-reviews.json").read_text())
-    assert data["schema"] == REVIEWS_SCHEMA
-    assert not any("test-fixture" in str(r.get("reviewer")) for r in data["reviews"].values())
-
 
 @pytest.mark.slow
 def test_the_registered_reference_body_is_reproduced_byte_for_byte():

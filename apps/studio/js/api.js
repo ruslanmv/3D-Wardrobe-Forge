@@ -163,6 +163,13 @@ export const api = {
     adminSignIn: (username, password) =>
         request('/v1/admin/session', { method: 'POST', body: { username, password } }),
     adminSignOut: () => request('/v1/admin/session', { method: 'DELETE' }),
+    /** CG4. Every library character's review state, licence, body and status (admin session only). */
+    reviews: () => request('/v1/admin/reviews'),
+    /** CG4. One person's own finding for the exact file they were shown. Never called with a default. */
+    recordReview: (slug, finding) =>
+        request(`/v1/admin/reviews/${encodeURIComponent(slug)}`, { method: 'POST', body: finding }),
+    /** CG4. The exact bytes of a library character, for hashing and rendering the same file. */
+    libraryAvatarBlob: (slug) => request(`/v1/library/${encodeURIComponent(slug)}/avatar.vrm`, { expect: 'blob' }),
     /** Declare, for this session only, that a library avatar depicts an adult (or withdraw it). */
     adminDeclare: (slug, depictsAdult, ageConfirmed = false) =>
         request(`/v1/admin/declarations/${encodeURIComponent(slug)}`, {

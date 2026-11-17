@@ -40,6 +40,19 @@ def library() -> AvatarLibrary:
     return found
 
 
+def _without_reviews(folder: Path) -> Settings:
+    """Settings over a copy of the body-surface folder whose registry holds no review: these
+    tests describe an unreviewed file, whatever the operator's committed registry records."""
+    import shutil
+
+    root = folder / "body_surface"
+    shutil.copytree(ROOT / "assets" / "body_surface", root)
+    data = json.loads((root / "adult-design-reviews.json").read_text(encoding="utf-8"))
+    data["reviews"] = {}
+    (root / "adult-design-reviews.json").write_text(json.dumps(data), encoding="utf-8")
+    return Settings(_env_file=None, wardrobe_body_surface_root=str(root))
+
+
 @pytest.fixture(scope="module")
 def made(library, tmp_path_factory):
     tool = _tool()
@@ -48,7 +61,8 @@ def made(library, tmp_path_factory):
     (sheets / "01-original-front.png").write_bytes(b"front picture bytes")
     (sheets / "01-original-back.png").write_bytes(b"back picture bytes")
     (sheets / "notes.txt").write_text("not a picture")
-    return tool, path, tool.packet(path, slug=SLUG, library=library, settings=Settings(_env_file=None),
+    settings = _without_reviews(tmp_path_factory.mktemp("registry"))
+    return tool, path, tool.packet(path, slug=SLUG, library=library, settings=settings,
                                    sheet_dir=sheets)
 
 
@@ -82,7 +96,7 @@ def test_a_declaration_is_reported_as_a_declaration_and_changes_nothing(made):
     checks = packet["eligibilityNow"]["checks"]
     assert set(checks) == {"author-permission", "operator-switch", "adult-declaration", "design-clearance",
                            "private-session"}
-    # The committed registry holds no review, so design clearance is closed whatever was declared.
+    # With no review recorded, design clearance is closed whatever was declared.
     assert checks["design-clearance"]["passed"] is False and packet["eligibilityNow"]["allowed"] is False
 
 
@@ -102,19 +116,19 @@ def test_the_tool_writes_outside_the_repository_and_never_the_registry(library, 
     with pytest.raises(SystemExit):
         tool.main(["--out", str(tmp_path)])  # neither a slug nor a file
     assert tool.main(["--slug", SLUG, "--out", str(tmp_path / "packet")]) == 0
-    assert REGISTRY.read_bytes() == before and json.loads(before)["reviews"] == {}
+    assert REGISTRY.read_bytes() == before  # the tool never writes the registry
     written = (tmp_path / "packet" / "packet.md").read_text()
     assert "records no finding" in written and '"outcome": ""' in written
     assert json.loads((tmp_path / "packet" / "packet.json").read_text())["reviewEntry"]["entry"]["reviewer"] == ""
 
 
-def test_the_inventory_lists_every_library_character_and_decides_nothing(library):
+def test_the_inventory_lists_every_library_character_and_decides_nothing(library, tmp_path):
     """RP2. One row per character, from the clothed source files. No row says a review exists
     (the registry is empty), a file that is not on this disk gets a row that says so, and the
     registry is not touched."""
     tool = _tool()
     before = REGISTRY.read_bytes()
-    rows = tool.inventory(library, Settings(_env_file=None))
+    rows = tool.inventory(library, _without_reviews(tmp_path))
     assert {row["slug"] for row in rows} == {avatar.slug for avatar in library.avatars} and len(rows) == 8
     here = [row for row in rows if row["present"]]
     assert SLUG in {row["slug"] for row in here}
