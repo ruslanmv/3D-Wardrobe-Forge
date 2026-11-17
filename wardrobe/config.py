@@ -108,11 +108,15 @@ class Settings(BaseSettings):
     #: synthetic reference bodies by exact SHA-256 (synthetic-references.json).
     wardrobe_calibration_root: str = str(REPO_ROOT / "assets" / "calibration")
     #: BS1. The operator's switch for adult body-surface profiles. Off: only collision-only
-    #: profiles run, whatever a caller sends. Never on by default.
-    wardrobe_adult_body_surface: bool = False
+    #: profiles run, whatever a caller sends. CG5: on by default, at the operator's request, so a
+    #: reviewed body-state file imports without a deployment step; set it false to close it. It
+    #: opens nothing alone: each file still needs its recorded clearly-adult review, and a
+    #: viewer their own adult confirmation.
+    wardrobe_adult_body_surface: bool = True
     #: BR1. The operator's separate switch for bare body *reconstruction* (bodyCompletion: proxy).
-    #: Off by default; turning on adult body surfaces never turns this on.
-    wardrobe_bare_body_completion: bool = False
+    #: CG5: on by default, so AvatarSample_O's bare look builds as her body-state file does; a
+    #: request still has to ask for it, and the file still says it is reconstructed.
+    wardrobe_bare_body_completion: bool = True
     #: BI2. Signs read grants (wardrobe.policy.grants): what a companion app holds to list and
     #: fetch one avatar's private looks, instead of the admin token. Empty: no grants, private
     #: looks stay admin-only. A secret, at least 32 characters; rotating it revokes every grant.

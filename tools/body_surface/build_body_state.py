@@ -24,7 +24,7 @@ What this does **not** do, and must never be made to do:
 * review anything. Every output is a new exact file; the import still needs a ``clearly-adult``
   review of the source and of these bytes (Studio, Character review), recorded by a person;
 * attest rights. The import's licence and ``rightsAttested`` are the operator's statement;
-* turn on the operator's switch (``WARDROBE_ADULT_BODY_SURFACE``). The pre-flight run here
+* change the operator's switch (``WARDROBE_ADULT_BODY_SURFACE``, on by default). The pre-flight run here
   reports it as it is;
 * hide that O's chest is reconstructed: the file says so (``reconstructed``,
   ``reconstruction: bc1-proxy``, the regions), as a BR1 look does, so a reviewer can tell.

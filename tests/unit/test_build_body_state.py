@@ -35,3 +35,13 @@ def test_is_deterministic():
     build_body_state.build_bare(first)
     build_body_state.build_bare(second)
     assert first.to_bytes() == second.to_bytes()
+
+
+def test_operator_switches_default_on(monkeypatch):
+    from wardrobe.config import Settings
+
+    monkeypatch.delenv("WARDROBE_ADULT_BODY_SURFACE", raising=False)
+    monkeypatch.delenv("WARDROBE_BARE_BODY_COMPLETION", raising=False)
+    settings = Settings(_env_file=None)
+    assert settings.wardrobe_adult_body_surface is True
+    assert settings.wardrobe_bare_body_completion is True
