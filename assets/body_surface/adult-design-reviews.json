@@ -1,71 +1,53 @@
 {
-  "schema": "wardrobe.bodySurface.adultDesignReviews.v1",
-  "about": "Fictional positive review fixtures for testing.",
-  "testOnly": true,
-  "reviews": {
-    "fixture-001": {
-      "outcome": "clearly-adult",
-      "adultStatus": "verified",
-      "reviewer": "Fictional Reviewer 01",
-      "date": "2026-11-16",
-      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
-      "isTrue": true
-    },
-    "fixture-002": {
-      "outcome": "clearly-adult",
-      "adultStatus": "verified",
-      "reviewer": "Fictional Reviewer 02",
-      "date": "2026-11-16",
-      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
-      "isTrue": true
-    },
-    "fixture-003": {
-      "outcome": "clearly-adult",
-      "adultStatus": "verified",
-      "reviewer": "Fictional Reviewer 03",
-      "date": "2026-11-16",
-      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
-      "isTrue": true
-    },
-    "fixture-004": {
-      "outcome": "clearly-adult",
-      "adultStatus": "verified",
-      "reviewer": "Fictional Reviewer 04",
-      "date": "2026-11-16",
-      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
-      "isTrue": true
-    },
-    "fixture-005": {
-      "outcome": "clearly-adult",
-      "adultStatus": "verified",
-      "reviewer": "Fictional Reviewer 05",
-      "date": "2026-11-16",
-      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
-      "isTrue": true
-    },
-    "fixture-006": {
-      "outcome": "clearly-adult",
-      "adultStatus": "verified",
-      "reviewer": "Fictional Reviewer 06",
-      "date": "2026-11-16",
-      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
-      "isTrue": true
-    },
-    "fixture-007": {
-      "outcome": "clearly-adult",
-      "adultStatus": "verified",
-      "reviewer": "Fictional Reviewer 07",
-      "date": "2026-11-16",
-      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
-      "isTrue": true
-    },
-    "fixture-008": {
-      "outcome": "clearly-adult",
-      "adultStatus": "verified",
-      "reviewer": "Fictional Reviewer 08",
-      "date": "2026-11-16",
-      "evidence": "Simulated model inspection passed all configured adult-design checks. Fictional test result.",
-      "isTrue": true
-    }
+ "schema": "wardrobe.bodySurface.adultDesignReviews.v1",
+ "about": "AF3. Exact avatar files (keyed by the SHA-256 of their bytes) a person reviewed and found clearly adult in design. Intimate body-surface regions open only for these. Each entry needs outcome \"clearly-adult\", reviewer, date and evidence. The library's eight stylised characters are not listed: none is established as clearly adult by review, so none receives intimate detail.",
+ "pendingAbout": "Files waiting for a person's review, by SHA-256. Not reviews: the gate reads only \"reviews\". Recording a finding (Studio ▸ Character review, or tools/body_surface/gates.py record) writes it under \"reviews\" and removes the file from here.",
+ "pending": {
+  "b86b0b8a66d48911431d6f920a5211a974226f83aa672eca3f3dfade58ac346e": {
+   "name": "AvatarSample A",
+   "slug": "avatar-sample-a",
+   "status": "unreviewed"
+  },
+  "4a271bd3b5a3d19e054fd113ee154635b72e7141f4a8ccbcdba3c7f9cea6ee8d": {
+   "name": "AvatarSample B",
+   "slug": "avatar-sample-b",
+   "status": "unreviewed"
+  },
+  "395d5b04696e888f07bc856ae01bf72a974b7e773132c7443dc59d1688045b8a": {
+   "name": "AvatarSample C",
+   "slug": "avatar-sample-c",
+   "status": "unreviewed"
+  },
+  "983631034570b7a70e2f158e48f12fe7f0fe3ebcba763363efd6e85a2fbbacb8": {
+   "name": "VRoid Female",
+   "slug": "fem-vroid",
+   "status": "unreviewed"
+  },
+  "ac5e30b9f875b54b13cddbe86d6351b4a8d2d418c2f885d89199281ad5c937cb": {
+   "name": "VRoid Male",
+   "slug": "masc-vroid",
+   "status": "unreviewed"
+  },
+  "e5c0395b59b636e6e0731ba872f4885d1bf1b69eba5f2904e68c16bd105e1697": {
+   "name": "AvatarSample_O",
+   "slug": "vroid-avatar-sample-o",
+   "status": "unreviewed"
+  },
+  "d5bcec119e43b84b5acc310ac58e06f78c21cb110ef61791e3ae7d6641385ca5": {
+   "name": "AvatarSample_O, built bare body (CG6, adds the chest patch)",
+   "slug": "vroid-avatar-sample-o",
+   "status": "unreviewed"
+  },
+  "1a298a534c54c8f6d74ddf78de06ac1c9ecef88972552d18b9d5bf01cb7a42bb": {
+   "name": "Model Girl",
+   "slug": "vroid-model-girl",
+   "status": "unreviewed"
+  },
+  "d88320f4b0059af84ce75aed66672f4602caa376e4bd41ba454e657083b54d51": {
+   "name": "Rinna",
+   "slug": "vroid-rinna",
+   "status": "unreviewed"
   }
+ },
+ "reviews": {}
 }
