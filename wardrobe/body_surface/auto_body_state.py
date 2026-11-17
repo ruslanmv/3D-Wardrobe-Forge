@@ -77,7 +77,7 @@ def build_file(source: bytes) -> bytes:
     return document.to_bytes()
 
 
-def _prepare(avatar, settings) -> dict:
+def _prepare(avatar, settings, declared_adult: bool) -> dict:
     """CPU part, on a worker thread: measure, build, check. Registers nothing."""
     from wardrobe.body_surface import body_state_import
     from wardrobe.body_surface.character_gates import _body_state, measure_body_state
@@ -90,7 +90,7 @@ def _prepare(avatar, settings) -> dict:
     data = build_file(original)
     verdict = body_state_import.check(
         data, original, state="bare", source_sha256=avatar.sha256, declared_sha256=None,
-        operator_enabled=settings.wardrobe_adult_body_surface, depicts_adult=bool(avatar.depicts_adult),
+        operator_enabled=settings.wardrobe_adult_body_surface, depicts_adult=declared_adult,
         review_root=settings.body_surface_root_path, reference_root=settings.wardrobe_calibration_root)
     return {"status": "built", "body": kind, "data": data, "verdict": verdict}
 
@@ -108,9 +108,14 @@ async def _already_imported(store, avatar) -> bool:
                for item in listed.get("looks", []))
 
 
-async def ensure(avatar, settings, store) -> dict:
-    """Make and import her bare body-state file if she needs one and the import check accepts it."""
+async def ensure(avatar, settings, store, *, declared_adult: bool = False) -> dict:
+    """Make and import her bare body-state file if she needs one and the import check accepts it.
+
+    ``declared_adult`` adds the reviewing admin session's own declaration (the Studio's, as the
+    manual import and the review row read it); startup passes none, so only the persistent
+    declaration in the library counts there."""
     from wardrobe.pipeline import prebuilt
+    from wardrobe.storage import withdrawals
 
     slug = getattr(avatar, "slug", "?")
     try:
@@ -120,7 +125,8 @@ async def ensure(avatar, settings, store) -> dict:
             return {"slug": slug, "status": "unavailable"}
         if await _already_imported(store, avatar):
             return {"slug": slug, "status": "already-imported"}
-        prepared = await asyncio.to_thread(_prepare, avatar, settings)
+        prepared = await asyncio.to_thread(_prepare, avatar, settings,
+                                           bool(avatar.depicts_adult or declared_adult))
         if prepared["status"] != "built":
             return {"slug": slug, **prepared}
         verdict = prepared["verdict"]
@@ -128,6 +134,12 @@ async def ensure(avatar, settings, store) -> dict:
             logger.info("auto body state for %s waits: %s", slug, verdict.message)
             return {"slug": slug, "status": "waiting", "reason": verdict.reason, "message": verdict.message}
         look_id = prebuilt.import_look_id(verdict.sha256)
+        # An operator's withdrawal of this exact file stands: registering it again would turn the
+        # receipt to "restored" (register_import does that for a deliberate re-import). Bringing a
+        # withdrawn look back is the operator's own act, never a restart's.
+        if withdrawals.blocks(await withdrawals.read(store, look_id)):
+            logger.info("auto body state for %s withdrawn by the operator; not re-imported", slug)
+            return {"slug": slug, "status": "withdrawn", "lookId": look_id}
         item = await prebuilt.register_import(
             store, slug, prepared["data"], verdict=verdict.to_dict(), state="bare",
             name=f"{avatar.name} (bare)", source_sha256=avatar.sha256, output_sha256=verdict.sha256,

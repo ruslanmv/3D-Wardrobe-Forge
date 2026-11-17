@@ -55,3 +55,35 @@ async def test_off_does_nothing(rinna, settings):
     settings.wardrobe_auto_body_states = False
     store = LocalObjectStore(settings.storage_root_path, settings)
     assert (await auto_body_state.ensure(rinna, settings, store))["status"] == "off"
+
+
+@pytest.mark.slow
+async def test_an_operators_withdrawal_stands(rinna, settings):
+    """Codex review: a restart re-registered a withdrawn auto import and turned its receipt to
+    restored. The operator's withdrawal of those exact bytes is never undone by Forge itself."""
+    from wardrobe.storage import withdrawals
+
+    settings.wardrobe_adult_body_surface = True
+    store = LocalObjectStore(settings.storage_root_path, settings)
+    clear_design_for_test(settings, rinna.path.read_bytes())
+    done = await auto_body_state.ensure(rinna, settings, store)
+    assert done["status"] == "imported", done
+    await prebuilt.withdraw_import(store, rinna.slug, done["lookId"], withdrawn_by="operator")
+    again = await auto_body_state.ensure(rinna, settings, store)
+    assert again["status"] == "withdrawn"
+    assert withdrawals.blocks(await withdrawals.read(store, done["lookId"]))
+
+
+@pytest.mark.slow
+async def test_the_reviewing_sessions_declaration_counts(rinna, settings):
+    """Codex review: a character declared adult only in the admin session (as the manual import and
+    the review row accept) got no automatic file after her review. The route passes that declaration."""
+    from dataclasses import replace
+
+    settings.wardrobe_adult_body_surface = True
+    store = LocalObjectStore(settings.storage_root_path, settings)
+    clear_design_for_test(settings, rinna.path.read_bytes())
+    undeclared = replace(rinna, depicts_adult=False)
+    assert (await auto_body_state.ensure(undeclared, settings, store))["status"] == "waiting"
+    done = await auto_body_state.ensure(undeclared, settings, store, declared_adult=True)
+    assert done["status"] == "imported", done

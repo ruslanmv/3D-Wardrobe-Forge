@@ -158,7 +158,8 @@ async def record(slug: str, body: Finding, request: Request, admin: AdminDep, se
     if body.outcome == "clearly-adult":
         from wardrobe.body_surface import auto_body_state
 
-        auto = await auto_body_state.ensure(avatar, settings, store)
+        auto = await auto_body_state.ensure(avatar, settings, store,
+                                           declared_adult=slug in admin.declared)
     row = await _row(avatar, settings, store, admin.declared)
     return {"entry": entry, "character": row, "bodyState": auto,
             "persist": f"commit {REGISTRY_FILE} (assets/body_surface/) under the reviewer's name; "
