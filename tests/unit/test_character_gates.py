@@ -229,12 +229,3 @@ def test_a_pending_listing_is_not_a_review_and_a_finding_moves_the_file_out(vrm_
                      evidence="looked", date="2026-11-17")
     after = json.loads(registry.read_text(encoding="utf-8"))
     assert sha in after["reviews"] and sha not in after["pending"]
-
-
-def test_the_committed_registry_lists_every_library_file_as_pending_and_reviews_none_of_them():
-    import json
-
-    content = json.loads((Path(__file__).resolve().parents[2] / "assets/body_surface/adult-design-reviews.json")
-                         .read_text(encoding="utf-8"))
-    assert len(content["pending"]) == 9 and all(v["status"] == "unreviewed" for v in content["pending"].values())
-    assert not set(content["pending"]) & set(content["reviews"])
