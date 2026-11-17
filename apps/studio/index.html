@@ -565,6 +565,29 @@
                         What you make with it is <strong>private</strong> to admin sessions. Logging out turns
                         everything off.
                     </p>
+                    <!-- CG7. The companion app reads her private looks (the bare one too) with a read
+                         grant. Minting one was a curl call; here it is one button, admin only. -->
+                    <div class="grant-panel" id="grant-panel" hidden>
+                        <h3>Read grant for the companion app</h3>
+                        <p class="settings-note">
+                            Lets the chatbot app list and load every library character's private looks,
+                            including her bare look. Paste it into the app's Settings ▸ Wardrobe ▸ grant.
+                            Read-only; it expires.
+                        </p>
+                        <div class="grant-controls">
+                            <label for="grant-days">Valid for</label>
+                            <select id="grant-days">
+                                <option value="7">7 days</option>
+                                <option value="30" selected>30 days</option>
+                            </select>
+                            <button type="button" class="primary" id="grant-mint">Create grant</button>
+                        </div>
+                        <div class="grant-result" id="grant-result" hidden>
+                            <textarea id="grant-token" readonly rows="3" spellcheck="false"></textarea>
+                            <button type="button" class="secondary" id="grant-copy">Copy</button>
+                            <small id="grant-meta"></small>
+                        </div>
+                    </div>
                 </section>
             </div>
             <p class="form-error" id="settings-error" role="alert" hidden></p>

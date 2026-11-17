@@ -712,6 +712,36 @@ function setSession(session) {
     if ($('settings-dialog').open) renderSettings();
 }
 
+/**
+ * CG7. Mint a read grant for every available library character, so the companion app lists and
+ * loads her private looks (the bare one among them). The server decides everything: an admin
+ * session, a grant secret, at most 30 days. The token is shown once, here, and kept nowhere.
+ */
+async function mintGrant() {
+    const button = $('grant-mint');
+    const slugs = state.library.filter((avatar) => avatar.available).map((avatar) => avatar.slug);
+    const days = Number($('grant-days').value) || 30;
+    button.disabled = true;
+    $('settings-error').hidden = true;
+    try {
+        const grant = await api.mintGrant(slugs, days * 24 * 3600, 'companion app');
+        $('grant-token').value = grant.token;
+        $('grant-meta').textContent = `${slugs.length} characters · expires ${new Date(
+            grant.expires * 1000
+        ).toLocaleString()} · header ${grant.header}`;
+        $('grant-result').hidden = false;
+    } catch (error) {
+        const reason = error && error.detail && error.detail.reason;
+        $('settings-error').textContent =
+            reason === 'grants_unavailable'
+                ? 'This Space has no WARDROBE_GRANT_SECRET (32+ characters). Set it in the Space settings, then try again.'
+                : `Could not create a grant: ${(error && error.message) || error}`;
+        $('settings-error').hidden = false;
+    } finally {
+        button.disabled = false;
+    }
+}
+
 /** BA10. The custom designs, for an admin session; a guest's list is always empty. */
 async function loadCustomBodyArt(signedIn) {
     const art = state.bodyArt;
@@ -838,6 +868,17 @@ function bindAccount() {
         else openSignIn();
     });
     $('declarations-signin').addEventListener('click', openSignIn);
+    $('grant-mint').addEventListener('click', mintGrant);
+    $('grant-copy').addEventListener('click', async () => {
+        const token = $('grant-token').value;
+        try {
+            await navigator.clipboard.writeText(token);
+            $('grant-copy').textContent = 'Copied';
+        } catch (_) {
+            $('grant-token').select(); // the browser refused the clipboard: select it for a manual copy
+        }
+        setTimeout(() => ($('grant-copy').textContent = 'Copy'), 1500);
+    });
     $('settings-key-action').addEventListener('click', () => {
         $('key-input').value = auth.key;
         $('key-dialog').showModal();
@@ -924,6 +965,12 @@ function renderSettings() {
 
     // Adult declarations: read-only for a guest, switches for an admin.
     $('declarations-locked').hidden = Boolean(session);
+    // CG7. The read grant is an admin's to make; a guest never sees the panel.
+    $('grant-panel').hidden = !session;
+    if (!session) {
+        $('grant-result').hidden = true;
+        $('grant-token').value = '';
+    }
     $('declarations').replaceChildren(
         ...state.library.map((avatar) => {
             const byOperator = avatar.declaredBy === 'operator';
