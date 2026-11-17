@@ -2709,3 +2709,46 @@ dialog.login .form-error {
     background: var(--panel-3);
     font-size: 12px;
 }
+
+/* CG7. The companion app's read grant, in Settings ▸ Private mode (admin only). */
+.grant-panel {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line, rgba(127, 127, 127, 0.25));
+}
+.grant-panel h3 {
+    margin: 0 0 6px;
+}
+.grant-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.grant-result {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+}
+.grant-result textarea {
+    width: 100%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    word-break: break-all;
+    resize: vertical;
+}
+.grant-result button {
+    justify-self: start;
+}
+.grant-revoke {
+    display: grid;
+    gap: 6px;
+    margin-top: 12px;
+}
+.grant-revoke input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+}
+.grant-revoke button {
+    justify-self: start;
+}

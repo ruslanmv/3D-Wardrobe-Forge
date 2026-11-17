@@ -170,6 +170,7 @@ class GrantRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     slugs: list[str] = Field(min_length=1, max_length=32)
+    #: CG8. 0 means no expiry (until revoked): ``grants.NO_EXPIRY_TTL_S``.
     ttl_seconds: int = Field(default=7 * 24 * 3600, alias="ttlSeconds")
     label: str = Field(default="", max_length=80)
 
@@ -190,7 +191,8 @@ def mint_grant(body: GrantRequest, request: Request, admin: AdminDep, admins: Ad
             "message": f"set WARDROBE_GRANT_SECRET (at least {grants.MIN_SECRET_LENGTH} characters) "
                        "to mint grants"})
     try:
-        token, grant = grants.mint(settings.wardrobe_grant_secret, slugs=body.slugs, ttl_s=body.ttl_seconds,
+        ttl = grants.NO_EXPIRY_TTL_S if body.ttl_seconds == 0 else body.ttl_seconds
+        token, grant = grants.mint(settings.wardrobe_grant_secret, slugs=body.slugs, ttl_s=ttl,
                                    label=body.label)
     except grants.GrantError as error:
         detail = {"reason": "grant_invalid", "message": str(error)}

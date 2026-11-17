@@ -248,9 +248,39 @@ async function submit(event) {
     }
 }
 
+/** CG9. Sign in right here, then load the characters: no trip back to the Studio. */
+function showSignIn() {
+    $('review-locked').hidden = false;
+    $('review-signin-username').focus();
+}
+
+async function signIn(event) {
+    event.preventDefault();
+    const error = $('review-signin-error');
+    error.hidden = true;
+    $('review-signin-submit').disabled = true;
+    try {
+        const result = await api.adminSignIn($('review-signin-username').value.trim(), $('review-signin-password').value);
+        admin.token = result.token;
+        $('review-signin-password').value = '';
+        $('review-locked').hidden = true;
+        await start();
+    } catch (failure) {
+        error.textContent =
+            failure instanceof ApiError && failure.status === 401
+                ? 'Wrong username or password.'
+                : `Could not log in: ${(failure && failure.message) || failure}`;
+        error.hidden = false;
+    } finally {
+        $('review-signin-submit').disabled = false;
+    }
+}
+
+let wired = false;
+
 async function start() {
     if (!admin.token) {
-        $('review-locked').hidden = false;
+        showSignIn();
         return;
     }
     try {
@@ -263,7 +293,8 @@ async function start() {
         }
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
-            $('review-locked').hidden = false;
+            admin.token = '';
+            showSignIn();
             return;
         }
         showError(`Could not read the characters: ${error.message}`);
@@ -271,12 +302,22 @@ async function start() {
     }
     $('review-main').hidden = false;
     renderList();
-    wireViews();
-    for (const id of ['review-reviewer', 'review-evidence', 'review-examined']) {
-        $(id).addEventListener('input', updateSubmit);
-        $(id).addEventListener('change', updateSubmit);
+    if (!wired) {
+        wired = true;
+        wireViews();
+        for (const id of ['review-reviewer', 'review-evidence', 'review-examined']) {
+            $(id).addEventListener('input', updateSubmit);
+            $(id).addEventListener('change', updateSubmit);
+        }
+        $('review-form').addEventListener('submit', submit);
     }
-    $('review-form').addEventListener('submit', submit);
+    // CG9. Open a character at once: the first one still waiting for a review, else the first.
+    // An empty right-hand two thirds read as a broken page.
+    const first = state.characters.find((row) => row.reviewState === 'pending') || state.characters[0];
+    if (first && !state.current) select(first.slug);
 }
 
-if (typeof document !== 'undefined' && document.getElementById('review-main')) start();
+if (typeof document !== 'undefined' && document.getElementById('review-main')) {
+    $('review-locked').addEventListener('submit', signIn);
+    start();
+}
