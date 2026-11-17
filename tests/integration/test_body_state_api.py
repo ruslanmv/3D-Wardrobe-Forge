@@ -121,10 +121,14 @@ def test_refusal_reports_every_check(env, mira, state):
         assert client.get("/v1/admin/library/mira/body-states", headers=headers).json()["count"] == 0
 
 
-def test_bare_without_a_review_of_the_import_is_refused(env, mira, state):
+def test_bare_without_a_review_of_the_import_is_refused(env, mira):
+    # CG1. A file drawing only her reviewed surfaces is covered by her review
+    # (tests/unit/test_body_state_import.py); one that reshapes her body needs its own.
+    from tests.unit.test_body_state_import import reshape
+
     clear_design_for_test(env["settings"], mira)
     with env["client"]() as client:
-        response = upload(client, sign_in(client), state, source=sha(mira))
+        response = upload(client, sign_in(client), edited(mira, reshape), source=sha(mira))
         assert response.json()["detail"]["reason"] == "body_state_not_permitted"
         assert response.json()["detail"]["verdict"]["checks"]["eligibility-import"]["refusedBy"] == \
             "design-clearance"
