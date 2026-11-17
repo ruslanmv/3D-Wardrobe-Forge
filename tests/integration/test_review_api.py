@@ -107,7 +107,8 @@ def test_nothing_is_recorded_without_the_persons_own_finding_for_this_file(env, 
         response = client.post("/v1/admin/reviews/mira", headers=headers, json=finding(env["sha"], **change))
         assert response.status_code == code, response.text
         assert response.json()["detail"]["reason"] == reason
-    assert json.loads(env["registry"].read_text(encoding="utf-8"))["reviews"] == {}
+    # Nothing recorded for this file; the committed registry's own entries are the operator's.
+    assert env["sha"] not in json.loads(env["registry"].read_text(encoding="utf-8"))["reviews"]
 
 
 @pytest.mark.parametrize("missing", ["reviewer", "evidence"])
@@ -117,7 +118,8 @@ def test_a_blank_name_or_evidence_is_refused(env, missing):
         body = finding(env["sha"])
         body[missing] = ""
         assert client.post("/v1/admin/reviews/mira", headers=headers, json=body).status_code == 422
-    assert json.loads(env["registry"].read_text(encoding="utf-8"))["reviews"] == {}
+    # Nothing recorded for this file; the committed registry's own entries are the operator's.
+    assert env["sha"] not in json.loads(env["registry"].read_text(encoding="utf-8"))["reviews"]
 
 
 def test_a_finding_is_recorded_once_and_moves_the_status_on(env):
