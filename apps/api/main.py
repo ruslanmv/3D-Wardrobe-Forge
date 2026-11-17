@@ -67,9 +67,24 @@ async def lifespan(app: FastAPI):
         await prebuilt.resume_withdrawals(orchestrator.store)
     except Exception:  # pragma: no cover - startup must not fail on this
         logger.exception("resuming withdrawals failed; pending ones stay blocked by their receipts")
+    # CG6. Bare body-state files Forge can make itself, in the background: startup never waits
+    # for them, and each one is imported only if the import check accepts it (a review first).
+    auto_task = None
+    try:
+        import asyncio
+
+        from wardrobe.body_surface import auto_body_state
+
+        if settings.wardrobe_auto_body_states and library.available():
+            auto_task = asyncio.create_task(auto_body_state.ensure_all(library, settings, orchestrator.store))
+            app.state.auto_body_states = auto_task
+    except Exception:  # pragma: no cover - startup must not fail on this
+        logger.exception("starting the automatic body states failed; uploads still work")
     try:
         yield
     finally:
+        if auto_task is not None and not auto_task.done():
+            auto_task.cancel()
         await orchestrator.stop()
         # RU3. Looks made since the last batch go up to the dataset before the Space stops.
         close = getattr(orchestrator.store, "close", None)

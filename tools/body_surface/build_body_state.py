@@ -40,7 +40,6 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -48,41 +47,13 @@ sys.path.insert(0, str(ROOT / "tools" / "body_surface"))
 
 import asset_spec  # noqa: E402
 
+from wardrobe.body_surface.auto_body_state import build_bare  # noqa: E402  (CG6: one build, shared)
 from wardrobe.config import Settings  # noqa: E402
 from wardrobe.library import AvatarLibrary  # noqa: E402
-from wardrobe.pipeline.bare_body import _complete_if_asked  # noqa: E402
 from wardrobe.vrm.document import GltfDocument  # noqa: E402
-from wardrobe.vrm.garment_inventory import build_strip_plan, garment_inventory, remove_garments  # noqa: E402
-from wardrobe.vrm.inspect import inspect_document  # noqa: E402
-from wardrobe.vrm.measure import measure_body  # noqa: E402
-from wardrobe.vrm.skin_restore import restore_skin  # noqa: E402
 
 #: The four the playbook named: clothing painted on (three) or a band deleted (O).
 FOUR = ("vroid-rinna", "fem-vroid", "masc-vroid", "vroid-avatar-sample-o")
-
-
-def build_bare(document: GltfDocument) -> dict:
-    """Complete (only where a band is missing), take every garment off, restore painted skin.
-
-    The order is ``bare_body.prepare``'s: the BC1 patch is shaped from the garments that covered
-    the hole, so it is made before they are removed. Completion is asked for here because this is
-    the operator's own tool, run on purpose; it is a no-op on a closed body (``applied`` false)."""
-    info = inspect_document(document)
-    measurements = measure_body(document, info)
-    inventory = garment_inventory(document)
-    removed = {(g.mesh, g.primitive) for g in inventory}
-    context = SimpleNamespace(
-        measurements=measurements, settings=SimpleNamespace(wardrobe_bare_body_completion=True),
-        record=SimpleNamespace(request=SimpleNamespace(options=SimpleNamespace(body_completion="proxy"))))
-    completion = _complete_if_asked(context, document, inventory, removed)
-    remove_garments(document, list(build_strip_plan(inventory, [], replace_all=True).remove))
-    restore_skin(document, measurements, set(), preserve_normals=True, include_feet=True)
-    tag = {"bare": True, "templateId": "body-bare-v1"}
-    if completion and completion["applied"]:
-        tag.update(reconstructed=True, reconstruction="bc1-proxy", reconstructedRegions=completion["regions"])
-    document.gltf.setdefault("extras", {}).setdefault("wardrobeForge", {}).update(**tag)
-    return {"garmentsRemoved": len(removed),
-            "reconstructedRegions": completion["regions"] if completion and completion["applied"] else []}
 
 
 def build_one(slug: str, library: AvatarLibrary, settings: Settings, out: Path) -> dict:

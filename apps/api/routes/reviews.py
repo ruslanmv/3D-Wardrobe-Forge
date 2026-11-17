@@ -152,8 +152,15 @@ async def record(slug: str, body: Finding, request: Request, admin: AdminDep, se
         raise HTTPException(status_code=409, detail={"reason": "refused", "message": str(exc)}) from None
     actual = hashlib.sha256(avatar.path.read_bytes()).hexdigest()
     logger.info("review recorded for %s (%s): %s by %s", slug, actual[:12], body.outcome, body.reviewer)
+    # CG6. A clearly-adult finding is what the bare body-state file was waiting for: Forge makes
+    # and imports it now (the import check runs as for an upload), so nobody has to.
+    auto = None
+    if body.outcome == "clearly-adult":
+        from wardrobe.body_surface import auto_body_state
+
+        auto = await auto_body_state.ensure(avatar, settings, store)
     row = await _row(avatar, settings, store, admin.declared)
-    return {"entry": entry, "character": row,
+    return {"entry": entry, "character": row, "bodyState": auto,
             "persist": f"commit {REGISTRY_FILE} (assets/body_surface/) under the reviewer's name; "
                        "a disk that does not persist loses it at restart"}
 
