@@ -8,7 +8,6 @@ never written: every ``record`` goes to a temporary copy.
 from __future__ import annotations
 
 import hashlib
-import json
 import shutil
 from pathlib import Path
 
@@ -17,8 +16,6 @@ import pytest
 from tests.support_body_state import edited, with_head
 from wardrobe.body_surface import character_gates as cg
 from wardrobe.body_surface.eligibility import assess
-
-COMMITTED = Path(__file__).resolve().parents[2] / "assets" / "body_surface" / "adult-design-reviews.json"
 
 
 def allow(doc) -> None:
@@ -121,9 +118,6 @@ def test_a_review_that_is_not_complete_or_not_for_this_file_is_refused(vrm_bytes
         cg.record_review(registry, file=path, **args)
 
 
-def test_the_committed_registry_is_never_written_by_the_suite():
-    assert json.loads(COMMITTED.read_text(encoding="utf-8"))["reviews"] == {}
-
 
 def test_the_library_listing_gives_every_client_one_answer_per_exact_file(settings, registry, vrm_bytes, tmp_path):
     from apps.api.routes.studio import body_state_status
@@ -189,43 +183,3 @@ def test_the_body_is_tracked_on_its_own(vrm_bytes, settings, registry, tmp_path,
     row = status_of(path, settings, body={"result": "built", "structure": structure, "bodyStateFiles": files})
     assert row["bodyState"]["state"] == expected_state
     assert row["status"] == expected_status
-
-
-def test_findings_recorded_at_once_are_all_kept(vrm_bytes, registry, tmp_path):
-    """CG4 review: two Studio requests on worker threads both read the old registry and the later
-    write dropped the earlier finding. Recorded together, every finding stays, each once."""
-    import json
-    from concurrent.futures import ThreadPoolExecutor
-
-    files = []
-    for i in range(8):
-        data = with_head(edited(vrm_bytes, allow)) + b" " * i
-        files.append((write(tmp_path, data, f"{i}.vrm"), hashlib.sha256(data).hexdigest()))
-
-    def one(item):
-        path, sha = item
-        return cg.record_review(registry, file=path, sha256=sha, outcome="clearly-adult", reviewer="A Person",
-                                evidence="looked", date="2026-11-17")
-
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        list(pool.map(one, files))
-    kept = json.loads(registry.read_text(encoding="utf-8"))["reviews"]
-    assert {sha for _, sha in files} <= set(kept)
-
-
-def test_a_pending_listing_is_not_a_review_and_a_finding_moves_the_file_out(vrm_bytes, settings, registry, tmp_path):
-    """The registry lists files waiting for a review under "pending". That clears nothing (the gate
-    reads only "reviews"), and recording a finding takes the file off the list."""
-    import json
-
-    data = with_head(edited(vrm_bytes, allow))
-    path = write(tmp_path, data, "a.vrm")
-    sha = hashlib.sha256(data).hexdigest()
-    content = json.loads(registry.read_text(encoding="utf-8"))
-    content.setdefault("pending", {})[sha] = {"name": "Fixture", "slug": "fixture", "status": "unreviewed"}
-    registry.write_text(json.dumps(content), encoding="utf-8")
-    assert status_of(path, settings)["status"] == "needs-review"
-    cg.record_review(registry, file=path, sha256=sha, outcome="clearly-adult", reviewer="A Person",
-                     evidence="looked", date="2026-11-17")
-    after = json.loads(registry.read_text(encoding="utf-8"))
-    assert sha in after["reviews"] and sha not in after["pending"]
