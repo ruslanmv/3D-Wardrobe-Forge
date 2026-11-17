@@ -965,6 +965,7 @@ function renderSettings() {
 
     // Adult declarations: read-only for a guest, switches for an admin.
     $('declarations-locked').hidden = Boolean(session);
+    $('declarations-fixed').hidden = !state.library.some((avatar) => avatar.declaredBy === 'operator');
     // CG7. The read grant is an admin's to make; a guest never sees the panel.
     $('grant-panel').hidden = !session;
     if (!session) {
@@ -997,7 +998,7 @@ function renderSettings() {
                         el('span', { text: avatar.name }),
                         el('small', {
                             text: byOperator
-                                ? 'On for everyone (set by the operator)'
+                                ? 'Always on: declared adult for everyone in assets/library/policy.json (edit it there to change)'
                                 : !avatar.available
                                   ? 'Not available'
                                   : checked
