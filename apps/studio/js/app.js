@@ -720,15 +720,14 @@ function setSession(session) {
 async function mintGrant() {
     const button = $('grant-mint');
     const slugs = state.library.filter((avatar) => avatar.available).map((avatar) => avatar.slug);
-    const days = Number($('grant-days').value) || 30;
+    const days = Number($('grant-days').value); // 0 = no expiry (CG8)
     button.disabled = true;
     $('settings-error').hidden = true;
     try {
-        const grant = await api.mintGrant(slugs, days * 24 * 3600, 'companion app');
+        const grant = await api.mintGrant(slugs, days ? days * 24 * 3600 : 0, 'companion app');
         $('grant-token').value = grant.token;
-        $('grant-meta').textContent = `${slugs.length} characters · expires ${new Date(
-            grant.expires * 1000
-        ).toLocaleString()} · header ${grant.header}`;
+        const until = days ? `expires ${new Date(grant.expires * 1000).toLocaleString()}` : 'no expiry, until revoked';
+        $('grant-meta').textContent = `${slugs.length} characters · ${until} · header ${grant.header}`;
         $('grant-result').hidden = false;
     } catch (error) {
         const reason = error && error.detail && error.detail.reason;
@@ -869,6 +868,20 @@ function bindAccount() {
     });
     $('declarations-signin').addEventListener('click', openSignIn);
     $('grant-mint').addEventListener('click', mintGrant);
+    $('grant-revoke').addEventListener('click', async () => {
+        const token = $('grant-revoke-token').value.trim();
+        if (!token) return;
+        $('grant-revoke').disabled = true;
+        try {
+            const done = await api.revokeGrant(token);
+            $('grant-revoke-result').textContent = `Revoked (grant ${done.id}). Devices using it lose access now.`;
+            $('grant-revoke-token').value = '';
+        } catch (error) {
+            $('grant-revoke-result').textContent = `Not revoked: ${(error && error.message) || error}`;
+        } finally {
+            $('grant-revoke').disabled = false;
+        }
+    });
     $('grant-copy').addEventListener('click', async () => {
         const token = $('grant-token').value;
         try {

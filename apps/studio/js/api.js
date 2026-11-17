@@ -166,6 +166,8 @@ export const api = {
     /** CG7. A read-only, expiring grant for these library avatars' private looks (admin session only). */
     mintGrant: (slugs, ttlSeconds, label) =>
         request('/v1/admin/grants', { method: 'POST', body: { slugs, ttlSeconds, label } }),
+    /** CG8. Revoke one grant, by presenting it (admin session only). */
+    revokeGrant: (token) => request('/v1/admin/access/revocations', { method: 'POST', body: { token } }),
     /** CG4. Every library character's review state, licence, body and status (admin session only). */
     reviews: () => request('/v1/admin/reviews'),
     /** CG4. One person's own finding for the exact file they were shown. Never called with a default. */

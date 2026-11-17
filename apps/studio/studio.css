@@ -2740,3 +2740,15 @@ dialog.login .form-error {
 .grant-result button {
     justify-self: start;
 }
+.grant-revoke {
+    display: grid;
+    gap: 6px;
+    margin-top: 12px;
+}
+.grant-revoke input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+}
+.grant-revoke button {
+    justify-self: start;
+}

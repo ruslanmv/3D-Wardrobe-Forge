@@ -460,10 +460,36 @@ class HfDatasetObjectStore(LocalObjectStore):
                 # WD1. A receipt is the only thing that keeps a withdrawn look withdrawn after
                 # this disk is gone, so it goes up with the next batch like a list does.
                 self._pending_receipts.add(key)
+            elif key == "access/revocations.json":
+                # CG8. A revoked grant must stay revoked after a restart wipes this disk: the
+                # list goes up at once, on its own (rare, small, and a no-expiry grant depends
+                # on it). load() reads it back from the dataset when the disk has none.
+                await self._upload_now(key)
+                return url
             else:
                 return url
             self._schedule()
         return url
+
+    async def _upload_now(self, key: str) -> None:
+        """CG8. Commit one small local file to the dataset now. Never raises: a failure is logged
+        loudly, and the next change to the file uploads it again."""
+        from huggingface_hub import HfApi
+
+        path = self._path(key)
+
+        def _go() -> None:
+            HfApi().upload_file(path_or_fileobj=str(path), path_in_repo=key, repo_id=self.repo_id,
+                                repo_type="dataset", commit_message=f"forge: {key}")
+
+        try:
+            await asyncio.to_thread(_go)
+            if self._remote is not None:
+                self._remote.add(key)
+            self._shared.pop(key, None)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("could not upload %s to %s: it is lost at the next restart unless "
+                         "changed again (%s)", key, self.repo_id, exc)
 
     async def list_keys(self, prefix: str) -> list[str]:
         """Local keys and the dataset's: after a restart with empty storage, only the dataset has them."""

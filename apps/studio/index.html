@@ -584,6 +584,7 @@
                             <select id="grant-days">
                                 <option value="7">7 days</option>
                                 <option value="30" selected>30 days</option>
+                                <option value="0">No expiry (until revoked)</option>
                             </select>
                             <button type="button" class="primary" id="grant-mint">Create grant</button>
                         </div>
@@ -591,6 +592,15 @@
                             <textarea id="grant-token" readonly rows="3" spellcheck="false"></textarea>
                             <button type="button" class="secondary" id="grant-copy">Copy</button>
                             <small id="grant-meta"></small>
+                        </div>
+                        <div class="grant-revoke">
+                            <p class="settings-note">
+                                Lost a device, or a grant leaked? Paste it here to revoke it at once.
+                            </p>
+                            <input type="text" id="grant-revoke-token" spellcheck="false" autocomplete="off"
+                                   placeholder="Paste a grant to revoke" />
+                            <button type="button" class="secondary" id="grant-revoke">Revoke</button>
+                            <small id="grant-revoke-result"></small>
                         </div>
                     </div>
                 </section>

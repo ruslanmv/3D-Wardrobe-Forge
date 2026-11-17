@@ -14,7 +14,9 @@ A grant is the smallest thing that is enough:
 * **Scoped to named library avatars.** A grant for ``vroid-model-girl`` does not list or serve
   Rinna's private looks. ``/v1/assets`` checks the grant against the wardrobe named in the look's
   own private marker, a stored object, so the check holds after a restart.
-* **Expiring.** At most ``MAX_TTL_S``; there is no "forever".
+* **Expiring, or until revoked.** At most ``MAX_TTL_S``, or, when the operator asks for it in so
+  many words, ``NO_EXPIRY_TTL_S`` (CG8: a grant pasted into the operator's own devices that should
+  not need renewing). That one is still revocable by its id or by rotating the secret.
 * **Revocable.** By its id (``WARDROBE_GRANT_REVOKED``), or all at once by rotating the secret.
 * **Stateless.** An HMAC-SHA256 over its own claims with ``WARDROBE_GRANT_SECRET``. Unset (the
   default), or shorter than ``MIN_SECRET_LENGTH``, there are no grants at all and every private
@@ -51,6 +53,8 @@ SCOPE = "private-read"
 VERSION = 1
 MIN_SECRET_LENGTH = 32
 MAX_TTL_S = 30 * 24 * 3600
+#: CG8. "No expiry": a hundred years, asked for explicitly; never a capability, always revocable.
+NO_EXPIRY_TTL_S = 100 * 365 * 24 * 3600
 #: AC1. The longest an account capability lives. Short enough that a copied one is soon
 #: nothing, long enough for a wardrobe to be listed and a 15 MB look downloaded on a phone.
 ACCOUNT_MAX_TTL_S = 15 * 60
@@ -119,8 +123,8 @@ def mint(secret: str, *, slugs, ttl_s: int, label: str = "", now: float | None =
     if not names or len(names) > MAX_SLUGS or not all(_SLUG.match(s) for s in names):
         raise GrantError(f"a grant names 1-{MAX_SLUGS} library avatars by slug")
     if subject is None:
-        if not 60 <= int(ttl_s) <= MAX_TTL_S:
-            raise GrantError(f"a grant lasts between 60 s and {MAX_TTL_S // 86400} days")
+        if not (60 <= int(ttl_s) <= MAX_TTL_S or int(ttl_s) == NO_EXPIRY_TTL_S):
+            raise GrantError(f"a grant lasts between 60 s and {MAX_TTL_S // 86400} days, or has no expiry")
     else:
         if not isinstance(subject, str) or not _SUBJECT.match(subject):
             raise GrantError("a capability is issued to one account, named by its identity provider")
@@ -158,7 +162,9 @@ def verify(secret: str | None, token: str | None, *, revoked=(), now: float | No
         grant_id = str(claims["jti"])
     except (KeyError, TypeError, ValueError):
         return None
-    if expires <= current or expires - issued > MAX_TTL_S or grant_id in set(revoked or ()):
+    life = expires - issued
+    allowed_life = life <= MAX_TTL_S or life == NO_EXPIRY_TTL_S
+    if expires <= current or not allowed_life or grant_id in set(revoked or ()):
         return None
     subject = claims.get("sub")
     if subject is not None:
@@ -172,5 +178,6 @@ def verify(secret: str | None, token: str | None, *, revoked=(), now: float | No
     return Grant(grant_id, slugs, expires, issued, str(claims.get("label", "")), subject)
 
 
-__all__ = ["ACCOUNT_MAX_TTL_S", "ACCOUNT_MIN_TTL_S", "HEADER", "MAX_TTL_S", "MIN_SECRET_LENGTH", "SCOPE",
+__all__ = ["ACCOUNT_MAX_TTL_S", "ACCOUNT_MIN_TTL_S", "HEADER", "MAX_TTL_S", "MIN_SECRET_LENGTH",
+           "NO_EXPIRY_TTL_S", "SCOPE",
            "Grant", "GrantError", "mint", "usable", "verify"]
