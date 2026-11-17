@@ -5,9 +5,12 @@ Two avatars of the library could not wear underwear, for the same reason in two 
 * **AvatarSample B** (and A, C, Rinna, VRoid Female/Male): clothing painted into the
   skin texture — B a printed crop top and shorts. Taking the garment meshes off leaves
   them; lingerie went on over them.
-* **AvatarSample_O**: her chest skin is *there* as geometry, but her texture's alpha
-  cuts it away — VRoid hides skin under clothes that way. The body check found no body
-  under her dress and refused.
+* **AvatarSample_O**: both, in different places (BR2, measured). From 0.964 m to 1.075 m
+  up her there is no skin triangle at all, all round her, and only a part ring to 1.13 m:
+  that is deleted geometry, which no texture can fill (BC1 / BR1). Round the hole, 88
+  skin triangles (87 cm², 9 221 texels) are there as geometry but cut away by her
+  texture's alpha — VRoid hides skin under clothes that way — and this restorer makes
+  those solid. The body check refused her for the deleted band, not for the alpha.
 
 What avatar pipelines do with a base body whose texture carries baked clothing is the
 same thing in both cases: mask what is not skin in UV space and fill it from the skin

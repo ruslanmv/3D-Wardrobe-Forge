@@ -38,13 +38,27 @@ def tool():
     return module
 
 
+def _without_reviews(folder: Path) -> Settings:
+    """Settings over a copy of the body-surface folder whose registry holds no review: the sheet
+    is checked for an unreviewed file, whatever the operator's committed registry records."""
+    import shutil
+
+    root = folder / "body_surface"
+    shutil.copytree(ROOT / "assets" / "body_surface", root)
+    data = json.loads((root / "adult-design-reviews.json").read_text(encoding="utf-8"))
+    data["reviews"] = {}
+    (root / "adult-design-reviews.json").write_text(json.dumps(data), encoding="utf-8")
+    return Settings(_env_file=None, wardrobe_body_surface_root=str(root))
+
+
 @pytest.fixture(scope="module")
-def sheet(tool):
+def sheet(tool, tmp_path_factory):
     library = AvatarLibrary.from_directory(ROOT / "assets" / "library")
     entry = library.get(SLUG)
     if entry is None or entry.path is None:
         pytest.skip("library file not present")
-    return tool.specification(Path(entry.path), SLUG, library, Settings(_env_file=None)), entry
+    settings = _without_reviews(tmp_path_factory.mktemp("registry"))
+    return tool.specification(Path(entry.path), SLUG, library, settings), entry
 
 
 def test_the_sheet_names_the_exact_file_and_what_the_import_holds_a_delivery_to(sheet):
@@ -56,7 +70,9 @@ def test_the_sheet_names_the_exact_file_and_what_the_import_holds_a_delivery_to(
     assert all(b["node"] and len(b["restMm"]) == 3 for b in spec["bones"])
     assert len(spec["expressions"]) == 14 and spec["identity"]
     assert all(i["vertices"] > 0 for i in spec["identity"])
-    assert {g["slot"] for g in spec["garments"]} == {"shoes", "tops"}
+    # BR2: her collar and cuff ("…_Onepiece_00_CLOTH_01/_02") are clothing too; before BR2 the
+    # detector missed VRoid's numbered sub-parts and a bare build kept them on.
+    assert {g["slot"] for g in spec["garments"]} == {"onepiece", "shoes", "tops"}
 
 
 def test_the_sheet_reports_the_registries_and_makes_no_finding(tool, sheet):

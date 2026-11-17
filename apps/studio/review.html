@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>Character review · Wardrobe Studio</title>
+        <link rel="stylesheet" href="studio.css" />
+        <link rel="stylesheet" href="review.css" />
+        <!-- The same import map as index.html: the review renders with the Studio's own viewer. -->
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js",
+                    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/",
+                    "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.4/lib/three-vrm.module.min.js"
+                }
+            }
+        </script>
+        <script type="module" src="js/review.js"></script>
+    </head>
+    <body class="review-page">
+        <header class="review-head">
+            <a href="./" class="review-back">← Studio</a>
+            <h1>Character review</h1>
+        </header>
+
+        <p class="review-locked" id="review-locked" hidden>
+            Character review is for an admin session. Log in from the Studio's Settings, then come back here.
+        </p>
+        <p class="form-error" id="review-error" role="alert" hidden></p>
+
+        <main class="review-main" id="review-main" hidden>
+            <section class="review-list" aria-label="Characters">
+                <ul id="review-characters"></ul>
+                <p class="review-note" id="review-missing" hidden></p>
+            </section>
+
+            <section class="review-detail" id="review-detail" hidden>
+                <h2 id="review-name"></h2>
+                <div class="review-stage" id="review-stage"></div>
+                <div class="review-views" role="group" aria-label="View">
+                    <button type="button" class="secondary" data-view="front">Front</button>
+                    <button type="button" class="secondary" data-view="left">Side</button>
+                    <button type="button" class="secondary" data-view="back">Back</button>
+                    <button type="button" class="secondary" data-view="turntable">Turntable</button>
+                </div>
+                <dl class="review-facts">
+                    <dt>File rendered here (SHA-256, hashed in this browser)</dt>
+                    <dd><code id="review-hash-local">loading…</code></dd>
+                    <dt>Pinned in the library</dt>
+                    <dd><code id="review-hash-pin"></code> <span id="review-hash-match"></span></dd>
+                    <dt>Licence</dt>
+                    <dd id="review-licence"></dd>
+                    <dt>Declared adult (operator)</dt>
+                    <dd id="review-declared"></dd>
+                    <dt>Body</dt>
+                    <dd id="review-body"></dd>
+                    <dt>Review</dt>
+                    <dd id="review-state"></dd>
+                    <dt>Status</dt>
+                    <dd id="review-status"></dd>
+                </dl>
+                <ul class="review-needs" id="review-needs"></ul>
+
+                <details class="review-guide" open>
+                    <summary>How to assess</summary>
+                    <ul>
+                        <li>Judge the design you see: body proportions, face, build and overall presentation, from
+                            every side.</li>
+                        <li>An anime or VRoid art style is not, by itself, a reason to record
+                            <em>age-ambiguous</em>. Many adult characters are drawn that way.</li>
+                        <li>A declared or stated age is not enough on its own. The operator's declaration is shown
+                            for context; it is not evidence of the design.</li>
+                        <li>If the design could reasonably be read as under 18, record <em>age-ambiguous</em> or
+                            <em>appears-minor</em>. If you cannot judge it from what is shown, record
+                            <em>not-assessable</em>.</li>
+                        <li>A finding is permanent for these exact bytes. Only <em>clearly-adult</em> opens
+                            anything.</li>
+                    </ul>
+                </details>
+
+                <form class="review-form" id="review-form" hidden>
+                    <fieldset>
+                        <legend>Your finding</legend>
+                        <div id="review-outcomes"></div>
+                    </fieldset>
+                    <label>Your name <input id="review-reviewer" autocomplete="name" maxlength="120" required /></label>
+                    <label
+                        >What you looked at
+                        <textarea id="review-evidence" rows="3" maxlength="2000" required></textarea>
+                    </label>
+                    <label class="review-check">
+                        <input type="checkbox" id="review-examined" />
+                        I looked at this rendered model myself, from the front, side and back.
+                    </label>
+                    <button type="submit" id="review-submit" disabled>Record finding</button>
+                </form>
+                <p class="review-note" id="review-done" hidden></p>
+            </section>
+        </main>
+    </body>
+</html>

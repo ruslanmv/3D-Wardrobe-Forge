@@ -55,6 +55,10 @@ def settings(tmp_path: Path) -> Settings:
         wardrobe_template_root=str(TEMPLATE_ROOT),
         strict_licensing=True,
         public_base_url="",
+        # CG5. The production default is on; the suite starts from off so every gate's
+        # switch-off path stays tested, and a test that needs it on says so.
+        wardrobe_adult_body_surface=False,
+        wardrobe_bare_body_completion=False,
     )
 
 
