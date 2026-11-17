@@ -1,0 +1,199 @@
+/* CG4. Character review: the Studio's tokens (studio.css), laid out for one character at a time. */
+.review-page {
+    min-height: 100vh;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--ui);
+}
+
+.review-head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.review-head h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 1.5rem;
+}
+
+.review-back {
+    color: var(--accent);
+}
+
+.review-main {
+    display: grid;
+    grid-template-columns: minmax(220px, 300px) 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 760px) {
+    .review-main {
+        grid-template-columns: 1fr;
+    }
+}
+
+.review-list ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.review-list button {
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line-strong);
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.review-list button[aria-current='true'] {
+    border-color: var(--accent);
+}
+
+.review-list small {
+    display: block;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.review-chip {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    background: var(--panel-3);
+    color: var(--muted);
+}
+
+.review-chip[data-tone='ok'] {
+    color: var(--ok);
+}
+
+.review-chip[data-tone='warn'] {
+    color: var(--warn);
+}
+
+.review-chip[data-tone='bad'] {
+    color: var(--bad);
+}
+
+.review-detail h2 {
+    margin: 0 0 8px;
+    font-family: var(--display);
+}
+
+.review-stage {
+    position: relative;
+    height: min(62vh, 560px);
+    border-radius: var(--radius);
+    background: var(--panel-2);
+    overflow: hidden;
+}
+
+.review-stage canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.review-views {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 12px;
+}
+
+.review-facts {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 12px;
+    margin: 0 0 8px;
+}
+
+.review-facts dt {
+    color: var(--muted);
+}
+
+.review-facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+    .review-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .review-facts dd {
+        margin-bottom: 6px;
+    }
+}
+
+.review-needs {
+    color: var(--warn);
+    padding-left: 18px;
+}
+
+.review-guide {
+    margin: 12px 0;
+    padding: 10px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+}
+
+.review-form {
+    display: grid;
+    gap: 10px;
+    max-width: 560px;
+}
+
+.review-form fieldset {
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+}
+
+.review-form label {
+    display: grid;
+    gap: 4px;
+}
+
+.review-form .review-check {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.review-form input:not([type]),
+.review-form textarea {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    font: inherit;
+}
+
+.review-outcome {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 4px 0;
+}
+
+.review-note {
+    color: var(--muted);
+}
+
+.review-locked {
+    color: var(--muted);
+}
