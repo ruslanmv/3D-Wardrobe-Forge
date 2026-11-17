@@ -46,6 +46,9 @@ file's terms. Adulthood of a design is only ever a person's recorded finding abo
 from __future__ import annotations
 
 import hashlib
+import os
+import tempfile
+import threading
 from pathlib import Path
 
 from wardrobe.body_surface.eligibility import assess
@@ -255,17 +258,33 @@ def record_review(registry: Path, *, file: Path, sha256: str, outcome: str, revi
         if sexual_usage_disallowed(terms) or explicit_usage_disallowed(terms):
             raise ValueError("the file's own terms refuse sexual expression; no review changes that")
     path = Path(registry)
-    content = json.loads(path.read_text(encoding="utf-8"))
-    reviews = content.setdefault("reviews", {})
-    if actual in reviews:
-        raise ValueError("a finding is already recorded for these bytes; it is not replaced")
     entry = {"outcome": outcome, "reviewer": reviewer.strip(), "date": date.strip(),
              "evidence": evidence.strip()}
     if packet is not None:
         entry["packet"] = str(packet)
-    reviews[actual] = entry
-    path.write_text(json.dumps(content, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    # Read, check and write as one step: two findings recorded at once (two Studio requests on
+    # worker threads) both read the old registry, and the later write dropped the earlier finding
+    # or replaced one for the same bytes, against the write-once rule. The file is replaced
+    # atomically, so a reader never sees half a registry.
+    with _REGISTRY_LOCK:
+        content = json.loads(path.read_text(encoding="utf-8"))
+        reviews = content.setdefault("reviews", {})
+        if actual in reviews:
+            raise ValueError("a finding is already recorded for these bytes; it is not replaced")
+        reviews[actual] = entry
+        fd, tmp = tempfile.mkstemp(prefix=".reviews-", suffix=".json", dir=path.parent)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(json.dumps(content, indent=1, ensure_ascii=False) + "\n")
+            os.replace(tmp, path)
+        except BaseException:
+            Path(tmp).unlink(missing_ok=True)
+            raise
     return entry
+
+
+#: One writer of a review registry at a time within this process (the API's worker threads).
+_REGISTRY_LOCK = threading.Lock()
 
 
 __all__ = ["CLEARED", "REVIEW_OUTCOMES", "measure_body_state", "record_review", "status"]

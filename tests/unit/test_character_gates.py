@@ -189,3 +189,25 @@ def test_the_body_is_tracked_on_its_own(vrm_bytes, settings, registry, tmp_path,
     row = status_of(path, settings, body={"result": "built", "structure": structure, "bodyStateFiles": files})
     assert row["bodyState"]["state"] == expected_state
     assert row["status"] == expected_status
+
+
+def test_findings_recorded_at_once_are_all_kept(vrm_bytes, registry, tmp_path):
+    """CG4 review: two Studio requests on worker threads both read the old registry and the later
+    write dropped the earlier finding. Recorded together, every finding stays, each once."""
+    import json
+    from concurrent.futures import ThreadPoolExecutor
+
+    files = []
+    for i in range(8):
+        data = with_head(edited(vrm_bytes, allow)) + b" " * i
+        files.append((write(tmp_path, data, f"{i}.vrm"), hashlib.sha256(data).hexdigest()))
+
+    def one(item):
+        path, sha = item
+        return cg.record_review(registry, file=path, sha256=sha, outcome="clearly-adult", reviewer="A Person",
+                                evidence="looked", date="2026-11-17")
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(one, files))
+    kept = json.loads(registry.read_text(encoding="utf-8"))["reviews"]
+    assert {sha for _, sha in files} <= set(kept)

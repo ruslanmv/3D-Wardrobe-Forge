@@ -177,18 +177,25 @@ async function select(slug) {
     $('review-form').reset();
     renderList();
     renderDetail();
+    // CG4. The previous character leaves the stage before the next one loads, and her hash is
+    // usable only once her own bytes have rendered and she is still the one selected: a finding
+    // is permanent, so it must never be recordable for one file while another is on screen.
+    if (state.viewer) state.viewer.clear('original');
     try {
         const blob = await api.libraryAvatarBlob(slug);
         const buffer = await blob.arrayBuffer();
         if (state.current !== row) return;
-        state.localHash = await sha256Hex(buffer);
+        const hash = await sha256Hex(buffer);
         if (state.blobUrl) URL.revokeObjectURL(state.blobUrl);
         state.blobUrl = URL.createObjectURL(new Blob([buffer], { type: 'model/gltf-binary' }));
         if (!state.viewer) state.viewer = new Viewer($('review-stage'));
         state.viewer.setPose('relaxed');
         await state.viewer.load('original', state.blobUrl);
+        if (state.current !== row) return;
         state.viewer.frame();
+        state.localHash = hash;
         renderDetail();
+        updateSubmit();
     } catch (error) {
         console.warn('[review] could not load', slug, error);
         showError(`Could not load ${row.name || slug}: ${error.message}`);

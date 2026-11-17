@@ -77,7 +77,10 @@ async def _body_state_files(store, slug: str) -> int:
         logger.warning("review: body-state list for %s unreadable: %s", slug, exc)
         return 0
     return sum(1 for item in listed.get("looks", [])
-               if item.get("origin") == "operator-import" and item.get("state") == "bare")
+               # register_import lists the state as ``wardrobeState`` (BL1's field); ``state`` is
+               # the import record's own name for it, kept for any list written that way.
+               if item.get("origin") == "operator-import"
+               and (item.get("wardrobeState") or item.get("state")) == "bare")
 
 
 def _body(avatar) -> dict:

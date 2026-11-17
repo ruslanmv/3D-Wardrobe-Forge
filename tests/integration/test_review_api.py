@@ -168,3 +168,19 @@ def test_a_replacement_imported_in_the_studio_is_reviewable_like_any_character(e
         assert row["reviewState"] == "pending"
         assert row["sha256"] == hashlib.sha256(replacement).hexdigest()
         assert row["licence"]["modification"] is True
+
+
+async def test_an_imported_bare_file_is_counted_by_the_field_the_list_writes(monkeypatch):
+    """CG4 review: register_import lists the state as ``wardrobeState``; reading ``state`` counted
+    every accepted bare import as none, so a fixed character kept showing ``needs-body-state``."""
+    from apps.api.routes import reviews
+
+    async def listed(_store, _slug):
+        return {"looks": [
+            {"origin": "operator-import", "wardrobeState": "bare"},
+            {"origin": "operator-import", "wardrobeState": "underwear"},
+            {"origin": "built", "wardrobeState": "bare"},
+        ]}
+
+    monkeypatch.setattr(reviews.prebuilt, "read_list", listed)
+    assert await reviews._body_state_files(None, "mira") == 1
