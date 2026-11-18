@@ -18,7 +18,7 @@ from wardrobe.body_art.custom import MAX_BYTES, CustomArtError, is_custom
 from wardrobe.body_art.raster import artwork_png
 from wardrobe.body_surface import body_state_import
 from wardrobe.pipeline import prebuilt
-from wardrobe.policy import grants, revocations
+from wardrobe.policy import device_codes, grants, revocations
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +200,26 @@ def mint_grant(body: GrantRequest, request: Request, admin: AdminDep, admins: Ad
     logger.info("read grant %s minted for %s by %s, expires %s", grant.id, sorted(grant.slugs),
                 admins.username or "admin", grant.expires)
     return {"token": token, "header": grants.HEADER, **grant.to_dict()}
+
+
+@router.post("/admin/device-codes", status_code=status.HTTP_201_CREATED)
+def issue_device_code(body: GrantRequest, request: Request, admin: AdminDep, admins: AdminSessionsDep,
+                      settings: SettingsDep) -> dict:
+    """DC1. The same read grant as ``/admin/grants``, handed over as a six-character one-time code.
+
+    For a headset, where pasting a token is impossible: the person types the code once in the
+    app's Settings, and the app trades it for this grant at ``/v1/device-codes/redeem``. Minted
+    by ``mint_grant`` itself, so every check on avatars, lifetime and the secret is that route's.
+    """
+    minted = mint_grant(body, request, admin, admins, settings)
+    token = minted.pop("token")
+    try:
+        code, expires = device_codes.codes.issue(token, minted)
+    except ValueError as error:
+        raise HTTPException(status_code=429, detail={"reason": "device_codes_full",
+                                                     "message": str(error)}) from None
+    logger.info("device code issued for grant %s by %s", minted.get("id"), admins.username or "admin")
+    return {"code": device_codes.formatted(code), "codeExpires": int(expires), "grant": minted}
 
 
 # ----------------------------------------------------------------------

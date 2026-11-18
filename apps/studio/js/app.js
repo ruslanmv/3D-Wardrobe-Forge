@@ -713,6 +713,35 @@ function setSession(session) {
 }
 
 /**
+ * DC1. The same grant as mintGrant, handed over as a six-character one-time code: on a headset the
+ * person cannot paste a token, and one mistyped character of a long one is a grant that does not
+ * verify. The code is shown here only; the app trades it for the grant, once, within ten minutes.
+ */
+async function pairHeadset() {
+    const button = $('grant-pair');
+    const slugs = state.library.filter((avatar) => avatar.available).map((avatar) => avatar.slug);
+    const days = Number($('grant-days').value); // 0 = no expiry (CG8)
+    button.disabled = true;
+    $('settings-error').hidden = true;
+    try {
+        const issued = await api.issueDeviceCode(slugs, days ? days * 24 * 3600 : 0, 'headset');
+        $('grant-pair-code').textContent = issued.code;
+        const until = new Date(issued.codeExpires * 1000).toLocaleTimeString();
+        $('grant-pair-meta').textContent = `${slugs.length} characters · use it before ${until}`;
+        $('grant-pair-result').hidden = false;
+    } catch (error) {
+        const reason = error && error.detail && error.detail.reason;
+        $('settings-error').textContent =
+            reason === 'grants_unavailable'
+                ? 'This Space has no WARDROBE_GRANT_SECRET (32+ characters). Set it in the Space settings, then try again.'
+                : `Could not create a code: ${(error && error.message) || error}`;
+        $('settings-error').hidden = false;
+    } finally {
+        button.disabled = false;
+    }
+}
+
+/**
  * CG7. Mint a read grant for every available library character, so the companion app lists and
  * loads her private looks (the bare one among them). The server decides everything: an admin
  * session, a grant secret, at most 30 days. The token is shown once, here, and kept nowhere.
@@ -868,6 +897,7 @@ function bindAccount() {
     });
     $('declarations-signin').addEventListener('click', openSignIn);
     $('grant-mint').addEventListener('click', mintGrant);
+    $('grant-pair').addEventListener('click', pairHeadset);
     $('grant-revoke').addEventListener('click', async () => {
         const token = $('grant-revoke-token').value.trim();
         if (!token) return;

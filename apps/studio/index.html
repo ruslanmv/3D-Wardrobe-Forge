@@ -587,6 +587,16 @@
                                 <option value="0">No expiry (until revoked)</option>
                             </select>
                             <button type="button" class="primary" id="grant-mint">Create grant</button>
+                            <!-- DC1. A headset cannot paste a token: a six-character code instead. -->
+                            <button type="button" class="secondary" id="grant-pair">Pair a headset</button>
+                        </div>
+                        <div class="grant-result" id="grant-pair-result" hidden>
+                            <p class="settings-note">
+                                Type this code in the app's Settings ▸ Wardrobe ▸ grant on the headset.
+                                It works once, within 10 minutes.
+                            </p>
+                            <output id="grant-pair-code" class="grant-pair-code" aria-live="polite"></output>
+                            <small id="grant-pair-meta"></small>
                         </div>
                         <div class="grant-result" id="grant-result" hidden>
                             <textarea id="grant-token" readonly rows="3" spellcheck="false"></textarea>
