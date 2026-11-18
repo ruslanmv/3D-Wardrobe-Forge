@@ -242,7 +242,6 @@ class Orchestrator:
             await render_preview.run(context, engine)
 
             await self._publish(context)
-            await context.emit(JobState.COMPLETED, "look ready")
             # RU1. Under every key it answers to; the list entry is written once, by the first.
             # BL1. Registration is not lookup: a bare look is never *answered* from the cache
             # (_prebuilt_keys), but once built it is recorded and listed like any prebuilt look,
@@ -250,9 +249,20 @@ class Orchestrator:
             # BR1. A reconstructed bare body (bodyCompletion: proxy) carries surface her author never
             # made: it stays a private job result for the operator to inspect and is never
             # registered, so no prebuilt list (and so no app) can serve it unreviewed.
+            # PB5. Registered *before* the job says it is done. It used to be the other way round,
+            # and anything acting on "completed" at once (the Studio opening the look, a client
+            # listing her wardrobe, a Space restarting) could find no prebuilt entry yet: the
+            # in-memory job store holds this very record, so a poller sees the new state the
+            # instant it is set. remember() keeps only a completed record, so it is given a
+            # completed copy; the entry stored is the same one as before.
             reconstructed = ((record.fit_report.base_body or {}).get("bodyCompletion") or {}).get("applied")
-            for i, key in enumerate([] if reconstructed else self._remember_keys(record.request)):
-                await prebuilt.remember(self.store, key, record, list_it=i == 0)
+            keys = [] if reconstructed else self._remember_keys(record.request)
+            if keys:
+                done = record.model_copy(deep=True)
+                done.transition(JobState.COMPLETED, "look ready")
+                for i, key in enumerate(keys):
+                    await prebuilt.remember(self.store, key, done, list_it=i == 0)
+            await context.emit(JobState.COMPLETED, "look ready")
 
         except WardrobeError as exc:
             logger.info("job %s rejected/failed: %s", record.id, exc.message)
