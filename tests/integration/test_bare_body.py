@@ -405,3 +405,64 @@ async def test_o_reconstruction_is_opt_in_switched_tagged_private_and_never_regi
     assert built.request.options.private
     assert await prebuilt.ready_looks(store, "test-avatar", include_private=True) == []
     assert await prebuilt.ready_looks(store, "vroid-avatar-sample-o", include_private=True) == []
+
+
+def _textured(vrm: bytes) -> bytes:
+    """BD1 fixture: the calibration body with a plain skin texture, so there is skin to paint."""
+    import io
+
+    import numpy as np
+    from PIL import Image
+
+    doc = GltfDocument.from_bytes(vrm)
+    doc.gltf["extensions"]["VRMC_vrm"]["meta"]["allowExcessivelySexualUsage"] = True
+    pixels = np.zeros((512, 512, 4), np.uint8)
+    pixels[...] = (236, 200, 182, 255)
+    buffer = io.BytesIO()
+    Image.fromarray(pixels).save(buffer, format="PNG")
+    texture = doc.add_texture(doc.add_image(buffer.getvalue(), name="skin"))
+    for primitive in (p for m in doc.meshes for p in m["primitives"]):
+        if "TEXCOORD_0" not in primitive.get("attributes", {}):
+            primitive["attributes"]["TEXCOORD_0"] = doc.add_accessor(
+                np.zeros((doc.gltf["accessors"][primitive["attributes"]["POSITION"]]["count"], 2), np.float32))
+    for material in doc.materials:
+        material.setdefault("pbrMetallicRoughness", {})["baseColorTexture"] = {"index": texture}
+    return doc.to_bytes()
+
+
+async def test_detail_needs_a_full_review(orchestrator, store, vrm_bytes):
+    """BD1. A clearance that opens bare (a finding without its packet) does not paint detail."""
+    source = _textured(vrm_bytes)
+    await store.put("sources/d.vrm", source)
+    orchestrator.settings.wardrobe_adult_body_surface = True
+    clear_design_for_test(orchestrator.settings, source)  # no packet, short evidence
+    payload = request("sources/d.vrm", bareDetail="natural")
+    with patch("wardrobe.vrm.body_detail.paint_detail", side_effect=AssertionError("no paint")):
+        result = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
+    assert result.state is JobState.REJECTED
+    assert result.reason == "body_surface_not_permitted"
+    assert "full adult-design review" in result.error and result.look is None
+
+
+async def test_detail_with_full_review_is_painted_and_tagged(orchestrator, store, vrm_bytes):
+    from wardrobe.vrm.body_detail import BodyDetail
+    from wardrobe.vrm.body_integrity import BodyIntegrity, RegionCheck
+
+    source = _textured(vrm_bytes)
+    await store.put("sources/d.vrm", source)
+    orchestrator.settings.wardrobe_adult_body_surface = True
+    clear_design_for_test(orchestrator.settings, source, full=True)
+    painted = BodyDetail(preset="warm", landmarks={}, painted_texels=10, texels_per_mm=4.0, upscaled=False,
+                         textures={})
+    # The calibration body's UVs are not a real layout; placement is tested in the unit tests and on
+    # the reference body. What is pinned here: asked after every check, with her facing, and tagged.
+    with patch("wardrobe.pipeline.bare_body.check_body", return_value=BodyIntegrity({"upper": RegionCheck(True, 1)})), \
+         patch("wardrobe.vrm.body_detail.paint_detail", return_value=painted) as paint:
+        result = await orchestrator.run_now(
+            CreateJobRequest.model_validate(request("sources/d.vrm", bareDetail="warm")))
+    assert result.state is JobState.COMPLETED, result.error
+    assert paint.call_args.kwargs == {"preset": "warm", "forward": 1.0}
+    output = GltfDocument.from_bytes(await store.get(f"looks/{result.look.id}/look.vrm"))
+    assert output.gltf["extras"]["wardrobeForge"]["detail"] == "warm"
+    detail = result.fit_report.base_body["bodyDetail"]
+    assert detail["preset"] == "warm" and detail["clearance"]["kind"] == "review"

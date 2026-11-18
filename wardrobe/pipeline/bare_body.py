@@ -3,9 +3,9 @@ import hashlib
 import logging
 import re
 
-from wardrobe.body_surface.eligibility import assess
+from wardrobe.body_surface.eligibility import assess, detail_clearance
 from wardrobe.errors import BodyIncompleteForBare, BodySurfaceNotPermitted
-from wardrobe.vrm import body_completion
+from wardrobe.vrm import body_completion, body_detail
 from wardrobe.vrm.body_integrity import check_body
 from wardrobe.vrm.completion_join import measure_join
 from wardrobe.vrm.garment_inventory import build_strip_plan, garment_inventory, remove_garments
@@ -29,6 +29,18 @@ async def prepare(context):
     if not eligibility.allowed:
         raise BodySurfaceNotPermitted(eligibility.message, detail={"refusedBy": eligibility.refused_by,
                                                                    "eligibility": eligibility.to_dict()})
+    # BD1. Asked first, before any work: painted detail needs a full review (or Forge's own body).
+    preset = getattr(request.options, "bare_detail", None)
+    detail_cleared = None
+    if preset:
+        detail_cleared = detail_clearance(context.settings.body_surface_root_path,
+                                          context.settings.wardrobe_calibration_root, context.source_sha256)
+        if detail_cleared is None:
+            raise BodySurfaceNotPermitted(
+                "body detail needs a full adult-design review of this exact file: clearly-adult, its "
+                f"review packet, and at least {body_detail_evidence()} characters of evidence "
+                "(adult-design-reviews.json), or Forge's synthetic adult reference",
+                detail={"refusedBy": "detail-review", "eligibility": eligibility.to_dict()})
     doc = context.document
     # A prior BC1 look is not the avatar's authored body.
     for item in [*doc.meshes, *doc.nodes]:
@@ -129,6 +141,19 @@ async def prepare(context):
     if remaining or tagged:
         raise BodyIncompleteForBare("detected clothing remains")
     tag = {"bare": True, "templateId": "body-bare-v1"}
+    if preset:
+        # BD1. Last, after every check above saw her exactly as before: the census, the bands and
+        # the clothing check would read painted anatomy as painted clothing.
+        from wardrobe.vrm.inspect import VrmSpec
+
+        forward = -1.0 if context.info.spec is VrmSpec.VRM0 else 1.0
+        painted = body_detail.paint_detail(doc, context.measurements, preset=preset, forward=forward)
+        if painted is None:
+            raise BodyIncompleteForBare("body detail could not be placed: no textured skin, or her "
+                                        "chest and pelvis landmarks were not found",
+                                        detail={"bodyDetail": preset})
+        context.fit_report.base_body["bodyDetail"] = {**painted.to_dict(), "clearance": detail_cleared}
+        tag.update(detail=preset)
     if completion and completion["applied"]:
         # BR1. Said in the file itself: this body is not entirely hers. The patch is BC1's,
         # tagged bodyProxy on its own mesh, so a viewer or a reviewer can tell it apart.
@@ -138,6 +163,12 @@ async def prepare(context):
 
 
 BARE_REGIONS = {"upper", "lower", "leftThigh", "rightThigh", "leftShin", "rightShin"}
+
+
+def body_detail_evidence() -> int:
+    from wardrobe.body_surface.eligibility import DETAIL_EVIDENCE_CHARS
+
+    return DETAIL_EVIDENCE_CHARS
 
 
 def _complete_if_asked(context, doc, inventory, removed) -> dict | None:

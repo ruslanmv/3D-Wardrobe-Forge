@@ -120,6 +120,11 @@ class JobOptions(BaseModel):
     #: operator's separate switch (WARDROBE_BARE_BODY_COMPLETION); its output is private and never
     #: registered for the app.
     body_completion: Literal["proxy"] | None = Field(default=None, alias="bodyCompletion")
+    #: BD1. A body-detail variant painted on the bare body's skin (``assets/body_detail/presets.json``:
+    #: natural, soft-pink, warm, defined). Bare only, and only for a source whose design clearance is
+    #: a full review — the reviewer's evidence and their packet — or Forge's own synthetic reference
+    #: (``eligibility.detail_clearance``). None by default, so no stored cache key changes.
+    bare_detail: str | None = Field(default=None, alias="bareDetail", max_length=32)
     #: MG3. Make sure a foundation is on her under the new clothes, adding only what is missing:
     #: a Forge foundation she already wears is kept (only a new foundation replaces one), and a
     #: half the outfit brings itself (a bikini, a lingerie set) is not doubled. It is also what
@@ -156,6 +161,14 @@ class JobOptions(BaseModel):
     def _completion_only_for_bare(self) -> JobOptions:
         if self.body_completion is not None and self.base_body != "bare":
             raise ValueError("bodyCompletion applies only to baseBody: bare")
+        if self.bare_detail is not None:
+            from wardrobe.vrm.body_detail import load_presets
+
+            if self.base_body != "bare":
+                raise ValueError("bareDetail applies only to baseBody: bare")
+            presets = load_presets()
+            if self.bare_detail not in presets:
+                raise ValueError(f"bareDetail must be one of {', '.join(sorted(presets))}")
         return self
 
     @model_validator(mode="after")
