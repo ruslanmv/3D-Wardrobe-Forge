@@ -27,7 +27,7 @@ async def create_job(request: CreateJobRequest, orchestrator: OrchestratorDep) -
 
     ``options.private`` is the server's to set (apps/api/admin.py), so it is cleared here.
     """
-    if request.options.base_body_mode == "bare":
+    if request.options.over_bare_body:
         raise HTTPException(status_code=403, detail="bare bodies require the private library route")
     request = request.model_copy(update={"options": request.options.model_copy(update={"private": False})})
     if request.body_art:  # a job without tattoos never touches body-art code (I1)

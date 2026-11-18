@@ -14,7 +14,7 @@ from wardrobe.vrm.skin_restore import restoration_verdict, restore_skin, skin_ce
 logger = logging.getLogger(__name__)
 
 
-async def prepare(context):
+async def prepare(context, *, dressed: bool = False):
     request = context.record.request
     # BE1. One eligibility contract: author licence, operator switch, adult declaration, a
     # design clearance bound to this exact file's SHA-256, and a private session. Before BE1 this
@@ -115,7 +115,7 @@ async def prepare(context):
                            {"upper", "lower", "leftThigh", "rightThigh", "leftShin", "rightShin"},
                            bare=True)
     context.fit_report.base_body = {
-        "mode": "bare", "complete": integrity.complete,
+        "mode": "bare-dressed" if dressed else "bare", "complete": integrity.complete,
         "bodyPreparation": "passed" if integrity.complete else "refused", "layerOrder": "passed",
         "removedSlots": sorted({g.slot for g in inventory}),
         "integrity": integrity.to_dict(), "skinRestored": restored.to_dict() if restored else None,
@@ -140,7 +140,9 @@ async def prepare(context):
     remaining = [g for g in garment_inventory(doc) if not is_anatomy(g)]
     if remaining or tagged:
         raise BodyIncompleteForBare("detected clothing remains")
-    tag = {"bare": True, "templateId": "body-bare-v1"}
+    # ES1. Dressed over bare: her body is bare under the outfit, but the look is not a bare look —
+    # a client that takes "bare" for "nothing on" must not take this for one.
+    tag = {"overBare": True} if dressed else {"bare": True, "templateId": "body-bare-v1"}
     if preset:
         # BD1. Last, after every check above saw her exactly as before: the census, the bands and
         # the clothing check would read painted anatomy as painted clothing.

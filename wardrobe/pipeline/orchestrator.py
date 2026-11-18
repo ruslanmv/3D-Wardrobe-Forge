@@ -150,7 +150,7 @@ class Orchestrator:
     def _prebuilt_keys(self, request: CreateJobRequest) -> list[str]:
         # Bare requests always recheck current terms, switch and declaration before output: never
         # answered from the cache, never remembered in it (feat/bare-base-body).
-        if not self.settings.wardrobe_prebuilt or request.options.base_body_mode == "bare":
+        if not self.settings.wardrobe_prebuilt or request.options.over_bare_body:
             return []
         return prebuilt.keys_for(request, self.catalog)
 
@@ -221,6 +221,7 @@ class Orchestrator:
                 await generate_garment.plan(context)
                 engine = self._engine_for_outfit(engine, context)
                 await prepare_base_body.run(context)
+                # Bare alone builds no garment; bare-dressed (ES1) goes on to dress her, below.
                 if record.request.options.base_body_mode == "bare":
                     engine = select_engine("native", self.settings)
                     context.output_bytes = context.document.to_bytes()
@@ -398,7 +399,8 @@ class Orchestrator:
             previewUrl=preview_url,
             sourceAvatarHash=context.source_sha256,
             templateId=record.request.outfit.template_id if record.request.outfit else None,
-            wardrobeState="bare" if record.request.options.base_body_mode == "bare" else None,
+            wardrobeState=("bare" if record.request.options.base_body_mode == "bare" else
+                           "over-bare" if record.request.options.base_body_mode == "bare-dressed" else None),
             outputSha256=hashlib.sha256(context.output_bytes).hexdigest(),
             prompt=prompt,
             plan=context.plan,

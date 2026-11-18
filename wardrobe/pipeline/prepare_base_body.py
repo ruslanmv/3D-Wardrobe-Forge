@@ -136,9 +136,10 @@ async def run(context: PipelineContext) -> None:
     if context.plan is None or context.document is None or context.info is None:
         return
     mode = context.record.request.options.base_body_mode
-    if mode == "bare":
+    if mode in ("bare", "bare-dressed"):
         from wardrobe.pipeline.bare_body import prepare
-        await prepare(context)
+        # ES1. Dressed over bare: the same preparation; the outfit is built on it afterwards.
+        await prepare(context, dressed=mode == "bare-dressed")
         return
     report = context.fit_report
     report.base_body = {"mode": mode, "removedSlots": [], "removedMaterials": [], "complete": None,

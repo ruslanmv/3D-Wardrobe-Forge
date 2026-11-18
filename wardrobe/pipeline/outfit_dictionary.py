@@ -89,6 +89,10 @@ GROUPS: tuple[Group, ...] = (
     # AA. Cards the atelier added. Private because every look in it is gated
     # (see-through, or a bra worn as a top). General new cards stay in their own groups.
     Group("atelier", "Atelier · adults", private=True),
+    # ES3. Erotic sets for private scenes, each dressed over her prepared bare body (base
+    # "bare-dressed"), so whatever comes off — the whole set, or only its top or only its bottom
+    # (the visibility answer by slot, ES2) — shows her own skin and its detail, not painted clothing.
+    Group("erotic", "Erotic sets · adults", private=True),
 )
 
 
@@ -103,6 +107,9 @@ class Outfit:
     tags: tuple[str, ...] = field(default_factory=tuple)
     #: AB. (collection, design id): a design of an independent collection (wardrobe.collections).
     design: tuple[str, str] | None = None
+    #: ES3. The base body the set is built on: "bare-dressed" for the erotic sets. None — every other
+    #: entry — dresses her as she is.
+    base: str | None = None
 
     def request(self) -> OutfitRequest:
         fields: dict = {"prompt": self.prompt}
@@ -455,6 +462,33 @@ OUTFITS: tuple[Outfit, ...] = (
            "black high-cut bodysuit + black thigh-high stockings + black cropped jacket worn open"
            " + black combat boots",
            tags=("anime-inspired", "fan-service", "action")),
+    # --- erotic sets (private, ES3: dressed over her bare body) ------------
+    Outfit("erotic-boudoir", "Boudoir garter set", "erotic",
+           "black lace balconette bra + black garter set + black thigh-high stockings",
+           tags=("boudoir", "striptease", "bedroom"), base="bare-dressed"),
+    Outfit("erotic-seduction", "Sheer babydoll & thong", "erotic", "black sheer babydoll + black thong",
+           tags=("seduction", "bedroom"), base="bare-dressed"),
+    Outfit("erotic-dominant", "Leather corset & garter", "erotic",
+           "black structured leather corset + black leather garter + black g-string"
+           " + black over-knee boots",
+           tags=("dominant", "role-play"), base="bare-dressed"),
+    Outfit("erotic-fishnet", "Fishnet bodystocking & heels", "erotic",
+           "black fishnet bodystocking + black stiletto heels",
+           tags=("club", "tease"), base="bare-dressed"),
+    Outfit("erotic-cutout", "Cut-out bodysuit", "erotic", "red cut-out bodysuit + red stiletto heels",
+           tags=("date-night", "tease"), base="bare-dressed"),
+    Outfit("erotic-massage", "Bralette & thong", "erotic", "white bralette + white thong",
+           tags=("massage", "slow", "bedroom"), base="bare-dressed"),
+    Outfit("erotic-after-shower", "Short robe & thong", "erotic", "white short robe + white thong",
+           tags=("shower", "morning"), base="bare-dressed"),
+    Outfit("erotic-guepiere", "Guêpière & stockings", "erotic",
+           "black guêpière + black g-string + black thigh-high stockings",
+           tags=("striptease", "boudoir"), base="bare-dressed"),
+    Outfit("erotic-micro-bikini", "Black micro bikini, poolside", "erotic", "black micro bikini",
+           tags=("pool", "sun", "tease"), base="bare-dressed"),
+    Outfit("erotic-night-out", "Sheer mini & thong", "erotic",
+           "black sheer bodycon mini dress + black thong + black stiletto heels",
+           tags=("night-out", "tease"), base="bare-dressed"),
     # --- lingerie (private) ---------------------------------------------
     Outfit("lace-lingerie-set", "Lace lingerie set", "lingerie", "black lace lingerie set"),
     Outfit("balconette-set", "Balconette bra & briefs", "lingerie", "red balconette bra + red briefs"),
@@ -703,7 +737,24 @@ def plan_entry(outfit: Outfit, catalog: TemplateCatalog) -> dict:
         "garments": garments,
         # CR2. Additive: a client that does not know add-ons ignores the key.
         "addOns": add_ons(outfit, garments, catalog),
+        # ES3. Additive too: the job options this entry needs (its base body), and which halves can
+        # come off alone — a set with both a top and a bottom piece.
+        **({"options": {"baseBody": outfit.base}} if outfit.base else {}),
+        **({"partial": _partial(garments)} if outfit.base else {}),
     }
+
+
+def _partial(garments: list[dict]) -> list[str]:
+    """ES3. "top" / "bottom" when the set has a piece that is only that half (a bra, a thong)."""
+    halves = set()
+    for garment in garments:
+        name = (garment.get("template") or "") + " " + garment["name"].lower()
+        tops = ("bra", "bralette", "bikini-top", "corset", "guepiere", "guêpière", "bustier", "babydoll")
+        if any(k in name for k in tops):
+            halves.add("top")
+        if any(k in name for k in ("thong", "string", "brief", "garter", "tanga", "cheeky", "bikini-bottom")):
+            halves.add("bottom")
+    return sorted(halves)
 
 
 @lru_cache(maxsize=4)

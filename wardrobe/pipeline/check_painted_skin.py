@@ -49,7 +49,7 @@ async def run(context: PipelineContext) -> None:
         # Measured on the output: a heel's stance lift moves her whole body up.
         measurements = measure_body(document, inspect_document(document))
     except (MeasurementError, ValueError, KeyError) as exc:  # pragma: no cover - validate_output says why
-        if mode == "bare":
+        if mode in ("bare", "bare-dressed"):
             raise PaintedClothingShows("bare output skin could not be checked") from exc
         context.warn(f"skin check skipped: the output could not be measured ({exc})")
         return
@@ -66,7 +66,7 @@ async def run(context: PipelineContext) -> None:
         return
 
     share = f"{round(result.visible_share * 100)}%"
-    if mode == "bare" or (context.requested_foundation and mode != "preserve"):
+    if mode in ("bare", "bare-dressed") or (context.requested_foundation and mode != "preserve"):
         base_body["layerOrder"] = "failed"
         kind = "swimwear" if any(g.category == "swimwear" for g in context.plan.garments) else "underwear"
         raise PaintedClothingShows(

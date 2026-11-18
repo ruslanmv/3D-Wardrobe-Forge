@@ -466,3 +466,35 @@ async def test_detail_with_full_review_is_painted_and_tagged(orchestrator, store
     assert output.gltf["extras"]["wardrobeForge"]["detail"] == "warm"
     detail = result.fit_report.base_body["bodyDetail"]
     assert detail["preset"] == "warm" and detail["clearance"]["kind"] == "review"
+
+
+async def test_dressed_over_bare_is_gated_like_bare(orchestrator, store, vrm_bytes):
+    """ES1. An outfit over her bare body asks every bare question first."""
+    await store.put("sources/e.vrm", vrm_bytes)
+    payload = request("sources/e.vrm")
+    payload["outfit"] = {"prompt": "black balconette bra + black thong"}
+    payload["options"]["baseBody"] = "bare-dressed"
+    with patch("wardrobe.pipeline.generate_garment.generate", side_effect=AssertionError("no garment")):
+        result = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
+    assert result.state is JobState.REJECTED and result.reason == "body_surface_not_permitted"
+
+
+async def test_dressed_over_bare_builds_the_outfit_and_is_not_a_bare_look(orchestrator, store, vrm_bytes):
+    from wardrobe.vrm.body_integrity import BodyIntegrity, RegionCheck
+
+    doc = GltfDocument.from_bytes(vrm_bytes)
+    doc.gltf["extensions"]["VRMC_vrm"]["meta"]["allowExcessivelySexualUsage"] = True
+    await store.put("sources/e.vrm", doc.to_bytes())
+    orchestrator.settings.wardrobe_adult_body_surface = True
+    clear_design_for_test(orchestrator.settings, doc.to_bytes())
+    payload = request("sources/e.vrm")
+    payload["outfit"] = {"prompt": "black balconette bra + black thong"}
+    payload["options"]["baseBody"] = "bare-dressed"
+    with patch("wardrobe.pipeline.bare_body.check_body", return_value=BodyIntegrity({"upper": RegionCheck(True, 1)})):
+        result = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
+    assert result.state is JobState.COMPLETED, result.error
+    output = GltfDocument.from_bytes(await store.get(f"looks/{result.look.id}/look.vrm"))
+    tag = output.gltf["extras"]["wardrobeForge"]
+    assert tag.get("overBare") is True and not tag.get("bare")
+    assert garment_inventory(output)  # the set is on her
+    assert result.look.wardrobe_state == "over-bare" and result.request.options.private
