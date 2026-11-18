@@ -104,7 +104,7 @@ def job_request(storage_key: str, prompt: str, **options) -> dict:
     }
 
 
-def clear_design_for_test(settings: Settings, *sources: bytes) -> None:
+def clear_design_for_test(settings: Settings, *sources: bytes, full: bool = False) -> None:
     """BE1. Point ``settings`` at a temporary copy of the body-surface registry that holds a
     *test* clearly-adult review for each source's exact bytes. Tests of the bare pipeline need
     the design clearance the real gate asks for; the committed registry is never written, and
@@ -123,5 +123,9 @@ def clear_design_for_test(settings: Settings, *sources: bytes) -> None:
             "outcome": "clearly-adult", "reviewer": "test-fixture (not a review)",
             "date": "2026-11-15", "evidence": "unit test",
         }
+        if full:  # BD1. A full review: the packet, and evidence a detail clearance accepts.
+            data["reviews"][hashlib.sha256(blob).hexdigest()].update(
+                packet="tests/fixture-packet.json",
+                evidence="unit test fixture: stands in for a person's full review with its packet")
     path.write_text(json.dumps(data), encoding="utf-8")
     settings.wardrobe_body_surface_root = str(root)

@@ -74,6 +74,32 @@ def design_clearance(review_root, reference_root, source_sha256: str | None) -> 
     return None
 
 
+#: BD1. Written evidence a full review gives, at least: the placeholder entries of 2026-11-17
+#: ("Its okay is adult", no character, no packet) are not one.
+DETAIL_EVIDENCE_CHARS = 40
+
+
+def detail_clearance(review_root, reference_root, source_sha256: str | None) -> dict | None:
+    """BD1. Clearance for painted anatomical detail on these exact bytes, or None.
+
+    Detail is more explicit than the bare body itself, so it asks for more than ``design_clearance``:
+    a person's ``clearly-adult`` finding that carries its review packet (the front/back/side
+    evidence ``tools/body_surface/review_packet.py`` writes, which ``record_review`` checks is for
+    this file) and written evidence of at least ``DETAIL_EVIDENCE_CHARS`` characters — or Forge's
+    own synthetic adult reference, which has no character design to review. A finding recorded
+    without looking at the packet does not paint detail on anyone.
+    """
+    review = design_review(review_root, source_sha256)
+    if (review and review.get("outcome") == "clearly-adult" and review.get("packet")
+            and len(str(review.get("evidence", "")).strip()) >= DETAIL_EVIDENCE_CHARS):
+        return {"kind": "review", "reviewer": review["reviewer"], "date": review["date"],
+                "packet": review["packet"]}
+    reference = synthetic_reference(reference_root, source_sha256)
+    if reference:
+        return {"kind": "synthetic-reference", "bodyId": reference["bodyId"]}
+    return None
+
+
 @dataclass
 class Eligibility:
     allowed: bool
@@ -110,5 +136,5 @@ def assess(*, terms, operator_enabled: bool, depicts_adult: bool, private: bool,
     return Eligibility(False, first, checks[first]["why"], checks)
 
 
-__all__ = ["Eligibility", "SYNTHETIC_FILE", "SYNTHETIC_SCHEMA", "assess", "design_clearance",
-           "synthetic_reference"]
+__all__ = ["DETAIL_EVIDENCE_CHARS", "Eligibility", "SYNTHETIC_FILE", "SYNTHETIC_SCHEMA", "assess",
+           "design_clearance", "detail_clearance", "synthetic_reference"]
