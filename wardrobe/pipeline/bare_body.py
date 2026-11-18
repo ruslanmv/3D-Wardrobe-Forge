@@ -147,13 +147,17 @@ async def prepare(context):
         from wardrobe.vrm.inspect import VrmSpec
 
         forward = -1.0 if context.info.spec is VrmSpec.VRM0 else 1.0
-        painted = body_detail.paint_detail(doc, context.measurements, preset=preset, forward=forward)
+        state = getattr(request.options, "bare_state", None)
+        painted = body_detail.paint_detail(doc, context.measurements, preset=preset, forward=forward,
+                                           state=state)
         if painted is None:
             raise BodyIncompleteForBare("body detail could not be placed: no textured skin, or her "
                                         "chest and pelvis landmarks were not found",
                                         detail={"bodyDetail": preset})
         context.fit_report.base_body["bodyDetail"] = {**painted.to_dict(), "clearance": detail_cleared}
         tag.update(detail=preset)
+        if state:
+            tag.update(state=state)
     if completion and completion["applied"]:
         # BR1. Said in the file itself: this body is not entirely hers. The patch is BC1's,
         # tagged bodyProxy on its own mesh, so a viewer or a reviewer can tell it apart.

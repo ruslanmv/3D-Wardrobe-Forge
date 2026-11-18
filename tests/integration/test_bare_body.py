@@ -461,7 +461,7 @@ async def test_detail_with_full_review_is_painted_and_tagged(orchestrator, store
         result = await orchestrator.run_now(
             CreateJobRequest.model_validate(request("sources/d.vrm", bareDetail="warm")))
     assert result.state is JobState.COMPLETED, result.error
-    assert paint.call_args.kwargs == {"preset": "warm", "forward": 1.0}
+    assert paint.call_args.kwargs == {"preset": "warm", "forward": 1.0, "state": None}
     output = GltfDocument.from_bytes(await store.get(f"looks/{result.look.id}/look.vrm"))
     assert output.gltf["extras"]["wardrobeForge"]["detail"] == "warm"
     detail = result.fit_report.base_body["bodyDetail"]

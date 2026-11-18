@@ -125,6 +125,9 @@ class JobOptions(BaseModel):
     #: a full review — the reviewer's evidence and their packet — or Forge's own synthetic reference
     #: (``eligibility.detail_clearance``). None by default, so no stored cache key changes.
     bare_detail: str | None = Field(default=None, alias="bareDetail", max_length=32)
+    #: BD4. The body state that detail is painted in (``assets/body_detail/states.json``: closed,
+    #: aroused, open, wide-open, anus-open, both-open). Needs ``bareDetail``; None keeps the preset.
+    bare_state: str | None = Field(default=None, alias="bareState", max_length=32)
     #: MG3. Make sure a foundation is on her under the new clothes, adding only what is missing:
     #: a Forge foundation she already wears is kept (only a new foundation replaces one), and a
     #: half the outfit brings itself (a bikini, a lingerie set) is not doubled. It is also what
@@ -169,6 +172,14 @@ class JobOptions(BaseModel):
             presets = load_presets()
             if self.bare_detail not in presets:
                 raise ValueError(f"bareDetail must be one of {', '.join(sorted(presets))}")
+        if self.bare_state is not None:
+            from wardrobe.vrm.body_detail import load_states
+
+            if self.bare_detail is None:
+                raise ValueError("bareState needs bareDetail")
+            states = load_states()
+            if self.bare_state not in states:
+                raise ValueError(f"bareState must be one of {', '.join(sorted(states))}")
         return self
 
     @model_validator(mode="after")
