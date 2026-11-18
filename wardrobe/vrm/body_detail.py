@@ -518,8 +518,7 @@ def _apply_relief(document, skin, material, textures, shape, rows, cols, where, 
     if slot.get("index") is not None:
         base = _image(document, int(slot["index"]), textures)
         if base is not None and base.shape[:2] != (h, w):
-            base = _resample(base.astype(np.float32), max(1, w // base.shape[1])) \
-                if w % base.shape[1] == 0 else None
+            base = _resize(base.astype(np.float32), w, h)
     added = base is None
     normal_map = np.zeros((h, w, 4), np.float32) if added else base.astype(np.float32).copy()
     if added:
@@ -630,7 +629,9 @@ def _texels(document, skin, w, h, marks, reach_chest, reach_pelvis):
             corners = uv[tri]
             if (corners.max(axis=0) - corners.min(axis=0) >= 0.5).any():
                 continue  # across the texture's seam
-            r, c, p = _raster((corners % 1.0) * (w, h), points[tri], w, h)
+            # The whole triangle moves into [0, 1) together: a corner at exactly u = 1.0 wrapped
+            # alone landed on the texture's other edge (Codex, PR #69).
+            r, c, p = _raster(_unwrapped(corners) * (w, h), points[tri], w, h)
             if len(r):
                 rows.append(r)
                 cols.append(c)
@@ -687,6 +688,22 @@ def _raster(px: np.ndarray, corners3d: np.ndarray, w: int, h: int):
     bw = 1.0 - bu - bv
     where = bw[:, None] * corners3d[0] + bu[:, None] * corners3d[1] + bv[:, None] * corners3d[2]
     return ys.ravel()[inside], xs.ravel()[inside], where
+
+
+def _unwrapped(corners: np.ndarray) -> np.ndarray:
+    """A triangle's UVs shifted as one into the [0, 1] tile its lowest corner is in."""
+    return corners - np.floor(corners.min(axis=0))
+
+
+def _resize(image: np.ndarray, w: int, h: int) -> np.ndarray:
+    """``image`` at exactly ``h`` x ``w``, channel by channel (any aspect ratio)."""
+    from PIL import Image
+
+    if image.shape[:2] == (h, w):
+        return image
+    channels = [np.asarray(Image.fromarray(image[:, :, k].astype(np.float32)).resize((w, h), Image.LANCZOS))
+                for k in range(image.shape[2])]
+    return np.stack(channels, axis=2)
 
 
 def _resample(image: np.ndarray | None, factor: int) -> np.ndarray | None:

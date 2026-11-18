@@ -187,3 +187,19 @@ def test_hair_styles_differ_in_coverage():
     assert widths["strip"] < widths["triangle"] < widths["natural"]
     spec.update(hair="none")
     assert BD._hair(u, u, np.ones_like(u, bool), L, spec, 1.0) is None
+
+
+def test_uv_triangle_on_the_texture_edge_stays_on_its_own_side():
+    """A corner at exactly u = 1.0 is the right edge, not the left (Codex, PR #69)."""
+    corners = np.array([[0.9, 0.2], [1.0, 0.2], [0.9, 0.3]])
+    rows, cols, _ = BD._raster(BD._unwrapped(corners) * (100, 100), np.eye(3), 100, 100)
+    assert len(cols) and cols.min() >= 89 and cols.max() <= 99
+    shifted = BD._unwrapped(np.array([[1.2, 0.5], [1.3, 0.5], [1.2, 0.6]]))
+    assert np.allclose(shifted, [[0.2, 0.5], [0.3, 0.5], [0.2, 0.6]])
+
+
+def test_resize_reaches_both_dimensions():
+    """A normal map of another aspect ratio is resized to the skin texture's exact shape."""
+    image = np.full((8, 16, 4), 128.0, np.float32)
+    assert BD._resize(image, 16, 16).shape == (16, 16, 4)
+    assert BD._resize(image, 32, 4).shape == (4, 32, 4)
