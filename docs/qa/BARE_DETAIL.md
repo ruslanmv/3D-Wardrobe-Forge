@@ -153,6 +153,27 @@ Painting the torso band is heavier: about 30–40 s per look at 4096, against
 about 8 s for anatomy alone. A parameter at 0 costs nothing. Rendered front,
 chest and back on the reference body: every effect shows where it belongs.
 
+## Live state switching: skin packs (BD7)
+
+`options.bareStates` (needs `bareDetail`, up to ten) builds a **skin pack**
+beside the look. Every listed state is painted on her prepared bare body, before
+any detail, with the look's own preset and extras.
+
+- **Tiles.** Each state is diffed against that body, and only the 256-texel
+  tiles any state changes are kept. Every state stores the same tiles (the
+  union), so switching from any state to any other leaves nothing behind.
+- **Files.** `skin-pack/manifest.json` plus `skin-pack/<state>/<map>.png`, under
+  the look's key and served as privately as the look itself.
+- **Manifest.** It gives the skin material's name, the texture size, the tile
+  list, the maps (base, shade, normal), and each state's label and `body` line.
+- **Tags.** The look carries `extras.wardrobeForge.skinPack`, and the fit report
+  carries `baseBody.skinPack` (states, tiles, maps, bytes).
+- **Client.** The chatbot's `SkinStateSwitcher` draws a state's tiles over a
+  canvas copy of her skin and swaps it in live, with no reload.
+
+On the reference body at 4096, a four-state pack is 99 tiles and about 4.4 MB
+per state, built in about 2 minutes.
+
 ## Who it is painted on
 
 Painted detail is more explicit than the bare body, so it asks for more than the

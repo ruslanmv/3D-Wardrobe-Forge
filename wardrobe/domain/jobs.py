@@ -135,6 +135,9 @@ class JobOptions(BaseModel):
     #: BD6. Persistent extras painted with the detail (``assets/body_detail/extras.json``: tan lines…).
     #: Needs ``bareDetail``. Empty by default, so no stored cache key changes.
     bare_extras: list[str] = Field(default_factory=list, alias="bareExtras", max_length=4)
+    #: BD7. The states a skin pack holds for live switching (``wardrobe.vrm.skin_pack``), built beside
+    #: the look. Needs ``bareDetail``. Empty by default: no pack, no cache key change.
+    bare_states: list[str] = Field(default_factory=list, alias="bareStates", max_length=10)
     #: MG3. Make sure a foundation is on her under the new clothes, adding only what is missing:
     #: a Forge foundation she already wears is kept (only a new foundation replaces one), and a
     #: half the outfit brings itself (a bikini, a lingerie set) is not doubled. It is also what
@@ -193,6 +196,15 @@ class JobOptions(BaseModel):
             states = load_states()
             if self.bare_state not in states:
                 raise ValueError(f"bareState must be one of {', '.join(sorted(states))}")
+        if self.bare_states:
+            from wardrobe.vrm.body_detail import load_states
+
+            if self.bare_detail is None:
+                raise ValueError("bareStates needs bareDetail")
+            known_states = load_states()
+            unknown_states = [s for s in self.bare_states if s not in known_states]
+            if unknown_states:
+                raise ValueError(f"bareStates: unknown {unknown_states}")
         if self.bare_extras:
             from wardrobe.vrm.body_detail import load_extras
 
