@@ -490,6 +490,7 @@ async def test_dressed_over_bare_builds_the_outfit_and_is_not_a_bare_look(orches
     payload = request("sources/e.vrm")
     payload["outfit"] = {"prompt": "black balconette bra + black thong"}
     payload["options"]["baseBody"] = "bare-dressed"
+    payload["options"]["engine"] = "blender"  # asked for Blender: bare-dressed still fits natively
     with patch("wardrobe.pipeline.bare_body.check_body", return_value=BodyIntegrity({"upper": RegionCheck(True, 1)})):
         result = await orchestrator.run_now(CreateJobRequest.model_validate(payload))
     assert result.state is JobState.COMPLETED, result.error
@@ -498,6 +499,7 @@ async def test_dressed_over_bare_builds_the_outfit_and_is_not_a_bare_look(orches
     assert tag.get("overBare") is True and not tag.get("bare")
     assert garment_inventory(output)  # the set is on her
     assert result.look.wardrobe_state == "over-bare" and result.request.options.private
+    assert "native" in output.gltf["extras"]["wardrobeForge"].get("generator", "")
 
 
 async def test_skin_pack_files_are_stored_beside_the_look(orchestrator, store, vrm_bytes):

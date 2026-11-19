@@ -220,6 +220,10 @@ class Orchestrator:
             else:
                 await generate_garment.plan(context)
                 engine = self._engine_for_outfit(engine, context)
+                if record.request.options.base_body_mode == "bare-dressed":
+                    # ES1. Only the native engine fits onto the prepared document; Blender re-imports
+                    # the source file and would drop her bare preparation and its detail (Codex, #70).
+                    engine = select_engine("native", self.settings)
                 await prepare_base_body.run(context)
                 # Bare alone builds no garment; bare-dressed (ES1) goes on to dress her, below.
                 if record.request.options.base_body_mode == "bare":
