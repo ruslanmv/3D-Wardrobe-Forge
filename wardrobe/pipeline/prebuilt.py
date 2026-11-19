@@ -435,7 +435,10 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
         "sourceSha256": record.look.source_avatar_hash,
         "outputSha256": record.look.output_sha256,
     }
-    if key.startswith("plan-") and not request.outfit.template_id:
+    # RU4. A layered stack is told apart by its plan key even when it also names a top-level
+    # template: otherwise two stacks over the same tee shared one identity and the second
+    # replaced the first in her wardrobe.
+    if key.startswith("plan-") and (not request.outfit.template_id or request.outfit.layers):
         # RU1. An outfit of several garments has no one template: its plan key tells it apart
         # from every other such outfit (all of them share templateId None and color None).
         item["plan"] = key

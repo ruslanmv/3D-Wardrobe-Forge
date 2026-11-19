@@ -93,3 +93,17 @@ def test_a_damaged_store_reads_as_no_decisions(tmp_path):
     store.path.write_text("{not json", encoding="utf-8")
     data = store.read()
     assert data["damaged"] is True and data["garments"] == {}
+
+
+def test_a_custom_private_collection_clears_the_unsorted_private_queue(tmp_path, world):
+    catalog, dictionary = world
+    store = RegistryStore(tmp_path)
+    store.set_garment("top-tee-v1", visibility="private")
+    view = registry.build(catalog, dictionary, store.read(), admin=True, preview=lambda t: None)
+    unsorted = next(c for c in view["collections"] if c["id"] == "unsorted-private")
+    assert "top-tee-v1" in unsorted["items"]
+    made = store.create_collection(title="Mine", private=True, items=["top-tee-v1"])
+    view = registry.build(catalog, dictionary, store.read(), admin=True, preview=lambda t: None)
+    unsorted = next(c for c in view["collections"] if c["id"] == "unsorted-private")
+    assert "top-tee-v1" not in unsorted["items"]
+    assert "top-tee-v1" in next(c for c in view["collections"] if c["id"] == made["id"])["items"]

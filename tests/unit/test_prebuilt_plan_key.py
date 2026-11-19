@@ -204,3 +204,17 @@ async def test_a_layered_combination_asked_again_is_loaded_not_rebuilt(orchestra
     again = await orchestrator.submit(_layered(*COMBO))
     assert again.state == JobState.COMPLETED and orchestrator.queue.ids == []
     assert again.look.id == first.look.id and again.events[-1].detail["cache"] == "prebuilt"
+
+
+async def test_layered_stacks_over_the_same_template_are_both_listed(orchestrator, stored_avatar):
+    # RU4. A top-level templateId must not make two different stacks one wardrobe entry.
+    def stack(bottom):
+        request = _layered(COMBO[0], (bottom, "black"))
+        return request.model_copy(update={"outfit": request.outfit.model_copy(update={"template_id": TEE})})
+
+    first = await orchestrator.run_now(stack("skirt-pleated-mini-v1"))
+    second = await orchestrator.run_now(stack("skirt-a-line-v1"))
+    assert first.state == second.state == JobState.COMPLETED and first.look.id != second.look.id
+    listed = await prebuilt.ready_looks(orchestrator.store, "test-avatar", include_private=True)
+    ids = {item.get("lookId") or item.get("id") for item in listed}
+    assert {first.look.id, second.look.id} <= ids

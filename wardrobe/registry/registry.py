@@ -233,7 +233,11 @@ def build(
     raw["unassigned"] = [
         i["id"] for i in items if i["kind"] == "garment" and not i["body"] and i["id"] not in placed
     ]
-    private_placed = {x for cid in curated if (BY_ID.get(cid) and BY_ID[cid].private) for x in raw[cid]}
+    # A built-in collection's privacy is the product's; a custom one's is what the admin set.
+    def is_private(cid: str) -> bool:
+        return BY_ID[cid].private if cid in BY_ID else bool(decided.get(cid, {}).get("private", True))
+
+    private_placed = {x for cid in curated if is_private(cid) for x in raw[cid]}
     raw["unsorted-private"] = [
         i["id"]
         for i in items
