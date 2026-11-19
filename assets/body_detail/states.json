@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.states.v1",
- "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
  "states": {
   "closed": {
    "label": "Closed",
@@ -133,9 +133,23 @@
     "sweat": 0.4,
     "vaginaOpen": 0.5,
     "anusOpen": 0.4,
-    "cum": 1.0
+    "cum": 1.0,
+    "cumInside": 0.8
    },
-   "body": "cum is pooled at your open vagina and your anus and runs down between them; you are flushed and wet"
+   "body": "cum fills your open vagina, pools at your anus and runs down between them; you are flushed and wet"
+  },
+  "creampie": {
+   "label": "Creampie",
+   "set": {
+    "arousal": 0.9,
+    "flush": 0.7,
+    "erect": 0.7,
+    "sweat": 0.4,
+    "vaginaOpen": 0.8,
+    "cum": 0.7,
+    "cumInside": 1.0
+   },
+   "body": "you are open and full: cum fills your vagina and spills out over your lips and down between your legs"
   }
  }
 }

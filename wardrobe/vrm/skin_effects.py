@@ -24,7 +24,7 @@ from __future__ import annotations
 import numpy as np
 
 #: Parameters a body state may set (0..1), besides BD4's arousal and openings.
-EFFECT_KEYS = ("flush", "erect", "goosebumps", "sweat", "cum")
+EFFECT_KEYS = ("flush", "erect", "goosebumps", "sweat", "cum", "cumInside")
 TAN_TOPS = ("none", "triangle", "bandeau")
 TAN_BOTTOMS = ("none", "thong", "brazilian", "classic")
 
@@ -213,7 +213,8 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
     on a 1.63 m body, scaled to hers, and every edge wanders with noise so no two look stamped.
     """
     amount = _p(spec, "cum")
-    if amount <= 0:
+    inside = _p(spec, "cumInside")
+    if amount <= 0 and inside <= 0:
         return None
     c = marks.crotch
     u = where[:, 0] - c[0]
@@ -249,7 +250,21 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
     drop = np.where(near & (pick > 0.8 - 0.15 * amount),
                     np.clip(1.0 - np.linalg.norm(where - centre, axis=1) / (0.0011 * s), 0.0, 1.0), 0.0)
     thick = np.maximum.reduce([vaginal, anal, run * 0.85, strand, drop * 0.9]) * (0.75 + 0.25 * fine)
-    thick *= min(1.0, 0.5 + 0.6 * amount)
+    thick *= min(1.0, 0.5 + 0.6 * amount) if amount > 0 else 0.0
+    if inside > 0:
+        # BD10. Inside her: the opened vaginal opening (BD4's own size, so the pool fits the opening
+        # she is painted with) filled with pooled semen — opaque across the centre, thinning to a wet
+        # meniscus against her inner walls — and a run spilling over its lower edge.
+        opened = float(np.clip(float(spec.get("vaginaOpen", 0.0)), 0.0, 1.5))
+        ru = float(spec.get("introitusWidth", 0.0034)) * s * (1.0 + 1.6 * opened)
+        rt = float(spec.get("introitusLength", 0.0075)) * s * (1.0 + 0.7 * opened)
+        ri = np.sqrt((u / ru) ** 2 + ((t - 0.22 * L) / rt) ** 2)
+        filled = np.clip(1.0 - _smoothstep(0.55, 0.95, ri * (0.92 + 0.16 * wobble)), 0.0, 1.0)
+        spill_t = (0.22 * L - rt * 0.8 - t) / (0.02 * s)  # below the opening's lower edge
+        spill = np.where((spill_t > 0) & (spill_t < 1),
+                         np.clip(1.0 - np.abs(u) / (ru * 0.45 * (1.0 - 0.6 * spill_t) + 1e-6), 0.0, 1.0)
+                         * (1.0 - spill_t), 0.0)
+        thick = np.maximum(thick, np.maximum(filled, spill * 0.9) * inside)
     alpha = _smoothstep(0.04, 0.45, thick) * (0.65 + 0.33 * _smoothstep(0.3, 0.8, thick))
     highlight = _smoothstep(0.55, 0.95, thick) * _smoothstep(0.45, 0.8, fine)
     return alpha, highlight, thick

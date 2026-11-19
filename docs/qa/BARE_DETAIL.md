@@ -166,6 +166,10 @@ The `cum` parameter, and the `cum` state, paint semen on her body skin:
 - **How:** a thickness field decides everything. Thick cores are opaque and
   pearly, thin edges translucent, and a highlight sits where it is thickest. The
   relief raises it about a millimetre.
+- **Inside (BD10):** `cumInside` fills the opened vaginal opening (sized as
+  BD4 opens it): opaque across the centre, a wet meniscus at the inner walls, a
+  run spilling over the lower edge. States `creampie` (and `cum`, which now
+  includes it).
 - **Limit:** the mouth is on her face material, which this painter does not
   touch.
 

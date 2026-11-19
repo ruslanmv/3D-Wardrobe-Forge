@@ -325,3 +325,15 @@ def test_cum_pools_at_both_openings_and_runs_between():
     assert alpha[3] == 0.0
     assert FX.fluid(where, marks, {**spec, "cum": 0.0}, 1.0) is None
     assert "cum" in BD.load_states() and BD.load_states()["cum"]["set"]["cum"] == 1.0
+
+
+def test_cum_inside_fills_the_opened_vagina():
+    """BD10. cumInside fills the opening itself (opaque at its centre), alone or with cum."""
+    from wardrobe.vrm import skin_effects as FX
+
+    base = BD.load_presets()["natural"]
+    L = base["vulvaLength"]
+    where = np.array([[0.0, 0.74 + 0.22 * L, 0.004], [0.06, 0.95, 0.12]])  # the opening; her belly
+    alpha, _, _ = FX.fluid(where, _marks(), {**base, "vaginaOpen": 0.8, "cumInside": 1.0}, 1.0)
+    assert alpha[0] > 0.6 and alpha[1] == 0.0
+    assert BD.load_states()["creampie"]["set"]["cumInside"] == 1.0
