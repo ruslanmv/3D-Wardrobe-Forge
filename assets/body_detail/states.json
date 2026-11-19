@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.states.v1",
- "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), anusGape (BD16: after anal fisting, the anus a wide round gape, rim swollen and red, inner walls showing, a dark centre — clearly visible from behind), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), cumPool, cumSpine, cumSides, cumCrack (BD17, lower-back cum with her ass up: a pool in the small of her back, runs up her spine, down her sides, into her crack), cumSecond (BD19: a second load on her back, the first thinned to a glaze under it), sweatBack (BD19: sweat built up on her back on all fours: a sheen down her spine, beads, a flush low down), ropeMarks, wax, welts, clampMarks, collarMark (BD15, sado: shibari rope marks, candle wax, whip welts, nipple-clamp marks, a collar mark), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), anusGape (BD16: after anal fisting, the anus a wide round gape, rim swollen and red, inner walls showing, a dark centre — clearly visible from behind), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), cumPool, cumSpine, cumSides, cumCrack (BD17, lower-back cum with her ass up: a pool in the small of her back, runs up her spine, down her sides, into her crack), cumSecond (BD19: a second load on her back, the first thinned to a glaze under it), sweatBack (BD19: sweat built up on her back on all fours: a sheen down her spine, beads, a flush low down), cumBelly, cumChest, cumThighs, cumRunDown, cumRunSides (BD20, facing them in missionary and cowgirl: a pool in her navel and ropes across her belly, ropes across her chest pooling between her breasts, streams down her inner thighs, and her belly's runs going down to her mons when upright or off her sides when lying back), ropeMarks, wax, welts, clampMarks, collarMark (BD15, sado: shibari rope marks, candle wax, whip welts, nipple-clamp marks, a collar mark), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
  "states": {
   "closed": {
    "label": "Closed",
@@ -596,6 +596,139 @@
     "sweatBack": 0.8
    },
    "body": "he has come in you a second time: your pussy is open and overflowing, cum dripping forward over your lips, an older pool drying on your lower back, your back slick with sweat"
+  },
+  "missionary-open": {
+   "label": "Missionary: wet and open",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "vaginaOpen": 0.8,
+    "anusOpen": 0.1
+   },
+   "body": "you lie on your back for them, knees up and apart, your chest flushed and glistening with sweat, nipples hard, your pussy open, wet and glistening"
+  },
+  "missionary-creampie": {
+   "label": "Missionary: creampie",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "vaginaOpen": 1.0,
+    "cumInside": 1.0,
+    "cum": 0.7
+   },
+   "body": "he came inside you while you lay on your back: your pussy is open and full, cum running out of you and down over your perineum to your ass"
+  },
+  "missionary-belly": {
+   "label": "Missionary: on her belly",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "vaginaOpen": 0.8,
+    "cumBelly": 1.0,
+    "cumRunSides": 0.8
+   },
+   "body": "he pulled out and came on your belly: cum pooled in your navel, ropes of it across your belly running off your sides, your pussy still open below"
+  },
+  "missionary-chest": {
+   "label": "Missionary: on her chest",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "vaginaOpen": 0.7,
+    "cumChest": 1.0
+   },
+   "body": "he came across your breasts: thick ropes over your chest and nipples, a pool between your breasts, your skin flushed and sweaty"
+  },
+  "missionary-covered": {
+   "label": "Missionary: covered",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.8,
+    "vaginaOpen": 1.0,
+    "cumInside": 1.0,
+    "cum": 0.6,
+    "cumBelly": 1.0,
+    "cumRunSides": 0.7,
+    "cumChest": 1.0
+   },
+   "body": "you are covered: cum across your breasts and pooled between them, more in your navel running off your sides, your open pussy full and leaking, your whole body slick with sweat"
+  },
+  "cowgirl-riding": {
+   "label": "Cowgirl: riding",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.9,
+    "erect": 0.9,
+    "sweat": 0.8,
+    "vaginaOpen": 0.8
+   },
+   "body": "you are riding them: a deep flush down your chest, sweat running between your breasts and down your belly, nipples hard, your pussy open and wet around them"
+  },
+  "cowgirl-creampie": {
+   "label": "Cowgirl: creampie dripping",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.7,
+    "vaginaOpen": 1.0,
+    "cumInside": 1.0,
+    "cum": 0.8,
+    "cumThighs": 1.0
+   },
+   "body": "he came inside you while you rode him: as you rise, cum drips out of your open pussy and runs down the insides of your thighs"
+  },
+  "cowgirl-belly": {
+   "label": "Cowgirl: on her belly",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.7,
+    "vaginaOpen": 0.8,
+    "cumBelly": 1.0,
+    "cumRunDown": 1.0
+   },
+   "body": "you rose off him and he came up onto your belly: cum in your navel, running down your belly over your mons to your pussy"
+  },
+  "cowgirl-after": {
+   "label": "Cowgirl: after",
+   "set": {
+    "arousal": 0.8,
+    "flush": 0.8,
+    "erect": 0.6,
+    "sweat": 0.9,
+    "vaginaOpen": 0.7,
+    "cumInside": 0.8,
+    "cumThighs": 0.8
+   },
+   "body": "you have just come on top of them: flushed and glowing, slick with sweat, your thighs streaked with cum still running from your pussy"
+  },
+  "cowgirl-everything": {
+   "label": "Cowgirl: everything",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.9,
+    "vaginaOpen": 1.0,
+    "cumInside": 1.0,
+    "cumThighs": 1.0,
+    "cumBelly": 1.0,
+    "cumRunDown": 0.8,
+    "cumChest": 1.0
+   },
+   "body": "cum is everywhere on you: across your breasts and between them, down your belly over your mons, filling your pussy and running down the insides of your thighs, your skin shining with sweat"
   }
  }
 }

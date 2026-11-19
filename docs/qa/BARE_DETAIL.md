@@ -223,6 +223,29 @@ prop mesh attached to her pelvis bone: it is a separate feature, not skin. The
 `stretched` states paint the skin as it looks around one. Breast-shape changes
 and real mesh jewellery also change the mesh, which this painter never does.
 
+## Missionary and cowgirl: facing them (BD20)
+
+Ten states for the two positions where she faces them. In missionary she is on
+her back, seen from above: face, breasts, belly, open vulva. Cum on her belly
+runs off her sides (`cumRunSides`), and a creampie runs down to her anus. In
+cowgirl she is upright on top, seen from below: cum on her belly runs down over
+her mons (`cumRunDown`), and a creampie runs down her inner thighs
+(`cumThighs`). `cumBelly` is a pool in her navel with ropes across her belly,
+and `cumChest` is ropes across her breasts pooling in her cleavage.
+
+| Missionary            | Cowgirl              |
+| --------------------- | -------------------- |
+| `missionary-open`     | `cowgirl-riding`     |
+| `missionary-creampie` | `cowgirl-creampie`   |
+| `missionary-belly`    | `cowgirl-belly`      |
+| `missionary-chest`    | `cowgirl-after`      |
+| `missionary-covered`  | `cowgirl-everything` |
+
+All ten keep her open, suit every preset (a hairless one shows the most), and
+switch live in a skin pack. The chatbot's finish chooses among them by the
+position she holds (UN37). `detail_flat.py --views thighs` shows her lower belly,
+vulva and inner thighs from the front.
+
 ## A second load, and sweat that builds on her back (BD19)
 
 `cumSecond` lays a second load on her back with ropes at other heights, leaning

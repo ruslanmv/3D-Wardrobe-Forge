@@ -45,6 +45,14 @@ EFFECT_KEYS = (
     # on her back while she is held on all fours: a sheen down her spine, beads, a flush low down.
     "cumSecond",
     "sweatBack",
+    # BD20. Facing them (missionary, cowgirl): cum on her belly and in her navel, across her chest
+    # and between her breasts, down her inner thighs, and how her belly's runs go — down to her
+    # mons when she is upright on top, off her sides when she lies on her back.
+    "cumBelly",
+    "cumChest",
+    "cumThighs",
+    "cumRunDown",
+    "cumRunSides",
     "cumDrip",
     "anusCumInside",
     "grips",
@@ -115,6 +123,11 @@ def wants_torso(spec: dict) -> bool:
             "cumCrack",
             "cumSecond",
             "sweatBack",
+            "cumBelly",
+            "cumChest",
+            "cumThighs",
+            "cumRunDown",
+            "cumRunSides",
             "grips",
             "spankRed",
             "ropeMarks",
@@ -1103,7 +1116,8 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
     back, drip, anal_in = _p(spec, "cumBack"), _p(spec, "cumDrip"), _p(spec, "anusCumInside")
     lower = {k: _p(spec, k) for k in ("cumPool", "cumSpine", "cumSides", "cumCrack")}
     second = _p(spec, "cumSecond")
-    if max(amount, inside, back, drip, anal_in, second, *lower.values()) <= 0:
+    on_front = {k: _p(spec, k) for k in ("cumBelly", "cumChest", "cumThighs", "cumRunDown", "cumRunSides")}
+    if max(amount, inside, back, drip, anal_in, second, *lower.values(), *on_front.values()) <= 0:
         return None
     c = marks.crotch
     u = where[:, 0] - c[0]
@@ -1202,6 +1216,8 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
         fresh = _on_her_back(where, marks, s, second, wobble, fine, phase=1.0)
         on_back = np.maximum(on_back * (1.0 - 0.45 * second), fresh)
     thick = np.maximum(thick, on_back)
+    if max(on_front.values()) > 0:
+        thick = np.maximum(thick, _on_her_front(where, marks, s, on_front, wobble, fine))
     alpha = _smoothstep(0.04, 0.45, thick) * (0.65 + 0.33 * _smoothstep(0.3, 0.8, thick))
     highlight = _smoothstep(0.55, 0.95, thick) * _smoothstep(0.45, 0.8, fine)
     return alpha, highlight, thick
@@ -1251,6 +1267,108 @@ def _lower_back(where, marks, s, amounts, wobble, fine):
             thick, run(pool_y - y, x + 0.001 * s * np.sin(y / (0.007 * s)), 0.15 * s, 0.004 * s, crack)
         )
     return np.where(behind, thick * (0.8 + 0.2 * fine), 0.0)
+
+
+def _rope_field(x, y, s, rows, reach, width0, wobble, fine, seed=0.0):
+    """Ropes laid across her, one per height in ``rows`` (metres): wavy, thick in the middle, thin
+    and breaking up towards their ends, lumpy along their length. ``x``/``y`` are across and up."""
+    out = np.zeros(len(x))
+    for k, y0 in enumerate(rows):
+        span = reach * (0.8 + 0.35 * ((k * 5 + int(seed)) % 3) / 2)
+        centre = y0 + 0.008 * s * np.sin(x / (0.025 * s) + 1.9 * k + seed)
+        taper = 1.0 - np.clip(np.abs(x - 0.008 * s * ((k % 2) * 2 - 1)) / span, 0, 1) ** 1.5
+        width = width0 * (0.6 + 0.8 * wobble) * taper
+        rope = np.exp(-(((y - centre) / (width + 1e-6)) ** 2)) * (taper > 0)
+        rope *= np.where(taper < 0.35, _smoothstep(0.4, 0.65, fine), 1.0)
+        out = np.maximum(out, rope * (0.75 + 0.25 * fine))
+    return out
+
+
+def _run_field(along, across, length, width0, wobble, fine):
+    """A run of semen ``along`` (metres from where it starts) and ``across`` it: narrowing,
+    breaking into drops further on, a bead at its end."""
+    lead = np.clip(along / length, 0, 1)
+    width = width0 * (1.0 - 0.6 * lead) * (0.7 + 0.6 * wobble)
+    body = np.clip(1.0 - np.abs(across) / (width + 1e-6), 0, 1) ** 0.7 * (along > 0) * (along < length)
+    body *= np.where(lead > 0.6, _smoothstep(0.35, 0.6, fine), 1.0)
+    bead = np.clip(1.0 - np.hypot(across, along - length) / (width0 * 0.9), 0, 1) ** 0.5
+    return np.maximum(body, bead)
+
+
+def _on_her_front(where, marks, s, amounts, wobble, fine):
+    """BD20. Semen on the front of her, as missionary and cowgirl show it: a pool in her navel with
+    ropes across her belly; ropes across her breasts pooling in her cleavage; streams down her inner
+    thighs from her vulva. Her belly's overflow runs where gravity takes it: down to her mons when
+    she is upright on top (``cumRunDown``), sideways off her flanks when she lies on her back
+    (``cumRunSides``)."""
+    c = marks.crotch
+    nipple_y = float(marks.nipples[0][1])
+    x = where[:, 0] - marks.axis_x
+    y = where[:, 1]
+    facing = _front(where, marks) > 0.02 * s
+    navel_y = nipple_y - 0.2 * s
+    thick = np.zeros(len(where))
+    belly = amounts["cumBelly"]
+    if belly > 0:
+        pool = np.clip(
+            1.0 - np.hypot(x / (0.016 * s), (y - navel_y) / (0.014 * s)) / (0.8 + 0.4 * wobble), 0, 1
+        )
+        ropes = _rope_field(
+            x,
+            y,
+            s,
+            [navel_y + d * s for d in (0.04, 0.015, -0.025)],
+            0.075 * s,
+            0.004 * s,
+            wobble,
+            fine,
+            seed=1.0,
+        )
+        thick = np.maximum(thick, np.maximum(pool**0.5, ropes) * belly)
+    chest = amounts["cumChest"]
+    if chest > 0:
+        ropes = _rope_field(
+            x,
+            y,
+            s,
+            [nipple_y + d * s for d in (0.045, 0.012, -0.03)],
+            0.11 * s,
+            0.0042 * s,
+            wobble,
+            fine,
+            seed=2.0,
+        )
+        cleavage = np.clip(
+            1.0 - np.hypot(x / (0.012 * s), (y - (nipple_y - 0.005 * s)) / (0.03 * s)) / (0.8 + 0.4 * wobble),
+            0,
+            1,
+        )
+        thick = np.maximum(thick, np.maximum(ropes, cleavage**0.6) * chest)
+    down = amounts["cumRunDown"]
+    if down > 0:  # upright: from her navel down her belly to her mons
+        wander = 0.003 * s * np.sin(y / (0.02 * s))
+        thick = np.maximum(
+            thick,
+            _run_field(navel_y - y, x - wander, navel_y - (c[1] + 0.04 * s), 0.004 * s, wobble, fine) * down,
+        )
+    sides = amounts["cumRunSides"]
+    if sides > 0:  # lying on her back: from her navel off her flanks
+        for sign in (-1.0, 1.0):
+            along = sign * x - 0.012 * s
+            across = y - navel_y + 0.003 * s * np.sin(along / (0.01 * s))
+            thick = np.maximum(thick, _run_field(along, across, 0.13 * s, 0.0035 * s, wobble, fine) * sides)
+    thighs = amounts["cumThighs"]
+    if thighs > 0:  # from her vulva down the inside of each thigh
+        inner = _front(where, marks) > -0.03 * s
+        for sign in (-1.0, 1.0):
+            along = c[1] - y
+            centre = sign * (0.026 * s + 0.34 * np.clip(along, 0, None)) + 0.002 * s * np.sin(
+                along / (0.015 * s)
+            )
+            run = _run_field(along, x - centre, 0.13 * s, 0.0035 * s, wobble, fine)
+            thick = np.maximum(thick, np.where(inner, run * thighs, 0.0))
+    keep = facing | (amounts["cumThighs"] > 0) & (_front(where, marks) > -0.03 * s)
+    return np.where(keep, thick, 0.0)
 
 
 def _on_her_back(where, marks, s, amount, wobble, fine, phase=0.0):
