@@ -569,3 +569,23 @@ def test_lower_back_cum_pools_and_runs_up_her_spine():
         assert states[name]["set"]["cumPool"] == 1.0 and states[name]["set"]["vaginaOpen"] > 0, name
     presets = BD.load_presets()
     assert presets["porcelain"]["hair"] == "none" and presets["anime"]["relief"] < 1.0
+
+
+def test_second_load_crosses_the_first_and_sweat_builds_on_her_back():
+    """BD19. A second load lands in other places over the first (which thins to a glaze); sweat on her
+    back is on her back only; both are in states the doggy finish can use."""
+    from wardrobe.vrm import skin_effects as FX
+
+    base = BD.load_presets()["porcelain"]
+    marks = _marks()
+    behind = np.array([[x, 0.74 + y, -0.12] for x in np.linspace(-0.1, 0.1, 21) for y in np.linspace(0.0, 0.2, 21)])
+    first = FX.fluid(behind, marks, {**base, "cumBack": 1.0}, 1.0)[2]
+    both = FX.fluid(behind, marks, {**base, "cumBack": 1.0, "cumSecond": 1.0}, 1.0)[2]
+    fresh = both > 0.5
+    assert fresh.sum() > 0 and (fresh & (first < 0.2)).sum() > 0  # new ropes where there were none
+    sheen, beads, _ = FX._sweat_back(np.vstack([behind[:5], [[0.0, 0.9, 0.12]]]), marks, 1.0, 1.0)
+    assert sheen[-1] == 0.0 and beads[-1] == 0.0  # never on her front
+    assert FX.wants_torso({"sweatBack": 1.0}) and FX.wants_torso({"cumSecond": 1.0})
+    states = BD.load_states()
+    for name in ("doggy-sweaty", "doggy-sweaty-open", "lower-back-cum-second", "doggy-second-creampie"):
+        assert states[name]["set"]["vaginaOpen"] > 0, name

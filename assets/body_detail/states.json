@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.states.v1",
- "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), anusGape (BD16: after anal fisting, the anus a wide round gape, rim swollen and red, inner walls showing, a dark centre — clearly visible from behind), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), cumPool, cumSpine, cumSides, cumCrack (BD17, lower-back cum with her ass up: a pool in the small of her back, runs up her spine, down her sides, into her crack), ropeMarks, wax, welts, clampMarks, collarMark (BD15, sado: shibari rope marks, candle wax, whip welts, nipple-clamp marks, a collar mark), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), anusGape (BD16: after anal fisting, the anus a wide round gape, rim swollen and red, inner walls showing, a dark centre — clearly visible from behind), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), cumPool, cumSpine, cumSides, cumCrack (BD17, lower-back cum with her ass up: a pool in the small of her back, runs up her spine, down her sides, into her crack), cumSecond (BD19: a second load on her back, the first thinned to a glaze under it), sweatBack (BD19: sweat built up on her back on all fours: a sheen down her spine, beads, a flush low down), ropeMarks, wax, welts, clampMarks, collarMark (BD15, sado: shibari rope marks, candle wax, whip welts, nipple-clamp marks, a collar mark), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
  "states": {
   "closed": {
    "label": "Closed",
@@ -538,6 +538,64 @@
     "anusCumInside": 0.7
    },
    "body": "cum pools on your lower back and runs down your crack into your gaping, fisted ass, its rim swollen and red, your pussy open below"
+  },
+  "doggy-sweaty": {
+   "label": "Doggy: sweating",
+   "set": {
+    "arousal": 0.95,
+    "flush": 0.6,
+    "erect": 0.85,
+    "vaginaOpen": 0.6,
+    "anusOpen": 0.2,
+    "sweatBack": 1.0,
+    "sweat": 0.4
+   },
+   "body": "you have been on all fours a while: sweat glistens down your spine and in the small of your back, beads on your skin, your ass flushed warm, your pussy wet and open"
+  },
+  "doggy-sweaty-open": {
+   "label": "Doggy: sweating, both open",
+   "set": {
+    "arousal": 0.95,
+    "flush": 0.6,
+    "erect": 0.85,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.9,
+    "sweatBack": 1.0,
+    "sweat": 0.5
+   },
+   "body": "sweat runs down your spine and pools in the small of your back, your ass flushed, and both your holes are open and wet"
+  },
+  "lower-back-cum-second": {
+   "label": "Lower back: a second load",
+   "set": {
+    "arousal": 0.95,
+    "flush": 0.6,
+    "erect": 0.85,
+    "vaginaOpen": 0.8,
+    "anusOpen": 0.6,
+    "cumPool": 1.0,
+    "cumSpine": 0.7,
+    "cumBack": 0.8,
+    "cumSecond": 1.0,
+    "sweatBack": 0.8
+   },
+   "body": "he came on your back a second time: a fresh, thick load across your lower back and ass over the first, which has thinned to a glaze, the pool in the small of your back overflowing, your skin hot and sweaty"
+  },
+  "doggy-second-creampie": {
+   "label": "Doggy: filled twice",
+   "set": {
+    "arousal": 0.95,
+    "flush": 0.6,
+    "erect": 0.85,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.4,
+    "cumInside": 1.0,
+    "cumDrip": 1.0,
+    "cum": 1.0,
+    "cumPool": 0.6,
+    "sweatBack": 0.8
+   },
+   "body": "he has come in you a second time: your pussy is open and overflowing, cum dripping forward over your lips, an older pool drying on your lower back, your back slick with sweat"
   }
  }
 }

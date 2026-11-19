@@ -223,6 +223,25 @@ prop mesh attached to her pelvis bone: it is a separate feature, not skin. The
 `stretched` states paint the skin as it looks around one. Breast-shape changes
 and real mesh jewellery also change the mesh, which this painter never does.
 
+## A second load, and sweat that builds on her back (BD19)
+
+`cumSecond` lays a second load on her back with ropes at other heights, leaning
+the other way so they cross the first, and its pool a little higher. Under it
+the first load thins to a glaze: less thick, so translucent and dull, while the
+new one is thick and pearly. `sweatBack` builds on her back while she is held on
+all fours: a glistening line down the groove of her spine, damp patches, beads
+that gather low down, and a warm flush over the small of her back and her
+cheeks. It is only ever on her back. States: `doggy-sweaty`,
+`doggy-sweaty-open`, `lower-back-cum-second`, `doggy-second-creampie`. The
+chatbot switches to them live: sweat after a while held on all fours, and the
+second load when the person finishes on her back again (UN35).
+
+**Admin panel (BD18).** Forge Studio has a "Private · bare body variants" panel
+for an admin session. It offers an erotic set or bare, a detail preset, a body
+state, extras (up to 4) and live states (up to 10), with Generate and Run again.
+Its lists come from `GET /v1/admin/body-detail`, which reads these files, so a
+new state or extra appears there without touching the page.
+
 ## Lower-back cum, fisted anus, sado, tribals, white and anime skin (BD15–BD17)
 
 **Lower-back cum (BD17).** In doggy her ass is up and her chest down, so her
