@@ -1,0 +1,112 @@
+"""ES1–ES3. Erotic sets dressed over her bare body, and taking off only their top or bottom."""
+import importlib.util
+from pathlib import Path
+
+import pytest
+
+from wardrobe.domain.jobs import BARE_MODES, CreateJobRequest, JobOptions
+from wardrobe.pipeline import outfit_dictionary as od
+
+
+def _job(**options):
+    return {"avatar": {"storageKey": "sources/a.vrm", "depictsAdult": True},
+            "outfit": {"prompt": "black balconette bra + black thong"}, "options": options}
+
+
+def test_bare_dressed_is_a_bare_mode_and_keeps_the_bare_guards():
+    options = JobOptions.model_validate({"baseBody": "bare-dressed"})
+    assert options.over_bare_body and "bare-dressed" in BARE_MODES
+    assert not JobOptions.model_validate({"baseBody": "replace-outer"}).over_bare_body
+
+
+def test_bare_dressed_takes_an_outfit_and_detail_but_no_added_foundation():
+    CreateJobRequest.model_validate(_job(baseBody="bare-dressed", bareDetail="natural", bareState="aroused"))
+    with pytest.raises(ValueError):
+        CreateJobRequest.model_validate(_job(baseBody="bare-dressed", ensureFoundation=True))
+    no_outfit = _job(baseBody="bare-dressed")
+    no_outfit.pop("outfit")
+    with pytest.raises(ValueError):
+        CreateJobRequest.model_validate(no_outfit)
+
+
+def test_erotic_sets_are_private_dressed_over_bare_and_say_what_comes_off(template_catalog):
+    planned = {e["id"]: e for e in od.catalogue(template_catalog)["outfits"]}
+    erotic = [o for o in od.OUTFITS if o.group == "erotic"]
+    assert len(erotic) >= 10
+    for outfit in erotic:
+        entry = planned[outfit.id]
+        assert entry["rating"] == "private"
+        assert entry["options"] == {"baseBody": "bare-dressed"}
+        assert all(g["template"] for g in entry["garments"] if g["category"] != "underwear")
+    # A two-piece set can lose either half alone; a one-piece cannot.
+    assert planned["erotic-boudoir"]["partial"] == ["bottom", "top"]
+    assert planned["erotic-micro-bikini"]["partial"] == ["bottom", "top"]
+    assert planned["erotic-fishnet"]["partial"] == []
+    # Entries that dress her as she is carry no options key at all (additive for old clients).
+    assert "options" not in planned["lace-lingerie-set"]
+
+
+def _prebuild():
+    path = Path(__file__).parents[2] / "tools" / "prebuild.py"
+    spec = importlib.util.spec_from_file_location("prebuild_tool", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_prebuild_sends_an_erotic_set_over_bare_without_an_added_foundation():
+    body = _prebuild().job_body({"templateId": "outfit:erotic-boudoir", "outfit": {"prompt": "x"},
+                                 "options": {"baseBody": "bare-dressed"}})
+    assert body["options"]["baseBody"] == "bare-dressed" and "ensureFoundation" not in body["options"]
+    plain = _prebuild().job_body({"templateId": "outfit:x", "outfit": {"prompt": "x"}})
+    assert plain["options"]["ensureFoundation"] is True
+
+
+class _FakeForge:
+    def __init__(self, looks):
+        self.looks, self.calls = looks, []
+
+    def call(self, path, body=None):
+        self.calls.append(path)
+        return {"looks": self.looks}
+
+
+def test_missing_only_keeps_what_the_dataset_lists_and_sends_the_rest():
+    tool = _prebuild()
+    forge = _FakeForge([{"templateId": "under-thong-v2", "color": "black"},
+                        {"templateId": None, "outfitId": "erotic-boudoir"}])
+    pairs = [{"slug": "a", "templateId": "under-thong-v2", "color": "black"},
+             {"slug": "a", "templateId": "under-thong-v2", "color": "red"},
+             {"slug": "a", "templateId": "outfit:erotic-boudoir", "color": None},
+             {"slug": "a", "templateId": "outfit:erotic-dominant", "color": None}]
+    assert tool.mark_listed(forge, pairs) == 2
+    assert [bool(p.get("listed")) for p in pairs] == [True, False, True, False]
+    assert forge.calls == ["/v1/library/a/prebuilt"]  # one read per character
+    # A listed pair is never sent to Forge.
+    out = tool.build(forge, pairs[0], 1.0)
+    assert out["result"] == "present" and forge.calls == ["/v1/library/a/prebuilt"]
+
+
+def test_show_outfits_build_and_pair_for_the_striptease(template_catalog):
+    """VA4. The chatbot's shows: a striptease set is the outfit and the matching lingerie under it
+    (each layer a look the undress steps down through, the lingerie's top then coming off alone);
+    the table-dance looks are one each. Every garment is a real template, every look is private."""
+    planned = {e["id"]: e for e in od.catalogue(template_catalog)["outfits"]}
+    shows = [o for o in od.OUTFITS if o.id.startswith("show-")]
+    strip = [o for o in shows if "striptease" in o.tags]
+    table = [o for o in shows if "table-dance" in o.tags]
+    assert len(strip) == 10 and len(table) == 5
+    for outfit in shows:
+        entry = planned[outfit.id]
+        assert entry["rating"] == "private" and entry["options"] == {"baseBody": "bare-dressed"}
+        assert entry["garments"] and all(g["template"] for g in entry["garments"]), outfit.id
+    for dressed in (o for o in strip if "dressed" in o.tags):
+        under = planned[dressed.id + "-under"]
+        outer = planned[dressed.id]
+        # Underneath is exactly the outfit's own underwear (and legwear, shoes): a step down, not new.
+        keep = {"underwear", "legwear", "shoes"}
+        assert {g["template"] for g in under["garments"]} == {
+            g["template"] for g in outer["garments"] if g["category"] in keep
+        }, dressed.id
+        assert len(outer["garments"]) > len(under["garments"])
+        assert "top" in under["partial"], dressed.id  # the next step: her top comes off alone

@@ -1,0 +1,512 @@
+{
+ "schema": "wardrobe.bodyDetail.presets.v1",
+ "about": "BD1-BD3. Variants of the detail painted on a bare body's skin (wardrobe/vrm/body_detail.py): colour and relief (a normal map). Sizes are metres for a 1.63 m body and scale with her height; tints multiply her own skin colour, so a preset suits every skin tone. hair: none | strip | triangle | trimmed | natural; hairColor RGB; relief: 0 (paint only) to about 1.5. Genital proportions: Lloyd et al., BJOG 2005 (adult women). Painted only on a bare look whose source has a person's full adult-design review with its packet, or Forge's own synthetic adult reference body.",
+ "presets": {
+  "natural": {
+   "label": "Natural",
+   "areolaRadius": 0.019,
+   "nippleRadius": 0.0055,
+   "areolaTint": [
+    0.8,
+    0.62,
+    0.58
+   ],
+   "nippleTint": [
+    0.7,
+    0.5,
+    0.47
+   ],
+   "areolaStrength": 0.85,
+   "glands": 7,
+   "hair": "none",
+   "hairColor": [
+    58,
+    40,
+    31
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.062,
+   "majoraWidth": 0.014,
+   "minoraWidth": 0.0055,
+   "minoraLength": 0.044,
+   "perineum": 0.032,
+   "anusRadius": 0.0065,
+   "relief": 1.0
+  },
+  "soft-pink": {
+   "label": "Soft pink",
+   "areolaRadius": 0.016,
+   "nippleRadius": 0.0048,
+   "areolaTint": [
+    0.92,
+    0.72,
+    0.72
+   ],
+   "nippleTint": [
+    0.84,
+    0.6,
+    0.62
+   ],
+   "areolaStrength": 0.8,
+   "glands": 5,
+   "hair": "none",
+   "hairColor": [
+    58,
+    40,
+    31
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.058,
+   "majoraWidth": 0.013,
+   "minoraWidth": 0.0042,
+   "minoraLength": 0.036,
+   "perineum": 0.03,
+   "anusRadius": 0.006,
+   "minoraTint": [
+    0.95,
+    0.78,
+    0.78
+   ],
+   "vestibuleTint": [
+    0.99,
+    0.84,
+    0.84
+   ],
+   "anusTint": [
+    0.88,
+    0.74,
+    0.73
+   ],
+   "relief": 1.0
+  },
+  "warm": {
+   "label": "Warm",
+   "areolaRadius": 0.023,
+   "nippleRadius": 0.006,
+   "areolaTint": [
+    0.66,
+    0.5,
+    0.44
+   ],
+   "nippleTint": [
+    0.56,
+    0.4,
+    0.36
+   ],
+   "areolaStrength": 0.9,
+   "glands": 9,
+   "hair": "none",
+   "hairColor": [
+    40,
+    28,
+    22
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.066,
+   "majoraWidth": 0.015,
+   "minoraWidth": 0.0075,
+   "minoraLength": 0.052,
+   "perineum": 0.035,
+   "anusRadius": 0.007,
+   "minoraTint": [
+    0.8,
+    0.62,
+    0.58
+   ],
+   "rimTint": [
+    0.68,
+    0.52,
+    0.48
+   ],
+   "anusTint": [
+    0.72,
+    0.56,
+    0.52
+   ],
+   "relief": 1.0
+  },
+  "defined": {
+   "label": "Defined",
+   "areolaRadius": 0.018,
+   "nippleRadius": 0.0052,
+   "areolaTint": [
+    0.84,
+    0.64,
+    0.62
+   ],
+   "nippleTint": [
+    0.74,
+    0.52,
+    0.5
+   ],
+   "areolaStrength": 0.85,
+   "glands": 6,
+   "hair": "none",
+   "hairColor": [
+    52,
+    36,
+    28
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.06,
+   "majoraWidth": 0.0135,
+   "minoraWidth": 0.0065,
+   "minoraLength": 0.048,
+   "perineum": 0.03,
+   "anusRadius": 0.0062,
+   "glansRadius": 0.0026,
+   "relief": 1.0
+  },
+  "natural-hair": {
+   "label": "Natural, full hair",
+   "areolaRadius": 0.019,
+   "nippleRadius": 0.0055,
+   "areolaTint": [
+    0.8,
+    0.62,
+    0.58
+   ],
+   "nippleTint": [
+    0.7,
+    0.5,
+    0.47
+   ],
+   "areolaStrength": 0.85,
+   "glands": 7,
+   "hair": "natural",
+   "hairColor": [
+    50,
+    35,
+    27
+   ],
+   "hairDensity": 0.85,
+   "vulvaLength": 0.062,
+   "majoraWidth": 0.014,
+   "minoraWidth": 0.0055,
+   "minoraLength": 0.044,
+   "perineum": 0.032,
+   "anusRadius": 0.0065,
+   "relief": 1.0
+  },
+  "trimmed": {
+   "label": "Trimmed",
+   "areolaRadius": 0.018,
+   "nippleRadius": 0.0052,
+   "areolaTint": [
+    0.84,
+    0.64,
+    0.62
+   ],
+   "nippleTint": [
+    0.74,
+    0.52,
+    0.5
+   ],
+   "areolaStrength": 0.85,
+   "glands": 6,
+   "hair": "trimmed",
+   "hairColor": [
+    78,
+    55,
+    40
+   ],
+   "hairDensity": 0.75,
+   "vulvaLength": 0.06,
+   "majoraWidth": 0.0135,
+   "minoraWidth": 0.0065,
+   "minoraLength": 0.048,
+   "perineum": 0.03,
+   "anusRadius": 0.0062,
+   "glansRadius": 0.0026,
+   "relief": 1.0
+  },
+  "landing-strip": {
+   "label": "Landing strip",
+   "areolaRadius": 0.019,
+   "nippleRadius": 0.0055,
+   "areolaTint": [
+    0.8,
+    0.62,
+    0.58
+   ],
+   "nippleTint": [
+    0.7,
+    0.5,
+    0.47
+   ],
+   "areolaStrength": 0.85,
+   "glands": 7,
+   "hair": "strip",
+   "hairColor": [
+    44,
+    31,
+    25
+   ],
+   "hairDensity": 0.9,
+   "vulvaLength": 0.062,
+   "majoraWidth": 0.014,
+   "minoraWidth": 0.0055,
+   "minoraLength": 0.044,
+   "perineum": 0.032,
+   "anusRadius": 0.0065,
+   "relief": 1.0
+  },
+  "triangle": {
+   "label": "Groomed triangle",
+   "areolaRadius": 0.016,
+   "nippleRadius": 0.0048,
+   "areolaTint": [
+    0.92,
+    0.72,
+    0.72
+   ],
+   "nippleTint": [
+    0.84,
+    0.6,
+    0.62
+   ],
+   "areolaStrength": 0.8,
+   "glands": 5,
+   "hair": "triangle",
+   "hairColor": [
+    30,
+    24,
+    22
+   ],
+   "hairDensity": 0.85,
+   "vulvaLength": 0.058,
+   "majoraWidth": 0.013,
+   "minoraWidth": 0.0042,
+   "minoraLength": 0.036,
+   "perineum": 0.03,
+   "anusRadius": 0.006,
+   "minoraTint": [
+    0.95,
+    0.78,
+    0.78
+   ],
+   "vestibuleTint": [
+    0.99,
+    0.84,
+    0.84
+   ],
+   "anusTint": [
+    0.88,
+    0.74,
+    0.73
+   ],
+   "relief": 1.0
+  },
+  "auburn-natural": {
+   "label": "Auburn, natural",
+   "areolaRadius": 0.023,
+   "nippleRadius": 0.006,
+   "areolaTint": [
+    0.66,
+    0.5,
+    0.44
+   ],
+   "nippleTint": [
+    0.56,
+    0.4,
+    0.36
+   ],
+   "areolaStrength": 0.9,
+   "glands": 9,
+   "hair": "natural",
+   "hairColor": [
+    96,
+    48,
+    30
+   ],
+   "hairDensity": 0.8,
+   "vulvaLength": 0.066,
+   "majoraWidth": 0.015,
+   "minoraWidth": 0.0075,
+   "minoraLength": 0.052,
+   "perineum": 0.035,
+   "anusRadius": 0.007,
+   "minoraTint": [
+    0.8,
+    0.62,
+    0.58
+   ],
+   "rimTint": [
+    0.68,
+    0.52,
+    0.48
+   ],
+   "anusTint": [
+    0.72,
+    0.56,
+    0.52
+   ],
+   "relief": 1.0
+  },
+  "outie": {
+   "label": "Outie (visible inner lips)",
+   "areolaRadius": 0.019,
+   "nippleRadius": 0.0055,
+   "areolaTint": [
+    0.8,
+    0.62,
+    0.58
+   ],
+   "nippleTint": [
+    0.7,
+    0.5,
+    0.47
+   ],
+   "areolaStrength": 0.85,
+   "glands": 7,
+   "hair": "none",
+   "hairColor": [
+    58,
+    40,
+    31
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.062,
+   "majoraWidth": 0.0125,
+   "minoraWidth": 0.0085,
+   "minoraLength": 0.056,
+   "perineum": 0.032,
+   "anusRadius": 0.0065,
+   "relief": 1.0
+  },
+  "puffy": {
+   "label": "Puffy areolae",
+   "areolaRadius": 0.024,
+   "nippleRadius": 0.0045,
+   "areolaTint": [
+    0.8,
+    0.62,
+    0.58
+   ],
+   "nippleTint": [
+    0.7,
+    0.5,
+    0.47
+   ],
+   "areolaStrength": 0.85,
+   "glands": 7,
+   "hair": "none",
+   "hairColor": [
+    58,
+    40,
+    31
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.062,
+   "majoraWidth": 0.014,
+   "minoraWidth": 0.0055,
+   "minoraLength": 0.044,
+   "perineum": 0.032,
+   "anusRadius": 0.0065,
+   "relief": 1.0,
+   "areolaPuff": 1.0
+  },
+  "porcelain": {
+   "label": "Porcelain (for white skin)",
+   "areolaRadius": 0.016,
+   "nippleRadius": 0.0048,
+   "areolaTint": [
+    0.95,
+    0.78,
+    0.8
+   ],
+   "nippleTint": [
+    0.9,
+    0.68,
+    0.72
+   ],
+   "areolaStrength": 0.7,
+   "glands": 5,
+   "hair": "none",
+   "hairColor": [
+    58,
+    40,
+    31
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.058,
+   "majoraWidth": 0.013,
+   "minoraWidth": 0.0042,
+   "minoraLength": 0.036,
+   "perineum": 0.03,
+   "anusRadius": 0.006,
+   "minoraTint": [
+    0.97,
+    0.8,
+    0.82
+   ],
+   "vestibuleTint": [
+    1.0,
+    0.86,
+    0.88
+   ],
+   "anusTint": [
+    0.93,
+    0.8,
+    0.8
+   ],
+   "relief": 1.0,
+   "majoraTint": [
+    0.97,
+    0.88,
+    0.87
+   ]
+  },
+  "anime": {
+   "label": "Anime (soft, simple, for toon skin)",
+   "areolaRadius": 0.014,
+   "nippleRadius": 0.0042,
+   "areolaTint": [
+    0.96,
+    0.74,
+    0.78
+   ],
+   "nippleTint": [
+    0.92,
+    0.62,
+    0.68
+   ],
+   "areolaStrength": 0.9,
+   "glands": 0,
+   "hair": "none",
+   "hairColor": [
+    58,
+    40,
+    31
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.058,
+   "majoraWidth": 0.013,
+   "minoraWidth": 0.0042,
+   "minoraLength": 0.036,
+   "perineum": 0.03,
+   "anusRadius": 0.006,
+   "minoraTint": [
+    0.98,
+    0.74,
+    0.8
+   ],
+   "vestibuleTint": [
+    1.0,
+    0.8,
+    0.86
+   ],
+   "anusTint": [
+    0.95,
+    0.76,
+    0.8
+   ],
+   "relief": 0.6,
+   "majoraTint": [
+    0.98,
+    0.88,
+    0.88
+   ]
+  }
+ }
+}

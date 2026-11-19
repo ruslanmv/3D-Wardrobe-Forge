@@ -1,0 +1,774 @@
+{
+ "schema": "wardrobe.bodyDetail.states.v1",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), anusGape (BD16: after anal fisting, the anus a wide round gape, rim swollen and red, inner walls showing, a dark centre — clearly visible from behind), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), cumPool, cumSpine, cumSides, cumCrack (BD17, lower-back cum with her ass up: a pool in the small of her back, runs up her spine, down her sides, into her crack), cumSecond (BD19: a second load on her back, the first thinned to a glaze under it), sweatBack (BD19: sweat built up on her back on all fours: a sheen down her spine, beads, a flush low down), cumBelly, cumChest, cumThighs, cumRunDown, cumRunSides (BD20, facing them in missionary and cowgirl: a pool in her navel and ropes across her belly, ropes across her chest pooling between her breasts, streams down her inner thighs, and her belly's runs going down to her mons when upright or off her sides when lying back), ropeMarks, wax, welts, clampMarks, collarMark (BD15, sado: shibari rope marks, candle wax, whip welts, nipple-clamp marks, a collar mark), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "states": {
+  "closed": {
+   "label": "Closed",
+   "set": {
+    "arousal": 0.0,
+    "vaginaOpen": 0.0,
+    "anusOpen": 0.0
+   },
+   "body": "your body is relaxed and closed"
+  },
+  "aroused": {
+   "label": "Aroused",
+   "set": {
+    "arousal": 0.85,
+    "vaginaOpen": 0.0,
+    "anusOpen": 0.0,
+    "flush": 0.5,
+    "erect": 0.8
+   },
+   "body": "you are aroused: a flush on your chest, your nipples hard, your inner lips flushed, swollen and wet"
+  },
+  "open": {
+   "label": "Open",
+   "set": {
+    "arousal": 0.9,
+    "vaginaOpen": 0.65,
+    "anusOpen": 0.0,
+    "flush": 0.6,
+    "erect": 0.8
+   },
+   "body": "you are aroused and open: your inner lips are parted and wet, your vagina is open"
+  },
+  "wide-open": {
+   "label": "Wide open",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.0,
+    "flush": 0.75,
+    "erect": 1.0,
+    "sweat": 0.3
+   },
+   "body": "you are very aroused and wide open: your lips are spread and your vagina is open wide"
+  },
+  "anus-open": {
+   "label": "Anus open",
+   "set": {
+    "arousal": 0.5,
+    "vaginaOpen": 0.0,
+    "anusOpen": 0.7
+   },
+   "body": "your anus is relaxed and open"
+  },
+  "both-open": {
+   "label": "Both open",
+   "set": {
+    "arousal": 0.9,
+    "vaginaOpen": 0.65,
+    "anusOpen": 0.7,
+    "flush": 0.6,
+    "erect": 0.8
+   },
+   "body": "you are aroused and open: your vagina is open and your anus is relaxed and open"
+  },
+  "flushed": {
+   "label": "Flushed",
+   "set": {
+    "arousal": 0.5,
+    "flush": 0.85,
+    "erect": 0.8
+   },
+   "body": "a warm flush spreads over your breasts and up your chest to your throat, and your nipples are hard"
+  },
+  "goosebumps": {
+   "label": "Goosebumps",
+   "set": {
+    "goosebumps": 1.0,
+    "erect": 0.9
+   },
+   "body": "you have goosebumps all over and your nipples are tight and hard"
+  },
+  "sweaty": {
+   "label": "Glistening",
+   "set": {
+    "sweat": 0.85,
+    "flush": 0.45,
+    "arousal": 0.4
+   },
+   "body": "your skin glistens with sweat; beads of it run between your breasts and down your belly"
+  },
+  "afterglow": {
+   "label": "Afterglow",
+   "set": {
+    "arousal": 0.4,
+    "flush": 0.6,
+    "sweat": 0.5,
+    "erect": 0.3,
+    "vaginaOpen": 0.2
+   },
+   "body": "you are in the afterglow: flushed, dewy with sweat, softened and relaxed"
+  },
+  "stretched": {
+   "label": "Stretched (fisting)",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.8,
+    "erect": 1.0,
+    "sweat": 0.4,
+    "vaginaOpen": 1.5
+   },
+   "body": "you are stretched open wide around their fist, flushed, very aroused and wet"
+  },
+  "anus-stretched": {
+   "label": "Anus stretched (fisting)",
+   "set": {
+    "arousal": 0.9,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.4,
+    "anusOpen": 1.5
+   },
+   "body": "your anus is stretched open wide around their fist, you are flushed and very aroused"
+  },
+  "cum": {
+   "label": "Cum",
+   "set": {
+    "arousal": 0.9,
+    "flush": 0.7,
+    "erect": 0.8,
+    "sweat": 0.4,
+    "vaginaOpen": 0.5,
+    "anusOpen": 0.4,
+    "cum": 1.0,
+    "cumInside": 0.8
+   },
+   "body": "cum fills your open vagina, pools at your anus and runs down between them; you are flushed and wet"
+  },
+  "creampie": {
+   "label": "Creampie",
+   "set": {
+    "arousal": 0.9,
+    "flush": 0.7,
+    "erect": 0.7,
+    "sweat": 0.4,
+    "vaginaOpen": 0.8,
+    "cum": 0.7,
+    "cumInside": 1.0
+   },
+   "body": "you are open and full: cum fills your vagina and spills out over your lips and down between your legs"
+  },
+  "pumped": {
+   "label": "Pumped",
+   "set": {
+    "arousal": 0.7,
+    "vaginaOpen": 0.0,
+    "anusOpen": 0.0,
+    "pumped": 1.0,
+    "flush": 0.4,
+    "erect": 0.7
+   },
+   "body": "your pussy has just been pumped: your outer lips are swollen and tight, your inner lips engorged, deep red, glossy and twice their size, your clit swollen out of its hood"
+  },
+  "pumped-open": {
+   "label": "Pumped and open",
+   "set": {
+    "arousal": 0.95,
+    "vaginaOpen": 0.7,
+    "anusOpen": 0.0,
+    "pumped": 1.0,
+    "flush": 0.6,
+    "erect": 0.85
+   },
+   "body": "your pumped pussy is open: swollen, engorged inner lips spread wide round your open, wet vagina, your clit swollen and exposed"
+  },
+  "oiled": {
+   "label": "Oiled",
+   "set": {
+    "arousal": 0.3,
+    "vaginaOpen": 0.0,
+    "anusOpen": 0.0,
+    "oil": 1.0,
+    "erect": 0.4
+   },
+   "body": "your body is oiled for a massage: your skin is slick and glossy all over, your breasts and belly shining"
+  },
+  "oiled-aroused": {
+   "label": "Oiled and aroused",
+   "set": {
+    "arousal": 0.9,
+    "vaginaOpen": 0.3,
+    "anusOpen": 0.0,
+    "oil": 1.0,
+    "flush": 0.5,
+    "erect": 0.85
+   },
+   "body": "your oiled body is aroused: slick and shining all over, nipples hard, your pussy flushed, wet and starting to open"
+  },
+  "cum-on-back": {
+   "label": "Cum on her back",
+   "set": {
+    "arousal": 0.85,
+    "vaginaOpen": 0.5,
+    "anusOpen": 0.0,
+    "flush": 0.5,
+    "erect": 0.7,
+    "sweat": 0.5,
+    "cumBack": 1.0
+   },
+   "body": "he has come on your back: thick ropes of cum across your lower back and ass, a pool in the small of your back, your pussy still open below them"
+  },
+  "doggy-creampie": {
+   "label": "Doggy creampie",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 0.9,
+    "anusOpen": 0.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "cumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "he came inside you from behind: your pussy is open and full of cum, and on all fours it runs forward over your lips and your clit and hangs in a drop"
+  },
+  "anal-creampie": {
+   "label": "Anal creampie",
+   "set": {
+    "arousal": 0.9,
+    "vaginaOpen": 0.3,
+    "anusOpen": 1.0,
+    "flush": 0.5,
+    "erect": 0.7,
+    "sweat": 0.4,
+    "anusCumInside": 1.0
+   },
+   "body": "he came in your ass: your anus is open and filled with cum, leaking down over your perineum towards your pussy"
+  },
+  "doggy-finish": {
+   "label": "Doggy: the full finish",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.8,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.8,
+    "cumInside": 1.0,
+    "cumDrip": 1.0,
+    "anusCumInside": 1.0,
+    "cumBack": 1.0,
+    "cum": 1.0
+   },
+   "body": "you have been used completely from behind: both holes open and dripping cum, more pooled round them and across your back and ass, your skin shining with sweat"
+  },
+  "doggy-open-cum": {
+   "label": "Doggy: both open, cum",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 0.85,
+    "anusOpen": 0.8,
+    "cum": 1.0,
+    "cumDrip": 0.7
+   },
+   "body": "you are on all fours with both holes open, your pussy and your ass, cum pooled on both and running between them, dripping forward over your lips"
+  },
+  "doggy-double-creampie": {
+   "label": "Doggy: double creampie",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 1.0,
+    "anusOpen": 1.0,
+    "cumInside": 1.0,
+    "anusCumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "he filled both your holes from behind: your pussy and your ass are open and full of cum, leaking forward over your lips and your clit"
+  },
+  "doggy-gaping-cum": {
+   "label": "Doggy: gaping and full",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 1.5,
+    "anusOpen": 1.5,
+    "cum": 1.0,
+    "cumInside": 1.0,
+    "anusCumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "both your holes are stretched gaping open from behind and full of cum, more pooled round them and dripping"
+  },
+  "doggy-cum-covered": {
+   "label": "Doggy: covered in cum",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 0.9,
+    "anusOpen": 0.9,
+    "cum": 1.0,
+    "cumInside": 0.8,
+    "anusCumInside": 0.8,
+    "cumDrip": 1.0,
+    "cumBack": 1.0
+   },
+   "body": "you are covered in cum from behind: both holes open and dripping, ropes of it across your back and ass"
+  },
+  "doggy-pumped-creampie": {
+   "label": "Doggy: pumped and filled",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "pumped": 1.0,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.9,
+    "cumInside": 1.0,
+    "anusCumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "your pumped pussy is swollen, engorged and open from behind, both your holes filled with cum running forward over your swollen lips"
+  },
+  "sado-roped-open": {
+   "label": "Sado: roped and open",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 0.9,
+    "anusOpen": 0.8,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "ropeMarks": 1.0,
+    "collarMark": 0.6
+   },
+   "body": "you have been tied: red rope marks above and below your breasts, a diamond harness pressed into your belly, rope lines round your thighs, a collar mark on your neck, and both your holes are open and wet"
+  },
+  "sado-wax-open": {
+   "label": "Sado: wax and open",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 0.9,
+    "anusOpen": 0.8,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "wax": 1.0,
+    "clampMarks": 0.8
+   },
+   "body": "hot red wax has dripped over your breasts and belly and set glossy on your skin, your nipples marked by clamps, both your holes open and wet"
+  },
+  "sado-whipped-open": {
+   "label": "Sado: whipped and open",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 0.9,
+    "anusOpen": 0.8,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "welts": 1.0,
+    "collarMark": 0.6
+   },
+   "body": "red welts from the whip cross your ass, the backs of your thighs and your lower back, and both your holes are open and wet"
+  },
+  "sado-used-cum": {
+   "label": "Sado: used and filled",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.0,
+    "anusOpen": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "ropeMarks": 1.0,
+    "welts": 0.8,
+    "clampMarks": 0.8,
+    "collarMark": 0.8,
+    "cum": 1.0,
+    "cumInside": 1.0,
+    "anusCumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "you have been tied, whipped and used: rope marks over your breasts and belly, welts across your ass, clamp marks on your nipples, a collar mark on your neck, both holes open and full of cum, dripping"
+  },
+  "sado-full": {
+   "label": "Sado: everything",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.2,
+    "anusOpen": 1.2,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.8,
+    "ropeMarks": 1.0,
+    "wax": 1.0,
+    "welts": 1.0,
+    "clampMarks": 1.0,
+    "collarMark": 1.0,
+    "cum": 1.0,
+    "cumInside": 1.0,
+    "anusCumInside": 1.0,
+    "cumBack": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "every mark of a long session is on you: rope lines, red wax set on your breasts, whip welts across your ass, clamp and collar marks, both holes stretched open and full of cum, more across your back"
+  },
+  "doggy-anal-fisted": {
+   "label": "Doggy: after anal fisting",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 0.8,
+    "anusOpen": 1.5,
+    "anusGape": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.7
+   },
+   "body": "you are on all fours after being fisted in the ass: your anus gapes wide open, its rim swollen and red, the pink inside of you showing, your pussy wet and open below it"
+  },
+  "doggy-anal-fisted-cum": {
+   "label": "Doggy: anal fisted and filled",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.0,
+    "anusOpen": 1.5,
+    "anusGape": 1.0,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.7,
+    "anusCumInside": 1.0,
+    "cumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "after fisting your ass gapes wide open, its rim swollen and red, and both your holes are full of cum running forward over your pussy"
+  },
+  "doggy-both-fisted": {
+   "label": "Doggy: both holes fisted",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.5,
+    "anusOpen": 1.5,
+    "anusGape": 1.0,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.8
+   },
+   "body": "both your holes have been fisted: your pussy is stretched wide open and your ass gapes, its rim swollen and red"
+  },
+  "lower-back-cum": {
+   "label": "Cum on her lower back",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "vaginaOpen": 0.6,
+    "anusOpen": 0.3,
+    "cumPool": 1.0,
+    "cumSpine": 0.7
+   },
+   "body": "he came on your lower back: a thick warm pool sits in the small of your back above your ass, and with your ass up it runs slowly up your spine"
+  },
+  "lower-back-cum-heavy": {
+   "label": "Lower back: a heavy load",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "vaginaOpen": 0.7,
+    "anusOpen": 0.4,
+    "cumPool": 1.0,
+    "cumSpine": 1.0,
+    "cumSides": 1.0,
+    "cumCrack": 1.0,
+    "cumBack": 0.6
+   },
+   "body": "a heavy load covers your lower back: the pool in the small of your back overflows, running up your spine, down both your sides and down into your crack"
+  },
+  "lower-back-cum-open": {
+   "label": "Lower back cum, both open",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.9,
+    "cumPool": 1.0,
+    "cumSpine": 0.8,
+    "cumCrack": 1.0
+   },
+   "body": "your lower back is covered in cum running down into your crack, and below it both your holes are open and wet"
+  },
+  "lower-back-cum-creampie": {
+   "label": "Lower back and inside",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.9,
+    "cumPool": 1.0,
+    "cumSpine": 0.8,
+    "cumCrack": 0.8,
+    "cumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "he came in you and on you: your pussy open and full, dripping forward, and a pool of cum on your lower back running up your spine"
+  },
+  "lower-back-cum-gaping": {
+   "label": "Lower back cum, anal gape",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "vaginaOpen": 0.9,
+    "anusOpen": 1.5,
+    "anusGape": 1.0,
+    "cumPool": 1.0,
+    "cumSpine": 0.8,
+    "cumCrack": 1.0,
+    "anusCumInside": 0.7
+   },
+   "body": "cum pools on your lower back and runs down your crack into your gaping, fisted ass, its rim swollen and red, your pussy open below"
+  },
+  "doggy-sweaty": {
+   "label": "Doggy: sweating",
+   "set": {
+    "arousal": 0.95,
+    "flush": 0.6,
+    "erect": 0.85,
+    "vaginaOpen": 0.6,
+    "anusOpen": 0.2,
+    "sweatBack": 1.0,
+    "sweat": 0.4
+   },
+   "body": "you have been on all fours a while: sweat glistens down your spine and in the small of your back, beads on your skin, your ass flushed warm, your pussy wet and open"
+  },
+  "doggy-sweaty-open": {
+   "label": "Doggy: sweating, both open",
+   "set": {
+    "arousal": 0.95,
+    "flush": 0.6,
+    "erect": 0.85,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.9,
+    "sweatBack": 1.0,
+    "sweat": 0.5
+   },
+   "body": "sweat runs down your spine and pools in the small of your back, your ass flushed, and both your holes are open and wet"
+  },
+  "lower-back-cum-second": {
+   "label": "Lower back: a second load",
+   "set": {
+    "arousal": 0.95,
+    "flush": 0.6,
+    "erect": 0.85,
+    "vaginaOpen": 0.8,
+    "anusOpen": 0.6,
+    "cumPool": 1.0,
+    "cumSpine": 0.7,
+    "cumBack": 0.8,
+    "cumSecond": 1.0,
+    "sweatBack": 0.8
+   },
+   "body": "he came on your back a second time: a fresh, thick load across your lower back and ass over the first, which has thinned to a glaze, the pool in the small of your back overflowing, your skin hot and sweaty"
+  },
+  "doggy-second-creampie": {
+   "label": "Doggy: filled twice",
+   "set": {
+    "arousal": 0.95,
+    "flush": 0.6,
+    "erect": 0.85,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.4,
+    "cumInside": 1.0,
+    "cumDrip": 1.0,
+    "cum": 1.0,
+    "cumPool": 0.6,
+    "sweatBack": 0.8
+   },
+   "body": "he has come in you a second time: your pussy is open and overflowing, cum dripping forward over your lips, an older pool drying on your lower back, your back slick with sweat"
+  },
+  "missionary-open": {
+   "label": "Missionary: wet and open",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "vaginaOpen": 0.8,
+    "anusOpen": 0.1
+   },
+   "body": "you lie on your back for them, knees up and apart, your chest flushed and glistening with sweat, nipples hard, your pussy open, wet and glistening"
+  },
+  "missionary-creampie": {
+   "label": "Missionary: creampie",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "vaginaOpen": 1.0,
+    "cumInside": 1.0,
+    "cum": 0.7
+   },
+   "body": "he came inside you while you lay on your back: your pussy is open and full, cum running out of you and down over your perineum to your ass"
+  },
+  "missionary-belly": {
+   "label": "Missionary: on her belly",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "vaginaOpen": 0.8,
+    "cumBelly": 1.0,
+    "cumRunSides": 0.8
+   },
+   "body": "he pulled out and came on your belly: cum pooled in your navel, ropes of it across your belly running off your sides, your pussy still open below"
+  },
+  "missionary-chest": {
+   "label": "Missionary: on her chest",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "vaginaOpen": 0.7,
+    "cumChest": 1.0
+   },
+   "body": "he came across your breasts: thick ropes over your chest and nipples, a pool between your breasts, your skin flushed and sweaty"
+  },
+  "missionary-covered": {
+   "label": "Missionary: covered",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.8,
+    "vaginaOpen": 1.0,
+    "cumInside": 1.0,
+    "cum": 0.6,
+    "cumBelly": 1.0,
+    "cumRunSides": 0.7,
+    "cumChest": 1.0
+   },
+   "body": "you are covered: cum across your breasts and pooled between them, more in your navel running off your sides, your open pussy full and leaking, your whole body slick with sweat"
+  },
+  "cowgirl-riding": {
+   "label": "Cowgirl: riding",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.9,
+    "erect": 0.9,
+    "sweat": 0.8,
+    "vaginaOpen": 0.8
+   },
+   "body": "you are riding them: a deep flush down your chest, sweat running between your breasts and down your belly, nipples hard, your pussy open and wet around them"
+  },
+  "cowgirl-creampie": {
+   "label": "Cowgirl: creampie dripping",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.7,
+    "vaginaOpen": 1.0,
+    "cumInside": 1.0,
+    "cum": 0.8,
+    "cumThighs": 1.0
+   },
+   "body": "he came inside you while you rode him: as you rise, cum drips out of your open pussy and runs down the insides of your thighs"
+  },
+  "cowgirl-belly": {
+   "label": "Cowgirl: on her belly",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.7,
+    "vaginaOpen": 0.8,
+    "cumBelly": 1.0,
+    "cumRunDown": 1.0
+   },
+   "body": "you rose off him and he came up onto your belly: cum in your navel, running down your belly over your mons to your pussy"
+  },
+  "cowgirl-after": {
+   "label": "Cowgirl: after",
+   "set": {
+    "arousal": 0.8,
+    "flush": 0.8,
+    "erect": 0.6,
+    "sweat": 0.9,
+    "vaginaOpen": 0.7,
+    "cumInside": 0.8,
+    "cumThighs": 0.8
+   },
+   "body": "you have just come on top of them: flushed and glowing, slick with sweat, your thighs streaked with cum still running from your pussy"
+  },
+  "cowgirl-everything": {
+   "label": "Cowgirl: everything",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.9,
+    "vaginaOpen": 1.0,
+    "cumInside": 1.0,
+    "cumThighs": 1.0,
+    "cumBelly": 1.0,
+    "cumRunDown": 0.8,
+    "cumChest": 1.0
+   },
+   "body": "cum is everywhere on you: across your breasts and between them, down your belly over your mons, filling your pussy and running down the insides of your thighs, your skin shining with sweat"
+  },
+  "missionary-fisted": {
+   "label": "Missionary: fisted",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 1.5,
+    "pumped": 0.4,
+    "anusOpen": 0.2
+   },
+   "body": "you lie on your back, knees up and wide, after being fisted: your pussy is stretched wide open, the pink inside of you showing, your lips swollen and dark from it, your body flushed and trembling"
+  },
+  "missionary-fisted-anal": {
+   "label": "Missionary: anal fisted",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 0.8,
+    "anusOpen": 1.5,
+    "anusGape": 1.0
+   },
+   "body": "you lie on your back with your knees up after being fisted in the ass: your anus gapes wide open, its rim swollen and red, your pussy open and wet just above it"
+  },
+  "missionary-fisted-cum": {
+   "label": "Missionary: fisted and filled",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 1.5,
+    "pumped": 0.4,
+    "cumInside": 1.0,
+    "cum": 0.8
+   },
+   "body": "after his fist he came in you: your stretched, swollen pussy gapes full of cum, running out of you and down over your perineum to your ass"
+  }
+ }
+}

@@ -34,6 +34,16 @@ on:
         required: false
         default: false
         type: boolean
+      outfits:
+        description: Also build every outfit dictionary entry (erotic sets included) on every character
+        required: false
+        default: true
+        type: boolean
+      missing_only:
+        description: Send only looks a character's list does not have yet (never rebuild an existing one)
+        required: false
+        default: true
+        type: boolean
 
 concurrency:
   group: prebuild-wardrobe
@@ -122,7 +132,8 @@ jobs:
           python tools/prebuild.py --forge http://127.0.0.1:8090 \
             --admin-token-file "$RUNNER_TEMP/forge-token" \
             --slugs "${{ matrix.slug }}" ${{ inputs.only && format('--only "{0}"', inputs.only) || '' }} \
-            --report "prebuild-${{ matrix.slug }}.json"
+            --report "prebuild-${{ matrix.slug }}.json" \
+            ${{ inputs.outfits && '--outfits' || '' }} ${{ inputs.missing_only && '--missing-only' || '' }}
       - name: Upload the new looks
         if: always()
         run: |

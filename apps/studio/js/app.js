@@ -628,6 +628,7 @@ async function selectAvatar(slug) {
     $('stage-empty').hidden = true;
     $('generate-btn').disabled = false;
     $('plan-btn').disabled = false;
+    syncBarePanel();
     $('plan-report').hidden = true;
     $('report').hidden = true;
     if (state.vocab) renderDesigner();
@@ -709,7 +710,142 @@ function setSession(session) {
         account.timer = setTimeout(() => endSession('Your admin session ended.'), Math.max(left, 0));
     }
     loadCustomBodyArt(signedIn);
+    loadBarePanel(signedIn);
     if ($('settings-dialog').open) renderSettings();
+}
+
+/*
+ * BD18. The bare-body panel: a bare look (or an erotic set dressed over her bare body) with a
+ * detail preset, a body state, extras and a live-state pack, for an admin session. The catalogue
+ * is the server's (the painter's own files), so this page lists whatever exists; the server still
+ * decides every gate (declaration, detail clearance, limits). "Run again" resubmits the last bare
+ * job exactly, so a variant can be rebuilt after the painter changes without re-picking anything.
+ */
+const bare = { catalogue: null, last: null };
+
+async function loadBarePanel(signedIn) {
+    const panel = $('bare-panel');
+    if (!signedIn) {
+        panel.hidden = true;
+        bare.catalogue = null;
+        return;
+    }
+    try {
+        bare.catalogue = await api.adminBodyDetail();
+    } catch (_) {
+        panel.hidden = true; // an older server without the route: nothing to offer
+        return;
+    }
+    const c = bare.catalogue;
+    const options = (select, items, keep) => {
+        select.replaceChildren(...keep, ...items.map((item) => el('option', { value: item.name || item.id, text: item.label || item.title })));
+    };
+    options($('bare-preset'), c.presets, []);
+    options($('bare-state'), c.states, [el('option', { value: '', text: 'None (relaxed)' })]);
+    options($('bare-outfit'), c.outfits, [el('option', { value: '', text: 'Bare — nothing on' })]);
+    const boxes = (root, items, limit) =>
+        root.replaceChildren(
+            ...items.map((item) =>
+                el(
+                    'label',
+                    { class: 'check', title: item.body || '' },
+                    el('input', {
+                        type: 'checkbox',
+                        value: item.name,
+                        onchange: () => {
+                            const on = root.querySelectorAll('input:checked');
+                            root.querySelectorAll('input').forEach((box) => (box.disabled = !box.checked && on.length >= limit));
+                        },
+                    }),
+                    el('span', { text: item.label }),
+                ),
+            ),
+        );
+    boxes($('bare-extras'), c.extras, c.limits.extras);
+    boxes($('bare-pack'), c.states, c.limits.states);
+    $('bare-state').onchange = () => {
+        const state = c.states.find((s) => s.name === $('bare-state').value);
+        $('bare-state-line').textContent = state ? state.body : '';
+    };
+    panel.hidden = false;
+    syncBarePanel();
+}
+
+function syncBarePanel() {
+    const ready = Boolean(bare.catalogue && state.avatar && !state.jobId);
+    $('bare-generate').disabled = !ready;
+    $('bare-rerun').disabled = !ready || !bare.last;
+    $('bare-note').textContent = state.avatar
+        ? `For ${state.avatar.name}: private to admin sessions. Her declaration and the detail review still decide.`
+        : 'Choose an avatar first.';
+}
+
+function bareBody() {
+    const c = bare.catalogue;
+    const checked = (id) => [...$(id).querySelectorAll('input:checked')].map((box) => box.value);
+    const outfit = c.outfits.find((o) => o.id === $('bare-outfit').value);
+    const extras = checked('bare-extras');
+    const pack = checked('bare-pack');
+    const stateName = $('bare-state').value;
+    return {
+        outfit: outfit ? { ...outfit.request, mode: 'template' } : { prompt: 'Bare authored body', templateId: 'body-bare-v1' },
+        options: {
+            renderPreview: true,
+            engine: 'native',
+            baseBody: outfit ? 'bare-dressed' : 'bare',
+            private: true,
+            bareDetail: $('bare-preset').value,
+            ...(stateName ? { bareState: stateName } : {}),
+            ...(extras.length ? { bareExtras: extras } : {}),
+            ...(pack.length ? { bareStates: pack } : {}),
+        },
+    };
+}
+
+async function runBare(body) {
+    if (!state.avatar || state.jobId) return;
+    bare.last = { slug: state.avatar.slug, body };
+    syncBarePanel();
+    const title = body.options.bareState ? `Bare · ${body.options.bareState}` : 'Bare body';
+    await runJob(state.avatar.slug, body, title);
+    syncBarePanel();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    $('bare-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        runBare(bareBody());
+    });
+    $('bare-rerun').addEventListener('click', () => bare.last && runBare(bare.last.body));
+});
+
+/**
+ * DC1. The same grant as mintGrant, handed over as a six-character one-time code: on a headset the
+ * person cannot paste a token, and one mistyped character of a long one is a grant that does not
+ * verify. The code is shown here only; the app trades it for the grant, once, within ten minutes.
+ */
+async function pairHeadset() {
+    const button = $('grant-pair');
+    const slugs = state.library.filter((avatar) => avatar.available).map((avatar) => avatar.slug);
+    const days = Number($('grant-days').value); // 0 = no expiry (CG8)
+    button.disabled = true;
+    $('settings-error').hidden = true;
+    try {
+        const issued = await api.issueDeviceCode(slugs, days ? days * 24 * 3600 : 0, 'headset');
+        $('grant-pair-code').textContent = issued.code;
+        const until = new Date(issued.codeExpires * 1000).toLocaleTimeString();
+        $('grant-pair-meta').textContent = `${slugs.length} characters · use it before ${until}`;
+        $('grant-pair-result').hidden = false;
+    } catch (error) {
+        const reason = error && error.detail && error.detail.reason;
+        $('settings-error').textContent =
+            reason === 'grants_unavailable'
+                ? 'This Space has no WARDROBE_GRANT_SECRET (32+ characters). Set it in the Space settings, then try again.'
+                : `Could not create a code: ${(error && error.message) || error}`;
+        $('settings-error').hidden = false;
+    } finally {
+        button.disabled = false;
+    }
 }
 
 /**
@@ -868,6 +1004,7 @@ function bindAccount() {
     });
     $('declarations-signin').addEventListener('click', openSignIn);
     $('grant-mint').addEventListener('click', mintGrant);
+    $('grant-pair').addEventListener('click', pairHeadset);
     $('grant-revoke').addEventListener('click', async () => {
         const token = $('grant-revoke-token').value.trim();
         if (!token) return;

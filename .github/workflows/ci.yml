@@ -26,7 +26,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        # CI1. Every push and pull request runs 3.12; 3.11 (the oldest supported version) runs
+        # when a change lands on ultimate or main. Testing every push twice doubled the wait for
+        # no difference in what most changes could break.
+        python-version: ${{ fromJSON((github.event_name == 'push' && (github.ref == 'refs/heads/ultimate' || github.ref == 'refs/heads/main')) && '["3.11", "3.12"]' || '["3.12"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -35,8 +38,9 @@ jobs:
           cache: pip
       - run: python -m pip install -e ".[dev,preview]"
 
+      # CI1. Spread across the runner's cores: about an hour on one core.
       - name: Unit and integration tests
-        run: pytest tests/unit tests/integration -q
+        run: pytest tests/unit tests/integration -q -n auto
 
       # The real bar: generate a look on four different bodies in both VRM
       # specs, re-import each result and prove it is still a working avatar.

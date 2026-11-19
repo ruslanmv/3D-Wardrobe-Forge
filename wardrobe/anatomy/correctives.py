@@ -319,6 +319,14 @@ def build(size_id: str, names: tuple[str, ...] | None = None) -> tuple[list[Corr
         for side, _, sign in SIDES:
             delta = np.where((np.sign(fine_rest[:, 0]) == sign)[:, None], deltas[key["name"]], 0.0)
             delta[np.linalg.norm(delta, axis=1) < 1e-7] = 0.0
+            # BE3. Rounded to the micrometre. The unskinning above goes through BLAS, and two CPU
+            # kernels (OpenBLAS Haswell vs SkylakeX: GitHub runners differ) disagree in the last
+            # bits, so a moved row carried ~1e-14 m of noise in its other components and the file
+            # came out with different bytes per machine. The reference body is cleared by the
+            # SHA-256 of exactly these bytes (synthetic-references.json, rebuilt at runtime in
+            # body_surface/visibility.py), so on the other kind of CPU she silently lost her
+            # clearance and CI failed at random. A micrometre is far below anything a viewer shows.
+            delta = np.round(delta, 6)
             out.append(
                 Corrective(
                     name=f"corrective.{side}Arm.{key['name']}",

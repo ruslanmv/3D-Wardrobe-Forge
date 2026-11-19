@@ -133,3 +133,21 @@ def test_a_high_leg_word_cuts_a_plain_bodysuit_high(measured):
     kept = build_garment("bodysuit-block", FitParameters(measurements=measured.measurements, metadata=thong,
                                                           clearance_m=0.0025))
     assert kept.metadata["lingerieBrief"]["spec"]["preset"] == "thong"
+
+
+def test_depth_in_blocks_matches_one_array(monkeypatch):
+    """VA4. ``_depth`` takes its distances a block at a time so a dense body cannot ask for
+    gigabytes; the blocks must give exactly what one array did."""
+    import numpy as np
+
+    from wardrobe.lingerie import fit
+
+    rng = np.random.default_rng(7)
+    pts = rng.normal(size=(500, 3))
+    nrm = pts / np.linalg.norm(pts, axis=1, keepdims=True)
+    p = rng.normal(size=(37, 3)) * 1.1
+    whole = fit._depth(p, pts, nrm)
+    monkeypatch.setattr(fit, "_DEPTH_BYTES", 500 * 3 * 8 * 5)  # five rows a block, uneven last block
+    blocks = fit._depth(p, pts, nrm)
+    np.testing.assert_array_equal(whole[0], blocks[0])
+    np.testing.assert_array_equal(whole[1], blocks[1])

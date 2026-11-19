@@ -19,6 +19,7 @@ from apps.api.routes.body_art import router as body_art_router
 from apps.api.routes.body_surface import router as body_surface_router
 from apps.api.routes.catalog import router as catalog_router
 from apps.api.routes.collections import router as collections_router
+from apps.api.routes.device_codes import router as device_codes_router
 from apps.api.routes.generate import router as generate_router
 from apps.api.routes.jobs import router as jobs_router
 from apps.api.routes.looks import router as looks_router
@@ -130,6 +131,7 @@ app.include_router(studio_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(admin_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(reviews_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(access_router, prefix="/v1", dependencies=api_dependencies)
+app.include_router(device_codes_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(body_art_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(body_surface_router, prefix="/v1", dependencies=api_dependencies)
 app.include_router(outfits_router, prefix="/v1", dependencies=api_dependencies)

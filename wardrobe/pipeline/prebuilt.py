@@ -90,6 +90,21 @@ def template_fingerprint(template) -> str:
     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()
 
 
+#: BD6/BD7. Option lists added after looks were cached: empty, they say nothing, so they stay out of
+#: the hashed request — otherwise every existing look's key would change and miss the cache.
+EMPTY_LIST_OPTIONS = ("bareExtras", "bareStates")
+
+
+def _request_payload(request: CreateJobRequest) -> dict:
+    payload = request.model_dump(mode="json", by_alias=True, exclude_none=True)
+    options = payload.get("options")
+    if isinstance(options, dict):
+        for key in EMPTY_LIST_OPTIONS:
+            if options.get(key) == []:
+                options.pop(key)
+    return payload
+
+
 def cache_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None:
     """The key a request's look is stored under, or None when it is not cacheable."""
     outfit = request.outfit
@@ -100,7 +115,7 @@ def cache_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None
     template = catalog.get(outfit.template_id)
     if template is None:
         return None
-    payload = request.model_dump(mode="json", by_alias=True, exclude_none=True)
+    payload = _request_payload(request)
     material = {
         "pipelineVersion": PIPELINE_VERSION,
         "template": template_fingerprint(template),
@@ -160,7 +175,7 @@ def plan_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None:
         if template is None:
             return None
         templates[garment.template_id] = template_fingerprint(template)
-    payload = request.model_dump(mode="json", by_alias=True, exclude_none=True)
+    payload = _request_payload(request)
     payload["outfit"] = {k: v for k, v in payload["outfit"].items() if k not in OUTFIT_PLANNED}
     material = {
         "key": "plan-1",
@@ -683,7 +698,7 @@ async def remember(store: ObjectStore, key: str, record: JobRecord, *, list_it: 
     """Keep a completed record under its key. Never raises: a cache that fails is a slower Forge."""
     if record.state != JobState.COMPLETED or record.look is None:
         return
-    if record.request.options.base_body_mode == "bare" and await store.exists(entry_key(key)):
+    if record.request.options.over_bare_body and await store.exists(entry_key(key)):
         return
     entry = {
         "key": key,
