@@ -241,6 +241,11 @@ and `cumChest` is ropes across her breasts pooling in her cleavage.
 | `missionary-chest`    | `cowgirl-after`      |
 | `missionary-covered`  | `cowgirl-everything` |
 
+Missionary also has three fisted variants: `missionary-fisted` (vagina
+stretched to 1.5, lips swollen by `pumped`), `missionary-fisted-anal` (the BD16
+gape) and `missionary-fisted-cum` (stretched and filled, running down to her
+anus).
+
 All ten keep her open, suit every preset (a hairless one shows the most), and
 switch live in a skin pack. The chatbot's finish chooses among them by the
 position she holds (UN37). `detail_flat.py --views thighs` shows her lower belly,

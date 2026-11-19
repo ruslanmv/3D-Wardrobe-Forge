@@ -729,6 +729,46 @@
     "cumChest": 1.0
    },
    "body": "cum is everywhere on you: across your breasts and between them, down your belly over your mons, filling your pussy and running down the insides of your thighs, your skin shining with sweat"
+  },
+  "missionary-fisted": {
+   "label": "Missionary: fisted",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 1.5,
+    "pumped": 0.4,
+    "anusOpen": 0.2
+   },
+   "body": "you lie on your back, knees up and wide, after being fisted: your pussy is stretched wide open, the pink inside of you showing, your lips swollen and dark from it, your body flushed and trembling"
+  },
+  "missionary-fisted-anal": {
+   "label": "Missionary: anal fisted",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 0.8,
+    "anusOpen": 1.5,
+    "anusGape": 1.0
+   },
+   "body": "you lie on your back with your knees up after being fisted in the ass: your anus gapes wide open, its rim swollen and red, your pussy open and wet just above it"
+  },
+  "missionary-fisted-cum": {
+   "label": "Missionary: fisted and filled",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 1.5,
+    "pumped": 0.4,
+    "cumInside": 1.0,
+    "cum": 0.8
+   },
+   "body": "after his fist he came in you: your stretched, swollen pussy gapes full of cum, running out of you and down over your perineum to your ass"
   }
  }
 }

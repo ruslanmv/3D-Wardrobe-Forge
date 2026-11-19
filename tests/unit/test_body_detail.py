@@ -608,7 +608,11 @@ def test_front_finishes_for_missionary_and_cowgirl():
     flank = np.array([[0.07, 1.17 - 0.2, 0.08]])
     assert FX.fluid(flank, marks, {**base, "cumRunSides": 1.0}, 1.0)[0][0] > 0.3
     states = BD.load_states()
-    names = [n for n in states if n.startswith(("missionary-", "cowgirl-"))]
+    names = [n for n in states if n.startswith(("missionary-", "cowgirl-")) and "fisted" not in n]
     assert len(names) == 10
+    # The missionary fisted variants: stretched past wide open, or the anus gaping.
+    assert states["missionary-fisted"]["set"]["vaginaOpen"] == 1.5
+    assert states["missionary-fisted-anal"]["set"]["anusGape"] == 1.0
+    assert states["missionary-fisted-cum"]["set"]["cumInside"] == 1.0
     for name in names:
         assert states[name]["set"]["vaginaOpen"] > 0 and states[name]["body"], name
