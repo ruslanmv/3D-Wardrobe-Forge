@@ -1,5 +1,10 @@
 # Remaining anatomy and quality work
 
+> **2026-11-18 — superseded in part.** The owner chose generated detail (BD1,
+> `docs/qa/BARE_DETAIL.md`): painted anatomical detail, in variants, on a bare body whose
+> source has a full adult-design review with its packet. Authored sources remain the
+> higher-quality route described below.
+
 The user explicitly deferred sourcing another avatar on 2026-11-15 and requested that the missing
 anatomical detail be recorded in this plan. No replacement anatomy is authorized or generated.
 

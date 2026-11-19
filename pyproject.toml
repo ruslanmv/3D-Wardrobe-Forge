@@ -38,6 +38,8 @@ redis = ["redis>=5.0,<7"]
 dev = [
   "pytest>=8.3,<9",
   "pytest-asyncio>=0.24,<1",
+  # CI1. Runs the suite across the runner's cores (pytest -n auto in .github/workflows/ci.yml).
+  "pytest-xdist>=3.6,<4",
   "ruff>=0.6,<1",
   "pillow>=10.3,<12",
 ]

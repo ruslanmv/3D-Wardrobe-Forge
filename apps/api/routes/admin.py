@@ -18,7 +18,7 @@ from wardrobe.body_art.custom import MAX_BYTES, CustomArtError, is_custom
 from wardrobe.body_art.raster import artwork_png
 from wardrobe.body_surface import body_state_import
 from wardrobe.pipeline import prebuilt
-from wardrobe.policy import grants, revocations
+from wardrobe.policy import device_codes, grants, revocations
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +200,26 @@ def mint_grant(body: GrantRequest, request: Request, admin: AdminDep, admins: Ad
     logger.info("read grant %s minted for %s by %s, expires %s", grant.id, sorted(grant.slugs),
                 admins.username or "admin", grant.expires)
     return {"token": token, "header": grants.HEADER, **grant.to_dict()}
+
+
+@router.post("/admin/device-codes", status_code=status.HTTP_201_CREATED)
+def issue_device_code(body: GrantRequest, request: Request, admin: AdminDep, admins: AdminSessionsDep,
+                      settings: SettingsDep) -> dict:
+    """DC1. The same read grant as ``/admin/grants``, handed over as a six-character one-time code.
+
+    For a headset, where pasting a token is impossible: the person types the code once in the
+    app's Settings, and the app trades it for this grant at ``/v1/device-codes/redeem``. Minted
+    by ``mint_grant`` itself, so every check on avatars, lifetime and the secret is that route's.
+    """
+    minted = mint_grant(body, request, admin, admins, settings)
+    token = minted.pop("token")
+    try:
+        code, expires = device_codes.codes.issue(token, minted)
+    except ValueError as error:
+        raise HTTPException(status_code=429, detail={"reason": "device_codes_full",
+                                                     "message": str(error)}) from None
+    logger.info("device code issued for grant %s by %s", minted.get("id"), admins.username or "admin")
+    return {"code": device_codes.formatted(code), "codeExpires": int(expires), "grant": minted}
 
 
 # ----------------------------------------------------------------------
@@ -387,3 +407,34 @@ async def restore_access(subject: str, admin: AdminDep, store: StoreDep) -> None
                                                      "message": str(error)}) from None
     if not found:
         raise HTTPException(status_code=404, detail="that account is not revoked")
+
+
+@router.get("/admin/body-detail")
+def body_detail_catalogue(admin: AdminDep) -> dict:
+    """BD18. What the Studio's bare-body panel offers an admin session: every body-detail preset,
+    body state and extra (name, label, and the line the conversation hears), and the erotic sets
+    that are dressed over a bare body.
+
+    Admin only: these are the names of explicit variants, and a guest has no use for them (a bare
+    job needs an admin's declaration anyway). Read from the same files the painter reads, so a new
+    state or extra appears here the moment it is added; nothing to keep in step."""
+    _signed_in(admin)
+    from wardrobe.pipeline import outfit_dictionary as dictionary
+    from wardrobe.vrm import body_detail
+
+    def entries(table: dict) -> list[dict]:
+        return [{"name": name, "label": value.get("label", name), "body": value.get("body", "")}
+                for name, value in table.items()]
+
+    presets = body_detail.load_presets()
+    return {
+        "version": 1,
+        "presets": [{"name": name, "label": p.get("label", name), "hair": p.get("hair", "none")}
+                    for name, p in presets.items()],
+        "states": entries(body_detail.load_states()),
+        "extras": entries(body_detail.load_extras()),
+        "outfits": [{"id": o.id, "title": o.title, "base": o.base,
+                     "request": o.request().model_dump(mode="json", by_alias=True, exclude_none=True)}
+                    for o in dictionary.OUTFITS if o.group == "erotic"],
+        "limits": {"extras": 4, "states": 10},
+    }

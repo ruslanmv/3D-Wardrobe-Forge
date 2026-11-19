@@ -106,6 +106,8 @@ class PipelineContext:
     body_surface: object | None = None
     #: A hosiery look's other views, by file name ("detail.webp", "preview-sit.webp", ...).
     extra_previews: dict[str, bytes] = field(default_factory=dict)
+    #: BD7. Files stored beside the look under its own key (a skin pack): name -> bytes.
+    extra_files: dict[str, bytes] = field(default_factory=dict)
     look: LookResult | None = None
     fit_report: FitReport = field(default_factory=FitReport)
     warnings: list[str] = field(default_factory=list)

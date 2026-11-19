@@ -52,7 +52,7 @@ async def generate(request: GenerateRequest, orchestrator: OrchestratorDep) -> G
         # Privacy is the server's to decide (apps/api/admin.py), never a caller's.
         options=request.options.model_copy(update={"private": False}),
     )
-    if job_request.options.base_body_mode == "bare":
+    if job_request.options.over_bare_body:
         raise HTTPException(status_code=403, detail="bare bodies require the private library route")
     record = await orchestrator.submit(job_request)
     return GenerateAccepted(

@@ -208,6 +208,9 @@ def _keep_width(positions: np.ndarray, rows: list[list[int]]) -> None:
 #: A vertex is judged against this many of its nearest surface samples.
 NEIGHBOURS = 8
 
+#: The largest difference array ``_depth`` builds at once (256 MiB).
+_DEPTH_BYTES = 256 * 1024 * 1024
+
 
 def _depth(p: np.ndarray, pts: np.ndarray, nrm: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """How far each point is outside her, and which way is out, from its nearest samples.
@@ -215,10 +218,19 @@ def _depth(p: np.ndarray, pts: np.ndarray, nrm: np.ndarray) -> tuple[np.ndarray,
     One nearest sample misjudges a corner: in the V between trunk and thigh the
     nearest point can be on the thigh, whose normal says "outside" for a vertex
     that is inside the trunk. The deepest of the nearest few is believed.
+
+    The distances are taken a block of vertices at a time. All at once, a dense
+    body (283 066 samples) against a bodysuit's 1 489 placed vertices asked for a
+    9.4 GiB array and the worker was killed for memory (VA4, the table dance's
+    red lace bodysuit). Each vertex's nearest samples depend on its own row only,
+    so the blocks give exactly what the single array did.
     """
-    d = np.linalg.norm(p[:, None, :] - pts[None, :, :], axis=2)
     count = min(NEIGHBOURS, pts.shape[0])
-    near = np.argpartition(d, count - 1, axis=1)[:, :count]
+    near = np.empty((p.shape[0], count), dtype=np.intp)
+    block = max(1, int(_DEPTH_BYTES // max(1, pts.shape[0] * 3 * 8)))
+    for start in range(0, p.shape[0], block):
+        d = np.linalg.norm(p[start : start + block, None, :] - pts[None, :, :], axis=2)
+        near[start : start + block] = np.argpartition(d, count - 1, axis=1)[:, :count]
     signed_all = np.einsum("ijk,ijk->ij", p[:, None, :] - pts[near], nrm[near])
     worst = signed_all.argmin(axis=1)
     rows = np.arange(p.shape[0])

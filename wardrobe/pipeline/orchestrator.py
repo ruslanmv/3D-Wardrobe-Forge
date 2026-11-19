@@ -150,7 +150,7 @@ class Orchestrator:
     def _prebuilt_keys(self, request: CreateJobRequest) -> list[str]:
         # Bare requests always recheck current terms, switch and declaration before output: never
         # answered from the cache, never remembered in it (feat/bare-base-body).
-        if not self.settings.wardrobe_prebuilt or request.options.base_body_mode == "bare":
+        if not self.settings.wardrobe_prebuilt or request.options.over_bare_body:
             return []
         return prebuilt.keys_for(request, self.catalog)
 
@@ -220,7 +220,12 @@ class Orchestrator:
             else:
                 await generate_garment.plan(context)
                 engine = self._engine_for_outfit(engine, context)
+                if record.request.options.base_body_mode == "bare-dressed":
+                    # ES1. Only the native engine fits onto the prepared document; Blender re-imports
+                    # the source file and would drop her bare preparation and its detail (Codex, #70).
+                    engine = select_engine("native", self.settings)
                 await prepare_base_body.run(context)
+                # Bare alone builds no garment; bare-dressed (ES1) goes on to dress her, below.
                 if record.request.options.base_body_mode == "bare":
                     engine = select_engine("native", self.settings)
                     context.output_bytes = context.document.to_bytes()
@@ -242,7 +247,6 @@ class Orchestrator:
             await render_preview.run(context, engine)
 
             await self._publish(context)
-            await context.emit(JobState.COMPLETED, "look ready")
             # RU1. Under every key it answers to; the list entry is written once, by the first.
             # BL1. Registration is not lookup: a bare look is never *answered* from the cache
             # (_prebuilt_keys), but once built it is recorded and listed like any prebuilt look,
@@ -250,9 +254,20 @@ class Orchestrator:
             # BR1. A reconstructed bare body (bodyCompletion: proxy) carries surface her author never
             # made: it stays a private job result for the operator to inspect and is never
             # registered, so no prebuilt list (and so no app) can serve it unreviewed.
+            # PB5. Registered *before* the job says it is done. It used to be the other way round,
+            # and anything acting on "completed" at once (the Studio opening the look, a client
+            # listing her wardrobe, a Space restarting) could find no prebuilt entry yet: the
+            # in-memory job store holds this very record, so a poller sees the new state the
+            # instant it is set. remember() keeps only a completed record, so it is given a
+            # completed copy; the entry stored is the same one as before.
             reconstructed = ((record.fit_report.base_body or {}).get("bodyCompletion") or {}).get("applied")
-            for i, key in enumerate([] if reconstructed else self._remember_keys(record.request)):
-                await prebuilt.remember(self.store, key, record, list_it=i == 0)
+            keys = [] if reconstructed else self._remember_keys(record.request)
+            if keys:
+                done = record.model_copy(deep=True)
+                done.transition(JobState.COMPLETED, "look ready")
+                for i, key in enumerate(keys):
+                    await prebuilt.remember(self.store, key, done, list_it=i == 0)
+            await context.emit(JobState.COMPLETED, "look ready")
 
         except WardrobeError as exc:
             logger.info("job %s rejected/failed: %s", record.id, exc.message)
@@ -328,6 +343,11 @@ class Orchestrator:
                 context.key(name), data, content_type="image/webp"
             )
 
+        # BD7. Beside the look, under its key: served as privately as the look itself.
+        for name, data in sorted(context.extra_files.items()):
+            kind = "application/json" if name.endswith(".json") else "image/png"
+            await self.store.put(context.key(name), data, content_type=kind)
+
         report = context.fit_report
         record.fit_report = report
         await self.store.put(
@@ -388,7 +408,8 @@ class Orchestrator:
             previewUrl=preview_url,
             sourceAvatarHash=context.source_sha256,
             templateId=record.request.outfit.template_id if record.request.outfit else None,
-            wardrobeState="bare" if record.request.options.base_body_mode == "bare" else None,
+            wardrobeState=("bare" if record.request.options.base_body_mode == "bare" else
+                           "over-bare" if record.request.options.base_body_mode == "bare-dressed" else None),
             outputSha256=hashlib.sha256(context.output_bytes).hexdigest(),
             prompt=prompt,
             plan=context.plan,
