@@ -59,6 +59,23 @@ Rules that break things when missed:
 - Previews of explicit detail are private: never commit them, never serve them
   from a public route.
 
+## Wardrobe registry (WS1): categories, collections, private gating
+
+Every garment and ready look, typed into 20 clothing types and collected into public and
+admin-only private collections (Adult ones aligned with the chatbot's Private: striptease,
+table dance, undress step by step; Private body ones: naked, gaped, finishes, positions).
+`GET /v1/registry`; the admin manager under `/v1/admin/registry/*`. Rules in `wardrobe/registry/classify.py`, decisions in
+`state/wardrobe-registry.json`. Read `docs/WARDROBE_REGISTRY.md` before changing it.
+
+- Three tiers: general, **Adult** (what guests already had; shown to everyone) and **Private**
+  (admin only: bare bodies, body states, finishes, marks). `/v1/registry` filters Private on the
+  server; the existing endpoints (`/v1/outfits`, `/v1/collections`, `/v1/templates`) are not
+  re-gated. Never hide Private content only in the page.
+- A finished look is reused, not rebuilt: `prebuilt.keys_for` (words key, plan key; RU4 adds
+  explicit layers). Body art and bare requests are never answered from the cache.
+- An admin's decision always wins over a rule; a garment is never dropped for lack of a
+  collection (All Clothes holds every wearable template).
+
 ## Looking at results (saved tools, fastest first)
 
 ```bash

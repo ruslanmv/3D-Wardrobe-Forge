@@ -157,14 +157,19 @@ def plan_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None:
     reveal …) — so whatever plans to the same garments is the same look.
 
     Planning is the pipeline's own rule-based planner (``plan_outfit_stack``): deterministic and
-    milliseconds. Body art and explicit layers stay uncached, as with ``cache_key``. A plan with
+    milliseconds. Body art stays uncached, as with ``cache_key``; explicit layers are keyed
+    (RU4). A plan with
     a garment the catalogue does not hold, or a piece of the prompt it could not plan, has no
     key: that look is not the one asked for, and must not be handed to the next person.
     """
     from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
 
     outfit = request.outfit
-    if outfit is None or request.body_art or request.body_art_remove or outfit.layers:
+    # RU4. Explicit layers are keyed too: a combination the person put together (a Try-On stack,
+    # an Outfit Lab set) is planned by the same deterministic rules as a described one, and the
+    # whole request, its layers included, goes into the key, so only the identical combination
+    # meets it. It used to be rebuilt from nothing every time it was asked for.
+    if outfit is None or request.body_art or request.body_art_remove:
         return None
     plan = plan_outfit_stack(outfit, catalog)
     if plan.unplanned:

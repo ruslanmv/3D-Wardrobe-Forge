@@ -80,11 +80,51 @@ function headers(extra = {}) {
     return out;
 }
 
+/**
+ * WS1. A GET the server or its proxy turned away for load (429, 503) is asked again after the wait
+ * it names (Retry-After), or a short growing one, up to three times. The Space's proxy refused a
+ * 12 MB look with 429 while the shelf was fetching a hundred previews at once: the person saw
+ * "Could not load" for a look that a second later would have loaded.
+ */
+const RETRY_STATUSES = new Set([429, 503]);
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+async function fetchPatiently(path, init) {
+    for (let attempt = 0; ; attempt += 1) {
+        const response = await fetch(path, init);
+        if (!RETRY_STATUSES.has(response.status) || init.method !== 'GET' || attempt >= 3) return response;
+        const named = Number(response.headers.get('Retry-After'));
+        await sleep(Number.isFinite(named) && named > 0 ? Math.min(named, 20) * 1000 : 600 * 2 ** attempt);
+    }
+}
+
+/**
+ * WS1. Pictures and files fetched through blobUrl wait their turn: at most four at a time, so the
+ * shelf never fires a hundred requests at once. A look the person asked to wear jumps the queue.
+ */
+const BLOB_SLOTS = 4;
+let blobsInFlight = 0;
+const blobQueue = [];
+function blobTurn(urgent) {
+    return new Promise((resolve) => {
+        const go = () => {
+            blobsInFlight += 1;
+            resolve(() => {
+                blobsInFlight -= 1;
+                const next = blobQueue.shift();
+                if (next) next();
+            });
+        };
+        if (blobsInFlight < BLOB_SLOTS || urgent) go();
+        else if (urgent) blobQueue.unshift(go);
+        else blobQueue.push(go);
+    });
+}
+
 async function request(path, { method = 'GET', body, form, expect = 'json' } = {}) {
     const init = { method, headers: headers(body ? { 'Content-Type': 'application/json' } : {}) };
     if (body) init.body = JSON.stringify(body);
     if (form) init.body = form;
-    const response = await fetch(path, init);
+    const response = await fetchPatiently(path, init);
     if (!response.ok) {
         let detail = null;
         try {
@@ -224,9 +264,17 @@ export const api = {
      */
     garmentParameters: (templateId) => request(`/v1/catalog/garments/${encodeURIComponent(templateId)}/parameters`),
 
-    /** An object URL for a protected asset. The caller owns it and must revoke it. */
-    async blobUrl(path) {
-        const blob = await request(path, { expect: 'blob' });
-        return URL.createObjectURL(blob);
+    /**
+     * An object URL for a protected asset. The caller owns it and must revoke it. WS1: queued, at
+     * most four at a time; `urgent` (a look the person chose to wear) goes straight through.
+     */
+    async blobUrl(path, { urgent = false } = {}) {
+        const done = await blobTurn(urgent);
+        try {
+            const blob = await request(path, { expect: 'blob' });
+            return URL.createObjectURL(blob);
+        } finally {
+            done();
+        }
     },
 };

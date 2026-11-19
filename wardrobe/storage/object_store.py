@@ -370,6 +370,7 @@ class HfDatasetObjectStore(LocalObjectStore):
         #: WD1. The last attempt to list the dataset failed: ``_remote`` is the listing before it.
         self._list_stale = False
         self._lock = asyncio.Lock()
+        self._downloads: asyncio.Semaphore | None = None
         #: RU2. key -> (read at, bytes) for get_shared.
         self._shared: dict[str, tuple[float, bytes]] = {}
         #: WD1. key -> when its shared copy last could not be read (asked again after RETRY_S).
@@ -385,6 +386,9 @@ class HfDatasetObjectStore(LocalObjectStore):
         self._publish_lock = asyncio.Lock()
         self._timer: asyncio.Task | None = None
         self.published = {"commits": 0, "looks": 0, "failures": 0}
+
+    #: WS1. Dataset files downloaded at the same time.
+    DOWNLOAD_SLOTS = 4
 
     async def _remote_files(self) -> set[str]:
         import time
@@ -429,11 +433,24 @@ class HfDatasetObjectStore(LocalObjectStore):
             finally:
                 shutil.rmtree(scratch, ignore_errors=True)
 
-        try:
-            await asyncio.to_thread(_download)
-        except Exception as exc:
-            logger.warning("dataset file %s could not be downloaded: %s", key, exc)
-            return False
+        # WS1. At most DOWNLOAD_SLOTS downloads at once, and one more try after a pause when the
+        # Hub turns one away (429, a reset): a shelf of previews asked for together used to start
+        # a hundred downloads at once, and the Hub's refusals reached the person as "Could not
+        # load" for a look that a moment later would have come down.
+        if self._downloads is None:
+            self._downloads = asyncio.Semaphore(self.DOWNLOAD_SLOTS)
+        async with self._downloads:
+            if await super().exists(key):
+                return True  # another request brought it down while this one waited
+            for attempt in range(2):
+                try:
+                    await asyncio.to_thread(_download)
+                    break
+                except Exception as exc:
+                    if attempt:
+                        logger.warning("dataset file %s could not be downloaded: %s", key, exc)
+                        return False
+                    await asyncio.sleep(1.5)
         return await super().exists(key)
 
     async def get(self, key: str) -> bytes:
