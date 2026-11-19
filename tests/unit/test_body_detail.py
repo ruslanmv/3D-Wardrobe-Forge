@@ -12,7 +12,7 @@ from wardrobe.vrm import body_detail as BD
 
 def test_presets_load_hairless_and_hairy_variants():
     presets = BD.load_presets()
-    hairless = {"natural", "soft-pink", "warm", "defined"}
+    hairless = {"natural", "soft-pink", "warm", "defined", "outie", "puffy"}
     assert hairless <= set(presets)
     for name in hairless:
         assert presets[name]["hair"] == "none"
@@ -337,3 +337,40 @@ def test_cum_inside_fills_the_opened_vagina():
     alpha, _, _ = FX.fluid(where, _marks(), {**base, "vaginaOpen": 0.8, "cumInside": 1.0}, 1.0)
     assert alpha[0] > 0.6 and alpha[1] == 0.0
     assert BD.load_states()["creampie"]["set"]["cumInside"] == 1.0
+
+
+def test_marks_land_where_they_are_aimed_and_nowhere_else():
+    """BD11. A kiss on her breast, a handprint behind, writing on her belly; none on bare belly skin."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    spots = FX._spots(marks, 1.0)
+    kiss_at = spots["left-breast"][0] + np.array([0.0, 0.0045, 0.0])
+    assert FX._kiss(np.array([kiss_at]), marks, spots["left-breast"][0], True, 1.0)[0] > 0.5
+    hand_at = spots["right-buttock"][0]
+    assert FX._handprint(np.array([hand_at]), marks, hand_at, 1.0)[0] > 0.5
+    far = np.array([[0.15, 0.9, 0.1]])
+    assert FX._kiss(far, marks, spots["left-breast"][0], True, 1.0)[0] == 0.0
+    extras = BD.load_extras()
+    assert {"kisses-red", "love-bites", "spanked", "freckles", "writing-yours", "piercings-all"} <= set(extras)
+
+
+def test_piercings_are_raised_metal_at_the_nipple():
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    spec = {**BD.load_presets()["natural"], "piercings": ["nipples"]}
+    metal, _ = FX._jewel(np.array([marks.nipples[0]]), marks, spec, 1.0)
+    assert metal[0] == 1.0
+    assert FX.relief(np.array([marks.nipples[0]]), marks, spec, 1.0)[0] > 0.001
+
+
+def test_bare_accepts_tattoos_now():
+    """BD12. An intimate tattoo is shown bare: body art is allowed on bare and bare-dressed jobs."""
+    from wardrobe.domain.jobs import CreateJobRequest
+
+    payload = {"avatar": {"storageKey": "s.vrm", "depictsAdult": True},
+               "outfit": {"prompt": "Bare authored body", "templateId": "body-bare-v1"},
+               "options": {"baseBody": "bare", "private": True},
+               "bodyArt": [{"design": "nape-crescent-01", "placement": "lower-back"}]}
+    CreateJobRequest.model_validate(payload)

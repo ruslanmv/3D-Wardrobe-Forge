@@ -256,15 +256,15 @@ class CreateJobRequest(BaseModel):
         if bare_template != (self.options.base_body_mode == "bare"):
             raise ValueError("body-bare-v1 and baseBody=bare must be requested together")
         if self.options.base_body_mode == "bare-dressed" and (
-                self.outfit is None or self.body_art or self.body_art_remove or self.body_surface
-                or self.options.ensure_foundation):
-            # ES1. Her bare body and an outfit over it; the outfit is the whole request.
-            raise ValueError("bare-dressed needs an outfit and accepts no body art, body surface "
-                             "or added foundation")
-        if bare_template and (self.body_art or self.body_art_remove or self.body_surface
+                self.outfit is None or self.body_surface or self.options.ensure_foundation):
+            # ES1. Her bare body and an outfit over it (tattoos allowed, BD12).
+            raise ValueError("bare-dressed needs an outfit and accepts no body surface or added foundation")
+        # BD12. Tattoos are allowed on a bare body now (an intimate tattoo is shown bare); the
+        # exposure check still places each only where her skin shows.
+        if bare_template and (self.body_surface
                               or self.options.ensure_foundation or self.options.foundation_color
                               or self.outfit.layers or self.outfit.color):
-            raise ValueError("bare mode accepts no garments, colours, body art or body surface")
+            raise ValueError("bare mode accepts no garments, colours or body surface")
         check_items(self.body_art, self.body_art_remove)
         changes_a_look = self.body_art or self.body_art_remove or self.options.foundation_color
         if self.outfit is None and not changes_a_look:

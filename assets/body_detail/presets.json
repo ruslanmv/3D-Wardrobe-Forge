@@ -342,6 +342,69 @@
     0.52
    ],
    "relief": 1.0
+  },
+  "outie": {
+   "label": "Outie (visible inner lips)",
+   "areolaRadius": 0.019,
+   "nippleRadius": 0.0055,
+   "areolaTint": [
+    0.8,
+    0.62,
+    0.58
+   ],
+   "nippleTint": [
+    0.7,
+    0.5,
+    0.47
+   ],
+   "areolaStrength": 0.85,
+   "glands": 7,
+   "hair": "none",
+   "hairColor": [
+    58,
+    40,
+    31
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.062,
+   "majoraWidth": 0.0125,
+   "minoraWidth": 0.0085,
+   "minoraLength": 0.056,
+   "perineum": 0.032,
+   "anusRadius": 0.0065,
+   "relief": 1.0
+  },
+  "puffy": {
+   "label": "Puffy areolae",
+   "areolaRadius": 0.024,
+   "nippleRadius": 0.0045,
+   "areolaTint": [
+    0.8,
+    0.62,
+    0.58
+   ],
+   "nippleTint": [
+    0.7,
+    0.5,
+    0.47
+   ],
+   "areolaStrength": 0.85,
+   "glands": 7,
+   "hair": "none",
+   "hairColor": [
+    58,
+    40,
+    31
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.062,
+   "majoraWidth": 0.014,
+   "minoraWidth": 0.0055,
+   "minoraLength": 0.044,
+   "perineum": 0.032,
+   "anusRadius": 0.0065,
+   "relief": 1.0,
+   "areolaPuff": 1.0
   }
  }
 }

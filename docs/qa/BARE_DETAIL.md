@@ -156,6 +156,34 @@ Painting the torso band is heavier: about 30–40 s per look at 4096, against
 about 8 s for anatomy alone. A parameter at 0 costs nothing. Rendered front,
 chest and back on the reference body: every effect shows where it belongs.
 
+## Marks, writing, piercings, variety and tattoos (BD11–BD12)
+
+New extras (persistent, `options.bareExtras`):
+
+- **Lipstick kisses:** `kisses-red` and `kisses-pink`. Lip-shaped prints with a
+  cupid's bow and faint lip lines, on breasts, belly, inner thigh and buttock.
+- **Love bites:** `love-bites`, on the neck, a breast and the inner thigh.
+- **Spank:** `spanked`, a soft pink handprint on a buttock.
+- **Realistic skin:** `freckles`, which also adds three beauty marks and fine
+  pores in the relief.
+- **Body writing:** `writing-yours` ("YOURS" in marker on the belly) and
+  `writing-lower-back` ("MINE" in lipstick). The text is rasterised once and laid
+  across her own lateral and vertical position, not UVs.
+- **Piercings:** `piercings-nipples` and `piercings-all` (nipple barbells, a
+  navel jewel, a clitoral-hood ring). These are painted steel with a highlight
+  and raised relief, not separate meshes.
+
+New presets: `outie` (inner lips that show) and `puffy` (puffy areolae, raised
+by `areolaPuff`).
+
+**Tattoos (BD12).** Forge's body-art system (`bodyArt`) is now accepted on bare
+and bare-dressed jobs, so intimate placements (lower back, under the bust, ribs,
+thighs) can be worn bare. The exposure check still places each one only where
+her skin shows.
+
+Rendered: writing, the barbells, the navel jewel, the kisses and the handprint
+read well. Freckles and love bites are subtle at full-body distance.
+
 ## Semen (BD9)
 
 The `cum` parameter, and the `cum` state, paint semen on her body skin:

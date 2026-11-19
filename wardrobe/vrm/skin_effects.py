@@ -33,10 +33,30 @@ def _p(spec: dict, key: str) -> float:
     return float(np.clip(float(spec.get(key, 0.0)), 0.0, 1.0))
 
 
+#: BD11. Extras that are marks on her: what each sets, 0..1 unless said.
+MARK_KEYS = (
+    "kisses",
+    "hickeys",
+    "spank",
+    "freckles",
+    "pores",
+    "writing",
+    "writingPlace",
+    "writingInk",
+    "piercings",
+    "kissColor",
+)
+
+
 def wants_torso(spec: dict) -> bool:
     """Does this spec paint beyond the landmarks (so her torso band must be rasterised)?"""
     tanned = spec.get("tanTop", "none") != "none" or spec.get("tanBottom", "none") != "none"
-    return tanned or any(_p(spec, k) > 0 for k in ("flush", "goosebumps", "sweat"))
+    marked = (
+        any(_p(spec, k) > 0 for k in ("kisses", "hickeys", "spank", "freckles", "pores"))
+        or bool(spec.get("writing"))
+        or bool(spec.get("piercings"))
+    )
+    return tanned or marked or any(_p(spec, k) > 0 for k in ("flush", "goosebumps", "sweat"))
 
 
 def in_torso(corners: np.ndarray, marks, s: float) -> np.ndarray:
@@ -71,8 +91,11 @@ def _noise3(p: np.ndarray, cell: float) -> np.ndarray:
     for dx in (0, 1):
         for dy in (0, 1):
             for dz in (0, 1):
-                w = ((f[:, 0] if dx else 1 - f[:, 0]) * (f[:, 1] if dy else 1 - f[:, 1])
-                     * (f[:, 2] if dz else 1 - f[:, 2]))
+                w = (
+                    (f[:, 0] if dx else 1 - f[:, 0])
+                    * (f[:, 1] if dy else 1 - f[:, 1])
+                    * (f[:, 2] if dz else 1 - f[:, 2])
+                )
                 out += w * _hash3(i[:, 0] + dx, i[:, 1] + dy, i[:, 2] + dz)
     return out
 
@@ -91,7 +114,155 @@ def under(where: np.ndarray, marks, spec: dict, s: float) -> list[tuple[list[flo
     flush = _p(spec, "flush")
     if flush > 0:
         layers.append(([1.0, 0.84, 0.85], _flush_field(where, marks, s) * flush * 0.75))
+    layers.extend(_marks(where, marks, spec, s))
     return layers
+
+
+# -- marks (BD11) ----------------------------------------------------------------------------------
+
+
+def _front(where, marks):
+    return marks.forward * (where[:, 2] - marks.crotch[2])
+
+
+def _spots(marks, s):
+    """Where marks land, measured from her landmarks (rest pose): name -> (centre, faces front)."""
+    nl, nr = marks.nipples
+    c = marks.crotch
+    ax = marks.axis_x
+    f = marks.forward
+    return {
+        "left-breast": (np.array([nl[0] - 0.01 * s, nl[1] + 0.045 * s, nl[2] - 0.006 * s]), True),
+        "right-breast": (np.array([nr[0] + 0.012 * s, nr[1] + 0.04 * s, nr[2] - 0.006 * s]), True),
+        "belly": (np.array([ax + 0.03 * s, c[1] + 0.12 * s, c[2] + f * 0.1 * s]), True),
+        "inner-thigh": (np.array([ax + 0.055 * s, c[1] - 0.05 * s, c[2] + f * 0.02 * s]), True),
+        "neck": (np.array([ax - 0.04 * s, nl[1] + 0.27 * s, nl[2] - 0.11 * s]), True),
+        "left-buttock": (np.array([ax + 0.065 * s, c[1] + 0.06 * s, c[2] - f * 0.1 * s]), False),
+        "right-buttock": (np.array([ax - 0.065 * s, c[1] + 0.06 * s, c[2] - f * 0.1 * s]), False),
+    }
+
+
+def _near_spot(where, centre, faces_front, marks, radius):
+    side = _front(where, marks)
+    ok = side > -0.01 if faces_front else side < 0.01
+    d = np.linalg.norm(where - centre, axis=1)
+    return d, ok & (d < radius)
+
+
+def _marks(where, marks, spec, s) -> list:
+    layers = []
+    spots = _spots(marks, s)
+    freckles = _p(spec, "freckles")
+    if freckles > 0:
+        # Over her chest and shoulders, thinning down her breasts: dots, a few of them darker.
+        upper = _smoothstep(marks.nipples[0][1] - 0.02 * s, marks.nipples[0][1] + 0.15 * s, where[:, 1])
+        cell = 0.006 * s
+        i = np.floor(where / cell)
+        pick = _hash3(i[:, 0], i[:, 1], i[:, 2])
+        centre = (i + 0.5) * cell
+        dot = 1.0 - _smoothstep(0.0006 * s, 0.0012 * s, np.linalg.norm(where - centre, axis=1))
+        layers.append(([0.86, 0.72, 0.62], dot * (pick > 1.0 - 0.35 * freckles) * upper * 0.8))
+        # Three beauty marks, always the same three: above a breast, on her belly, on a hip.
+        for name, size in (("left-breast", 0.0016), ("belly", 0.0013), ("inner-thigh", 0.0012)):
+            centre, front = spots[name]
+            centre = centre + np.array([0.018, 0.012, 0.0]) * s
+            d, ok = _near_spot(where, centre, front, marks, 0.004 * s)
+            layers.append(
+                ([0.55, 0.42, 0.38], np.where(ok, 1.0 - _smoothstep(size * 0.5 * s, size * s, d), 0.0))
+            )
+    hickeys = _p(spec, "hickeys")
+    if hickeys > 0:
+        for name in ("neck", "left-breast", "inner-thigh"):
+            centre, front = spots[name]
+            radius = 0.014 * s
+            d, ok = _near_spot(where, centre, front, marks, radius * 1.4)
+            blot = 1.0 - _smoothstep(radius * 0.3, radius * (0.9 + 0.3 * _noise3(where, 0.006 * s)), d)
+            layers.append(([0.86, 0.62, 0.70], np.where(ok, blot * hickeys * 0.8, 0.0)))
+    spank = _p(spec, "spank")
+    if spank > 0:
+        layers.append(
+            ([1.0, 0.78, 0.78], _handprint(where, marks, spots["right-buttock"][0], s) * spank * 0.85)
+        )
+    kisses = _p(spec, "kisses")
+    if kisses > 0:
+        colour = np.asarray(spec.get("kissColor", [0.62, 0.18, 0.22]), dtype=np.float64)
+        names = ["left-breast", "belly", "inner-thigh", "right-breast", "left-buttock"]
+        for name in names[: max(1, int(round(kisses * len(names))))]:
+            centre, front = spots[name]
+            layers.append((list(colour * 1.4), _kiss(where, marks, centre, front, s) * 0.85))
+    text = spec.get("writing")
+    if text:
+        ink = spec.get("writingInk", "marker")
+        tint = [0.25, 0.22, 0.24] if ink == "marker" else [0.75, 0.2, 0.25]
+        layers.append(
+            (tint, _writing(where, marks, str(text)[:24], spec.get("writingPlace", "belly"), s) * 0.9)
+        )
+    return layers
+
+
+def _kiss(where, marks, centre, front, s):
+    """A lipstick kiss print: an upper lip with a cupid's bow over a fuller lower lip, a gap between,
+    soft edges, and the faint vertical lines lips leave."""
+    d, ok = _near_spot(where, centre, front, marks, 0.035 * s)
+    x = (where[:, 0] - centre[0]) / (0.02 * s)
+    y = (where[:, 1] - centre[1]) / (0.01 * s)
+    bow = 0.08 + 0.25 * np.exp(-((x / 0.18) ** 2)) - 0.15 * x**2
+    upper = (1.0 - _smoothstep(0.8, 1.0, x**2 + ((y - 0.45) / 0.55) ** 2)) * _smoothstep(bow, bow + 0.12, y)
+    lower = (1.0 - _smoothstep(0.8, 1.0, x**2 + ((y + 0.45) / 0.65) ** 2)) * (
+        1.0 - _smoothstep(-0.2, -0.06, y)
+    )
+    lines = 0.85 + 0.15 * np.sin(x * 40.0)
+    return np.where(ok, np.maximum(upper, lower) * lines, 0.0)
+
+
+def _handprint(where, marks, centre, s):
+    """A spank: a palm and four fingers, pink and soft-edged on one buttock."""
+    d, ok = _near_spot(where, centre, False, marks, 0.13 * s)
+    x = (where[:, 0] - centre[0]) / s
+    y = (where[:, 1] - centre[1]) / s
+    hand = 1.0 - _smoothstep(0.75, 1.0, (x / 0.045) ** 2 + ((y + 0.01) / 0.05) ** 2)
+    for k, dx in enumerate((-0.032, -0.011, 0.011, 0.032)):
+        length = (0.07, 0.08, 0.078, 0.06)[k]
+        across = 1.0 - _smoothstep(0.006, 0.0095, np.abs(x - dx))
+        along = _smoothstep(0.015, 0.025, y) * (1.0 - _smoothstep(length + 0.01, length + 0.02, y))
+        hand = np.maximum(hand, across * along)
+    soft = 0.75 + 0.25 * _noise3(where, 0.01 * s)
+    return np.where(ok, hand * soft, 0.0)
+
+
+_FONT_CACHE: dict = {}
+
+
+def _writing(where, marks, text, place, s):
+    """Words on her skin: the text rasterised once, then sampled across a patch of her belly or
+    lower back by her own lateral and vertical position (no UV involved)."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    if text not in _FONT_CACHE:
+        try:
+            font = ImageFont.truetype("DejaVuSans-Bold.ttf", 64)
+        except OSError:
+            font = ImageFont.load_default()
+        box = ImageDraw.Draw(Image.new("L", (1, 1))).textbbox((0, 0), text, font=font)
+        image = Image.new("L", (box[2] - box[0] + 8, box[3] - box[1] + 8), 0)
+        ImageDraw.Draw(image).text((4 - box[0], 4 - box[1]), text, fill=255, font=font)
+        _FONT_CACHE[text] = np.asarray(image, dtype=np.float64) / 255.0
+    mask = _FONT_CACHE[text]
+    h, w = mask.shape
+    c = marks.crotch
+    centre_y = c[1] + (0.11 if place == "belly" else 0.17) * s
+    width = 0.14 * s
+    height = width * h / w
+    faces_front = place == "belly"
+    side = _front(where, marks)
+    ok = side > 0.0 if faces_front else side < 0.0
+    lateral = (where[:, 0] - marks.axis_x) * (1.0 if faces_front else -1.0)
+    col = ((lateral / width) + 0.5) * w
+    row = (0.5 - (where[:, 1] - centre_y) / height) * h
+    inside = ok & (col >= 0) & (col < w - 1) & (row >= 0) & (row < h - 1)
+    out = np.zeros(len(where))
+    out[inside] = mask[row[inside].astype(int), col[inside].astype(int)]
+    return out
 
 
 def _tan_mask(where: np.ndarray, marks, spec: dict, s: float) -> np.ndarray | None:
@@ -115,8 +286,12 @@ def _tan_mask(where: np.ndarray, marks, spec: dict, s: float) -> np.ndarray | No
             t = np.clip((where[:, 1] - (nipple[1] + 0.065 * s)) / (0.2 * s), 0, 1)
             strap_x = apex_x + (marks.axis_x + np.sign(apex_x - marks.axis_x) * 0.04 * s - apex_x) * t
             strap = (where[:, 1] > nipple[1] + 0.06 * s) & (where[:, 1] < nipple[1] + 0.27 * s)
-            mask = np.maximum(mask, np.where(strap, 1.0 - _smoothstep(0.004 * s, 0.004 * s + edge,
-                                                                       np.abs(where[:, 0] - strap_x)), 0.0))
+            mask = np.maximum(
+                mask,
+                np.where(
+                    strap, 1.0 - _smoothstep(0.004 * s, 0.004 * s + edge, np.abs(where[:, 0] - strap_x)), 0.0
+                ),
+            )
         # The band under the bust, all round her.
         band_y = float(nl[1]) - 0.05 * s
         mask = np.maximum(mask, 1.0 - _smoothstep(0.004 * s, 0.004 * s + edge, np.abs(where[:, 1] - band_y)))
@@ -165,20 +340,67 @@ def _flush_field(where: np.ndarray, marks, s: float) -> np.ndarray:
 
 
 def over(where: np.ndarray, marks, spec: dict, s: float) -> list[tuple[list[float], np.ndarray]]:
-    """Tint layers painted after the anatomy: sweat — a sheen and beads of it."""
+    """Tint layers painted after the anatomy: sweat — a sheen and beads of it — and piercings."""
+    layers = _piercings(where, marks, spec, s)
     sweat = _p(spec, "sweat")
     if sweat <= 0:
-        return []
+        return layers
     beads, rims = _beads(where, s, sweat)
     sheen = _sheen(where, marks, s) * sweat
-    return [([1.07, 1.06, 1.06], sheen * 0.6), ([0.9, 0.86, 0.86], rims * 0.5),
-            ([1.2, 1.18, 1.18], beads * 0.75)]
+    return layers + [
+        ([1.07, 1.06, 1.06], sheen * 0.6),
+        ([0.9, 0.86, 0.86], rims * 0.5),
+        ([1.2, 1.18, 1.18], beads * 0.75),
+    ]
+
+
+def _jewel(where, marks, spec, s):
+    """BD11. Piercings as metal: a field 0..1 and a highlight 0..1 (painted and raised, not a mesh)."""
+    kinds = spec.get("piercings") or []
+    metal = np.zeros(len(where))
+    shine = np.zeros(len(where))
+    rn = float(spec.get("nippleRadius", 0.0055)) * s
+    if "nipples" in kinds:
+        for nipple in marks.nipples:
+            dx = where[:, 0] - nipple[0]
+            dy = where[:, 1] - nipple[1]
+            near = np.linalg.norm(where - nipple, axis=1) < rn * 3.0
+            bar = (np.abs(dy) < 0.0011 * s) & (np.abs(dx) < rn * 2.0)
+            balls = np.minimum(np.hypot(dx - rn * 2.0, dy), np.hypot(dx + rn * 2.0, dy)) < 0.0021 * s
+            metal = np.maximum(metal, np.where(near & (bar | balls), 1.0, 0.0))
+            shine = np.maximum(
+                shine, np.where(near & balls, np.exp(-(((dy - 0.0008 * s) / (0.0007 * s)) ** 2)), 0.0)
+            )
+    if "navel" in kinds:
+        navel = np.array([marks.axis_x, marks.nipples[0][1] - 0.2 * s, 0.0])
+        d = np.hypot(where[:, 0] - navel[0], where[:, 1] - (navel[1] + 0.012 * s))
+        front = _front(where, marks) > 0.05 * s
+        gem = front & (d < 0.0035 * s)
+        metal = np.maximum(metal, np.where(gem, 1.0, 0.0))
+        shine = np.maximum(shine, np.where(gem, 1.0 - _smoothstep(0.0, 0.002 * s, d), 0.0))
+    if "hood" in kinds:
+        L = float(spec.get("vulvaLength", 0.062)) * s
+        c = marks.crotch
+        front = _front(where, marks)
+        dist = np.sqrt((where[:, 1] - c[1]) ** 2 + np.maximum(front, 0) ** 2)
+        ring = np.abs(np.hypot(where[:, 0] - c[0], dist - (0.86 * L)) - 0.0035 * s) < 0.0008 * s
+        metal = np.maximum(metal, np.where(ring & (front > -0.004 * s), 1.0, 0.0))
+    return metal, shine
+
+
+def _piercings(where, marks, spec, s):
+    if not spec.get("piercings"):
+        return []
+    metal, shine = _jewel(where, marks, spec, s)
+    # Steel: towards a cool grey, then a hot highlight where it catches the light.
+    return [([0.62, 0.64, 0.68], metal * 0.95), ([1.6, 1.6, 1.6], shine * metal * 0.9)]
 
 
 def _sheen(where: np.ndarray, marks, s: float) -> np.ndarray:
     """Where skin glistens first: between her breasts, down her belly, the crease of her hips."""
-    cleavage = np.exp(-((where[:, 0] - marks.axis_x) / (0.02 * s)) ** 2) * \
-        (np.abs(where[:, 1] - marks.nipples[0][1]) < 0.08 * s)
+    cleavage = np.exp(-(((where[:, 0] - marks.axis_x) / (0.02 * s)) ** 2)) * (
+        np.abs(where[:, 1] - marks.nipples[0][1]) < 0.08 * s
+    )
     streak = _smoothstep(0.55, 0.8, _noise3(where * np.array([3.0, 1.0, 3.0]), 0.05 * s))
     return np.clip(0.6 * cleavage + 0.5 * streak, 0.0, 1.0)
 
@@ -196,7 +418,7 @@ def _beads(where: np.ndarray, s: float, amount: float):
     d = np.linalg.norm(where - centre, axis=1) / radius
     bead = np.where(present, 1.0 - _smoothstep(0.2, 0.75, d), 0.0)
     below = where[:, 1] < centre[:, 1]
-    rim = np.where(present & below, np.exp(-((d - 0.95) / 0.15) ** 2), 0.0)
+    rim = np.where(present & below, np.exp(-(((d - 0.95) / 0.15) ** 2)), 0.0)
     return bead, rim
 
 
@@ -219,7 +441,7 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
     c = marks.crotch
     u = where[:, 0] - c[0]
     front = marks.forward * (where[:, 2] - c[2])
-    dist = np.sqrt((where[:, 1] - c[1]) ** 2 + front ** 2)
+    dist = np.sqrt((where[:, 1] - c[1]) ** 2 + front**2)
     t = np.where(front >= 0.0, dist, -dist)
     L = float(spec.get("vulvaLength", 0.062)) * s
     per = float(spec.get("perineum", 0.032)) * s
@@ -227,7 +449,7 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
     fine = _noise3(where, 0.0015 * s)
 
     def pool(t0, radius):
-        r = np.sqrt(u ** 2 + ((t - t0) * 0.8) ** 2) / (radius * (0.8 + 0.4 * wobble))
+        r = np.sqrt(u**2 + ((t - t0) * 0.8) ** 2) / (radius * (0.8 + 0.4 * wobble))
         return np.clip(1.0 - r, 0.0, 1.0) ** 0.6
 
     vaginal = pool(0.22 * L, 0.011 * s * (0.6 + 0.4 * amount))
@@ -239,16 +461,22 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
     run = np.where(stream, np.clip(1.0 - np.abs(u) / width, 0.0, 1.0) ** 0.7, 0.0)
     run *= np.where(along > 0.7, _smoothstep(0.35, 0.6, fine), 1.0)  # breaking into drops lower down
     # Strands across the vulva and droplets round both openings.
-    strand = np.exp(-((u + 0.004 * s * np.sin(t / (0.006 * s))) / (0.0008 * s)) ** 2) * \
-        ((t > 0.05 * L) & (t < 0.6 * L)) * 0.7
+    strand = (
+        np.exp(-(((u + 0.004 * s * np.sin(t / (0.006 * s))) / (0.0008 * s)) ** 2))
+        * ((t > 0.05 * L) & (t < 0.6 * L))
+        * 0.7
+    )
     cell = 0.003 * s
     q = where / cell
     i = np.floor(q)
     pick = _hash3(i[:, 0], i[:, 1], i[:, 2])
-    near = np.minimum(np.sqrt(u ** 2 + (t - 0.22 * L) ** 2), np.sqrt(u ** 2 + (t + per) ** 2)) < 0.025 * s
+    near = np.minimum(np.sqrt(u**2 + (t - 0.22 * L) ** 2), np.sqrt(u**2 + (t + per) ** 2)) < 0.025 * s
     centre = (i + 0.5) * cell
-    drop = np.where(near & (pick > 0.8 - 0.15 * amount),
-                    np.clip(1.0 - np.linalg.norm(where - centre, axis=1) / (0.0011 * s), 0.0, 1.0), 0.0)
+    drop = np.where(
+        near & (pick > 0.8 - 0.15 * amount),
+        np.clip(1.0 - np.linalg.norm(where - centre, axis=1) / (0.0011 * s), 0.0, 1.0),
+        0.0,
+    )
     thick = np.maximum.reduce([vaginal, anal, run * 0.85, strand, drop * 0.9]) * (0.75 + 0.25 * fine)
     thick *= min(1.0, 0.5 + 0.6 * amount) if amount > 0 else 0.0
     if inside > 0:
@@ -261,9 +489,11 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
         ri = np.sqrt((u / ru) ** 2 + ((t - 0.22 * L) / rt) ** 2)
         filled = np.clip(1.0 - _smoothstep(0.55, 0.95, ri * (0.92 + 0.16 * wobble)), 0.0, 1.0)
         spill_t = (0.22 * L - rt * 0.8 - t) / (0.02 * s)  # below the opening's lower edge
-        spill = np.where((spill_t > 0) & (spill_t < 1),
-                         np.clip(1.0 - np.abs(u) / (ru * 0.45 * (1.0 - 0.6 * spill_t) + 1e-6), 0.0, 1.0)
-                         * (1.0 - spill_t), 0.0)
+        spill = np.where(
+            (spill_t > 0) & (spill_t < 1),
+            np.clip(1.0 - np.abs(u) / (ru * 0.45 * (1.0 - 0.6 * spill_t) + 1e-6), 0.0, 1.0) * (1.0 - spill_t),
+            0.0,
+        )
         thick = np.maximum(thick, np.maximum(filled, spill * 0.9) * inside)
     alpha = _smoothstep(0.04, 0.45, thick) * (0.65 + 0.33 * _smoothstep(0.3, 0.8, thick))
     highlight = _smoothstep(0.55, 0.95, thick) * _smoothstep(0.45, 0.8, fine)
@@ -297,8 +527,24 @@ def relief(where: np.ndarray, marks, spec: dict, s: float) -> np.ndarray:
     wet = fluid(where, marks, spec, s)
     if wet is not None:
         h += 0.0012 * s * wet[2]  # semen stands on her skin, thickest in the pools
+    pores = _p(spec, "pores")
+    if pores > 0:
+        h -= 0.00006 * s * pores * _smoothstep(0.6, 0.85, _noise3(where, 0.0007 * s))
+    if spec.get("piercings"):
+        metal, _ = _jewel(where, marks, spec, s)
+        h += 0.0015 * s * metal
     return h
 
 
-__all__ = ["EFFECT_KEYS", "TAN_BOTTOMS", "TAN_TOPS", "fluid", "in_torso", "over", "relief", "under",
-           "wants_torso"]
+__all__ = [
+    "EFFECT_KEYS",
+    "MARK_KEYS",
+    "TAN_BOTTOMS",
+    "TAN_TOPS",
+    "fluid",
+    "in_torso",
+    "over",
+    "relief",
+    "under",
+    "wants_torso",
+]

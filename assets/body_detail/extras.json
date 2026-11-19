@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.extras.v1",
- "about": "BD6. Persistent extras painted with a body-detail preset (options.bareExtras, up to four). tanTop: none|triangle|bandeau; tanBottom: none|thong|brazilian|classic; tan: how pale the covered skin is against her tan, 0..1. 'body' is a line for the conversation.",
+ "about": "BD6. Persistent extras painted with a body-detail preset (options.bareExtras, up to four). tanTop: none|triangle|bandeau; tanBottom: none|thong|brazilian|classic; tan: how pale the covered skin is against her tan, 0..1. 'body' is a line for the conversation. BD11: marks — kisses (0..1, kissColor), hickeys, spank, freckles, pores; writing (text, writingPlace belly|lower-back, writingInk marker|lipstick); piercings [nipples, navel, hood] (painted metal with relief, not meshes).",
  "extras": {
   "tan-triangle-thong": {
    "label": "Tan lines · triangle & thong",
@@ -37,6 +37,90 @@
     "tan": 0.85
    },
    "body": "you sunbathed topless: only a pale thong shape over your hips"
+  },
+  "kisses-red": {
+   "label": "Lipstick kisses (red)",
+   "set": {
+    "kisses": 0.8,
+    "kissColor": [
+     0.62,
+     0.16,
+     0.2
+    ]
+   },
+   "body": "red lipstick kisses are printed over your breasts, belly and inner thigh"
+  },
+  "kisses-pink": {
+   "label": "Lipstick kisses (pink)",
+   "set": {
+    "kisses": 0.6,
+    "kissColor": [
+     0.85,
+     0.4,
+     0.55
+    ]
+   },
+   "body": "pink lipstick kisses are printed on your skin"
+  },
+  "love-bites": {
+   "label": "Love bites",
+   "set": {
+    "hickeys": 0.9
+   },
+   "body": "you have love bites on your neck, a breast and your inner thigh"
+  },
+  "spanked": {
+   "label": "Spanked",
+   "set": {
+    "spank": 0.9
+   },
+   "body": "a pink handprint glows on your buttock from a spank"
+  },
+  "freckles": {
+   "label": "Freckles & beauty marks",
+   "set": {
+    "freckles": 0.8,
+    "pores": 0.6
+   },
+   "body": "freckles are scattered over your chest and shoulders"
+  },
+  "writing-yours": {
+   "label": "Written: Yours",
+   "set": {
+    "writing": "YOURS",
+    "writingPlace": "belly",
+    "writingInk": "marker"
+   },
+   "body": "the word YOURS is written in marker on your belly"
+  },
+  "writing-lower-back": {
+   "label": "Written on lower back",
+   "set": {
+    "writing": "MINE",
+    "writingPlace": "lower-back",
+    "writingInk": "lipstick"
+   },
+   "body": "the word MINE is written in lipstick on your lower back"
+  },
+  "piercings-nipples": {
+   "label": "Nipple piercings",
+   "set": {
+    "piercings": [
+     "nipples"
+    ]
+   },
+   "body": "your nipples are pierced with small steel barbells"
+  },
+  "piercings-all": {
+   "label": "Nipple, navel & hood piercings",
+   "set": {
+    "piercings": [
+     "nipples",
+     "navel",
+     "hood"
+    ]
+   },
+   "body": "your nipples, navel and clitoral hood are pierced"
   }
  }
 }

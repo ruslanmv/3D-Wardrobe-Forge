@@ -71,7 +71,7 @@ STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen", *FX.EFFECT_KEYS)
 EXTRAS_PATH = PRESETS_PATH.with_name("extras.json")
 EXTRAS_SCHEMA = "wardrobe.bodyDetail.extras.v1"
 #: BD6. What a persistent extra may set (tan lines now; marks, freckles… later).
-EXTRA_KEYS = ("tanTop", "tanBottom", "tan")
+EXTRA_KEYS = ("tanTop", "tanBottom", "tan", *FX.MARK_KEYS)
 
 
 class BodyDetailError(ValueError):
@@ -567,6 +567,8 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.nda
         d = np.linalg.norm(where - nipple, axis=1)
         h += 0.0035 * k * (1.0 - _smoothstep(0.0, rn * 1.1, d)) ** 1.5
         h += 0.0005 * k * (1.0 - _smoothstep(ra * 0.75, ra * 1.05, d))
+        # BD11. Puffy areolae: the whole areola raised as a soft dome (the "puffy" preset).
+        h += float(spec.get("areolaPuff", 0.0)) * 0.003 * k * (1.0 - _smoothstep(0.0, ra, d)) ** 0.8
     u, t, in_front = _coords(where, marks, s)
     g = lambda key, default: float(spec.get(key, default)) * s  # noqa: E731
     L, wmaj = g("vulvaLength", 0.062), g("majoraWidth", 0.014)
