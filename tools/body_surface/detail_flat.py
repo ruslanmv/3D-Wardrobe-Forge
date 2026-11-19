@@ -2,7 +2,7 @@
 
     python tools/body_surface/detail_flat.py --base <dir>/ref-atlas.vrm --out <private dir>
         [--preset natural] [--states closed,pumped] [--extras tattoo-mons-rose+piercings-labia,glitter]
-        [--views pelvis,nipple,torso,back] [--px 700]
+        [--views pelvis,anus,nipple,torso,back] [--px 700]
 
 Why this exists next to ``detail_preview.py``. A renderer shows the result as a person sees it, but
 a camera on a posed fixture misses small structures easily (thighs in the way, a landmark a few
@@ -137,6 +137,10 @@ def main(argv=None) -> int:
                     args.out / f"{label}-torso.png",
                     args.px,
                 )
+            if "anus" in views:  # BD16. close on her anus (perineum length below the crotch point)
+                per = float(spec.get("perineum", 0.032)) * s
+                plot(colours, np.abs(u) < 0.04 * s, u, t + per, 0.06 * s,
+                     args.out / f"{label}-anus.png", args.px)
             if "back" in views:  # BD14. her back and buttocks, as seen from behind (mirrored so left is left)
                 plot(colours, front < 0.02 * s, -(where[:, 0] - marks.axis_x), where[:, 1] - c[1] - 0.08 * s,
                      0.4 * s, args.out / f"{label}-back.png", args.px)

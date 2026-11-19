@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.states.v1",
- "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), anusGape (BD16: after anal fisting, the anus a wide round gape, rim swollen and red, inner walls showing, a dark centre — clearly visible from behind), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), ropeMarks, wax, welts, clampMarks, collarMark (BD15, sado: shibari rope marks, candle wax, whip welts, nipple-clamp marks, a collar mark), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
  "states": {
   "closed": {
    "label": "Closed",
@@ -332,6 +332,132 @@
     "cumDrip": 1.0
    },
    "body": "your pumped pussy is swollen, engorged and open from behind, both your holes filled with cum running forward over your swollen lips"
+  },
+  "sado-roped-open": {
+   "label": "Sado: roped and open",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 0.9,
+    "anusOpen": 0.8,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "ropeMarks": 1.0,
+    "collarMark": 0.6
+   },
+   "body": "you have been tied: red rope marks above and below your breasts, a diamond harness pressed into your belly, rope lines round your thighs, a collar mark on your neck, and both your holes are open and wet"
+  },
+  "sado-wax-open": {
+   "label": "Sado: wax and open",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 0.9,
+    "anusOpen": 0.8,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "wax": 1.0,
+    "clampMarks": 0.8
+   },
+   "body": "hot red wax has dripped over your breasts and belly and set glossy on your skin, your nipples marked by clamps, both your holes open and wet"
+  },
+  "sado-whipped-open": {
+   "label": "Sado: whipped and open",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 0.9,
+    "anusOpen": 0.8,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "welts": 1.0,
+    "collarMark": 0.6
+   },
+   "body": "red welts from the whip cross your ass, the backs of your thighs and your lower back, and both your holes are open and wet"
+  },
+  "sado-used-cum": {
+   "label": "Sado: used and filled",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.0,
+    "anusOpen": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "ropeMarks": 1.0,
+    "welts": 0.8,
+    "clampMarks": 0.8,
+    "collarMark": 0.8,
+    "cum": 1.0,
+    "cumInside": 1.0,
+    "anusCumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "you have been tied, whipped and used: rope marks over your breasts and belly, welts across your ass, clamp marks on your nipples, a collar mark on your neck, both holes open and full of cum, dripping"
+  },
+  "sado-full": {
+   "label": "Sado: everything",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.2,
+    "anusOpen": 1.2,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.8,
+    "ropeMarks": 1.0,
+    "wax": 1.0,
+    "welts": 1.0,
+    "clampMarks": 1.0,
+    "collarMark": 1.0,
+    "cum": 1.0,
+    "cumInside": 1.0,
+    "anusCumInside": 1.0,
+    "cumBack": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "every mark of a long session is on you: rope lines, red wax set on your breasts, whip welts across your ass, clamp and collar marks, both holes stretched open and full of cum, more across your back"
+  },
+  "doggy-anal-fisted": {
+   "label": "Doggy: after anal fisting",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 0.8,
+    "anusOpen": 1.5,
+    "anusGape": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.7
+   },
+   "body": "you are on all fours after being fisted in the ass: your anus gapes wide open, its rim swollen and red, the pink inside of you showing, your pussy wet and open below it"
+  },
+  "doggy-anal-fisted-cum": {
+   "label": "Doggy: anal fisted and filled",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.0,
+    "anusOpen": 1.5,
+    "anusGape": 1.0,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.7,
+    "anusCumInside": 1.0,
+    "cumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "after fisting your ass gapes wide open, its rim swollen and red, and both your holes are full of cum running forward over your pussy"
+  },
+  "doggy-both-fisted": {
+   "label": "Doggy: both holes fisted",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.5,
+    "anusOpen": 1.5,
+    "anusGape": 1.0,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.8
+   },
+   "body": "both your holes have been fisted: your pussy is stretched wide open and your ass gapes, its rim swollen and red"
   }
  }
 }

@@ -39,6 +39,12 @@ EFFECT_KEYS = (
     "anusCumInside",
     "grips",
     "spankRed",
+    # BD15. Sado: rope marks (shibari), candle wax, whip welts, nipple-clamp marks, a collar mark.
+    "ropeMarks",
+    "wax",
+    "welts",
+    "clampMarks",
+    "collarMark",
 )
 TAN_TOPS = ("none", "triangle", "bandeau")
 TAN_BOTTOMS = ("none", "thong", "brazilian", "classic")
@@ -72,7 +78,7 @@ MARK_KEYS = (
     "stretchMarks",
 )
 #: BD13. The designs a mons tattoo can be (``tattoo``), and the piercings that can be worn.
-TATTOOS = ("heart", "rose", "butterfly", "text", "tribal")
+TATTOOS = ("heart", "rose", "butterfly", "text", "tribal", "tribal-wings", "tribal-sun")
 #: Where a BD13 tattoo goes: her mons (above the vulva) or, BD14, the small of her back.
 TATTOO_PLACES = ("mons", "lower-back")
 PIERCINGS = ("nipples", "nipple-rings", "navel", "hood", "hood-bar", "christina", "labia")
@@ -85,11 +91,13 @@ def wants_torso(spec: dict) -> bool:
         any(_p(spec, k) > 0 for k in ("kisses", "hickeys", "spank", "freckles", "pores"))
         or bool(spec.get("writing"))
         or bool(spec.get("piercings"))
-        or spec.get("tattoo") == "tribal"
+        or str(spec.get("tattoo", "")).startswith("tribal")
         or spec.get("tattooPlace") == "lower-back"
         or any(_p(spec, k) > 0 for k in ("hearts", "glitter", "bodyPaint", "stretchMarks"))
     )
-    behind = any(_p(spec, k) > 0 for k in ("cumBack", "grips", "spankRed"))
+    behind = any(
+        _p(spec, k) > 0 for k in ("cumBack", "grips", "spankRed", "ropeMarks", "wax", "welts", "collarMark")
+    )
     return tanned or marked or behind or any(_p(spec, k) > 0 for k in ("flush", "goosebumps", "sweat", "oil"))
 
 
@@ -233,6 +241,7 @@ def _marks(where, marks, spec, s) -> list:
             layers.append(
                 ([0.97, 0.7, 0.72], _handprint(where, marks, print_at, s, 0.8, outward) * red * 0.8)
             )
+    layers.extend(_sado_under(where, marks, spec, s))
     grips = _p(spec, "grips")
     if grips > 0:
         layers.append(([0.98, 0.76, 0.77], _grips(where, marks, s) * grips * 0.8))
@@ -305,6 +314,123 @@ def _handprint(where, marks, centre, s, size=1.0, angle=0.0):
         hand = np.maximum(hand, across * along)
     soft = 0.75 + 0.25 * _noise3(where, 0.01 * s)
     return np.where(ok, hand * soft, 0.0)
+
+
+# -- BD15: sado ------------------------------------------------------------------------------------
+
+
+def _rope_line(d, s):
+    """A pressed rope mark across distance ``d`` (metres) from its centre line: two strands side by
+    side, each with the diagonal twist a rope leaves."""
+    strand = np.exp(-(((np.abs(d) - 0.0022 * s) / (0.0013 * s)) ** 2))
+    return strand
+
+
+def _ropes(where, marks, s):
+    """BD15. Shibari marks: bands above and below her breasts and round her waist, a diamond harness
+    (karada) down her front, the line down her spine behind, and a band round each upper thigh."""
+    c, nl = marks.crotch, marks.nipples[0]
+    x = where[:, 0] - marks.axis_x
+    y = where[:, 1]
+    front = _front(where, marks)
+    out = np.zeros(len(where))
+    for band_y in (nl[1] + 0.06 * s, nl[1] - 0.075 * s, c[1] + 0.17 * s):
+        out = np.maximum(
+            out, _rope_line(y - band_y - 0.006 * s * np.sin(x / (0.05 * s)), s) * (np.abs(x) < 0.19 * s)
+        )
+    # The diamond: from under her breasts to her waist, two lines meeting on her midline at each end.
+    top, bottom = nl[1] - 0.075 * s, c[1] + 0.17 * s
+    mid, half = (top + bottom) / 2, (top - bottom) / 2
+    edge = 0.055 * s * (1.0 - np.abs(y - mid) / half)
+    inside = (y < top) & (y > bottom) & (front > 0)
+    out = np.maximum(out, np.where(inside, _rope_line(np.abs(x) - edge, s), 0.0))
+    # Midline: from her throat to the diamond, and below the waist band towards her crotch; behind,
+    # down her spine.
+    down = (y > c[1] + 0.03 * s) & (y < nl[1] + 0.2 * s) & ~inside
+    out = np.maximum(out, np.where(down, _rope_line(x, s), 0.0))
+    for side in (-1.0, 1.0):  # round each upper thigh
+        thigh = (side * x > 0.02 * s) & (side * x < 0.17 * s)
+        out = np.maximum(out, np.where(thigh, _rope_line(y - (c[1] - 0.07 * s), s), 0.0))
+    twist = 0.75 + 0.25 * np.sin((x + y) / (0.0025 * s))
+    return out * twist
+
+
+def _welts(where, marks, s):
+    """BD15. Whip or crop welts: thin raised stripes laid diagonally across her buttocks, the backs of
+    her thighs and her lower back, each a darker core in a pink halo."""
+    c = marks.crotch
+    behind = _front(where, marks) < -0.02 * s
+    x = where[:, 0] - marks.axis_x
+    y = where[:, 1] - c[1]
+    region = (y > -0.14 * s) & (y < 0.2 * s) & (np.abs(x) < 0.17 * s)
+    out = np.zeros(len(where))
+    halo = np.zeros(len(where))
+    for k in range(7):
+        y0 = (-0.11 + 0.042 * k) * s
+        tilt = 0.35 if k % 2 else -0.25
+        d = y - y0 - tilt * x - 0.004 * s * np.sin(x / (0.02 * s) + k)
+        reach = np.abs(x) < (0.09 + 0.05 * ((k * 5) % 3) / 2) * s
+        out = np.maximum(out, np.exp(-((d / (0.0016 * s)) ** 2)) * reach)
+        halo = np.maximum(halo, np.exp(-((d / (0.005 * s)) ** 2)) * reach)
+    keep = behind & region
+    return np.where(keep, out, 0.0), np.where(keep, halo, 0.0)
+
+
+def _wax(where, marks, s, amount):
+    """BD15. Candle wax: splashes on her breasts, cleavage and belly, each a round drop with runs
+    down from it, set hard and glossy. Returns (cover, shine)."""
+    nl = marks.nipples[0]
+    front = _front(where, marks) > 0.0
+    cell = 0.03 * s
+    i = np.floor(where / cell)
+    pick = _hash3(i[:, 0], i[:, 1], i[:, 2])
+    jitter = np.stack([_hash3(i[:, 0] + 2 * k, i[:, 1] - k, i[:, 2] + 5) for k in range(3)], axis=1)
+    centre = (i + 0.2 + 0.6 * jitter) * cell
+    radius = (0.004 + 0.005 * _hash3(i[:, 0] + 7, i[:, 1], i[:, 2])) * s
+    dx = where[:, 0] - centre[:, 0]
+    dy = where[:, 1] - centre[:, 1]
+    blob = 1.0 - _smoothstep(0.7, 1.0, np.hypot(dx, dy) / radius * (0.85 + 0.3 * _noise3(where, 0.003 * s)))
+    run_len = radius * (2.0 + 3.0 * _hash3(i[:, 0], i[:, 1] + 3, i[:, 2]))
+    run = (dy < 0) & (-dy < run_len) & (np.abs(dx) < radius * 0.3 * (1.0 + dy / run_len))
+    cover = np.maximum(blob, run * 1.0)
+    band = (where[:, 1] > marks.crotch[1] + 0.08 * s) & (where[:, 1] < nl[1] + 0.08 * s)
+    wide = np.abs(where[:, 0] - marks.axis_x) < 0.15 * s
+    present = (pick > 1.0 - 0.55 * amount) & band & wide & front
+    shine = np.exp(-((np.hypot(dx + 0.3 * radius, dy - 0.3 * radius) / (0.35 * radius)) ** 2))
+    return np.where(present, cover, 0.0), np.where(present, shine, 0.0)
+
+
+def _sado_under(where, marks, spec, s) -> list:
+    layers = []
+    rope = _p(spec, "ropeMarks")
+    if rope > 0:
+        layers.append(([0.97, 0.72, 0.74], _ropes(where, marks, s) * rope * 0.85))
+    welts = _p(spec, "welts")
+    if welts > 0:
+        core, halo = _welts(where, marks, s)
+        layers.append(([1.0, 0.82, 0.83], halo * welts * 0.6))
+        layers.append(([0.88, 0.5, 0.55], core * welts * 0.85))
+    clamps = _p(spec, "clampMarks")
+    if clamps > 0:
+        rn = float(spec.get("nippleRadius", 0.0055)) * s
+        for nipple in marks.nipples:
+            for side in (-1.0, 1.0):
+                d = np.hypot(where[:, 0] - nipple[0] - side * rn * 1.5, (where[:, 1] - nipple[1]) * 0.6)
+                near = np.linalg.norm(where - nipple, axis=1) < rn * 4
+                layers.append(
+                    (
+                        [0.9, 0.6, 0.65],
+                        np.where(near, 1.0 - _smoothstep(0.0008 * s, 0.0024 * s, d), 0.0) * clamps,
+                    )
+                )
+    collar = _p(spec, "collarMark")
+    if collar > 0:
+        neck_y = marks.nipples[0][1] + 0.255 * s
+        band = np.exp(-(((where[:, 1] - neck_y) / (0.007 * s)) ** 2)) * (
+            np.abs(where[:, 0] - marks.axis_x) < 0.07 * s
+        )
+        layers.append(([0.95, 0.72, 0.74], band * collar * 0.75))
+    return layers
 
 
 def _grips(where, marks, s):
@@ -454,6 +580,38 @@ def _design(name: str, text: str = "") -> np.ndarray:
         out = np.asarray(image.resize((512, 192), Image.LANCZOS), dtype=np.float64) / 255.0
         _DESIGNS[key] = out
         return out
+    elif name in ("tribal-wings-line", "tribal-sun-line"):
+        image = Image.new("L", (1024, 384) if name == "tribal-wings-line" else (512, 512), 0)
+        draw = ImageDraw.Draw(image)
+        if name == "tribal-wings-line":
+            # BD15. Wings: three feathered blades fanning out on each side of a small heart-shaped core.
+            for k, (rise, length, thick) in enumerate(((150, 430, 40), (60, 380, 30), (-30, 300, 22))):
+                t = np.linspace(0.0, 1.0, 60)
+                x = 540 + length * t
+                y = 230 - rise * t - 40 * np.sin(np.pi * t) * (1 - 0.3 * k)
+                w = thick * (1 - t) ** 0.7 + 2
+                draw.polygon(
+                    list(zip(x, y - w, strict=True)) + list(zip(x[::-1], (y + w)[::-1], strict=True)),
+                    fill=255,
+                )
+            both = np.maximum(np.asarray(image), np.asarray(image)[:, ::-1])
+            image = Image.fromarray(both)
+            ImageDraw.Draw(image).ellipse((470, 180, 554, 280), fill=255)
+            out = np.asarray(image.resize((512, 192), Image.LANCZOS), dtype=np.float64) / 255.0
+        else:
+            # BD15. A tribal sun: a ring round a solid core, and flame-shaped rays, alternate ones curled.
+            draw.ellipse((176, 176, 336, 336), outline=255, width=26)
+            draw.ellipse((226, 226, 286, 286), fill=255)
+            for k in range(12):
+                a = 2 * np.pi * k / 12
+                length = 210 if k % 2 == 0 else 170
+                tip = (256 + length * np.cos(a + 0.18), 256 + length * np.sin(a + 0.18))
+                base1 = (256 + 95 * np.cos(a - 0.17), 256 + 95 * np.sin(a - 0.17))
+                base2 = (256 + 95 * np.cos(a + 0.17), 256 + 95 * np.sin(a + 0.17))
+                draw.polygon([base1, tip, base2], fill=255)
+            out = np.asarray(image.resize((256, 256), Image.LANCZOS), dtype=np.float64) / 255.0
+        _DESIGNS[key] = out
+        return out
     elif name == "text":
         try:
             font = ImageFont.truetype("DejaVuSerif-BoldItalic.ttf", 120)
@@ -499,8 +657,19 @@ def _tattoo(where, marks, spec, design, s):
     """BD13. A tattoo on her mons, just above her vulva: black linework over a colour, healed soft."""
     if design not in TATTOOS:
         return []
-    if spec.get("tattooPlace", "mons") == "lower-back" or design == "tribal":
+    place = spec.get("tattooPlace") or ("lower-back" if design.startswith("tribal") else "mons")
+    if place == "lower-back":
         return _lower_back_tattoo(where, marks, spec, design, s)
+    if design.startswith("tribal"):
+        # BD15. A tribal on her mons: the same linework, small, just above her vulva.
+        across, up, ok = _mons(where, marks, s)
+        L = float(spec.get("vulvaLength", 0.062)) * s
+        mask = _design("tribal-line" if design == "tribal" else f"{design}-line")
+        width = 0.075 * s
+        height = width * mask.shape[0] / mask.shape[1]
+        cover = _sample(mask, 0.5 - (up - (L + 0.026 * s)) / height, across / width + 0.5)
+        ink = [0.2, 0.19, 0.24] if spec.get("tattooInk", "black") == "black" else [0.55, 0.3, 0.35]
+        return [(ink, np.where(ok, cover * 0.92, 0.0))]
     across, up, ok = _mons(where, marks, s)
     L = float(spec.get("vulvaLength", 0.062)) * s
     ink = [0.2, 0.19, 0.24] if spec.get("tattooInk", "black") == "black" else [0.55, 0.3, 0.35]
@@ -532,6 +701,12 @@ def _lower_back_tattoo(where, marks, spec, design, s):
     if design == "tribal":
         mask = _design("tribal-line")
         width = 0.2 * s
+    elif design == "tribal-wings":
+        mask = _design("tribal-wings-line")
+        width = 0.24 * s
+    elif design == "tribal-sun":
+        mask = _design("tribal-sun-line")
+        width = 0.1 * s
     elif design == "text":
         mask = _design("text", str(spec.get("tattooText", "Yours"))[:16])
         width = 0.12 * s
@@ -711,6 +886,11 @@ def over(where: np.ndarray, marks, spec: dict, s: float) -> list[tuple[list[floa
     oil = _p(spec, "oil")
     if oil > 0:
         layers.extend(_oil(where, marks, s, oil))
+    wax = _p(spec, "wax")
+    if wax > 0:
+        drops, shine = _wax(where, marks, s, wax)
+        layers.append(([0.92, 0.22, 0.26], drops * 0.92))
+        layers.append(([1.25, 1.2, 1.2], shine * drops * 0.6))
     glitter = _p(spec, "glitter")
     if glitter > 0:
         fleck, hue = _glitter(where, marks, s, glitter)
@@ -941,7 +1121,8 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
         # BD14. An anal creampie: her opened anus (BD4's size) filled, leaking forward over her
         # perineum towards her vulva, as it does on all fours.
         anus_open = float(np.clip(float(spec.get("anusOpen", 0.0)), 0.0, 1.5))
-        ra = float(spec.get("anusRadius", 0.0065)) * s * (1.0 + 0.35 * anus_open)
+        gape = float(np.clip(float(spec.get("anusGape", 0.0)), 0.0, 1.0))  # BD16: same as body_detail
+        ra = float(spec.get("anusRadius", 0.0065)) * s * (1.0 + 0.35 * anus_open + 1.3 * gape)
         r = np.hypot(u, t + per) / (ra * (0.3 + 0.35 * anus_open))
         filled = np.clip(1.0 - _smoothstep(0.6, 1.0, r * (0.92 + 0.16 * wobble)), 0.0, 1.0)
         lead = (t + per) / (per * 0.9)
@@ -1022,6 +1203,15 @@ def relief(where: np.ndarray, marks, spec: dict, s: float) -> np.ndarray:
     pores = _p(spec, "pores")
     if pores > 0:
         h -= 0.00006 * s * pores * _smoothstep(0.6, 0.85, _noise3(where, 0.0007 * s))
+    rope = _p(spec, "ropeMarks")
+    if rope > 0:  # rope presses in
+        h -= 0.00045 * s * rope * _ropes(where, marks, s)
+    welts = _p(spec, "welts")
+    if welts > 0:  # welts rise
+        h += 0.0006 * s * welts * _welts(where, marks, s)[0]
+    wax = _p(spec, "wax")
+    if wax > 0:  # set wax stands on her skin
+        h += 0.0009 * s * _wax(where, marks, s, wax)[0]
     stretch = _p(spec, "stretchMarks")
     if stretch > 0:  # healed stretch marks sit a hair below her skin
         h -= 0.00008 * s * stretch * _stretch_marks(where, marks, s)

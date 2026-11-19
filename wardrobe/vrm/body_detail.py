@@ -67,7 +67,7 @@ MIDLINE = 0.006
 
 STATES_PATH = PRESETS_PATH.with_name("states.json")
 STATES_SCHEMA = "wardrobe.bodyDetail.states.v1"
-STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen", "pumped", *FX.EFFECT_KEYS)
+STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen", "pumped", "anusGape", *FX.EFFECT_KEYS)
 EXTRAS_PATH = PRESETS_PATH.with_name("extras.json")
 EXTRAS_SCHEMA = "wardrobe.bodyDetail.extras.v1"
 #: BD6. What a persistent extra may set (tan lines now; marks, freckles… later).
@@ -457,7 +457,8 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
     layers.append((spec.get("majoraTint", [0.88, 0.70, 0.68]), raphe * 0.5))
 
     # Anus: a puckered ring — radial folds darkening in to a closed centre.
-    ra = g("anusRadius", 0.0065) * (1.0 + 0.35 * anus_open)
+    ra = _anus_radius(spec, s)
+    gape = _gape(spec)
     au, at = u, t + per
     ar = np.sqrt(au ** 2 + at ** 2) / ra
     angle = np.arctan2(at, au)
@@ -471,6 +472,19 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
         layers.append(([0.92, 0.62, 0.64], inner * 0.7 * anus_open))
     layers.append((spec.get("openingTint", [0.56, 0.40, 0.42]),
                    (1.0 - _smoothstep(core * 0.15, core, ar)) * (0.6 + 0.3 * anus_open)))
+    if gape > 0:
+        # BD16. After anal fisting: a wide round gape. Its folds are gone, its rim is swollen and
+        # flushed red, its inner walls show pink and wet, and its centre is dark depth, so it reads
+        # clearly from behind on all fours.
+        hole = 0.42 + 0.18 * gape
+        rim = np.exp(-((ar - (hole + 0.2)) / 0.13) ** 2)
+        walls = _smoothstep(hole * 0.7, hole, ar) * (1.0 - _smoothstep(hole, hole + 0.12, ar))
+        layers.append(([0.92, 0.6, 0.62], rim * 0.8 * gape))  # swollen, flushed rim
+        wet = np.exp(-((ar - (hole + 0.24)) / 0.05) ** 2)
+        layers.append(([1.1, 1.04, 1.05], wet * 0.45 * gape))  # wet edge
+        layers.append(([0.86, 0.5, 0.54], walls * 0.85 * gape))  # her inner walls
+        depth = 1.0 - _smoothstep(hole * 0.5, hole * 0.92, ar)
+        layers.append(([0.3, 0.2, 0.22], depth * 0.95 * gape))  # dark depth
 
     hair = _hair(u, np.where(in_front, t, -1.0), in_front, L, spec, s)
     return layers, hair
@@ -486,6 +500,17 @@ def _state(spec: dict) -> tuple[float, float, float]:
 def _pumped(spec: dict) -> float:
     """BD13. How engorged her vulva is after a pump, 0..1 (``pumped`` in a state)."""
     return float(np.clip(float(spec.get("pumped", 0.0)), 0.0, 1.0))
+
+
+def _gape(spec: dict) -> float:
+    """BD16. How far her anus gapes after anal fisting, 0..1 (``anusGape``)."""
+    return float(np.clip(float(spec.get("anusGape", 0.0)), 0.0, 1.0))
+
+
+def _anus_radius(spec: dict, s: float) -> float:
+    """Her anus: wider relaxed open (BD4); after fisting it gapes to more than twice that (BD16)."""
+    _, _, anus_open = _state(spec)
+    return float(spec.get("anusRadius", 0.0065)) * s * (1.0 + 0.35 * anus_open + 1.3 * _gape(spec))
 
 
 def _majora_width(spec: dict, s: float) -> float:
@@ -646,8 +671,13 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.nda
     hood_t = 0.76 * L + 0.6 * rc + 0.004 * s
     hood = np.sqrt((u / (0.0045 * s)) ** 2 + ((t - hood_t) / (0.0055 * s)) ** 2)
     h += 0.0014 * k * np.clip(1.0 - hood, 0.0, 1.0) ** 0.7
-    per, ra = g("perineum", 0.032), g("anusRadius", 0.0065) * (1.0 + 0.35 * anus_open)
+    per, ra = g("perineum", 0.032), _anus_radius(spec, s)
     ar = np.sqrt(u ** 2 + (t + per) ** 2) / ra
+    gape = _gape(spec)
+    if gape > 0:  # BD16. a deep round hole, a swollen rim standing round it
+        hole = 0.42 + 0.18 * gape
+        h -= 0.006 * k * gape * (1.0 - _smoothstep(0.0, hole, ar)) ** 1.5
+        h += 0.0012 * k * gape * np.exp(-((ar - (hole + 0.2)) / 0.13) ** 2)
     angle = np.arctan2(t + per, u)
     h -= 0.0032 * k * (1.0 + 1.8 * anus_open) * (1.0 - _smoothstep(0.0, 0.9, ar)) ** 2
     h += 0.0005 * k * (1.0 - 0.7 * anus_open) * np.cos(14 * angle + 0.6 * np.sin(5 * angle)) \

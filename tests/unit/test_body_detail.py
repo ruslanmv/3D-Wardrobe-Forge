@@ -499,3 +499,53 @@ def test_tribal_tattoo_is_on_her_lower_back_only():
     ink = layers[-1][1]
     assert ink[0] > 0.5 and ink[1] == 0.0
     assert FX.wants_torso(spec)
+
+
+def test_fisted_anus_gapes_wide_dark_and_deep():
+    """BD16. After anal fisting her anus is nearly twice as wide as stretched open, dark at its centre
+    and recessed deeper; the doggy-fisted states keep the vagina open too."""
+    base = BD.load_presets()["natural"]
+    stretched = {**base, "anusOpen": 1.5}
+    fisted = {**stretched, "anusGape": 1.0}
+    assert BD._anus_radius(fisted, 1.0) > 1.8 * BD._anus_radius(stretched, 1.0)
+    marks = _marks()
+    anus = np.array([[0.0, 0.74, -base["perineum"]]])
+    assert BD._height(anus, marks, fisted, 1.0)[0] < BD._height(anus, marks, stretched, 1.0)[0]
+    shade = np.array([[200.0, 170.0, 160.0]])
+    dark, _ = BD._paint(shade.copy(), anus, marks, fisted, 1.0, shade=False)
+    plain, _ = BD._paint(shade.copy(), anus, marks, stretched, 1.0, shade=False)
+    assert dark.sum() < plain.sum()
+    states = BD.load_states()
+    for name in ("doggy-anal-fisted", "doggy-anal-fisted-cum", "doggy-both-fisted"):
+        assert states[name]["set"]["anusGape"] == 1.0 and states[name]["set"]["vaginaOpen"] > 0
+
+
+def test_sado_marks_land_where_aimed():
+    """BD15. Rope marks band her chest, welts cross her buttocks behind, wax sits on her front; all
+    the sado states keep both holes open."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    under_breasts = np.array([[0.02, 1.17 - 0.075, 0.15]])
+    assert FX._ropes(under_breasts, marks, 1.0)[0] > 0.5
+    buttock = np.array([[0.05, 0.74 + 0.0, -0.12], [0.05, 0.74, 0.12]])
+    core, halo = FX._welts(buttock, marks, 1.0)
+    assert halo[0] > 0 and halo[1] == 0.0
+    for name, state in BD.load_states().items():
+        if name.startswith("sado-"):
+            assert state["set"]["vaginaOpen"] > 0 and state["set"]["anusOpen"] > 0, name
+
+
+def test_more_tribals_and_their_places():
+    """BD15. Tribal wings and sun go on her lower back; a tribal can sit on her mons instead."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    extras = BD.load_extras()
+    back = np.array([[0.0, 0.74 + 0.15, -0.12]])
+    for name in ("tattoo-lower-back-tribal-wings", "tattoo-lower-back-tribal-sun"):
+        spec = {**BD.load_presets()["natural"], **extras[name]["set"]}
+        layers = FX._tattoo(back, marks, spec, spec["tattoo"], 1.0)
+        assert layers and max(layer[1][0] for layer in layers) > 0.3, name
+    spec = {**BD.load_presets()["natural"], **extras["tattoo-mons-tribal"]["set"]}
+    assert FX._tattoo(back, marks, spec, "tribal", 1.0)[0][1][0] == 0.0  # not on her back

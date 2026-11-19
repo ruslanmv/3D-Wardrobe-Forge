@@ -239,6 +239,33 @@
     "tattooInk": "black"
    },
    "body": "a black tribal tattoo sweeps across the small of your back, just above your ass, where he sees it when he takes you from behind"
+  },
+  "tattoo-lower-back-tribal-wings": {
+   "label": "Tribal wings on her lower back",
+   "set": {
+    "tattoo": "tribal-wings",
+    "tattooPlace": "lower-back",
+    "tattooInk": "black"
+   },
+   "body": "black tribal wings spread across the small of your back, just above your ass"
+  },
+  "tattoo-lower-back-tribal-sun": {
+   "label": "Tribal sun on her lower back",
+   "set": {
+    "tattoo": "tribal-sun",
+    "tattooPlace": "lower-back",
+    "tattooInk": "black"
+   },
+   "body": "a black tribal sun is tattooed in the small of your back, just above your ass"
+  },
+  "tattoo-mons-tribal": {
+   "label": "Tribal above her pussy",
+   "set": {
+    "tattoo": "tribal",
+    "tattooPlace": "mons",
+    "tattooInk": "black"
+   },
+   "body": "a black tribal design is tattooed on your mons, just above your pussy"
   }
  }
 }
