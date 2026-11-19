@@ -110,8 +110,11 @@ parameters, from 0 to 1:
 | `wide-open` | 1.0     | 1.0        | 0        |
 | `anus-open` | 0.5     | 0          | 0.7      |
 | `both-open` | 0.9     | 0.65       | 0.7      |
+| `stretched` (fisting) | 1.0 | 1.5     | 0        |
+| `anus-stretched` (fisting) | 0.9 | 0 | 1.5      |
 
-Each state has a `body` line in the second person ("you are aroused and open:
+The openings go up to 1.5 (BD8): past 1 is stretched beyond wide open, for the
+two fisting states. Each state has a `body` line in the second person ("you are aroused and open:
 …"), for the conversation. A client says it to the model only while that look is
 on stage, the same way the positions describe her body. The look carries
 `extras.wardrobeForge.state`. Rendered from behind on all fours, the six states

@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.states.v1",
- "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), arousal (flush, swelling, sheen), vaginaOpen (inner lips parted, opening widened to show the inner walls), anusOpen (relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), arousal (flush, swelling, sheen), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
  "states": {
   "closed": {
    "label": "Closed",
@@ -101,6 +101,28 @@
     "vaginaOpen": 0.2
    },
    "body": "you are in the afterglow: flushed, dewy with sweat, softened and relaxed"
+  },
+  "stretched": {
+   "label": "Stretched (fisting)",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.8,
+    "erect": 1.0,
+    "sweat": 0.4,
+    "vaginaOpen": 1.5
+   },
+   "body": "you are stretched open wide around their fist, flushed, very aroused and wet"
+  },
+  "anus-stretched": {
+   "label": "Anus stretched (fisting)",
+   "set": {
+    "arousal": 0.9,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.4,
+    "anusOpen": 1.5
+   },
+   "body": "your anus is stretched open wide around their fist, you are flushed and very aroused"
   }
  }
 }

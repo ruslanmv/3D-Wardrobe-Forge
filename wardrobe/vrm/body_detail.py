@@ -448,8 +448,9 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
 
 def _state(spec: dict) -> tuple[float, float, float]:
     """BD4. (arousal, vagina open, anus open), each 0..1, from a preset merged with a state."""
-    clip = lambda key: float(np.clip(float(spec.get(key, 0.0)), 0.0, 1.0))  # noqa: E731
-    return clip("arousal"), clip("vaginaOpen"), clip("anusOpen")
+    clip = lambda key, top=1.0: float(np.clip(float(spec.get(key, 0.0)), 0.0, top))  # noqa: E731
+    # BD8. The openings go past 1 (to 1.5) for the stretched states: stretched beyond wide open.
+    return clip("arousal"), clip("vaginaOpen", 1.5), clip("anusOpen", 1.5)
 
 
 def _introitus(spec: dict, s: float, opened: float) -> tuple[float, float]:

@@ -294,3 +294,15 @@ def test_erect_nipple_stands_higher():
     marks = _marks()
     nipple = np.array([marks.nipples[0]])
     assert FX.relief(nipple, marks, {"erect": 1.0}, 1.0)[0] > FX.relief(nipple, marks, {"erect": 0.0}, 1.0)[0]
+
+
+def test_stretched_states_open_past_wide_open():
+    """BD8. Stretched (fisting) opens beyond wide open: 1.5, clamped there, never more."""
+    states = BD.load_states()
+    assert states["stretched"]["set"]["vaginaOpen"] == 1.5
+    assert states["anus-stretched"]["set"]["anusOpen"] == 1.5
+    assert BD._state({"vaginaOpen": 9, "anusOpen": 9, "arousal": 9}) == (1.0, 1.5, 1.5)
+    base = BD.load_presets()["natural"]
+    wide = BD._introitus({**base, "vaginaOpen": 1.0}, 1.0, 1.0)
+    stretched = BD._introitus({**base, "vaginaOpen": 1.5}, 1.0, 1.5)
+    assert stretched[0] > wide[0] and stretched[1] > wide[1]
