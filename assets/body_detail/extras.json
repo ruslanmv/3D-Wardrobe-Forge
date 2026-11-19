@@ -121,6 +121,115 @@
     ]
    },
    "body": "your nipples, navel and clitoral hood are pierced"
+  },
+  "tattoo-mons-heart": {
+   "label": "Heart tattoo above her pussy",
+   "set": {
+    "tattoo": "heart",
+    "tattooInk": "black"
+   },
+   "body": "a red heart is tattooed on your mons, just above your pussy"
+  },
+  "tattoo-mons-rose": {
+   "label": "Rose tattoo above her pussy",
+   "set": {
+    "tattoo": "rose",
+    "tattooInk": "black"
+   },
+   "body": "a red rose is tattooed on your mons, just above your pussy"
+  },
+  "tattoo-mons-butterfly": {
+   "label": "Butterfly tattoo above her pussy",
+   "set": {
+    "tattoo": "butterfly",
+    "tattooInk": "black"
+   },
+   "body": "a blue butterfly is tattooed on your mons, just above your pussy"
+  },
+  "tattoo-mons-text": {
+   "label": "Words tattooed above her pussy",
+   "set": {
+    "tattoo": "text",
+    "tattooText": "Yours",
+    "tattooInk": "black"
+   },
+   "body": "the word Yours is tattooed in script on your mons, just above your pussy"
+  },
+  "piercings-intimate": {
+   "label": "Labia rings, Christina & hood bar",
+   "set": {
+    "piercings": [
+     "labia",
+     "christina",
+     "hood-bar"
+    ]
+   },
+   "body": "your pussy is pierced: two rings in each inner lip, a Christina bar down your mons and a bar through your clit hood"
+  },
+  "piercings-labia": {
+   "label": "Labia rings",
+   "set": {
+    "piercings": [
+     "labia"
+    ]
+   },
+   "body": "two small rings pierce each of your inner lips"
+  },
+  "piercings-christina": {
+   "label": "Christina piercing",
+   "set": {
+    "piercings": [
+     "christina"
+    ]
+   },
+   "body": "a Christina bar runs down your mons to the top of your pussy, a gem at its foot"
+  },
+  "piercings-nipple-rings": {
+   "label": "Nipple rings",
+   "set": {
+    "piercings": [
+     "nipple-rings"
+    ]
+   },
+   "body": "rings hang through both your nipples"
+  },
+  "hearts": {
+   "label": "Hearts drawn on her",
+   "set": {
+    "hearts": 1.0,
+    "kissColor": [
+     0.75,
+     0.15,
+     0.3
+    ]
+   },
+   "body": "little hearts are drawn in lipstick on your breasts, belly, thigh and bottom"
+  },
+  "glitter": {
+   "label": "Glitter",
+   "set": {
+    "glitter": 1.0
+   },
+   "body": "glitter sparkles over your chest, breasts and belly"
+  },
+  "body-paint-gold": {
+   "label": "Gold body paint",
+   "set": {
+    "bodyPaint": 1.0,
+    "bodyPaintColor": [
+     1.25,
+     1.0,
+     0.55
+    ]
+   },
+   "body": "flowing gold lines are painted over your breasts, belly and hips"
+  },
+  "stretch-marks": {
+   "label": "Stretch marks",
+   "set": {
+    "stretchMarks": 1.0
+   },
+   "body": "faint silvery stretch marks cross your hips and the undersides of your breasts"
   }
  }
 }

@@ -184,6 +184,45 @@ her skin shows.
 Rendered: writing, the barbells, the navel jewel, the kisses and the handprint
 read well. Freckles and love bites are subtle at full-body distance.
 
+## Pumped, oiled, intimate tattoos and piercings (BD13)
+
+New states (`states.json`, live-switchable in a skin pack like any other):
+
+- **`pumped` and `pumped-open`:** the deformation a vacuum pump leaves. `pumped`
+  (0..1) widens the outer lips by up to a third and nearly doubles the inner lips
+  (`_minora_width`), lengthens them a little, and swells the glans
+  (`_glans_radius`). The tints go deep red-violet and glossy, and the relief
+  rises. Colour and relief read the same helpers, so a fold is where its colour is.
+- **`oiled` and `oiled-aroused`:** a massage-oil sheen over her whole torso band,
+  with long glossy highlights and no beads. The highlight tints lift blue and
+  green more than red: on already-bright skin a flat multiplier clips red first
+  and the shine turns cyan (seen and fixed).
+
+New extras (`extras.json`):
+
+- **Mons tattoos:** `tattoo-mons-heart`, `-rose`, `-butterfly` and `-text`
+  (`tattoo`: one of `TATTOOS`; `tattooText`, `tattooInk`). Each is a PIL drawing
+  (black linework over a colour fill, with green leaves for the rose) sampled
+  bilinearly at her own coordinates. `_mons` gives across her midline and up her
+  front, along her skin, and the design sits just above the vulva. A natural
+  bush paints over it, as hair would.
+- **Intimate piercings:** `piercings-labia` (two rings in each inner lip, which
+  follow a pumped or opened width), `piercings-christina` (a vertical bar up the
+  mons with a gem at its foot), `hood-bar` (in `piercings-intimate`) and
+  `piercings-nipple-rings` (rings hanging through the nipples).
+  `skin_effects.PIERCINGS` lists what may be worn, and `load_extras` refuses
+  anything else. Piercings from several extras now add up instead of the last
+  one replacing the rest.
+- **`hearts`** (lipstick hearts at the kiss spots), **`glitter`** (gold, blue and
+  pink flecks over her chest and belly), **`body-paint-gold`** (flowing lines;
+  `bodyPaintColor`), and **`stretch-marks`** (fine, pale, broken lines across her
+  hips and under her breasts, a hair below the surface in the relief).
+
+**Not paintable, so not here.** A bottle or any other inserted object needs a
+prop mesh attached to her pelvis bone: it is a separate feature, not skin. The
+`stretched` states paint the skin as it looks around one. Breast-shape changes
+and real mesh jewellery also change the mesh, which this painter never does.
+
 ## Semen (BD9)
 
 The `cum` parameter, and the `cum` state, paint semen on her body skin:
@@ -279,6 +318,13 @@ and its packet.
   `node tools/qa/body-detail-render.mjs --vrm audits/poses/runs/detail/ref-<preset>.vrm --views chest,seated,kneesup,allfours`
   renders them in the app's own viewer and poses, the camera aimed along each
   landmark's surface normal.
+- **Flat check (seconds, no renderer):**
+  `python tools/body_surface/detail_flat.py --base <dir>/ref-atlas.vrm --out <dir> --preset natural --states pumped --extras tattoo-mons-rose+piercings-intimate --views pelvis,nipple,torso`
+  paints in memory exactly as `paint_detail` does and plots each texel at her own
+  coordinates: the vulva unrolled along her midline, a nipple face-on, and her
+  torso front. Tune with it first, then confirm in the viewer. `detail_preview.py`
+  also takes `--states` and `--extras` (`+` joins extras worn together, `,`
+  separates variants).
 - To tune a preset, change `presets.json`, rebuild that preset with `--base`, and
   render it. Change the anatomy fields in `body_detail.py` (`_pelvis`, `_height`,
   `_hair`) and run `tests/unit/test_body_detail.py`.

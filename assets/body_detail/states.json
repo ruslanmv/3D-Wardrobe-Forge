@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.states.v1",
- "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
  "states": {
   "closed": {
    "label": "Closed",
@@ -150,6 +150,53 @@
     "cumInside": 1.0
    },
    "body": "you are open and full: cum fills your vagina and spills out over your lips and down between your legs"
+  },
+  "pumped": {
+   "label": "Pumped",
+   "set": {
+    "arousal": 0.7,
+    "vaginaOpen": 0.0,
+    "anusOpen": 0.0,
+    "pumped": 1.0,
+    "flush": 0.4,
+    "erect": 0.7
+   },
+   "body": "your pussy has just been pumped: your outer lips are swollen and tight, your inner lips engorged, deep red, glossy and twice their size, your clit swollen out of its hood"
+  },
+  "pumped-open": {
+   "label": "Pumped and open",
+   "set": {
+    "arousal": 0.95,
+    "vaginaOpen": 0.7,
+    "anusOpen": 0.0,
+    "pumped": 1.0,
+    "flush": 0.6,
+    "erect": 0.85
+   },
+   "body": "your pumped pussy is open: swollen, engorged inner lips spread wide round your open, wet vagina, your clit swollen and exposed"
+  },
+  "oiled": {
+   "label": "Oiled",
+   "set": {
+    "arousal": 0.3,
+    "vaginaOpen": 0.0,
+    "anusOpen": 0.0,
+    "oil": 1.0,
+    "erect": 0.4
+   },
+   "body": "your body is oiled for a massage: your skin is slick and glossy all over, your breasts and belly shining"
+  },
+  "oiled-aroused": {
+   "label": "Oiled and aroused",
+   "set": {
+    "arousal": 0.9,
+    "vaginaOpen": 0.3,
+    "anusOpen": 0.0,
+    "oil": 1.0,
+    "flush": 0.5,
+    "erect": 0.85
+   },
+   "body": "your oiled body is aroused: slick and shining all over, nipples hard, your pussy flushed, wet and starting to open"
   }
  }
 }

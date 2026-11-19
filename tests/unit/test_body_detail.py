@@ -374,3 +374,78 @@ def test_bare_accepts_tattoos_now():
                "options": {"baseBody": "bare", "private": True},
                "bodyArt": [{"design": "nape-crescent-01", "placement": "lower-back"}]}
     CreateJobRequest.model_validate(payload)
+
+
+def test_pumped_swells_the_labia_and_glans_and_raises_them():
+    """BD13. Pumped: outer lips wider, inner lips nearly doubled, glans larger — and higher relief."""
+    base = BD.load_presets()["natural"]
+    pumped = {**base, **BD.load_states()["pumped"]["set"]}
+    calm = {**base, "arousal": pumped["arousal"]}
+    assert BD._majora_width(pumped, 1.0) > BD._majora_width(calm, 1.0) * 1.25
+    assert BD._minora_width(pumped, 1.0) > BD._minora_width(calm, 1.0) * 1.6
+    assert BD._glans_radius(pumped, 1.0) > BD._glans_radius(calm, 1.0) * 1.4
+    marks = _marks()
+    L = base["vulvaLength"]
+    lip = np.array([[0.004, 0.74 + 0.5 * L, 0.004]])
+    assert BD._height(lip, marks, pumped, 1.0)[0] > BD._height(lip, marks, calm, 1.0)[0]
+    assert "pumped-open" in BD.load_states() and "oiled" in BD.load_states()
+
+
+def test_piercings_from_several_extras_add_up(tmp_path):
+    """BD13. Nipple rings from one extra and labia rings from another are both worn."""
+    from wardrobe.vrm import skin_effects as FX
+
+    extras = BD.load_extras()
+    assert set(extras["piercings-intimate"]["set"]["piercings"]) == {"labia", "christina", "hood-bar"}
+    for name, extra in extras.items():
+        assert set(extra["set"].get("piercings", [])) <= set(FX.PIERCINGS), name
+    bad = {"schema": BD.EXTRAS_SCHEMA, "extras": {"x": {"set": {"piercings": ["tongue"]}, "body": "b"}}}
+    path = tmp_path / "extras.json"
+    path.write_text(json.dumps(bad))
+    with pytest.raises(BD.BodyDetailError):
+        BD.load_extras(path)
+
+
+def test_genital_piercings_and_mons_tattoo_land_on_her_vulva_and_mons():
+    """BD13. A Christina bar runs up her mons, labia rings sit on her inner lips; the tattoo is on her
+    mons above the vulva and nowhere on her belly."""
+    from wardrobe.vrm import skin_effects as FX
+
+    base = BD.load_presets()["natural"]
+    marks = _marks()
+    c = marks.crotch
+    L = base["vulvaLength"]
+    # Points on her front, at heights along her (flat, upright) front: up = height above the crotch.
+    def at(x, up):
+        return np.array([[c[0] + x, c[1] + up, c[2] + 0.002]])
+
+    spec = {**base, "piercings": ["christina", "labia"]}
+    metal, _ = FX._jewel(at(0.0, L + 0.012), marks, spec, 1.0)
+    assert metal[0] > 0.9
+    ring_x = base["minoraWidth"] * 0.95 + 0.0028
+    metal, _ = FX._jewel(at(ring_x, 0.38 * L), marks, spec, 1.0)
+    assert metal[0] > 0.5
+    metal, _ = FX._jewel(at(0.03, 0.5 * L), marks, spec, 1.0)
+    assert metal[0] == 0.0
+    tattoo = {**base, "tattoo": "heart"}
+    layers = FX._tattoo(np.vstack([at(0.0, L + 0.03), at(0.0, L + 0.2)]), marks, tattoo, "heart", 1.0)
+    fill = layers[0][1]
+    assert fill[0] > 0.5 and fill[1] == 0.0
+    assert FX._tattoo(at(0.0, L + 0.03), marks, tattoo, "skull", 1.0) == []
+
+
+def test_oil_glitter_paint_and_stretch_marks_stay_on_her_torso():
+    """BD13. Torso effects: present on her belly, absent well away from it; oil whitens, never clips red."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    belly = np.array([[0.02, 0.95, 0.12]])
+    away = np.array([[0.0, 2.5, 0.12]])
+    oil = FX._oil(np.vstack([belly, away]), marks, 1.0, 1.0)
+    assert oil[0][1][0] > 0 and all(layer[1][1] == 0 for layer in oil)
+    for tint, _ in oil[1:]:
+        assert tint[2] >= tint[1] >= tint[0]  # lifts blue and green more than red
+    assert FX._body_paint(away, marks, 1.0)[0] == 0.0
+    assert FX._stretch_marks(away, marks, 1.0)[0] == 0.0
+    spec = {"oil": 1.0}
+    assert FX.wants_torso(spec) and FX.wants_torso({"glitter": 1.0}) and FX.wants_torso({"stretchMarks": 0.5})

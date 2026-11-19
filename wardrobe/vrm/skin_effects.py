@@ -24,7 +24,7 @@ from __future__ import annotations
 import numpy as np
 
 #: Parameters a body state may set (0..1), besides BD4's arousal and openings.
-EFFECT_KEYS = ("flush", "erect", "goosebumps", "sweat", "cum", "cumInside")
+EFFECT_KEYS = ("flush", "erect", "goosebumps", "sweat", "cum", "cumInside", "oil")
 TAN_TOPS = ("none", "triangle", "bandeau")
 TAN_BOTTOMS = ("none", "thong", "brazilian", "classic")
 
@@ -45,7 +45,19 @@ MARK_KEYS = (
     "writingInk",
     "piercings",
     "kissColor",
+    # BD13: a tattoo on her mons, hearts drawn on her, glitter, body paint, stretch marks.
+    "tattoo",
+    "tattooText",
+    "tattooInk",
+    "hearts",
+    "glitter",
+    "bodyPaint",
+    "bodyPaintColor",
+    "stretchMarks",
 )
+#: BD13. The designs a mons tattoo can be (``tattoo``), and the piercings that can be worn.
+TATTOOS = ("heart", "rose", "butterfly", "text")
+PIERCINGS = ("nipples", "nipple-rings", "navel", "hood", "hood-bar", "christina", "labia")
 
 
 def wants_torso(spec: dict) -> bool:
@@ -55,8 +67,9 @@ def wants_torso(spec: dict) -> bool:
         any(_p(spec, k) > 0 for k in ("kisses", "hickeys", "spank", "freckles", "pores"))
         or bool(spec.get("writing"))
         or bool(spec.get("piercings"))
+        or any(_p(spec, k) > 0 for k in ("hearts", "glitter", "bodyPaint", "stretchMarks"))
     )
-    return tanned or marked or any(_p(spec, k) > 0 for k in ("flush", "goosebumps", "sweat"))
+    return tanned or marked or any(_p(spec, k) > 0 for k in ("flush", "goosebumps", "sweat", "oil"))
 
 
 def in_torso(corners: np.ndarray, marks, s: float) -> np.ndarray:
@@ -190,6 +203,27 @@ def _marks(where, marks, spec, s) -> list:
         for name in names[: max(1, int(round(kisses * len(names))))]:
             centre, front = spots[name]
             layers.append((list(colour * 1.4), _kiss(where, marks, centre, front, s) * 0.85))
+    stretch = _p(spec, "stretchMarks")
+    if stretch > 0:
+        layers.append(([1.12, 0.95, 1.0], _stretch_marks(where, marks, s) * stretch * 0.85))
+    paint = _p(spec, "bodyPaint")
+    if paint > 0:
+        colour = spec.get("bodyPaintColor", [1.25, 1.0, 0.55])
+        layers.append((list(colour), _body_paint(where, marks, s) * paint * 0.9))
+    hearts = _p(spec, "hearts")
+    if hearts > 0:
+        colour = np.asarray(spec.get("kissColor", [0.62, 0.18, 0.22]), dtype=np.float64)
+        names = ["left-breast", "belly", "inner-thigh", "right-breast", "left-buttock"]
+        for name in names[: max(1, int(round(hearts * len(names))))]:
+            centre, front = spots[name]
+            d, ok = _near_spot(where, centre, front, marks, 0.03 * s)
+            x = (where[:, 0] - centre[0]) / (0.024 * s) * (1.0 if front else -1.0)
+            y = (where[:, 1] - centre[1]) / (0.024 * s)
+            outline = _sample(_design("heart-outline"), 0.5 - y, x + 0.5)
+            layers.append((list(colour * 1.4), np.where(ok, outline * 0.85, 0.0)))
+    tattoo = spec.get("tattoo")
+    if tattoo:
+        layers.extend(_tattoo(where, marks, spec, str(tattoo), s))
     text = spec.get("writing")
     if text:
         ink = spec.get("writingInk", "marker")
@@ -263,6 +297,221 @@ def _writing(where, marks, text, place, s):
     out = np.zeros(len(where))
     out[inside] = mask[row[inside].astype(int), col[inside].astype(int)]
     return out
+
+
+# -- BD13: tattoo, hearts, body paint, stretch marks, glitter, oil ---------------------------------
+
+_DESIGNS: dict = {}
+
+
+def _design(name: str, text: str = "") -> np.ndarray:
+    """A design drawn once at 512 px and kept at 256 (so its edges are anti-aliased): 0..1 coverage.
+
+    ``heart-outline`` is a heart's line; ``<tattoo>-line`` and ``<tattoo>-fill`` the ink and colour of
+    a tattoo; ``rose-leaf`` the green of a rose's leaves; ``text`` the tattoo's words."""
+    key = (name, text)
+    if key in _DESIGNS:
+        return _DESIGNS[key]
+    from PIL import Image, ImageDraw, ImageFont
+
+    big = 512
+    image = Image.new("L", (big, big), 0)
+    draw = ImageDraw.Draw(image)
+    t = np.linspace(0, 2 * np.pi, 200)
+    hx = 16 * np.sin(t) ** 3
+    hy = 13 * np.cos(t) - 5 * np.cos(2 * t) - 2 * np.cos(3 * t) - np.cos(4 * t)
+    heart = [(big / 2 + x * 13, big / 2 - 10 - y * 13) for x, y in zip(hx, hy, strict=True)]
+    if name == "heart-outline":
+        draw.line(heart + heart[:1], fill=255, width=30, joint="curve")
+    elif name == "heart-line":
+        draw.line(heart + heart[:1], fill=255, width=22, joint="curve")
+        draw.arc((150, 150, 260, 260), 200, 260, fill=255, width=14)  # the highlight a heart tattoo has
+    elif name == "heart-fill":
+        draw.polygon(heart, fill=255)
+    elif name in ("rose-line", "rose-fill", "rose-leaf"):
+        cx, cy = big / 2, big / 2 - 40
+        if name == "rose-fill":
+            draw.ellipse((cx - 120, cy - 110, cx + 120, cy + 110), fill=255)
+        elif name == "rose-leaf":
+            for side in (-1, 1):
+                leaf = Image.new("L", (big, big), 0)
+                ImageDraw.Draw(leaf).ellipse((cx - 70, cy + 120, cx + 70, cy + 180), fill=255)
+                image.paste(
+                    255,
+                    mask=leaf.rotate(side * 30, center=(cx, cy + 150)).transform(
+                        (big, big), Image.AFFINE, (1, 0, -side * 70, 0, 1, 0)
+                    ),
+                )
+        else:
+            # Petals: a spiral in the middle, then overlapping cupped arcs, and the stem.
+            for k in range(5):
+                r = 18 + 22 * k
+                draw.arc((cx - r, cy - r, cx + r, cy + r), 40 * k, 40 * k + 250, fill=255, width=12)
+            draw.arc((cx - 120, cy - 110, cx + 120, cy + 110), 0, 360, fill=255, width=16)
+            draw.arc((cx - 150, cy - 60, cx + 20, cy + 110), 90, 220, fill=255, width=12)
+            draw.arc((cx - 20, cy - 60, cx + 150, cy + 110), -40, 90, fill=255, width=12)
+            draw.line((cx, cy + 110, cx, big - 10), fill=255, width=14)
+    elif name in ("butterfly-line", "butterfly-fill"):
+        cx, cy = big / 2, big / 2
+        wings = [
+            (cx - 230, cy - 170, cx - 10, cy + 30),
+            (cx + 10, cy - 170, cx + 230, cy + 30),
+            (cx - 170, cy + 10, cx - 15, cy + 170),
+            (cx + 15, cy + 10, cx + 170, cy + 170),
+        ]
+        for box in wings:
+            if name == "butterfly-fill":
+                draw.ellipse(box, fill=255)
+            else:
+                draw.ellipse(box, outline=255, width=16)
+        if name == "butterfly-line":
+            draw.line((cx, cy - 140, cx, cy + 150), fill=255, width=22)
+            draw.line((cx, cy - 140, cx - 60, cy - 230), fill=255, width=8)
+            draw.line((cx, cy - 140, cx + 60, cy - 230), fill=255, width=8)
+    elif name == "text":
+        try:
+            font = ImageFont.truetype("DejaVuSerif-BoldItalic.ttf", 120)
+        except OSError:
+            font = ImageFont.load_default()
+        box = draw.textbbox((0, 0), text, font=font)
+        width, height = box[2] - box[0], box[3] - box[1]
+        image = Image.new("L", (max(width + 20, 1), max(height + 20, 1)), 0)
+        ImageDraw.Draw(image).text((10 - box[0], 10 - box[1]), text, fill=255, font=font)
+        image = image.resize((max(1, image.width // 2), max(1, image.height // 2)), Image.LANCZOS)
+        _DESIGNS[key] = np.asarray(image, dtype=np.float64) / 255.0
+        return _DESIGNS[key]
+    out = np.asarray(image.resize((256, 256), Image.LANCZOS), dtype=np.float64) / 255.0
+    _DESIGNS[key] = out
+    return out
+
+
+def _sample(mask: np.ndarray, row01: np.ndarray, col01: np.ndarray) -> np.ndarray:
+    """Bilinear sample of ``mask`` at (row, col) given as 0..1 across it; 0 outside."""
+    h, w = mask.shape
+    r, c = row01 * (h - 1), col01 * (w - 1)
+    inside = (r >= 0) & (r <= h - 1) & (c >= 0) & (c <= w - 1)
+    r, c = np.clip(r, 0, h - 1.001), np.clip(c, 0, w - 1.001)
+    r0, c0 = r.astype(int), c.astype(int)
+    fr, fc = r - r0, c - c0
+    top = mask[r0, c0] * (1 - fc) + mask[r0, c0 + 1] * fc
+    bottom = mask[r0 + 1, c0] * (1 - fc) + mask[r0 + 1, c0 + 1] * fc
+    return np.where(inside, top * (1 - fr) + bottom * fr, 0.0)
+
+
+def _mons(where, marks, s):
+    """Across her midline and up the front of her from her crotch, along her skin: (across, up, ok).
+
+    The same reckoning the hood ring uses: her height above her crotch point combined with how far
+    forward of it she is, so ``up`` follows her vulva and then her mons."""
+    c = marks.crotch
+    front = _front(where, marks)
+    up = np.hypot(where[:, 1] - c[1], np.maximum(front, 0.0))
+    return where[:, 0] - c[0], up, front > -0.004 * s
+
+
+def _tattoo(where, marks, spec, design, s):
+    """BD13. A tattoo on her mons, just above her vulva: black linework over a colour, healed soft."""
+    if design not in TATTOOS:
+        return []
+    across, up, ok = _mons(where, marks, s)
+    L = float(spec.get("vulvaLength", 0.062)) * s
+    ink = [0.2, 0.19, 0.24] if spec.get("tattooInk", "black") == "black" else [0.55, 0.3, 0.35]
+    if design == "text":
+        mask = _design("text", str(spec.get("tattooText", "Yours"))[:16])
+        width = 0.085 * s
+        height = width * mask.shape[0] / mask.shape[1]
+        centre = L + 0.022 * s
+        cover = _sample(mask, 0.5 - (up - centre) / height, across / width + 0.5)
+        return [(ink, np.where(ok, cover * 0.92, 0.0))]
+    size = 0.05 * s
+    centre = L + 0.03 * s
+    row, col = 0.5 - (up - centre) / size, across / size + 0.5
+    colours = {"heart": [0.95, 0.38, 0.42], "rose": [0.92, 0.32, 0.36], "butterfly": [0.55, 0.62, 1.0]}
+    layers = [(colours[design], np.where(ok, _sample(_design(f"{design}-fill"), row, col) * 0.75, 0.0))]
+    if design == "rose":
+        layers.append(([0.55, 0.8, 0.55], np.where(ok, _sample(_design("rose-leaf"), row, col) * 0.7, 0.0)))
+    layers.append((ink, np.where(ok, _sample(_design(f"{design}-line"), row, col) * 0.92, 0.0)))
+    return layers
+
+
+def _body_paint(where, marks, s):
+    """BD13. Body paint: flowing lines over her breasts, belly and hips (iso-lines of a slow noise)."""
+    field = _noise3(where, 0.05 * s) * 4.0 + _noise3(where, 0.02 * s)
+    lines = np.exp(-(((np.abs(((field * 2.0) % 1.0) - 0.5) - 0.5) / 0.08) ** 2))
+    nl = marks.nipples[0]
+    band = _smoothstep(marks.crotch[1] - 0.02 * s, marks.crotch[1] + 0.03 * s, where[:, 1]) * (
+        1.0 - _smoothstep(nl[1] + 0.06 * s, nl[1] + 0.12 * s, where[:, 1])
+    )
+    front = _front(where, marks) > -0.03 * s
+    wide = 1.0 - _smoothstep(0.14 * s, 0.18 * s, np.abs(where[:, 0] - marks.axis_x))
+    return lines * band * front * wide
+
+
+def _stretch_marks(where, marks, s):
+    """BD13. Healed stretch marks: fine, pale, broken lines across her hips, lower belly and the
+    undersides of her breasts, the way skin marks where it grew."""
+    c, nl = marks.crotch, marks.nipples[0]
+    x = where[:, 0] - marks.axis_x
+    hips = (
+        _smoothstep(0.07 * s, 0.11 * s, np.abs(x))
+        * _smoothstep(c[1] + 0.0, c[1] + 0.04 * s, where[:, 1])
+        * (1.0 - _smoothstep(c[1] + 0.12 * s, c[1] + 0.16 * s, where[:, 1]))
+    )
+    lateral_breast = np.abs(np.abs(x) - abs(float(nl[0]) - marks.axis_x))
+    breasts = (
+        (1.0 - _smoothstep(0.03 * s, 0.05 * s, lateral_breast))
+        * _smoothstep(nl[1] - 0.07 * s, nl[1] - 0.05 * s, where[:, 1])
+        * (1.0 - _smoothstep(nl[1] - 0.02 * s, nl[1], where[:, 1]))
+    )
+    region = np.maximum(hips, breasts)
+    # Lines run roughly across, tilted towards her centre, wavering and broken.
+    v = where[:, 1] + 0.35 * np.abs(x) + 0.004 * s * _noise3(where, 0.015 * s)
+    stripe = np.exp(-((((v / (0.007 * s)) % 1.0 - 0.5) / 0.14) ** 2))
+    broken = _smoothstep(0.35, 0.6, _noise3(where * np.array([0.4, 3.0, 0.4]), 0.02 * s))
+    return stripe * broken * region
+
+
+def _glitter(where, marks, s, amount):
+    """BD13. Glitter: tiny bright flecks across her chest, breasts and belly, some coloured."""
+    cell = 0.0022 * s
+    i = np.floor(where / cell)
+    pick = _hash3(i[:, 0], i[:, 1], i[:, 2])
+    centre = (i + 0.5) * cell
+    fleck = 1.0 - _smoothstep(0.00035 * s, 0.0007 * s, np.linalg.norm(where - centre, axis=1))
+    nl = marks.nipples[0]
+    band = _smoothstep(marks.crotch[1] + 0.04 * s, marks.crotch[1] + 0.08 * s, where[:, 1]) * (
+        1.0 - _smoothstep(nl[1] + 0.12 * s, nl[1] + 0.2 * s, where[:, 1])
+    )
+    front = _front(where, marks) > -0.02 * s
+    wide = 1.0 - _smoothstep(0.12 * s, 0.16 * s, np.abs(where[:, 0] - marks.axis_x))
+    present = (pick > 1.0 - 0.5 * amount) * band * front * wide * fleck
+    hue = _hash3(i[:, 0] + 9, i[:, 1], i[:, 2])
+    return present, hue
+
+
+def _torso_field(where, marks, s):
+    """1 over her torso band (as ``in_torso`` chooses triangles), soft at its ends."""
+    nl = marks.nipples[0]
+    low, high = marks.crotch[1] - 0.12 * s, nl[1] + 0.26 * s
+    y = where[:, 1]
+    band = _smoothstep(low, low + 0.04 * s, y) * (1.0 - _smoothstep(high - 0.04 * s, high, y))
+    return band * (1.0 - _smoothstep(0.16 * s, 0.2 * s, np.abs(where[:, 0] - marks.axis_x)))
+
+
+def _oil(where, marks, s, amount):
+    """BD13. Oiled for a massage: her skin a touch deeper and wet-looking all over, with long glossy
+    highlights along her curves — a sheen, not beads.
+
+    The highlights lift blue and green more than red: on skin that is already bright, a plain
+    multiplier clips red first and the shine turns cyan. These tints whiten her colour instead."""
+    torso = _torso_field(where, marks, s)
+    streak = _smoothstep(0.55, 0.85, _noise3(where * np.array([2.0, 0.6, 2.0]), 0.06 * s))
+    glint = _smoothstep(0.62, 0.8, _noise3(where * np.array([2.5, 0.8, 2.5]), 0.03 * s)) * streak
+    return [
+        ([0.95, 0.9, 0.88], torso * 0.5 * amount),
+        ([1.03, 1.09, 1.12], torso * streak * 0.8 * amount),
+        ([1.05, 1.16, 1.22], torso * glint * 0.75 * amount),
+    ]
 
 
 def _tan_mask(where: np.ndarray, marks, spec: dict, s: float) -> np.ndarray | None:
@@ -341,7 +590,17 @@ def _flush_field(where: np.ndarray, marks, s: float) -> np.ndarray:
 
 def over(where: np.ndarray, marks, spec: dict, s: float) -> list[tuple[list[float], np.ndarray]]:
     """Tint layers painted after the anatomy: sweat — a sheen and beads of it — and piercings."""
-    layers = _piercings(where, marks, spec, s)
+    layers = []
+    oil = _p(spec, "oil")
+    if oil > 0:
+        layers.extend(_oil(where, marks, s, oil))
+    glitter = _p(spec, "glitter")
+    if glitter > 0:
+        fleck, hue = _glitter(where, marks, s, glitter)
+        layers.append(([1.8, 1.7, 1.45], fleck * (hue < 0.6) * 0.9))  # gold
+        layers.append(([1.3, 1.5, 1.9], fleck * (hue >= 0.6) * (hue < 0.8) * 0.9))  # blue
+        layers.append(([1.9, 1.35, 1.7], fleck * (hue >= 0.8) * 0.9))  # pink
+    layers.extend(_piercings(where, marks, spec, s))
     sweat = _p(spec, "sweat")
     if sweat <= 0:
         return layers
@@ -371,6 +630,58 @@ def _jewel(where, marks, spec, s):
             shine = np.maximum(
                 shine, np.where(near & balls, np.exp(-(((dy - 0.0008 * s) / (0.0007 * s)) ** 2)), 0.0)
             )
+    if "nipple-rings" in kinds:
+        # Rings through her nipples, hanging just below them.
+        for nipple in marks.nipples:
+            dx = where[:, 0] - nipple[0]
+            dy = where[:, 1] - (nipple[1] - 0.0055 * s)
+            near = (np.linalg.norm(where - nipple, axis=1) < 0.016 * s) & (_front(where, marks) > 0)
+            ring = np.abs(np.hypot(dx, dy) - 0.0062 * s)
+            metal = np.maximum(metal, np.where(near, 1.0 - _smoothstep(0.0005 * s, 0.0009 * s, ring), 0.0))
+            lit = np.exp(-(((np.arctan2(dy, dx) - 2.3) / 0.35) ** 2))
+            shine = np.maximum(shine, np.where(near & (ring < 0.0008 * s), lit, 0.0))
+    genital = [k for k in ("labia", "christina", "hood-bar") if k in kinds]
+    if genital:
+        across, up, ok = _mons(where, marks, s)
+        L = float(spec.get("vulvaLength", 0.062)) * s
+
+        def bar(top, bottom, ball):
+            nonlocal metal, shine
+            rod = (np.abs(across) < 0.0008 * s) & (up > bottom) & (up < top)
+            ends = np.minimum(np.hypot(across, up - top), np.hypot(across, up - bottom))
+            balls = 1.0 - _smoothstep(ball * 0.8, ball, ends)
+            metal = np.maximum(metal, np.where(ok, np.maximum(rod * 1.0, balls), 0.0))
+            shine = np.maximum(
+                shine, np.where(ok, balls * np.exp(-(((ends - 0.4 * ball) / (0.35 * ball)) ** 2)), 0.0)
+            )
+
+        if "christina" in kinds:  # a vertical bar from the top of her cleft up her mons, a gem below
+            bar(L + 0.026 * s, 0.97 * L, 0.0024 * s)
+        if "hood-bar" in kinds:  # a vertical bar through her clitoral hood
+            bar(0.92 * L, 0.80 * L, 0.0018 * s)
+        if "labia" in kinds:  # two small rings down each inner lip
+            arousal = _p(spec, "arousal")
+            opened = float(np.clip(float(spec.get("vaginaOpen", 0.0)), 0.0, 1.5))
+            wmin = (
+                float(spec.get("minoraWidth", 0.0055))
+                * s
+                * (1.0 + 0.25 * arousal + 0.55 * opened + 0.9 * _p(spec, "pumped"))
+            )
+            for side in (-1.0, 1.0):
+                for along in (0.38, 0.56):
+                    d = np.hypot(across - side * wmin * 0.95, up - along * L)
+                    ring = np.abs(d - 0.0028 * s)
+                    metal = np.maximum(
+                        metal, np.where(ok, 1.0 - _smoothstep(0.0004 * s, 0.0008 * s, ring), 0.0)
+                    )
+                    shine = np.maximum(
+                        shine,
+                        np.where(
+                            ok & (ring < 0.0006 * s),
+                            0.6 * np.exp(-(((up - along * L) / (0.002 * s) - 1.0) ** 2)),
+                            0.0,
+                        ),
+                    )
     if "navel" in kinds:
         navel = np.array([marks.axis_x, marks.nipples[0][1] - 0.2 * s, 0.0])
         d = np.hypot(where[:, 0] - navel[0], where[:, 1] - (navel[1] + 0.012 * s))
@@ -530,6 +841,9 @@ def relief(where: np.ndarray, marks, spec: dict, s: float) -> np.ndarray:
     pores = _p(spec, "pores")
     if pores > 0:
         h -= 0.00006 * s * pores * _smoothstep(0.6, 0.85, _noise3(where, 0.0007 * s))
+    stretch = _p(spec, "stretchMarks")
+    if stretch > 0:  # healed stretch marks sit a hair below her skin
+        h -= 0.00008 * s * stretch * _stretch_marks(where, marks, s)
     if spec.get("piercings"):
         metal, _ = _jewel(where, marks, spec, s)
         h += 0.0015 * s * metal
@@ -540,7 +854,9 @@ __all__ = [
     "EFFECT_KEYS",
     "MARK_KEYS",
     "TAN_BOTTOMS",
+    "PIERCINGS",
     "TAN_TOPS",
+    "TATTOOS",
     "fluid",
     "in_torso",
     "over",
