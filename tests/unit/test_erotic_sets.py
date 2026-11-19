@@ -85,3 +85,28 @@ def test_missing_only_keeps_what_the_dataset_lists_and_sends_the_rest():
     # A listed pair is never sent to Forge.
     out = tool.build(forge, pairs[0], 1.0)
     assert out["result"] == "present" and forge.calls == ["/v1/library/a/prebuilt"]
+
+
+def test_show_outfits_build_and_pair_for_the_striptease(template_catalog):
+    """VA4. The chatbot's shows: a striptease set is the outfit and the matching lingerie under it
+    (each layer a look the undress steps down through, the lingerie's top then coming off alone);
+    the table-dance looks are one each. Every garment is a real template, every look is private."""
+    planned = {e["id"]: e for e in od.catalogue(template_catalog)["outfits"]}
+    shows = [o for o in od.OUTFITS if o.id.startswith("show-")]
+    strip = [o for o in shows if "striptease" in o.tags]
+    table = [o for o in shows if "table-dance" in o.tags]
+    assert len(strip) == 10 and len(table) == 5
+    for outfit in shows:
+        entry = planned[outfit.id]
+        assert entry["rating"] == "private" and entry["options"] == {"baseBody": "bare-dressed"}
+        assert entry["garments"] and all(g["template"] for g in entry["garments"]), outfit.id
+    for dressed in (o for o in strip if "dressed" in o.tags):
+        under = planned[dressed.id + "-under"]
+        outer = planned[dressed.id]
+        # Underneath is exactly the outfit's own underwear (and legwear, shoes): a step down, not new.
+        keep = {"underwear", "legwear", "shoes"}
+        assert {g["template"] for g in under["garments"]} == {
+            g["template"] for g in outer["garments"] if g["category"] in keep
+        }, dressed.id
+        assert len(outer["garments"]) > len(under["garments"])
+        assert "top" in under["partial"], dressed.id  # the next step: her top comes off alone

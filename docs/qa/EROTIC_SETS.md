@@ -66,3 +66,32 @@ any character without a clearance.
 Tests: `tests/unit/test_erotic_sets.py`, `tests/integration/test_bare_body.py`
 (`-k dressed_over_bare`), and `tests/unit/test_clothing_visibility.py`
 (`hideBySlot`).
+
+## Outfits for the shows (VA4)
+
+The chatbot's Private shows (`src/experiences/private/PrivateRoutines.js`) have
+looks made for them, in the same private Erotic group and dressed over her bare
+body (`baseBody: bare-dressed`), so the admin panel offers them.
+
+**Striptease: five pairs.** A striptease takes three layers off, one look down
+at a time through her own looks. Each set is the outfit plus the matching
+lingerie under it: dressed, then the lingerie, then its top alone (`partial`),
+then bare. Generate both looks of a pair for her.
+
+| Dressed                                            | Underneath                                           |
+| -------------------------------------------------- | ---------------------------------------------------- |
+| `show-strip-red`: red slip dress                   | `show-strip-red-under`: red lace balconette & thong  |
+| `show-strip-office`: white blouse & pencil skirt   | `show-strip-office-under`: black lace & stockings    |
+| `show-strip-trench`: trench coat & lingerie        | `show-strip-trench-under`: lace set & stockings      |
+| `show-strip-lbd`: little black dress               | `show-strip-lbd-under`: black bra & thong            |
+| `show-strip-robe`: short robe & garters            | `show-strip-robe-under`: balconette & garters        |
+
+**Table dance: five looks.** `show-table-sequin` (sequin mini and fishnets),
+`show-table-shorts` (denim shorts and bralette), `show-table-lace-body` (red lace
+bodysuit), `show-table-sheer-crop` (sheer crop and thong) and
+`show-table-pink-bikini` (pink micro bikini).
+
+Every garment is a real template (`tests/unit/test_erotic_sets.py` checks each
+look, and that the underneath look is exactly the dressed one's underwear,
+legwear and shoes). All fifteen were built end to end on Forge's synthetic adult
+reference body.
