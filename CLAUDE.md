@@ -73,6 +73,16 @@ B=<scratch>/ref-atlas.vrm      # unique-UV synthetic adult; first build ~5 min
 node tools/qa/body-detail-render.mjs --vrm audits/poses/runs/detail/ref-natural-pumped.vrm --views chest,torso,back
 ```
 
+Outfits end to end (a real job each, the look written to a VRM), then the chatbot's viewer head
+to heels — a look that builds is not a look that fits:
+
+```bash
+.venv/bin/python tools/body_surface/build_outfits.py --body <scratch>/ref-plain.vrm --out <scratch>/looks --prefix show-
+node tools/qa/body-detail-render.mjs --vrm <copy under the chatbot>/<id>.vrm --views full,fullback   # chatbot
+```
+
+One build killed for memory takes the whole run down silently: build that id alone (`--ids`).
+
 The flat view shows the fixture's sparse texels as stripes and gaps. That is the
 fixture, not the paint. The renderer's pelvis close-ups (`seated`, `kneesup`)
 often miss the vulva on this fixture, so use the flat view to judge the vulva.
