@@ -24,7 +24,7 @@ from __future__ import annotations
 import numpy as np
 
 #: Parameters a body state may set (0..1), besides BD4's arousal and openings.
-EFFECT_KEYS = ("flush", "erect", "goosebumps", "sweat")
+EFFECT_KEYS = ("flush", "erect", "goosebumps", "sweat", "cum")
 TAN_TOPS = ("none", "triangle", "bandeau")
 TAN_BOTTOMS = ("none", "thong", "brazilian", "classic")
 
@@ -200,6 +200,61 @@ def _beads(where: np.ndarray, s: float, amount: float):
     return bead, rim
 
 
+# -- semen (BD9) -----------------------------------------------------------------------------------
+
+
+def fluid(where: np.ndarray, marks, spec: dict, s: float):
+    """BD9. Semen: (alpha 0..1, highlight 0..1) per texel, or None when ``cum`` is 0.
+
+    Pooled at the vaginal opening and at the anus, running from one to the other over the perineum
+    and on below, with strands and droplets round them. A thickness field decides everything:
+    thick cores are opaque and pearly, thin edges translucent (her skin shows through), and a
+    highlight sits where it is thickest, so it reads wet under toon shading. Sizes are millimetres
+    on a 1.63 m body, scaled to hers, and every edge wanders with noise so no two look stamped.
+    """
+    amount = _p(spec, "cum")
+    if amount <= 0:
+        return None
+    c = marks.crotch
+    u = where[:, 0] - c[0]
+    front = marks.forward * (where[:, 2] - c[2])
+    dist = np.sqrt((where[:, 1] - c[1]) ** 2 + front ** 2)
+    t = np.where(front >= 0.0, dist, -dist)
+    L = float(spec.get("vulvaLength", 0.062)) * s
+    per = float(spec.get("perineum", 0.032)) * s
+    wobble = _noise3(where, 0.004 * s)
+    fine = _noise3(where, 0.0015 * s)
+
+    def pool(t0, radius):
+        r = np.sqrt(u ** 2 + ((t - t0) * 0.8) ** 2) / (radius * (0.8 + 0.4 * wobble))
+        return np.clip(1.0 - r, 0.0, 1.0) ** 0.6
+
+    vaginal = pool(0.22 * L, 0.011 * s * (0.6 + 0.4 * amount))
+    anal = pool(-per, 0.008 * s * (0.6 + 0.4 * amount))
+    # The run between them and below: a stream down her midline that narrows and breaks up.
+    along = np.clip((0.22 * L - t) / (0.22 * L + per + 0.03 * s), 0.0, 1.0)
+    width = (0.0045 - 0.0025 * along) * s * (0.6 + 0.8 * wobble)
+    stream = (t < 0.22 * L) & (t > -per - 0.03 * s)
+    run = np.where(stream, np.clip(1.0 - np.abs(u) / width, 0.0, 1.0) ** 0.7, 0.0)
+    run *= np.where(along > 0.7, _smoothstep(0.35, 0.6, fine), 1.0)  # breaking into drops lower down
+    # Strands across the vulva and droplets round both openings.
+    strand = np.exp(-((u + 0.004 * s * np.sin(t / (0.006 * s))) / (0.0008 * s)) ** 2) * \
+        ((t > 0.05 * L) & (t < 0.6 * L)) * 0.7
+    cell = 0.003 * s
+    q = where / cell
+    i = np.floor(q)
+    pick = _hash3(i[:, 0], i[:, 1], i[:, 2])
+    near = np.minimum(np.sqrt(u ** 2 + (t - 0.22 * L) ** 2), np.sqrt(u ** 2 + (t + per) ** 2)) < 0.025 * s
+    centre = (i + 0.5) * cell
+    drop = np.where(near & (pick > 0.8 - 0.15 * amount),
+                    np.clip(1.0 - np.linalg.norm(where - centre, axis=1) / (0.0011 * s), 0.0, 1.0), 0.0)
+    thick = np.maximum.reduce([vaginal, anal, run * 0.85, strand, drop * 0.9]) * (0.75 + 0.25 * fine)
+    thick *= min(1.0, 0.5 + 0.6 * amount)
+    alpha = _smoothstep(0.04, 0.45, thick) * (0.65 + 0.33 * _smoothstep(0.3, 0.8, thick))
+    highlight = _smoothstep(0.55, 0.95, thick) * _smoothstep(0.45, 0.8, fine)
+    return alpha, highlight, thick
+
+
 # -- relief ----------------------------------------------------------------------------------------
 
 
@@ -224,7 +279,11 @@ def relief(where: np.ndarray, marks, spec: dict, s: float) -> np.ndarray:
     if sweat > 0:
         bead, _ = _beads(where, s, sweat)
         h += 0.0005 * s * bead
+    wet = fluid(where, marks, spec, s)
+    if wet is not None:
+        h += 0.0012 * s * wet[2]  # semen stands on her skin, thickest in the pools
     return h
 
 
-__all__ = ["EFFECT_KEYS", "TAN_BOTTOMS", "TAN_TOPS", "in_torso", "over", "relief", "under", "wants_torso"]
+__all__ = ["EFFECT_KEYS", "TAN_BOTTOMS", "TAN_TOPS", "fluid", "in_torso", "over", "relief", "under",
+           "wants_torso"]

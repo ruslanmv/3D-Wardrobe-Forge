@@ -294,6 +294,14 @@ def _paint(colour: np.ndarray, where: np.ndarray, marks: Landmarks, spec: dict, 
     for tint, weight in FX.over(where, marks, spec, s):
         out = _tint(out, tint, weight)
         touched |= weight > 0.01
+    # BD9. Semen last: pearly white, translucent where thin, a wet highlight where thick.
+    wet = FX.fluid(where, marks, spec, s)
+    if wet is not None:
+        alpha, highlight, _ = wet
+        cream = np.array([242.0, 240.0, 230.0]) * (0.92 if shade else 1.0)
+        out = out * (1.0 - alpha[:, None]) + cream[None, :] * alpha[:, None]
+        out = _tint(out, [1.08, 1.08, 1.06], highlight * 0.8)
+        touched |= alpha > 0.01
     return np.clip(out, 0, 255), touched
 
 

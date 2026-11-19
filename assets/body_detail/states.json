@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.states.v1",
- "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), arousal (flush, swelling, sheen), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
  "states": {
   "closed": {
    "label": "Closed",
@@ -123,6 +123,19 @@
     "anusOpen": 1.5
    },
    "body": "your anus is stretched open wide around their fist, you are flushed and very aroused"
+  },
+  "cum": {
+   "label": "Cum",
+   "set": {
+    "arousal": 0.9,
+    "flush": 0.7,
+    "erect": 0.8,
+    "sweat": 0.4,
+    "vaginaOpen": 0.5,
+    "anusOpen": 0.4,
+    "cum": 1.0
+   },
+   "body": "cum is pooled at your open vagina and your anus and runs down between them; you are flushed and wet"
   }
  }
 }

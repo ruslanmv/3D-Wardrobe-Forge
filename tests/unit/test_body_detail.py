@@ -306,3 +306,22 @@ def test_stretched_states_open_past_wide_open():
     wide = BD._introitus({**base, "vaginaOpen": 1.0}, 1.0, 1.0)
     stretched = BD._introitus({**base, "vaginaOpen": 1.5}, 1.0, 1.5)
     assert stretched[0] > wide[0] and stretched[1] > wide[1]
+
+
+def test_cum_pools_at_both_openings_and_runs_between():
+    """BD9. Semen is opaque at the vaginal opening and the anus, present on the perineum between them,
+    and absent on her belly; at 0 nothing is drawn."""
+    from wardrobe.vrm import skin_effects as FX
+
+    spec = {**BD.load_presets()["natural"], "cum": 1.0}
+    L, per = spec["vulvaLength"], spec["perineum"]
+    marks = _marks()
+    where = np.array([[0.0, 0.74 + 0.22 * L, 0.004],   # vaginal opening
+                      [0.0, 0.74, -per],               # anus
+                      [0.0, 0.74, -per / 2],           # perineum, between them
+                      [0.06, 0.95, 0.12]])             # belly
+    alpha, highlight, thick = FX.fluid(where, marks, spec, 1.0)
+    assert alpha[0] > 0.5 and alpha[1] > 0.5 and alpha[2] > 0.2
+    assert alpha[3] == 0.0
+    assert FX.fluid(where, marks, {**spec, "cum": 0.0}, 1.0) is None
+    assert "cum" in BD.load_states() and BD.load_states()["cum"]["set"]["cum"] == 1.0

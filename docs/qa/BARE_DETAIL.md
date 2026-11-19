@@ -156,6 +156,19 @@ Painting the torso band is heavier: about 30–40 s per look at 4096, against
 about 8 s for anatomy alone. A parameter at 0 costs nothing. Rendered front,
 chest and back on the reference body: every effect shows where it belongs.
 
+## Semen (BD9)
+
+The `cum` parameter, and the `cum` state, paint semen on her body skin:
+
+- **Where:** pooled at the vaginal opening and at the anus, running between them
+  over the perineum and on below, breaking into drops, with strands across the
+  vulva and droplets round both openings.
+- **How:** a thickness field decides everything. Thick cores are opaque and
+  pearly, thin edges translucent, and a highlight sits where it is thickest. The
+  relief raises it about a millimetre.
+- **Limit:** the mouth is on her face material, which this painter does not
+  touch.
+
 ## Live state switching: skin packs (BD7)
 
 `options.bareStates` (needs `bareDetail`, up to ten) builds a **skin pack**
