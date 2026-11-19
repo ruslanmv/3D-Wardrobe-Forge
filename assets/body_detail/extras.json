@@ -230,6 +230,15 @@
     "stretchMarks": 1.0
    },
    "body": "faint silvery stretch marks cross your hips and the undersides of your breasts"
+  },
+  "tattoo-lower-back-tribal": {
+   "label": "Tribal tattoo on her lower back",
+   "set": {
+    "tattoo": "tribal",
+    "tattooPlace": "lower-back",
+    "tattooInk": "black"
+   },
+   "body": "a black tribal tattoo sweeps across the small of your back, just above your ass, where he sees it when he takes you from behind"
   }
  }
 }

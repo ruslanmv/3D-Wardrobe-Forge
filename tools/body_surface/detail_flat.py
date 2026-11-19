@@ -2,15 +2,16 @@
 
     python tools/body_surface/detail_flat.py --base <dir>/ref-atlas.vrm --out <private dir>
         [--preset natural] [--states closed,pumped] [--extras tattoo-mons-rose+piercings-labia,glitter]
-        [--views pelvis,nipple,torso] [--px 700]
+        [--views pelvis,nipple,torso,back] [--px 700]
 
 Why this exists next to ``detail_preview.py``. A renderer shows the result as a person sees it, but
 a camera on a posed fixture misses small structures easily (thighs in the way, a landmark a few
 centimetres off), and every run takes minutes. This paints in memory exactly as ``paint_detail``
 does (same preset, state and extras merge, same ``_paint``) and plots each painted texel at her own
 coordinates: the vulva unrolled along her midline (``u`` across, ``t`` up the front, negative back
-to the anus), a nipple face-on, or her whole torso front. Seconds per variant, and what you see is
-what the texture holds — use it to tune, then confirm in the app's viewer.
+to the anus), a nipple face-on, her whole torso front, or her back and buttocks from behind.
+Seconds per variant, and what you see is what the texture holds — use it to tune, then confirm
+in the app's viewer.
 
 ``--base`` is the unique-UV reference body ``detail_preview.py`` writes (``ref-atlas.vrm``); never a
 library character. The output is explicit and stays private: never commit it.
@@ -136,6 +137,9 @@ def main(argv=None) -> int:
                     args.out / f"{label}-torso.png",
                     args.px,
                 )
+            if "back" in views:  # BD14. her back and buttocks, as seen from behind (mirrored so left is left)
+                plot(colours, front < 0.02 * s, -(where[:, 0] - marks.axis_x), where[:, 1] - c[1] - 0.08 * s,
+                     0.4 * s, args.out / f"{label}-back.png", args.px)
             print(label, "texels", len(rows))
     return 0
 

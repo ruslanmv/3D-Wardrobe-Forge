@@ -223,6 +223,40 @@ prop mesh attached to her pelvis bone: it is a separate feature, not skin. The
 `stretched` states paint the skin as it looks around one. Breast-shape changes
 and real mesh jewellery also change the mesh, which this painter never does.
 
+## Doggy style: from behind, on all fours (BD14)
+
+States for the all-fours view, where her buttocks, lower back, both openings
+and inner thighs are what is seen. All of them suit a hairless preset
+(`natural`, `soft-pink`, `warm`, `defined`, `outie`, `puffy`). None of them
+carries handprints or grip marks: the owner asked for none.
+
+| State                   | Both open | What the cum does                                                    |
+| ----------------------- | --------- | -------------------------------------------------------------------- |
+| `doggy-open-cum`        | yes       | pooled on both openings, running between them, dripping forward      |
+| `doggy-double-creampie` | yes       | both filled (`cumInside`, `anusCumInside`) and leaking forward       |
+| `doggy-gaping-cum`      | 1.5 each  | both stretched gaping and full, more pooled round them               |
+| `doggy-cum-covered`     | yes       | both dripping, plus ropes across her back and buttocks (`cumBack`)   |
+| `doggy-pumped-creampie` | yes       | pumped (BD13) labia, both filled, running over the swollen lips      |
+| `doggy-finish`          | yes       | everything above at once                                             |
+| `doggy-creampie`, `anal-creampie`, `cum-on-back` | one | one opening, or her back |
+
+New fields (`skin_effects.fluid`):
+
+- `cumDrip`: gravity on all fours pulls towards her belly, so what leaks runs
+  forward over her vulva and clit, meanders, breaks into drops, and hangs off
+  her mons.
+- `anusCumInside`: the opened anus, at BD4's own size, is filled and leaks
+  forward over the perineum.
+- `cumBack` (`_on_her_back`): lumpy ropes across her lower back and buttocks,
+  tapering and breaking up at their ends, a pool in the small of her back, and
+  thrown droplets.
+
+The new extra `tattoo-lower-back-tribal` puts a symmetric black tribal
+(`tattoo: tribal`, `tattooPlace: lower-back`) across the small of her back,
+above her cleft: the view from behind. Wear it with a doggy skin pack
+(`bareExtras` with `bareStates`). `spankRed` and `grips` exist in the painter,
+but no state uses them.
+
 ## Semen (BD9)
 
 The `cum` parameter, and the `cum` state, paint semen on her body skin:

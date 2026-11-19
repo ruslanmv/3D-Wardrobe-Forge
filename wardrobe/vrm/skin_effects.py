@@ -24,7 +24,22 @@ from __future__ import annotations
 import numpy as np
 
 #: Parameters a body state may set (0..1), besides BD4's arousal and openings.
-EFFECT_KEYS = ("flush", "erect", "goosebumps", "sweat", "cum", "cumInside", "oil")
+EFFECT_KEYS = (
+    "flush",
+    "erect",
+    "goosebumps",
+    "sweat",
+    "cum",
+    "cumInside",
+    "oil",
+    # BD14. From behind, on all fours: semen on her back, a creampie dripping the way gravity pulls
+    # her on all fours, an anal creampie, grip marks on her hips and both cheeks spanked red.
+    "cumBack",
+    "cumDrip",
+    "anusCumInside",
+    "grips",
+    "spankRed",
+)
 TAN_TOPS = ("none", "triangle", "bandeau")
 TAN_BOTTOMS = ("none", "thong", "brazilian", "classic")
 
@@ -49,6 +64,7 @@ MARK_KEYS = (
     "tattoo",
     "tattooText",
     "tattooInk",
+    "tattooPlace",
     "hearts",
     "glitter",
     "bodyPaint",
@@ -56,7 +72,9 @@ MARK_KEYS = (
     "stretchMarks",
 )
 #: BD13. The designs a mons tattoo can be (``tattoo``), and the piercings that can be worn.
-TATTOOS = ("heart", "rose", "butterfly", "text")
+TATTOOS = ("heart", "rose", "butterfly", "text", "tribal")
+#: Where a BD13 tattoo goes: her mons (above the vulva) or, BD14, the small of her back.
+TATTOO_PLACES = ("mons", "lower-back")
 PIERCINGS = ("nipples", "nipple-rings", "navel", "hood", "hood-bar", "christina", "labia")
 
 
@@ -67,9 +85,12 @@ def wants_torso(spec: dict) -> bool:
         any(_p(spec, k) > 0 for k in ("kisses", "hickeys", "spank", "freckles", "pores"))
         or bool(spec.get("writing"))
         or bool(spec.get("piercings"))
+        or spec.get("tattoo") == "tribal"
+        or spec.get("tattooPlace") == "lower-back"
         or any(_p(spec, k) > 0 for k in ("hearts", "glitter", "bodyPaint", "stretchMarks"))
     )
-    return tanned or marked or any(_p(spec, k) > 0 for k in ("flush", "goosebumps", "sweat", "oil"))
+    behind = any(_p(spec, k) > 0 for k in ("cumBack", "grips", "spankRed"))
+    return tanned or marked or behind or any(_p(spec, k) > 0 for k in ("flush", "goosebumps", "sweat", "oil"))
 
 
 def in_torso(corners: np.ndarray, marks, s: float) -> np.ndarray:
@@ -196,6 +217,25 @@ def _marks(where, marks, spec, s) -> list:
         layers.append(
             ([1.0, 0.78, 0.78], _handprint(where, marks, spots["right-buttock"][0], s) * spank * 0.85)
         )
+    red = _p(spec, "spankRed")
+    if red > 0:
+        # BD14. Both cheeks spanked red: a deep, blotchy blush over each and a handprint on each.
+        # (Two prints offset on one cheek read as stripes at texture scale, so one each.)
+        for name in ("left-buttock", "right-buttock"):
+            centre, _ = spots[name]
+            d, ok = _near_spot(where, centre, False, marks, 0.11 * s)
+            blush = np.where(ok, 1.0 - _smoothstep(0.02 * s, 0.09 * s, d), 0.0)
+            blush = blush * (0.7 + 0.3 * _noise3(where, 0.02 * s))
+            layers.append(([1.0, 0.8, 0.8], blush * red * 0.7))
+            # Lower on the cheek and turned so the fingers point up and out, as a hand from behind lands.
+            outward = 0.45 if centre[0] > marks.axis_x else -0.45
+            print_at = centre + np.array([0.0, -0.035, 0.0]) * s
+            layers.append(
+                ([0.97, 0.7, 0.72], _handprint(where, marks, print_at, s, 0.8, outward) * red * 0.8)
+            )
+    grips = _p(spec, "grips")
+    if grips > 0:
+        layers.append(([0.98, 0.76, 0.77], _grips(where, marks, s) * grips * 0.8))
     kisses = _p(spec, "kisses")
     if kisses > 0:
         colour = np.asarray(spec.get("kissColor", [0.62, 0.18, 0.22]), dtype=np.float64)
@@ -249,11 +289,14 @@ def _kiss(where, marks, centre, front, s):
     return np.where(ok, np.maximum(upper, lower) * lines, 0.0)
 
 
-def _handprint(where, marks, centre, s):
-    """A spank: a palm and four fingers, pink and soft-edged on one buttock."""
-    d, ok = _near_spot(where, centre, False, marks, 0.13 * s)
-    x = (where[:, 0] - centre[0]) / s
-    y = (where[:, 1] - centre[1]) / s
+def _handprint(where, marks, centre, s, size=1.0, angle=0.0):
+    """A spank: a palm and four fingers, pink and soft-edged on one buttock. BD14: ``size`` scales it
+    and ``angle`` (radians) turns it, so a hand can come in from the side onto either cheek."""
+    d, ok = _near_spot(where, centre, False, marks, 0.13 * s * size)
+    dx = (where[:, 0] - centre[0]) / (s * size)
+    dy = (where[:, 1] - centre[1]) / (s * size)
+    x = dx * np.cos(angle) + dy * np.sin(angle)
+    y = -dx * np.sin(angle) + dy * np.cos(angle)
     hand = 1.0 - _smoothstep(0.75, 1.0, (x / 0.045) ** 2 + ((y + 0.01) / 0.05) ** 2)
     for k, dx in enumerate((-0.032, -0.011, 0.011, 0.032)):
         length = (0.07, 0.08, 0.078, 0.06)[k]
@@ -262,6 +305,24 @@ def _handprint(where, marks, centre, s):
         hand = np.maximum(hand, across * along)
     soft = 0.75 + 0.25 * _noise3(where, 0.01 * s)
     return np.where(ok, hand * soft, 0.0)
+
+
+def _grips(where, marks, s):
+    """BD14. Where hands held her hips from behind: four fingertip ovals down the side of each hip and
+    a thumb print on either side of her lower back."""
+    c = marks.crotch
+    side = _front(where, marks)
+    out = np.zeros(len(where))
+    for sign in (-1.0, 1.0):
+        x0 = marks.axis_x + sign * 0.125 * s
+        for k in range(4):
+            cx, cy = x0 + sign * 0.006 * k * s, c[1] + (0.06 + 0.022 * k) * s
+            r = np.hypot((where[:, 0] - cx) / (0.008 * s), (where[:, 1] - cy) / (0.011 * s))
+            out = np.maximum(out, np.where(side < 0.04 * s, 1.0 - _smoothstep(0.6, 1.0, r), 0.0))
+        thumb_x, thumb_y = marks.axis_x + sign * 0.06 * s, c[1] + 0.13 * s
+        r = np.hypot((where[:, 0] - thumb_x) / (0.012 * s), (where[:, 1] - thumb_y) / (0.009 * s))
+        out = np.maximum(out, np.where(side < -0.02 * s, 1.0 - _smoothstep(0.6, 1.0, r), 0.0))
+    return out * (0.75 + 0.25 * _noise3(where, 0.006 * s))
 
 
 _FONT_CACHE: dict = {}
@@ -368,6 +429,31 @@ def _design(name: str, text: str = "") -> np.ndarray:
             draw.line((cx, cy - 140, cx, cy + 150), fill=255, width=22)
             draw.line((cx, cy - 140, cx - 60, cy - 230), fill=255, width=8)
             draw.line((cx, cy - 140, cx + 60, cy - 230), fill=255, width=8)
+    elif name == "tribal-line":
+        # BD14. A lower-back tribal: symmetric about her spine — a spearhead in the middle, and on
+        # each side two tapered blades sweeping out from it, the upper one ending in a hooked curl.
+        wide = Image.new("L", (1024, 384), 0)
+        half = ImageDraw.Draw(wide)
+
+        def blade(x0, y0, length, rise, thickness, bend):
+            t = np.linspace(0.0, 1.0, 60)
+            x = x0 + length * t
+            y = y0 - rise * np.sin(np.pi * t * bend)
+            w = thickness * np.sin(np.pi * np.clip(t * 1.05, 0, 1)) ** 0.8 + 2
+            top = list(zip(x, y - w, strict=True))
+            bottom = list(zip(x[::-1], (y + w)[::-1], strict=True))
+            half.polygon(top + bottom, fill=255)
+
+        blade(548, 196, 420, 120, 34, 0.95)
+        blade(540, 236, 330, -70, 24, 0.8)
+        blade(600, 150, 170, 60, 14, 1.0)
+        half.arc((880, 40, 990, 150), 120, 400, fill=255, width=22)  # the curl at the upper blade's end
+        both = np.maximum(np.asarray(wide), np.asarray(wide)[:, ::-1])
+        image = Image.fromarray(both)
+        ImageDraw.Draw(image).polygon([(512, 40), (566, 196), (512, 352), (458, 196)], fill=255)
+        out = np.asarray(image.resize((512, 192), Image.LANCZOS), dtype=np.float64) / 255.0
+        _DESIGNS[key] = out
+        return out
     elif name == "text":
         try:
             font = ImageFont.truetype("DejaVuSerif-BoldItalic.ttf", 120)
@@ -413,6 +499,8 @@ def _tattoo(where, marks, spec, design, s):
     """BD13. A tattoo on her mons, just above her vulva: black linework over a colour, healed soft."""
     if design not in TATTOOS:
         return []
+    if spec.get("tattooPlace", "mons") == "lower-back" or design == "tribal":
+        return _lower_back_tattoo(where, marks, spec, design, s)
     across, up, ok = _mons(where, marks, s)
     L = float(spec.get("vulvaLength", 0.062)) * s
     ink = [0.2, 0.19, 0.24] if spec.get("tattooInk", "black") == "black" else [0.55, 0.3, 0.35]
@@ -431,6 +519,35 @@ def _tattoo(where, marks, spec, design, s):
     if design == "rose":
         layers.append(([0.55, 0.8, 0.55], np.where(ok, _sample(_design("rose-leaf"), row, col) * 0.7, 0.0)))
     layers.append((ink, np.where(ok, _sample(_design(f"{design}-line"), row, col) * 0.92, 0.0)))
+    return layers
+
+
+def _lower_back_tattoo(where, marks, spec, design, s):
+    """BD14. A tattoo across the small of her back, centred on her spine above her cleft: the view
+    from behind on all fours. Laid out by her own lateral and vertical position, seen from behind."""
+    ink = [0.2, 0.19, 0.24] if spec.get("tattooInk", "black") == "black" else [0.55, 0.3, 0.35]
+    ok = _front(where, marks) < -0.02 * s
+    lateral = -(where[:, 0] - marks.axis_x)  # from behind, her left is on the left
+    centre_y = marks.crotch[1] + 0.15 * s
+    if design == "tribal":
+        mask = _design("tribal-line")
+        width = 0.2 * s
+    elif design == "text":
+        mask = _design("text", str(spec.get("tattooText", "Yours"))[:16])
+        width = 0.12 * s
+    else:
+        mask = _design(f"{design}-line")
+        width = 0.07 * s
+    height = width * mask.shape[0] / mask.shape[1]
+    cover = _sample(mask, 0.5 - (where[:, 1] - centre_y) / height, lateral / width + 0.5)
+    layers = []
+    if design in ("heart", "rose", "butterfly"):
+        colours = {"heart": [0.95, 0.38, 0.42], "rose": [0.92, 0.32, 0.36], "butterfly": [0.55, 0.62, 1.0]}
+        fill = _sample(
+            _design(f"{design}-fill"), 0.5 - (where[:, 1] - centre_y) / height, lateral / width + 0.5
+        )
+        layers.append((colours[design], np.where(ok, fill * 0.75, 0.0)))
+    layers.append((ink, np.where(ok, cover * 0.92, 0.0)))
     return layers
 
 
@@ -747,7 +864,8 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
     """
     amount = _p(spec, "cum")
     inside = _p(spec, "cumInside")
-    if amount <= 0 and inside <= 0:
+    back, drip, anal_in = _p(spec, "cumBack"), _p(spec, "cumDrip"), _p(spec, "anusCumInside")
+    if max(amount, inside, back, drip, anal_in) <= 0:
         return None
     c = marks.crotch
     u = where[:, 0] - c[0]
@@ -806,9 +924,72 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
             0.0,
         )
         thick = np.maximum(thick, np.maximum(filled, spill * 0.9) * inside)
+    if drip > 0:
+        # BD14. On all fours gravity pulls towards her belly: what leaks from her runs forward over
+        # her vulva — between her inner lips, over her clit — and hangs in a drop off her mons.
+        lead = (t - 0.22 * L) / (L * 0.85 + 0.012 * s)
+        wander = 0.0018 * s * np.sin(t / (0.007 * s)) + 0.0008 * s * np.sin(t / (0.0023 * s) + 1.3)
+        width = (0.0022 - 0.0012 * np.clip(lead, 0, 1)) * s * (0.7 + 0.6 * wobble)
+        run = np.where(
+            (lead > 0) & (lead < 1), np.clip(1.0 - np.abs(u - wander) / width, 0.0, 1.0) ** 0.7, 0.0
+        )
+        run *= np.where(lead > 0.55, _smoothstep(0.35, 0.6, fine), 1.0)  # breaking into drops further on
+        hang = np.hypot(u - 0.001 * s, t - (1.04 * L + 0.012 * s)) / (0.0038 * s * (0.8 + 0.4 * wobble))
+        hang = np.clip(1.0 - hang, 0, 1) ** 0.5
+        thick = np.maximum(thick, np.maximum(run * 0.85, hang) * drip)
+    if anal_in > 0:
+        # BD14. An anal creampie: her opened anus (BD4's size) filled, leaking forward over her
+        # perineum towards her vulva, as it does on all fours.
+        anus_open = float(np.clip(float(spec.get("anusOpen", 0.0)), 0.0, 1.5))
+        ra = float(spec.get("anusRadius", 0.0065)) * s * (1.0 + 0.35 * anus_open)
+        r = np.hypot(u, t + per) / (ra * (0.3 + 0.35 * anus_open))
+        filled = np.clip(1.0 - _smoothstep(0.6, 1.0, r * (0.92 + 0.16 * wobble)), 0.0, 1.0)
+        lead = (t + per) / (per * 0.9)
+        leak = np.where(
+            (lead > 0) & (lead < 1),
+            np.clip(1.0 - np.abs(u) / (0.003 * s * (1.0 - 0.5 * lead) * (0.7 + 0.6 * wobble)), 0, 1),
+            0.0,
+        )
+        thick = np.maximum(thick, np.maximum(filled, leak * 0.85 * (1.0 - 0.4 * lead)) * anal_in)
+    if back > 0:
+        thick = np.maximum(thick, _on_her_back(where, marks, s, back, wobble, fine))
     alpha = _smoothstep(0.04, 0.45, thick) * (0.65 + 0.33 * _smoothstep(0.3, 0.8, thick))
     highlight = _smoothstep(0.55, 0.95, thick) * _smoothstep(0.45, 0.8, fine)
     return alpha, highlight, thick
+
+
+def _on_her_back(where, marks, s, amount, wobble, fine):
+    """BD14. Semen across her lower back and buttocks, as when he finishes on her from behind: ropes
+    laid across her (each its own wave, thick in the middle and thinning to its ends), a pool in the
+    small of her back, and droplets thrown off round them."""
+    c = marks.crotch
+    behind = _front(where, marks) < -0.03 * s
+    x = where[:, 0] - marks.axis_x
+    y = where[:, 1] - c[1]
+    thick = np.zeros(len(where))
+    for k in range(2 + int(round(3 * amount))):
+        y0 = (0.02 + 0.04 * k) * s
+        reach = (0.05 + 0.035 * ((k * 7) % 3)) * s
+        centre = y0 + 0.012 * s * np.sin(x / (0.03 * s) + 1.7 * k)
+        # Thick where it landed first, thinning and breaking up towards its ends; lumpy along it.
+        taper = 1.0 - np.clip(np.abs(x - 0.01 * s * (k % 2)) / reach, 0, 1) ** 1.5
+        lumps = 0.6 + 0.8 * _noise3(where * np.array([0.4, 1.0, 1.0]), 0.008 * s)
+        width = 0.0048 * s * lumps * taper
+        rope = np.exp(-(((y - centre) / (width + 1e-6)) ** 2)) * (taper > 0)
+        rope *= np.where(taper < 0.35, _smoothstep(0.4, 0.65, fine), 1.0)
+        thick = np.maximum(thick, rope * (0.75 + 0.25 * fine))
+    pool = (
+        np.clip(1.0 - np.hypot(x / (0.022 * s), (y - 0.14 * s) / (0.016 * s)) / (0.8 + 0.4 * wobble), 0, 1)
+        ** 0.6
+    )
+    thick = np.maximum(thick, pool)
+    cell = 0.004 * s
+    i = np.floor(where / cell)
+    pick = _hash3(i[:, 0], i[:, 1], i[:, 2])
+    dots = np.clip(1.0 - np.linalg.norm(where - (i + 0.5) * cell, axis=1) / (0.0012 * s), 0, 1)
+    region = (np.abs(x) < 0.12 * s) & (y > -0.01 * s) & (y < 0.2 * s)
+    thick = np.maximum(thick, np.where(region & (pick > 0.9 - 0.08 * amount), dots * 0.9, 0.0))
+    return np.where(behind, thick * min(1.0, 0.5 + 0.6 * amount), 0.0)
 
 
 # -- relief ----------------------------------------------------------------------------------------
@@ -857,6 +1038,7 @@ __all__ = [
     "PIERCINGS",
     "TAN_TOPS",
     "TATTOOS",
+    "TATTOO_PLACES",
     "fluid",
     "in_torso",
     "over",

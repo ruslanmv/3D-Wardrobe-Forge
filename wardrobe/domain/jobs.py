@@ -265,6 +265,11 @@ class CreateJobRequest(BaseModel):
                               or self.options.ensure_foundation or self.options.foundation_color
                               or self.outfit.layers or self.outfit.color):
             raise ValueError("bare mode accepts no garments, colours or body surface")
+        if self.options.bare_states and self.body_art:
+            # BD7. A skin pack is painted before body art is applied, so a state's tiles would
+            # carry no tattoo: switching state would erase one that lands in them. Refused
+            # until the pack composites the art; painted marks (bareExtras) are fine.
+            raise ValueError("bareStates (a skin pack) cannot be combined with bodyArt yet")
         check_items(self.body_art, self.body_art_remove)
         changes_a_look = self.body_art or self.body_art_remove or self.options.foundation_color
         if self.outfit is None and not changes_a_look:

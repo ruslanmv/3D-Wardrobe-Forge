@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.states.v1",
- "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
  "states": {
   "closed": {
    "label": "Closed",
@@ -197,6 +197,141 @@
     "erect": 0.85
    },
    "body": "your oiled body is aroused: slick and shining all over, nipples hard, your pussy flushed, wet and starting to open"
+  },
+  "cum-on-back": {
+   "label": "Cum on her back",
+   "set": {
+    "arousal": 0.85,
+    "vaginaOpen": 0.5,
+    "anusOpen": 0.0,
+    "flush": 0.5,
+    "erect": 0.7,
+    "sweat": 0.5,
+    "cumBack": 1.0
+   },
+   "body": "he has come on your back: thick ropes of cum across your lower back and ass, a pool in the small of your back, your pussy still open below them"
+  },
+  "doggy-creampie": {
+   "label": "Doggy creampie",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 0.9,
+    "anusOpen": 0.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "cumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "he came inside you from behind: your pussy is open and full of cum, and on all fours it runs forward over your lips and your clit and hangs in a drop"
+  },
+  "anal-creampie": {
+   "label": "Anal creampie",
+   "set": {
+    "arousal": 0.9,
+    "vaginaOpen": 0.3,
+    "anusOpen": 1.0,
+    "flush": 0.5,
+    "erect": 0.7,
+    "sweat": 0.4,
+    "anusCumInside": 1.0
+   },
+   "body": "he came in your ass: your anus is open and filled with cum, leaking down over your perineum towards your pussy"
+  },
+  "doggy-finish": {
+   "label": "Doggy: the full finish",
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.8,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.8,
+    "cumInside": 1.0,
+    "cumDrip": 1.0,
+    "anusCumInside": 1.0,
+    "cumBack": 1.0,
+    "cum": 1.0
+   },
+   "body": "you have been used completely from behind: both holes open and dripping cum, more pooled round them and across your back and ass, your skin shining with sweat"
+  },
+  "doggy-open-cum": {
+   "label": "Doggy: both open, cum",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 0.85,
+    "anusOpen": 0.8,
+    "cum": 1.0,
+    "cumDrip": 0.7
+   },
+   "body": "you are on all fours with both holes open, your pussy and your ass, cum pooled on both and running between them, dripping forward over your lips"
+  },
+  "doggy-double-creampie": {
+   "label": "Doggy: double creampie",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 1.0,
+    "anusOpen": 1.0,
+    "cumInside": 1.0,
+    "anusCumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "he filled both your holes from behind: your pussy and your ass are open and full of cum, leaking forward over your lips and your clit"
+  },
+  "doggy-gaping-cum": {
+   "label": "Doggy: gaping and full",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 1.5,
+    "anusOpen": 1.5,
+    "cum": 1.0,
+    "cumInside": 1.0,
+    "anusCumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "both your holes are stretched gaping open from behind and full of cum, more pooled round them and dripping"
+  },
+  "doggy-cum-covered": {
+   "label": "Doggy: covered in cum",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "vaginaOpen": 0.9,
+    "anusOpen": 0.9,
+    "cum": 1.0,
+    "cumInside": 0.8,
+    "anusCumInside": 0.8,
+    "cumDrip": 1.0,
+    "cumBack": 1.0
+   },
+   "body": "you are covered in cum from behind: both holes open and dripping, ropes of it across your back and ass"
+  },
+  "doggy-pumped-creampie": {
+   "label": "Doggy: pumped and filled",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.7,
+    "erect": 0.9,
+    "sweat": 0.6,
+    "pumped": 1.0,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.9,
+    "cumInside": 1.0,
+    "anusCumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "your pumped pussy is swollen, engorged and open from behind, both your holes filled with cum running forward over your swollen lips"
   }
  }
 }

@@ -374,6 +374,12 @@ def test_bare_accepts_tattoos_now():
                "options": {"baseBody": "bare", "private": True},
                "bodyArt": [{"design": "nape-crescent-01", "placement": "lower-back"}]}
     CreateJobRequest.model_validate(payload)
+    # A skin pack is painted before body art: switching state would erase the tattoo, so refused.
+    packed = {**payload, "options": {**payload["options"], "bareDetail": "natural",
+                                     "bareStates": ["closed", "aroused"]}}
+    with pytest.raises(ValueError, match="bareStates"):
+        CreateJobRequest.model_validate(packed)
+    CreateJobRequest.model_validate({**packed, "bodyArt": []})
 
 
 def test_pumped_swells_the_labia_and_glans_and_raises_them():
@@ -449,3 +455,47 @@ def test_oil_glitter_paint_and_stretch_marks_stay_on_her_torso():
     assert FX._stretch_marks(away, marks, 1.0)[0] == 0.0
     spec = {"oil": 1.0}
     assert FX.wants_torso(spec) and FX.wants_torso({"glitter": 1.0}) and FX.wants_torso({"stretchMarks": 0.5})
+
+
+def test_doggy_states_open_both_holes_with_cum_and_no_hand_marks():
+    """BD14. The doggy skins: both holes open, cum, and no spank or grip marks in any state."""
+    states = BD.load_states()
+    for name in ("doggy-open-cum", "doggy-double-creampie", "doggy-gaping-cum", "doggy-cum-covered",
+                 "doggy-pumped-creampie"):
+        values = states[name]["set"]
+        assert values["vaginaOpen"] > 0 and values["anusOpen"] > 0, name
+        assert any(values.get(k, 0) > 0 for k in ("cum", "cumInside", "anusCumInside")), name
+    for name, state in states.items():
+        assert not state["set"].get("spankRed") and not state["set"].get("grips"), name
+
+
+def test_from_behind_semen_lands_where_aimed():
+    """BD14. cumBack is on her lower back only; cumDrip runs forward over her vulva; anusCumInside
+    fills the opened anus."""
+    from wardrobe.vrm import skin_effects as FX
+
+    base = BD.load_presets()["natural"]
+    marks = _marks()
+    L, per = base["vulvaLength"], base["perineum"]
+    back = np.array([[0.0, 0.74 + 0.14, -0.12], [0.0, 0.74 + 0.14, 0.12]])  # small of her back; belly
+    alpha, _, _ = FX.fluid(back, marks, {**base, "cumBack": 1.0}, 1.0)
+    assert alpha[0] > 0.5 and alpha[1] == 0.0
+    over_lips = np.array([[0.0, 0.74 + 0.5 * L, 0.004]])
+    assert FX.fluid(over_lips, marks, {**base, "cumDrip": 1.0}, 1.0)[0][0] > 0.3
+    anus = np.array([[0.0, 0.74, -per]])
+    spec = {**base, "anusOpen": 1.0, "anusCumInside": 1.0}
+    assert FX.fluid(anus, marks, spec, 1.0)[0][0] > 0.6
+    assert FX.fluid(anus, marks, base, 1.0) is None
+
+
+def test_tribal_tattoo_is_on_her_lower_back_only():
+    """BD14. The tribal sits across the small of her back, seen from behind; nothing on her front."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    spec = {**BD.load_presets()["natural"], **BD.load_extras()["tattoo-lower-back-tribal"]["set"]}
+    where = np.array([[0.0, 0.74 + 0.15, -0.12], [0.0, 0.74 + 0.15, 0.12]])  # the spearhead; her belly
+    layers = FX._tattoo(where, marks, spec, "tribal", 1.0)
+    ink = layers[-1][1]
+    assert ink[0] > 0.5 and ink[1] == 0.0
+    assert FX.wants_torso(spec)

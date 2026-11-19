@@ -122,6 +122,8 @@ def load_extras(path: Path | str | None = None) -> dict[str, dict]:
             raise BodyDetailError(f"extra {name}: unknown piercings {sorted(unknown)}")
         if values.get("tattoo") and values["tattoo"] not in FX.TATTOOS:
             raise BodyDetailError(f"extra {name}: unknown tattoo {values['tattoo']!r}")
+        if values.get("tattooPlace", "mons") not in FX.TATTOO_PLACES:
+            raise BodyDetailError(f"extra {name}: unknown tattoo place {values['tattooPlace']!r}")
     return extras
 
 
