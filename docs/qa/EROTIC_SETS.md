@@ -87,7 +87,7 @@ then bare. Generate both looks of a pair for her.
 | `show-strip-robe`: short robe & garters            | `show-strip-robe-under`: balconette & garters        |
 
 **Table dance: five looks.** `show-table-sequin` (sequin mini and fishnets),
-`show-table-shorts` (denim shorts and bralette), `show-table-lace-body` (red lace
+`show-table-leather` (leather mini and lace bra), `show-table-lace-body` (red lace
 bodysuit), `show-table-sheer-crop` (sheer crop and thong) and
 `show-table-pink-bikini` (pink micro bikini).
 
@@ -95,3 +95,13 @@ Every garment is a real template (`tests/unit/test_erotic_sets.py` checks each
 look, and that the underneath look is exactly the dressed one's underwear,
 legwear and shoes). All fifteen were built end to end on Forge's synthetic adult
 reference body.
+Each was then rendered in the chatbot's own viewer, front and back
+(`tools/qa/body-detail-render.mjs --views full,fullback`). Two things that run
+found:
+
+- The red lace bodysuit killed its worker for memory: `lingerie/fit.py`'s
+  `_depth` took every placed vertex against every body sample in one array
+  (9.4 GiB on this body). It now works in blocks with the same result.
+- Denim shorts with a bralette or a plunge bra did not sit on this body (the
+  shorts' waist rode over the band, a loop hung at the thigh), so the club look
+  is a leather mini and a lace bra.
