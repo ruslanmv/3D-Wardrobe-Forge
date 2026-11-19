@@ -28,7 +28,7 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   `.venv/bin/python -m pytest tests/unit/test_body_detail.py tests/integration/test_bare_body.py -q`.
 - Plain `python` lacks the deps (`pydantic_settings`). Always use `.venv/bin/python`.
 
-## Bare bodies and body detail (BD1–BD20): where things are
+## Bare bodies and body detail (BD1–BD21): where things are
 
 | What                                       | Where                                                              |
 | ------------------------------------------ | ------------------------------------------------------------------ |
@@ -39,6 +39,8 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
 | Presets / states / extras (data)           | `assets/body_detail/presets.json`, `states.json`, `extras.json`     |
 | Job options (`bareDetail`, `bareState`, `bareExtras`, `bareStates`) | `wardrobe/domain/jobs.py` |
 | Erotic outfits, partial undress            | `wardrobe/body_surface/outfit_dictionary.py`, `docs/qa/EROTIC_SETS.md` |
+| What a client is told (BD21): each bare look's `body`, the catalogue | `JobOptions.body_summary`, `GET /v1/body-surface/catalog` (admin or grant) |
+| Make every private look for every character (BD21) | `tools/prebuild_private.py` (packs of ≤10 states covering all, extras sets) |
 | Full notes                                 | `docs/qa/BARE_DETAIL.md` (read before changing the painter)         |
 
 Rules that break things when missed:
@@ -54,6 +56,9 @@ Rules that break things when missed:
   anything else.
 - **Brightening tints whiten:** on bright skin a flat multiplier > 1 clips red
   first and turns cyan. Lift blue and green more than red (see `_oil`).
+- **A new state is made by the generator without edits** (an `other` pack), but give it a
+  group in `tools/prebuild_private.py` `GROUPS` so it lands in the pack its scene uses.
+  Each detailed bare look is listed separately (`plan: bare-<key>`); never collapse them.
 - **Detail needs clearance:** `eligibility.detail_clearance` needs a full review
   (packet + ≥40 chars of evidence) or the synthetic reference. Never loosen it.
 - Previews of explicit detail are private: never commit them, never serve them
@@ -106,7 +111,7 @@ often miss the vulva on this fixture, so use the flat view to judge the vulva.
 
 ## Conventions
 
-- **Batch prefixes** in comments and docs: `BD` body detail (BD20 latest), `ES`
+- **Batch prefixes** in comments and docs: `BD` body detail (BD21 latest), `ES`
   erotic sets, `W`/`WF` wardrobe. Comments say why, at length.
 - **PRs and commits for this owner:** PR title and body are just `Updates`.
   Commit messages are `Updates of quality`, and merge commits `Updates`. Do not

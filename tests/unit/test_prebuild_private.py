@@ -1,0 +1,72 @@
+"""BD21. The private-look generator: every state made, in packs Forge accepts, never a rebuild."""
+
+import importlib.util
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).parents[2]
+spec = importlib.util.spec_from_file_location("prebuild_private", ROOT / "tools/prebuild_private.py")
+pp = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(pp)
+
+STATES = list(json.loads((ROOT / "assets/body_detail/states.json").read_text())["states"])
+EXTRAS = set(json.loads((ROOT / "assets/body_detail/extras.json").read_text())["extras"])
+
+
+def test_every_state_is_in_a_pack_forge_accepts():
+    packs = pp.state_groups(STATES)
+    assert {s for states in packs.values() for s in states} == set(STATES)
+    for states in packs.values():
+        assert states[0] == "closed" and len(states) <= pp.MAX_STATES and len(set(states)) == len(states)
+
+
+def test_a_state_forge_adds_later_is_still_made():
+    packs = pp.state_groups(STATES + [f"new-state-{i}" for i in range(12)])
+    assert "other" in packs and "other-2" in packs
+    assert sum(len(v) - 1 for k, v in packs.items() if k.startswith("other")) == 12
+
+
+def test_extras_sets_are_real_and_within_the_limit():
+    for extras in pp.EXTRAS_SETS.values():
+        assert set(extras) <= EXTRAS and len(extras) <= pp.MAX_EXTRAS
+
+
+def test_plan_skips_a_character_not_declared_adult_and_sends_the_studio_body():
+    packs = pp.state_groups(STATES)
+    pairs = pp.plan([{"slug": "a", "depictsAdult": True}, {"slug": "b"}], ["natural"], packs, pp.EXTRAS_SETS)
+    assert all(p.get("skip") for p in pairs if p["slug"] == "b")
+    assert not any(p.get("skip") for p in pairs if p["slug"] == "a")
+    body = pp.job_body(next(p for p in pairs if p["extras"]))
+    assert body["outfit"]["templateId"] == "body-bare-v1"
+    assert body["options"]["baseBody"] == "bare" and body["options"]["bareDetail"] == "natural"
+    assert body["options"]["bareStates"] and body["options"]["bareExtras"]
+
+
+class Forge:
+    def __init__(self):
+        self.sent = []
+
+    def call(self, path, body=None):
+        if body is not None:
+            self.sent.append(body)
+            return {"id": "j1", "state": "rejected", "reason": "body_surface_not_permitted", "error": "no"}
+        return {"looks": [{"body": {"detail": "natural", "states": ["open", "closed"], "extras": []}}]}
+
+
+def test_a_listed_body_is_not_rebuilt_and_a_gate_refusal_is_reported_not_failed():
+    forge = Forge()
+    held = pp.listed(forge, "a")
+    present = pp.build(
+        forge,
+        {"slug": "a", "preset": "natural", "look": "x", "states": ["closed", "open"], "extras": []},
+        held,
+        10,
+    )
+    assert present["result"] == "present" and not forge.sent
+    refused = pp.build(
+        forge,
+        {"slug": "a", "preset": "natural", "look": "y", "states": ["closed", "cum"], "extras": []},
+        held,
+        10,
+    )
+    assert refused["result"] == "refused" and refused["reasonCode"] == "body_surface_not_permitted"

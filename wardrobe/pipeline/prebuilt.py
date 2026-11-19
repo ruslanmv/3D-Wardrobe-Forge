@@ -406,6 +406,7 @@ async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, inclu
                 outputSha256=item.get("outputSha256"),
                 origin=item.get("origin"),
                 garments=item.get("garments") if item.get("origin") == "operator-import" else None,
+                body=item.get("body") if isinstance(item.get("body"), dict) else None,
             )
         )
     return merged
@@ -435,6 +436,15 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
         "sourceSha256": record.look.source_avatar_hash,
         "outputSha256": record.look.output_sha256,
     }
+    # BD21. A bare look says what its body is (preset, states, extras), so a list read after a
+    # restart still tells a client what she can show in it.
+    body = request.options.body_summary()
+    if body:
+        item["body"] = body
+        # BD21. Each detailed bare look is its own look: preset, states and extras tell them apart
+        # (``plan`` is in LIST_FIELDS). Without it every bare look shared one identity, the first
+        # was kept and the rest never reached her wardrobe — a closet of one body.
+        item["plan"] = "bare-" + key
     # RU4. A layered stack is told apart by its plan key even when it also names a top-level
     # template: otherwise two stacks over the same tee shared one identity and the second
     # replaced the first in her wardrobe.
@@ -449,11 +459,12 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
     async with _LIST_LOCK:
         # RU2. Read through the merge, so writing her list never drops what the dataset holds.
         listed = await read_list(store, wardrobe_id)
-        if item["templateId"] == "body-bare-v1" and any(
-            old.get("templateId") == "body-bare-v1" for old in listed.get("looks", [])
-        ):
-            return  # Bare prebuilds are keep-existing, never a replacement.
         same = tuple(item.get(f) for f in LIST_FIELDS)
+        if item["templateId"] == "body-bare-v1" and any(
+            old.get("templateId") == "body-bare-v1" and tuple(old.get(f) for f in LIST_FIELDS) == same
+            for old in listed.get("looks", [])
+        ):
+            return  # Bare prebuilds are keep-existing, never a replacement (BD21: of the same look).
         kept = [old for old in listed.get("looks", []) if tuple(old.get(f) for f in LIST_FIELDS) != same]
         listed["looks"] = kept
         listed["looks"].append(item)
