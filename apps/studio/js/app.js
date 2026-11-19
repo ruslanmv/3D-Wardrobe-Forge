@@ -3302,12 +3302,17 @@ async function renderWardrobe() {
     const card = (look) => {
             const picture = el('span', { class: 'look-ph', text: '👗' });
             if (look.previewUrl) {
-                api.blobUrl(look.previewUrl)
-                    .then((url) => {
-                        state.urls.previews.push(url);
-                        picture.replaceWith(el('img', { src: url, alt: '', loading: 'lazy' }));
-                    })
-                    .catch(() => {});
+                // WS1. Fetched when its card comes into view, not all at once on render: a shelf of
+                // 130 looks fired 130 requests in a burst and the Space's proxy answered 429.
+                whenVisible(picture, () =>
+                    api
+                        .blobUrl(look.previewUrl)
+                        .then((url) => {
+                            state.urls.previews.push(url);
+                            picture.replaceWith(el('img', { src: url, alt: '', loading: 'lazy' }));
+                        })
+                        .catch(() => {})
+                );
             }
             return el(
                 'article',
@@ -3360,6 +3365,32 @@ async function renderWardrobe() {
     );
 }
 
+/**
+ * WS1. Run `fn` once `node` is on screen (or near it); at once where IntersectionObserver is missing.
+ * One observer for the page, so a long shelf does not make one per card.
+ */
+let visibleObserver = null;
+const visibleCallbacks = new WeakMap();
+function whenVisible(node, fn) {
+    if (typeof IntersectionObserver === 'undefined') return fn();
+    if (!visibleObserver) {
+        visibleObserver = new IntersectionObserver(
+            (entries) => {
+                for (const entry of entries) {
+                    if (!entry.isIntersecting) continue;
+                    visibleObserver.unobserve(entry.target);
+                    const run = visibleCallbacks.get(entry.target);
+                    visibleCallbacks.delete(entry.target);
+                    if (run) run();
+                }
+            },
+            { rootMargin: '200px' }
+        );
+    }
+    visibleCallbacks.set(node, fn);
+    visibleObserver.observe(node);
+}
+
 async function wearLook(lookId, { mode = null } = {}) {
     const look = state.wardrobe && state.wardrobe.looks.find((item) => item.id === lookId);
     if (!look) return;
@@ -3369,7 +3400,7 @@ async function wearLook(lookId, { mode = null } = {}) {
         .forEach((node) => node.setAttribute('aria-current', String(node.dataset.look === lookId)));
     setStatus(`Loading ${look.name}…`);
     try {
-        const url = await api.blobUrl(look.vrmUrl);
+        const url = await api.blobUrl(look.vrmUrl, { urgent: true });
         if (state.activeLookId !== lookId) return revoke(url);
         const landed = await viewer.load('look', url);
         if (!landed) return revoke(url);
