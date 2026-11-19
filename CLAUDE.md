@@ -40,7 +40,7 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
 | Job options (`bareDetail`, `bareState`, `bareExtras`, `bareStates`) | `wardrobe/domain/jobs.py` |
 | Erotic outfits, partial undress            | `wardrobe/body_surface/outfit_dictionary.py`, `docs/qa/EROTIC_SETS.md` |
 | What a client is told (BD21): each bare look's `body`, the catalogue | `JobOptions.body_summary`, `GET /v1/body-surface/catalog` (admin or grant) |
-| Make every private look for every character (BD21) | `tools/prebuild_private.py` (packs of ≤10 states covering all, extras sets) |
+| Make every private look for every character (BD21) | `tools/prebuild_private.py` (packs of ≤10 states covering all, extras sets); in CI: Prebuild wardrobe ▸ `private_looks` |
 | Full notes                                 | `docs/qa/BARE_DETAIL.md` (read before changing the painter)         |
 
 Rules that break things when missed:
@@ -69,7 +69,7 @@ Rules that break things when missed:
 Every garment and ready look, typed into 20 clothing types and collected into public and
 admin-only private collections (Adult ones aligned with the chatbot's Private: striptease,
 table dance, undress step by step; Private body ones: naked, gaped, finishes, positions).
-`GET /v1/registry`; the admin manager under `/v1/admin/registry/*`. Rules in `wardrobe/registry/classify.py`, decisions in
+`GET /v1/registry`; the admin manager under `/v1/admin/registry/*`; in the Studio, the top bar's Collections (`apps/studio/js/collections.js`, WS2). Rules in `wardrobe/registry/classify.py`, decisions in
 `state/wardrobe-registry.json`. Read `docs/WARDROBE_REGISTRY.md` before changing it.
 
 - Three tiers: general, **Adult** (what guests already had; shown to everyone) and **Private**

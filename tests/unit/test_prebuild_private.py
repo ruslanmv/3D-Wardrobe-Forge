@@ -70,3 +70,30 @@ def test_a_listed_body_is_not_rebuilt_and_a_gate_refusal_is_reported_not_failed(
         10,
     )
     assert refused["result"] == "refused" and refused["reasonCode"] == "body_surface_not_permitted"
+
+
+def test_the_prebuild_workflow_can_make_the_private_looks():
+    import yaml
+
+    flow = yaml.safe_load((ROOT / ".github/workflows/prebuild-wardrobe.yml").read_text())
+    inputs = (
+        flow[True]["workflow_dispatch"]["inputs"]
+        if True in flow
+        else flow["on"]["workflow_dispatch"]["inputs"]
+    )
+    assert inputs["private_looks"]["default"] is False  # never made unless a person ticks it
+    steps = flow["jobs"]["build"]["steps"]
+    step = next(s for s in steps if s.get("name", "").startswith("Private looks"))
+    assert "tools/prebuild_private.py" in step["run"] and "--admin-token-file" in step["run"]
+    assert step["if"] == "inputs.private_looks"
+
+
+def test_the_studio_opens_the_collections_browser():
+    html = (ROOT / "apps/studio/index.html").read_text()
+    assert 'id="collections-btn"' in html and 'id="registry-dialog"' in html
+    app = (ROOT / "apps/studio/js/app.js").read_text()
+    assert "initCollections(" in app and "./collections.js" in app
+    page = (ROOT / "apps/studio/js/collections.js").read_text()
+    # The page never decides what is private: it draws what the registry answers for this caller.
+    for call in ("registry()", "registryAssign", "registryFavourite", "registryCreate"):
+        assert call in page

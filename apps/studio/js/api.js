@@ -264,6 +264,18 @@ export const api = {
      */
     garmentParameters: (templateId) => request(`/v1/catalog/garments/${encodeURIComponent(templateId)}/parameters`),
 
+    // WS2. The wardrobe registry (docs/WARDROBE_REGISTRY.md): the Collections browser and its manager.
+    registry: () => request('/v1/registry'),
+    registryDashboard: () => request('/v1/admin/registry/dashboard'),
+    registryCreate: (body) => request('/v1/admin/registry/collections', { method: 'POST', body }),
+    registryEditCollection: (id, body) =>
+        request(`/v1/admin/registry/collections/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
+    registryAssign: (id, body) =>
+        request(`/v1/admin/registry/collections/${encodeURIComponent(id)}/items`, { method: 'POST', body }),
+    registryEditGarment: (id, body) =>
+        request(`/v1/admin/registry/garments/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
+    registryFavourite: (id, on) =>
+        request(`/v1/admin/registry/favourites/${encodeURIComponent(id)}`, { method: on ? 'PUT' : 'DELETE' }),
     /**
      * An object URL for a protected asset. The caller owns it and must revoke it. WS1: queued, at
      * most four at a time; `urgent` (a look the person chose to wear) goes straight through.

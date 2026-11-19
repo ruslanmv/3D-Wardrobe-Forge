@@ -12,6 +12,7 @@ filtered on the server for whoever asks.
 | The view for one caller, the dashboard counts | `wardrobe/registry/registry.py` |
 | The admin's decisions (JSON, `state/wardrobe-registry.json`) | `wardrobe/registry/store.py` |
 | HTTP | `apps/api/routes/registry.py` |
+| Studio page (WS2): the Collections browser and manager, from the top bar | `apps/studio/js/collections.js` |
 | Tests | `tests/unit/test_wardrobe_registry.py`, `tests/integration/test_registry_api.py` |
 
 ## API

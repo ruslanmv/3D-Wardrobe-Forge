@@ -26,6 +26,7 @@ import {
     withoutColour,
 } from './occasions.js';
 import { Viewer } from './viewer.js';
+import { initCollections } from './collections.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -200,6 +201,8 @@ async function boot() {
     // For the console and browser tests: window.wardrobeStudio.viewer.polarDegrees() and the like.
     window.wardrobeStudio = { viewer };
     bindChrome();
+    // WS2. The registry's collections, opened from the top bar (apps/studio/js/collections.js).
+    initCollections({ api, describe, whenVisible });
 
     let loaded;
     try {
@@ -3345,6 +3348,7 @@ async function renderWardrobe() {
                           title: "Made under an admin session's declaration: only an admin session sees it",
                       })
                     : null,
+                bodyChips(look),
                 saved.has(look.id) ? el('span', { class: 'look-saved', title: 'Saved', text: '♥' }) : null,
                 el('button', {
                     class: 'look-del',
@@ -3362,6 +3366,26 @@ async function renderWardrobe() {
             labelled ? el('span', { class: 'look-group', text: `${group.icon} ${group.title}` }) : null,
             ...group.looks.map(card),
         ]).filter(Boolean)
+    );
+}
+
+/**
+ * BD21. What a bare look's body has, on its card: the preset, how many states its skin pack
+ * switches between live, and the extras painted in. Read from Forge's own `look.body`, so the
+ * card says what the file is — two bare looks used to be told apart only by their names.
+ */
+function bodyChips(look) {
+    const body = look && look.body;
+    if (!body || typeof body !== 'object') return null;
+    const chip = (text, title) => el('span', { class: 'reg-badge', text, title });
+    const states = Array.isArray(body.states) ? body.states : [];
+    const extras = Array.isArray(body.extras) ? body.extras : [];
+    return el(
+        'span',
+        { class: 'look-body' },
+        body.detail ? chip(String(body.detail).replace(/-/g, ' '), 'Body detail preset') : null,
+        states.length ? chip(`${states.length} states`, states.join(', ')) : null,
+        ...extras.map((name) => chip(String(name).replace(/-/g, ' '), 'Painted in: comes with this look'))
     );
 }
 
