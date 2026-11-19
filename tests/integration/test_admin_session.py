@@ -259,3 +259,17 @@ def test_a_caller_cannot_mark_its_own_work_private(client: TestClient, stored_av
         "options": {"private": True, "renderPreview": False},
     })
     assert response.json()["request"]["options"]["private"] is False
+
+
+def test_body_detail_catalogue_is_for_an_admin_session_only(client):
+    """BD18. The Studio's bare-body panel lists every preset, state, extra and erotic set, read from
+    the painter's own files; a guest is refused."""
+    assert client.get("/v1/admin/body-detail").status_code == 401
+    listing = client.get("/v1/admin/body-detail", headers=sign_in(client)).json()
+    names = {group: {e["name"] for e in listing[group]} for group in ("presets", "states", "extras")}
+    assert {"porcelain", "anime", "natural"} <= names["presets"]
+    assert {"lower-back-cum", "doggy-anal-fisted", "sado-full", "doggy-double-creampie"} <= names["states"]
+    assert {"tattoo-lower-back-tribal", "piercings-intimate"} <= names["extras"]
+    assert all(entry["body"] for entry in listing["states"])
+    assert listing["outfits"] and all(o["base"] == "bare-dressed" and o["request"]["prompt"] for o in listing["outfits"])
+    assert listing["limits"] == {"extras": 4, "states": 10}

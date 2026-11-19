@@ -2762,3 +2762,15 @@ dialog.login .form-error {
     letter-spacing: 0.18em;
     color: var(--accent);
 }
+
+/* BD18. The bare-body panel's extras and live states: many short labels, so a wrapping grid. */
+.bare-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: 0.25rem 0.75rem;
+    max-height: 14rem;
+    overflow-y: auto;
+}
+#bare-panel form > button {
+    margin-top: 0.5rem;
+}

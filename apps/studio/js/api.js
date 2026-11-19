@@ -163,6 +163,8 @@ export const api = {
     adminSignIn: (username, password) =>
         request('/v1/admin/session', { method: 'POST', body: { username, password } }),
     adminSignOut: () => request('/v1/admin/session', { method: 'DELETE' }),
+    /** BD18. The bare-body panel's presets, states, extras and erotic sets (admin session only). */
+    adminBodyDetail: () => request('/v1/admin/body-detail'),
     /** CG7. A read-only, expiring grant for these library avatars' private looks (admin session only). */
     mintGrant: (slugs, ttlSeconds, label) =>
         request('/v1/admin/grants', { method: 'POST', body: { slugs, ttlSeconds, label } }),

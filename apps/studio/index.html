@@ -333,6 +333,32 @@
                 </form>
                 </details>
 
+                <!-- BD18. Bare bodies and their variants, for an admin session only (apps/api/routes/admin.py
+                     /admin/body-detail). Every option comes from the painter's own files, so a new state or
+                     extra shows up here without touching this page. -->
+                <details class="customize" id="bare-panel" hidden>
+                    <summary>Private · bare body variants</summary>
+                    <form id="bare-form" novalidate>
+                        <label class="field"><span>Outfit</span>
+                            <select id="bare-outfit"><option value="">Bare — nothing on</option></select>
+                        </label>
+                        <label class="field"><span>Detail</span><select id="bare-preset"></select></label>
+                        <label class="field"><span>Body state</span>
+                            <select id="bare-state"><option value="">None (relaxed)</option></select>
+                        </label>
+                        <p class="hint" id="bare-state-line"></p>
+                        <fieldset class="style"><legend>Extras <span class="legend-hint">up to 4</span></legend>
+                            <div class="bare-choices" id="bare-extras"></div>
+                        </fieldset>
+                        <fieldset class="style"><legend>Live states <span class="legend-hint">up to 10 · switched in the app without reloading</span></legend>
+                            <div class="bare-choices" id="bare-pack"></div>
+                        </fieldset>
+                        <p class="hint" id="bare-note"></p>
+                        <button type="submit" class="primary" id="bare-generate" disabled>Generate bare look</button>
+                        <button type="button" class="secondary" id="bare-rerun" disabled>Run again</button>
+                    </form>
+                </details>
+
                 <div class="job" id="job" hidden>
                     <div class="job-head">
                         <strong id="job-title">Generating</strong>
