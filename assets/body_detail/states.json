@@ -1,36 +1,106 @@
 {
  "schema": "wardrobe.bodyDetail.states.v1",
- "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: arousal (flush, swelling, sheen), vaginaOpen (inner lips parted, opening widened to show the inner walls), anusOpen (relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), arousal (flush, swelling, sheen), vaginaOpen (inner lips parted, opening widened to show the inner walls), anusOpen (relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
  "states": {
   "closed": {
    "label": "Closed",
-   "set": {"arousal": 0.0, "vaginaOpen": 0.0, "anusOpen": 0.0},
+   "set": {
+    "arousal": 0.0,
+    "vaginaOpen": 0.0,
+    "anusOpen": 0.0
+   },
    "body": "your body is relaxed and closed"
   },
   "aroused": {
    "label": "Aroused",
-   "set": {"arousal": 0.85, "vaginaOpen": 0.0, "anusOpen": 0.0},
-   "body": "you are aroused: your inner lips are flushed, swollen and wet"
+   "set": {
+    "arousal": 0.85,
+    "vaginaOpen": 0.0,
+    "anusOpen": 0.0,
+    "flush": 0.5,
+    "erect": 0.8
+   },
+   "body": "you are aroused: a flush on your chest, your nipples hard, your inner lips flushed, swollen and wet"
   },
   "open": {
    "label": "Open",
-   "set": {"arousal": 0.9, "vaginaOpen": 0.65, "anusOpen": 0.0},
+   "set": {
+    "arousal": 0.9,
+    "vaginaOpen": 0.65,
+    "anusOpen": 0.0,
+    "flush": 0.6,
+    "erect": 0.8
+   },
    "body": "you are aroused and open: your inner lips are parted and wet, your vagina is open"
   },
   "wide-open": {
    "label": "Wide open",
-   "set": {"arousal": 1.0, "vaginaOpen": 1.0, "anusOpen": 0.0},
+   "set": {
+    "arousal": 1.0,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.0,
+    "flush": 0.75,
+    "erect": 1.0,
+    "sweat": 0.3
+   },
    "body": "you are very aroused and wide open: your lips are spread and your vagina is open wide"
   },
   "anus-open": {
    "label": "Anus open",
-   "set": {"arousal": 0.5, "vaginaOpen": 0.0, "anusOpen": 0.7},
+   "set": {
+    "arousal": 0.5,
+    "vaginaOpen": 0.0,
+    "anusOpen": 0.7
+   },
    "body": "your anus is relaxed and open"
   },
   "both-open": {
    "label": "Both open",
-   "set": {"arousal": 0.9, "vaginaOpen": 0.65, "anusOpen": 0.7},
+   "set": {
+    "arousal": 0.9,
+    "vaginaOpen": 0.65,
+    "anusOpen": 0.7,
+    "flush": 0.6,
+    "erect": 0.8
+   },
    "body": "you are aroused and open: your vagina is open and your anus is relaxed and open"
+  },
+  "flushed": {
+   "label": "Flushed",
+   "set": {
+    "arousal": 0.5,
+    "flush": 0.85,
+    "erect": 0.8
+   },
+   "body": "a warm flush spreads over your breasts and up your chest to your throat, and your nipples are hard"
+  },
+  "goosebumps": {
+   "label": "Goosebumps",
+   "set": {
+    "goosebumps": 1.0,
+    "erect": 0.9
+   },
+   "body": "you have goosebumps all over and your nipples are tight and hard"
+  },
+  "sweaty": {
+   "label": "Glistening",
+   "set": {
+    "sweat": 0.85,
+    "flush": 0.45,
+    "arousal": 0.4
+   },
+   "body": "your skin glistens with sweat; beads of it run between your breasts and down your belly"
+  },
+  "afterglow": {
+   "label": "Afterglow",
+   "set": {
+    "arousal": 0.4,
+    "flush": 0.6,
+    "sweat": 0.5,
+    "erect": 0.3,
+    "vaginaOpen": 0.2
+   },
+   "body": "you are in the afterglow: flushed, dewy with sweat, softened and relaxed"
   }
  }
 }

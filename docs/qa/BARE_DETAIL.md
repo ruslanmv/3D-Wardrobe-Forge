@@ -117,6 +117,42 @@ on stage, the same way the positions describe her body. The look carries
 `extras.wardrobeForge.state`. Rendered from behind on all fours, the six states
 are distinct; Knees Up framing in the render tool still needs work.
 
+## Her skin reacting (BD5) and tan lines (BD6)
+
+`wardrobe/vrm/skin_effects.py` adds effects across her whole torso band, from
+below her buttocks to her throat. They are painted in this order: tan lines
+(her skin), then the flush, then the anatomy, then sweat on top.
+
+**State parameters (0–1):**
+
+- **`flush`:** a blotchy blush over her breasts and up her chest to her throat.
+- **`erect`:** a taller nipple and a finely puckered areola, in the relief.
+- **`goosebumps`:** fine bumps in the relief.
+- **`sweat`:** a sheen (between her breasts, in streaks) and beads, each a
+  highlight with a faint rim below and a little relief.
+
+**States:**
+
+- **New:** `flushed`, `goosebumps`, `sweaty` (labelled "Glistening"), and
+  `afterglow`.
+- **Updated:** `aroused`, `open`, `wide-open` and `both-open` now carry a flush
+  and erect nipples too.
+
+**Extras** (`assets/body_detail/extras.json`, `options.bareExtras`, up to four)
+are persistent, unlike states. They are tan lines, as paler bikini shapes:
+
+- **Tops:** `triangle` (two cups, halter straps, a band all round) and
+  `bandeau`.
+- **Bottoms:** `thong`, `brazilian` and `classic`, with a waist string all
+  round; a thong is a string down her cleft behind.
+- **Presets:** `tan-triangle-thong`, `tan-triangle-brazilian`,
+  `tan-bandeau-classic` and `tan-thong-only` (topless). Each has a `body` line
+  for the conversation.
+
+Painting the torso band is heavier: about 30–40 s per look at 4096, against
+about 8 s for anatomy alone. A parameter at 0 costs nothing. Rendered front,
+chest and back on the reference body: every effect shows where it belongs.
+
 ## Who it is painted on
 
 Painted detail is more explicit than the bare body, so it asks for more than the

@@ -44,6 +44,7 @@ from pathlib import Path
 
 import numpy as np
 
+from wardrobe.vrm import skin_effects as FX
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.measure import BodyMeasurements
 from wardrobe.vrm.painted_clothing import _image, skin_surface
@@ -66,7 +67,11 @@ MIDLINE = 0.006
 
 STATES_PATH = PRESETS_PATH.with_name("states.json")
 STATES_SCHEMA = "wardrobe.bodyDetail.states.v1"
-STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen")
+STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen", *FX.EFFECT_KEYS)
+EXTRAS_PATH = PRESETS_PATH.with_name("extras.json")
+EXTRAS_SCHEMA = "wardrobe.bodyDetail.extras.v1"
+#: BD6. What a persistent extra may set (tan lines now; marks, freckles… later).
+EXTRA_KEYS = ("tanTop", "tanBottom", "tan")
 
 
 class BodyDetailError(ValueError):
@@ -97,6 +102,22 @@ def load_states(path: Path | str | None = None) -> dict[str, dict]:
         if not state.get("body"):
             raise BodyDetailError(f"state {name}: needs a 'body' line for the conversation")
     return states
+
+
+def load_extras(path: Path | str | None = None) -> dict[str, dict]:
+    """BD6. Persistent extras painted with a preset (tan lines…): ``options.bareExtras``."""
+    data = json.loads(Path(path or EXTRAS_PATH).read_text(encoding="utf-8"))
+    if data.get("schema") != EXTRAS_SCHEMA:
+        raise BodyDetailError(f"not a body-detail extras file: {path or EXTRAS_PATH}")
+    extras = data.get("extras") or {}
+    for name, extra in extras.items():
+        values = extra.get("set", {})
+        if set(values) - set(EXTRA_KEYS):
+            raise BodyDetailError(f"extra {name}: unknown keys {sorted(set(values) - set(EXTRA_KEYS))}")
+        top, bottom = values.get("tanTop", "none"), values.get("tanBottom", "none")
+        if top not in FX.TAN_TOPS or bottom not in FX.TAN_BOTTOMS:
+            raise BodyDetailError(f"extra {name}: unknown tan cut")
+    return extras
 
 
 @dataclass(frozen=True)
@@ -163,7 +184,8 @@ def find_landmarks(points: np.ndarray, measurements: BodyMeasurements, forward: 
 
 
 def paint_detail(document: GltfDocument, measurements: BodyMeasurements, *, preset: str, forward: float,
-                 presets: dict | None = None, state: str | None = None) -> BodyDetail | None:
+                 presets: dict | None = None, state: str | None = None,
+                 extras: list[str] | tuple[str, ...] = ()) -> BodyDetail | None:
     """Paint ``preset`` (in body ``state``, BD4) on her skin. None: no textured skin or no landmarks."""
     table = presets if presets is not None else load_presets()
     if preset not in table:
@@ -174,6 +196,12 @@ def paint_detail(document: GltfDocument, measurements: BodyMeasurements, *, pres
         if state not in states:
             raise BodyDetailError(f"unknown body state {state!r}; one of {', '.join(sorted(states))}")
         spec.update(states[state].get("set", {}))
+    if extras:
+        table_extras = load_extras()
+        for name in extras:
+            if name not in table_extras:
+                raise BodyDetailError(f"unknown extra {name!r}; one of {', '.join(sorted(table_extras))}")
+            spec.update(table_extras[name].get("set", {}))
     textures: dict = {}
     skin, _ = skin_surface(document, measurements, set(), textures)
     if skin is None:
@@ -193,7 +221,8 @@ def paint_detail(document: GltfDocument, measurements: BodyMeasurements, *, pres
     s = marks.scale
     reach_chest = float(spec["areolaRadius"]) * s * 2.2
     reach_pelvis = 0.14 * s
-    density = _texels_per_mm(document, skin, main.shape, marks, reach_chest, reach_pelvis)
+    torso = s if FX.wants_torso(spec) else None  # BD5: effects of her whole torso band
+    density = _texels_per_mm(document, skin, main.shape, marks, reach_chest, reach_pelvis, torso)
     upscaled = False
     while density < MIN_TEXELS_PER_MM and max(main.shape[:2]) * 2 <= MAX_TEXTURE:
         main = _resample(main, 2)
@@ -201,7 +230,7 @@ def paint_detail(document: GltfDocument, measurements: BodyMeasurements, *, pres
         density *= 2
         upscaled = True
     h, w = main.shape[:2]
-    samples = _texels(document, skin, w, h, marks, reach_chest, reach_pelvis)
+    samples = _texels(document, skin, w, h, marks, reach_chest, reach_pelvis, torso)
     if samples is None:
         return None
     rows, cols, where, frames = samples
@@ -234,6 +263,10 @@ def _paint(colour: np.ndarray, where: np.ndarray, marks: Landmarks, spec: dict, 
     """The texels' new colours, and which were changed. Pure: colours and body points in, out."""
     out = colour.copy()
     touched = np.zeros(len(colour), dtype=bool)
+    # BD5–BD6. Her skin first: tan lines, then the flush; the anatomy is painted over them.
+    for tint, weight in FX.under(where, marks, spec, s):
+        out = _tint(out, tint, weight)
+        touched |= weight > 0.01
     for nipple in marks.nipples:
         weight = _areola(where, nipple, spec, s)
         if weight is not None:
@@ -257,6 +290,10 @@ def _paint(colour: np.ndarray, where: np.ndarray, marks: Landmarks, spec: dict, 
         tone = tone * (0.75 if shade else 1.0)
         out = out * (1.0 - alpha[:, None]) + tone * alpha[:, None]
         touched |= alpha > 0.01
+    # BD5. Sweat on top of everything.
+    for tint, weight in FX.over(where, marks, spec, s):
+        out = _tint(out, tint, weight)
+        touched |= weight > 0.01
     return np.clip(out, 0, 255), touched
 
 
@@ -555,7 +592,7 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.nda
     hair = _hair(u, np.where(in_front, t, -1.0), in_front, L, spec, s)
     if hair is not None:
         h += 0.00035 * k * hair[0]
-    return h
+    return h + FX.relief(where, marks, spec, s) * float(spec.get("relief", 1.0))
 
 
 def _relief_normals(where: np.ndarray, frames: np.ndarray, marks: Landmarks, spec: dict, s: float):
@@ -662,21 +699,22 @@ def _value_noise(x: np.ndarray, y: np.ndarray) -> np.ndarray:
 
 
 def _near(points: np.ndarray, triangles: np.ndarray, marks: Landmarks, reach_chest: float,
-          reach_pelvis: float) -> np.ndarray:
-    """Triangles with a corner near a nipple or her crotch: the only ones worth rasterising."""
+          reach_pelvis: float, torso: float | None = None) -> np.ndarray:
+    """Triangles with a corner near a nipple or her crotch — and her torso band when an effect needs
+    it (``torso`` is her scale then): the only ones worth rasterising."""
     corners = points[triangles]  # (T, 3, 3)
-    near = np.zeros(len(triangles), dtype=bool)
+    near = FX.in_torso(corners, marks, torso) if torso else np.zeros(len(triangles), dtype=bool)
     for nipple in marks.nipples:
         near |= (np.linalg.norm(corners - nipple, axis=2) < reach_chest).any(axis=1)
     near |= (np.linalg.norm(corners - marks.crotch, axis=2) < reach_pelvis).any(axis=1)
     return near
 
 
-def _texels_per_mm(document, skin, shape, marks, reach_chest, reach_pelvis) -> float:
+def _texels_per_mm(document, skin, shape, marks, reach_chest, reach_pelvis, torso=None) -> float:
     h, w = shape[:2]
     pixel_area = body_area = 0.0
     for primitive, points, triangles in skin.parts:
-        chosen = triangles[_near(points, triangles, marks, reach_chest, reach_pelvis)]
+        chosen = triangles[_near(points, triangles, marks, reach_chest, reach_pelvis, torso)]
         if not len(chosen):
             continue
         uv = document.read_accessor(primitive["attributes"]["TEXCOORD_0"]).astype(np.float64)[:, :2]
@@ -688,11 +726,11 @@ def _texels_per_mm(document, skin, shape, marks, reach_chest, reach_pelvis) -> f
     return float(np.sqrt(pixel_area / body_area)) if body_area > 0 else 0.0
 
 
-def _texels(document, skin, w, h, marks, reach_chest, reach_pelvis):
+def _texels(document, skin, w, h, marks, reach_chest, reach_pelvis, torso=None):
     """(rows, cols, body points) of every texel the triangles near the landmarks cover."""
     rows, cols, where, frames = [], [], [], []
     for primitive, points, triangles in skin.parts:
-        chosen = triangles[_near(points, triangles, marks, reach_chest, reach_pelvis)]
+        chosen = triangles[_near(points, triangles, marks, reach_chest, reach_pelvis, torso)]
         if not len(chosen):
             continue
         uv = document.read_accessor(primitive["attributes"]["TEXCOORD_0"]).astype(np.float64)[:, :2]
@@ -788,5 +826,6 @@ def _resample(image: np.ndarray | None, factor: int) -> np.ndarray | None:
     return np.stack(channels, axis=2)
 
 
-__all__ = ["BodyDetail", "BodyDetailError", "Landmarks", "find_landmarks", "load_presets", "load_states",
+__all__ = ["BodyDetail", "BodyDetailError", "Landmarks", "find_landmarks", "load_extras", "load_presets",
+           "load_states",
            "paint_detail"]

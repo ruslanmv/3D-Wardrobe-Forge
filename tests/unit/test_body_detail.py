@@ -246,3 +246,51 @@ def test_open_states_darken_and_deepen_the_openings():
 def test_arousal_flushes_towards_red():
     flushed = BD._flushed([0.9, 0.8, 0.8], 1.0)
     assert flushed[0] == pytest.approx(0.9) and flushed[1] < 0.8 and flushed[2] < 0.8
+
+
+def test_effect_states_and_tan_extras_load():
+    """BD5–BD6. New states set only known effect keys; every extra names a known tan cut."""
+    states = BD.load_states()
+    for name in ("flushed", "goosebumps", "sweaty", "afterglow"):
+        assert name in states and set(states[name]["set"]) <= set(BD.STATE_KEYS)
+    extras = BD.load_extras()
+    assert {"tan-triangle-thong", "tan-bandeau-classic"} <= set(extras)
+    for extra in extras.values():
+        assert len(extra["body"]) > 10
+
+
+@pytest.mark.parametrize("options, ok", [
+    ({"baseBody": "bare", "bareDetail": "natural", "bareExtras": ["tan-triangle-thong"]}, True),
+    ({"baseBody": "bare", "bareExtras": ["tan-triangle-thong"]}, False),
+    ({"baseBody": "bare", "bareDetail": "natural", "bareExtras": ["nope"]}, False),
+])
+def test_extras_option_needs_detail_and_known_extras(options, ok):
+    if ok:
+        assert JobOptions.model_validate(options).bare_extras == ["tan-triangle-thong"]
+    else:
+        with pytest.raises(ValueError):
+            JobOptions.model_validate(options)
+
+
+def test_effects_paint_where_they_belong():
+    """Flush on the upper chest not the belly; a tan line paler; sweat beads brighter; nothing at 0."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    chest = np.array([[0.0, 1.17 + 0.12, 0.15]])   # up her chest towards her throat
+    belly = np.array([[0.04, 0.9, 0.12]])
+    flush = FX._flush_field(np.vstack([chest, belly]), marks, 1.0)
+    assert flush[0] > flush[1]
+    assert FX.under(belly, marks, {}, 1.0) == [] and FX.over(belly, marks, {}, 1.0) == []
+    band = np.array([[0.05, 1.17 - 0.05, 0.16]])  # on the band under her bust
+    pale = FX._tan_mask(band, marks, {"tanTop": "triangle"}, 1.0)
+    assert pale[0] > 0.9
+    assert not FX.wants_torso({}) and FX.wants_torso({"sweat": 0.5})
+
+
+def test_erect_nipple_stands_higher():
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    nipple = np.array([marks.nipples[0]])
+    assert FX.relief(nipple, marks, {"erect": 1.0}, 1.0)[0] > FX.relief(nipple, marks, {"erect": 0.0}, 1.0)[0]

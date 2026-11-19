@@ -1,0 +1,42 @@
+{
+ "schema": "wardrobe.bodyDetail.extras.v1",
+ "about": "BD6. Persistent extras painted with a body-detail preset (options.bareExtras, up to four). tanTop: none|triangle|bandeau; tanBottom: none|thong|brazilian|classic; tan: how pale the covered skin is against her tan, 0..1. 'body' is a line for the conversation.",
+ "extras": {
+  "tan-triangle-thong": {
+   "label": "Tan lines · triangle & thong",
+   "set": {
+    "tanTop": "triangle",
+    "tanBottom": "thong",
+    "tan": 0.8
+   },
+   "body": "you have tan lines: pale triangles over your breasts and a pale thong shape over your hips"
+  },
+  "tan-triangle-brazilian": {
+   "label": "Tan lines · triangle & brazilian",
+   "set": {
+    "tanTop": "triangle",
+    "tanBottom": "brazilian",
+    "tan": 0.8
+   },
+   "body": "you have tan lines from a triangle bikini and brazilian bottoms"
+  },
+  "tan-bandeau-classic": {
+   "label": "Tan lines · bandeau & classic",
+   "set": {
+    "tanTop": "bandeau",
+    "tanBottom": "classic",
+    "tan": 0.7
+   },
+   "body": "you have tan lines from a bandeau top and classic bikini bottoms"
+  },
+  "tan-thong-only": {
+   "label": "Tan lines · topless, thong",
+   "set": {
+    "tanTop": "none",
+    "tanBottom": "thong",
+    "tan": 0.85
+   },
+   "body": "you sunbathed topless: only a pale thong shape over your hips"
+  }
+ }
+}
