@@ -90,7 +90,19 @@ def answer(data: bytes, *, settings, library=None) -> dict:
         "clearance": derived or checks["design-clearance"].get("clearance"),
         "structure": structure,
         "hideMaterials": [h["material"] for h in structure["hideable"]] if refused is None else [],
+        # ES2. The same materials by slot (tops, bottoms, onepiece, shoes, other), so a client can take
+        # off only her top or only her bottom: bottomless with her top kept, or the other way round.
+        # Same gate, same answer: nothing at all when anything above refused.
+        "hideBySlot": _by_slot(structure["hideable"]) if refused is None else {},
     }
+
+
+def _by_slot(hideable: list[dict]) -> dict[str, list[str]]:
+    slots: dict[str, list[str]] = {}
+    for item in hideable:
+        if item.get("material"):
+            slots.setdefault(item.get("slot") or "other", []).append(item["material"])
+    return slots
 
 
 __all__ = ["answer"]

@@ -88,6 +88,35 @@ no stored cache key changes. The look carries
 `baseBody.bodyDetail`: landmarks, texels/mm, whether the texture was resampled,
 and the clearance used.
 
+## Body states (BD4)
+
+`assets/body_detail/states.json` defines states that are painted on top of any
+preset (`options.bareState`, which needs `bareDetail`). Each sets three
+parameters, from 0 to 1:
+
+- **`arousal`:** a flush towards red, swollen inner lips, a larger glans, and a
+  wet sheen down the vestibule.
+- **`vaginaOpen`:** the inner lips part and the opening widens and lengthens. It
+  shows the inner walls (flushed, with transverse folds) round a centre that
+  darkens and deepens as it opens.
+- **`anusOpen`:** the anus relaxes open. Its radius grows, the folds stretch flat,
+  the pinker inner rim shows, and the centre widens and deepens.
+
+| State       | arousal | vaginaOpen | anusOpen |
+| ----------- | ------- | ---------- | -------- |
+| `closed`    | 0       | 0          | 0        |
+| `aroused`   | 0.85    | 0          | 0        |
+| `open`      | 0.9     | 0.65       | 0        |
+| `wide-open` | 1.0     | 1.0        | 0        |
+| `anus-open` | 0.5     | 0          | 0.7      |
+| `both-open` | 0.9     | 0.65       | 0.7      |
+
+Each state has a `body` line in the second person ("you are aroused and open:
+…"), for the conversation. A client says it to the model only while that look is
+on stage, the same way the positions describe her body. The look carries
+`extras.wardrobeForge.state`. Rendered from behind on all fours, the six states
+are distinct; Knees Up framing in the render tool still needs work.
+
 ## Who it is painted on
 
 Painted detail is more explicit than the bare body, so it asks for more than the

@@ -683,7 +683,7 @@ async def remember(store: ObjectStore, key: str, record: JobRecord, *, list_it: 
     """Keep a completed record under its key. Never raises: a cache that fails is a slower Forge."""
     if record.state != JobState.COMPLETED or record.look is None:
         return
-    if record.request.options.base_body_mode == "bare" and await store.exists(entry_key(key)):
+    if record.request.options.over_bare_body and await store.exists(entry_key(key)):
         return
     entry = {
         "key": key,

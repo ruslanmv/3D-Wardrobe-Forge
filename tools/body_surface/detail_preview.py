@@ -93,6 +93,7 @@ def main(argv=None) -> int:
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--presets", default=",".join(load_presets()))
     parser.add_argument("--base", type=Path, help="reuse an earlier ref-atlas.vrm")
+    parser.add_argument("--states", default="", help="BD4 body states (states.json), comma-separated")
     args = parser.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
     if args.base:
@@ -103,15 +104,17 @@ def main(argv=None) -> int:
         base = atlas_body(build_reference_vrm("ref-f-median"))
         (args.out / "ref-atlas.vrm").write_bytes(base)
     for name in args.presets.split(","):
-        doc = GltfDocument.from_bytes(base)
-        info = inspect_document(doc)
-        report = paint_detail(doc, measure_body(doc, info), preset=name,
-                              forward=-1.0 if info.spec is VrmSpec.VRM0 else 1.0)
-        if report is None:
-            print(f"{name}: not placed")
-            continue
-        (args.out / f"ref-{name}.vrm").write_bytes(doc.to_bytes())
-        print(f"{name}: {report.painted_texels} texels, {report.texels_per_mm:.2f}/mm, {report.landmarks}")
+        for state in [s for s in args.states.split(",") if s] or [None]:
+            doc = GltfDocument.from_bytes(base)
+            info = inspect_document(doc)
+            report = paint_detail(doc, measure_body(doc, info), preset=name, state=state,
+                                  forward=-1.0 if info.spec is VrmSpec.VRM0 else 1.0)
+            label = f"{name}-{state}" if state else name
+            if report is None:
+                print(f"{label}: not placed")
+                continue
+            (args.out / f"ref-{label}.vrm").write_bytes(doc.to_bytes())
+            print(f"{label}: {report.painted_texels} texels, {report.texels_per_mm:.2f}/mm")
     return 0
 
 

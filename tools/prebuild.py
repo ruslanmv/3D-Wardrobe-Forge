@@ -124,6 +124,8 @@ def plan_outfits(forge: Forge, slugs: list[str] | None, only: str | None) -> lis
         for avatar in avatars:
             pair = {"slug": avatar["slug"], "templateId": f"outfit:{entry['id']}", "name": entry["title"],
                     "color": None, "outfit": entry["request"]}
+            if entry.get("options"):
+                pair["options"] = entry["options"]  # ES3: e.g. an erotic set's bare-dressed base
             if entry.get("rating") == "private" and not avatar.get("depictsAdult"):
                 pair["skip"] = "a private outfit needs a character declared adult"
             pairs.append(pair)
@@ -134,10 +136,13 @@ def job_body(pair: dict) -> dict:
     """What Try-On sends for a fresh garment: the template, over a foundation, previewed."""
     if pair.get("outfit"):
         # RU1. A dictionary outfit, byte for byte the body the companion app's TryOnGenerator sends.
-        return {
-            "outfit": {"mode": "auto", **pair["outfit"]},
-            "options": {"renderPreview": True, "engine": "auto", "ensureFoundation": True},
-        }
+        options = {"renderPreview": True, "engine": "auto", "ensureFoundation": True}
+        if pair.get("options"):
+            # ES3. Dressed over her bare body: the bare preparation is her foundation, and the job
+            # refuses an added one.
+            options = {**options, **pair["options"]}
+            options.pop("ensureFoundation", None)
+        return {"outfit": {"mode": "auto", **pair["outfit"]}, "options": options}
     if pair["templateId"] == "body-bare-v1":
         return {"outfit": {"prompt": "Bare authored body", "mode": "template", "templateId": "body-bare-v1"},
                 "options": {"baseBody": "bare", "renderPreview": True, "engine": "native"}}

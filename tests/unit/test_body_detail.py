@@ -203,3 +203,46 @@ def test_resize_reaches_both_dimensions():
     image = np.full((8, 16, 4), 128.0, np.float32)
     assert BD._resize(image, 16, 16).shape == (16, 16, 4)
     assert BD._resize(image, 32, 4).shape == (4, 32, 4)
+
+
+def test_states_load_and_each_says_what_her_body_is_doing():
+    """BD4. Every state names its parameters and carries a line for the conversation."""
+    states = BD.load_states()
+    assert {"closed", "aroused", "open", "wide-open", "anus-open", "both-open"} <= set(states)
+    for state in states.values():
+        assert set(state["set"]) <= set(BD.STATE_KEYS)
+        assert len(state["body"]) > 10
+
+
+@pytest.mark.parametrize("options, ok", [
+    ({"baseBody": "bare", "bareDetail": "natural", "bareState": "open"}, True),
+    ({"baseBody": "bare", "bareState": "open"}, False),
+    ({"baseBody": "bare", "bareDetail": "natural", "bareState": "nope"}, False),
+])
+def test_state_option_needs_detail_and_a_known_state(options, ok):
+    if ok:
+        assert JobOptions.model_validate(options).bare_state == "open"
+    else:
+        with pytest.raises(ValueError):
+            JobOptions.model_validate(options)
+
+
+def test_open_states_darken_and_deepen_the_openings():
+    """BD4. Opened, the vaginal opening and the anus are darker and deeper than closed."""
+    base = BD.load_presets()["natural"]
+    L = base["vulvaLength"]
+    marks = _marks()
+    where = np.array([[0.0, 0.74 + 0.22 * L, 0.004],       # vaginal opening, off-centre a little
+                      [0.004, 0.74, -base["perineum"]]])    # anus, a little off its centre
+    closed = {**base, "arousal": 0.0, "vaginaOpen": 0.0, "anusOpen": 0.0}
+    opened = {**base, "arousal": 0.9, "vaginaOpen": 1.0, "anusOpen": 1.0}
+    skin = np.full((2, 3), 200.0)
+    shut, _ = BD._paint(skin, where, marks, closed, 1.0, shade=False)
+    open_, _ = BD._paint(skin, where, marks, opened, 1.0, shade=False)
+    assert (open_.sum(axis=1) < shut.sum(axis=1)).all()
+    assert (BD._height(where, marks, opened, 1.0) < BD._height(where, marks, closed, 1.0)).all()
+
+
+def test_arousal_flushes_towards_red():
+    flushed = BD._flushed([0.9, 0.8, 0.8], 1.0)
+    assert flushed[0] == pytest.approx(0.9) and flushed[1] < 0.8 and flushed[2] < 0.8

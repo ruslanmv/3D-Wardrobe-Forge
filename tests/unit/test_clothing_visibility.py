@@ -55,6 +55,10 @@ def test_a_dressed_cleared_body_may_have_exactly_its_garments_hidden(source, cle
     assert answer["clearance"]["kind"] == "derived"
     assert answer["structure"]["verdict"] == "separable-complete"
     assert sorted(answer["hideMaterials"]) == ["F00_000_01_Bottoms_01_CLOTH", "F00_000_01_Tops_01_CLOTH"]
+    # ES2. The same answer by slot: her top alone, or her bottom alone, can be taken off.
+    by_slot = answer["hideBySlot"]
+    assert sorted(m for ms in by_slot.values() for m in ms) == sorted(answer["hideMaterials"])
+    assert len(by_slot) >= 2
     assert answer["sha256"] == hashlib.sha256(dressed).hexdigest()
 
 
@@ -62,6 +66,7 @@ def test_the_operator_switch_still_decides(source, cleared):
     cleared.wardrobe_adult_body_surface = False
     answer = visibility.answer(dress_like_vroid(source), settings=cleared)
     assert not answer["allowed"] and answer["refusedBy"] == "operator-switch" and answer["hideMaterials"] == []
+    assert answer["hideBySlot"] == {}
 
 
 def test_a_body_that_is_not_the_cleared_one_is_not_covered(source, cleared):

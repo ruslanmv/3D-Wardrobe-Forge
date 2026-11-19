@@ -1,0 +1,36 @@
+{
+ "schema": "wardrobe.bodyDetail.states.v1",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: arousal (flush, swelling, sheen), vaginaOpen (inner lips parted, opening widened to show the inner walls), anusOpen (relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "states": {
+  "closed": {
+   "label": "Closed",
+   "set": {"arousal": 0.0, "vaginaOpen": 0.0, "anusOpen": 0.0},
+   "body": "your body is relaxed and closed"
+  },
+  "aroused": {
+   "label": "Aroused",
+   "set": {"arousal": 0.85, "vaginaOpen": 0.0, "anusOpen": 0.0},
+   "body": "you are aroused: your inner lips are flushed, swollen and wet"
+  },
+  "open": {
+   "label": "Open",
+   "set": {"arousal": 0.9, "vaginaOpen": 0.65, "anusOpen": 0.0},
+   "body": "you are aroused and open: your inner lips are parted and wet, your vagina is open"
+  },
+  "wide-open": {
+   "label": "Wide open",
+   "set": {"arousal": 1.0, "vaginaOpen": 1.0, "anusOpen": 0.0},
+   "body": "you are very aroused and wide open: your lips are spread and your vagina is open wide"
+  },
+  "anus-open": {
+   "label": "Anus open",
+   "set": {"arousal": 0.5, "vaginaOpen": 0.0, "anusOpen": 0.7},
+   "body": "your anus is relaxed and open"
+  },
+  "both-open": {
+   "label": "Both open",
+   "set": {"arousal": 0.9, "vaginaOpen": 0.65, "anusOpen": 0.7},
+   "body": "you are aroused and open: your vagina is open and your anus is relaxed and open"
+  }
+ }
+}
