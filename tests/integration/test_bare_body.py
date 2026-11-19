@@ -461,7 +461,7 @@ async def test_detail_with_full_review_is_painted_and_tagged(orchestrator, store
         result = await orchestrator.run_now(
             CreateJobRequest.model_validate(request("sources/d.vrm", bareDetail="warm")))
     assert result.state is JobState.COMPLETED, result.error
-    assert paint.call_args.kwargs == {"preset": "warm", "forward": 1.0, "state": None}
+    assert paint.call_args.kwargs == {"preset": "warm", "forward": 1.0, "state": None, "extras": ()}
     output = GltfDocument.from_bytes(await store.get(f"looks/{result.look.id}/look.vrm"))
     assert output.gltf["extras"]["wardrobeForge"]["detail"] == "warm"
     detail = result.fit_report.base_body["bodyDetail"]
@@ -500,3 +500,30 @@ async def test_dressed_over_bare_builds_the_outfit_and_is_not_a_bare_look(orches
     assert garment_inventory(output)  # the set is on her
     assert result.look.wardrobe_state == "over-bare" and result.request.options.private
     assert "native" in output.gltf["extras"]["wardrobeForge"].get("generator", "")
+
+
+async def test_skin_pack_files_are_stored_beside_the_look(orchestrator, store, vrm_bytes):
+    """BD7. A pack asked with the detail is built from her prepared body and stored under the look."""
+    from wardrobe.vrm.body_detail import BodyDetail
+    from wardrobe.vrm.body_integrity import BodyIntegrity, RegionCheck
+
+    source = _textured(vrm_bytes)
+    await store.put("sources/p.vrm", source)
+    orchestrator.settings.wardrobe_adult_body_surface = True
+    clear_design_for_test(orchestrator.settings, source, full=True)
+    painted = BodyDetail(preset="natural", landmarks={}, painted_texels=1, texels_per_mm=4.0, upscaled=False,
+                         textures={})
+    files = {"skin-pack/manifest.json": b'{"schema": "wardrobe.skinPack.v1", "states": {"closed": {}}}',
+             "skin-pack/closed/base.png": b"png"}
+    manifest = {"states": {"closed": {}}, "tiles": [[0, 0]], "maps": ["base"]}
+    with patch("wardrobe.pipeline.bare_body.check_body", return_value=BodyIntegrity({"upper": RegionCheck(True, 1)})), \
+         patch("wardrobe.vrm.body_detail.paint_detail", return_value=painted), \
+         patch("wardrobe.vrm.skin_pack.build", return_value=(manifest, files)) as build:
+        result = await orchestrator.run_now(CreateJobRequest.model_validate(
+            request("sources/p.vrm", bareDetail="natural", bareStates=["closed"])))
+    assert result.state is JobState.COMPLETED, result.error
+    assert build.call_args.kwargs["states"] == ["closed"]
+    assert await store.get(f"looks/{result.look.id}/skin-pack/closed/base.png") == b"png"
+    output = GltfDocument.from_bytes(await store.get(f"looks/{result.look.id}/look.vrm"))
+    assert output.gltf["extras"]["wardrobeForge"]["skinPack"] == "skin-pack/manifest.json"
+    assert result.fit_report.base_body["skinPack"]["tiles"] == 1

@@ -44,6 +44,7 @@ from pathlib import Path
 
 import numpy as np
 
+from wardrobe.vrm import skin_effects as FX
 from wardrobe.vrm.document import GltfDocument
 from wardrobe.vrm.measure import BodyMeasurements
 from wardrobe.vrm.painted_clothing import _image, skin_surface
@@ -66,7 +67,11 @@ MIDLINE = 0.006
 
 STATES_PATH = PRESETS_PATH.with_name("states.json")
 STATES_SCHEMA = "wardrobe.bodyDetail.states.v1"
-STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen")
+STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen", "pumped", "anusGape", *FX.EFFECT_KEYS)
+EXTRAS_PATH = PRESETS_PATH.with_name("extras.json")
+EXTRAS_SCHEMA = "wardrobe.bodyDetail.extras.v1"
+#: BD6. What a persistent extra may set (tan lines now; marks, freckles… later).
+EXTRA_KEYS = ("tanTop", "tanBottom", "tan", *FX.MARK_KEYS)
 
 
 class BodyDetailError(ValueError):
@@ -97,6 +102,29 @@ def load_states(path: Path | str | None = None) -> dict[str, dict]:
         if not state.get("body"):
             raise BodyDetailError(f"state {name}: needs a 'body' line for the conversation")
     return states
+
+
+def load_extras(path: Path | str | None = None) -> dict[str, dict]:
+    """BD6. Persistent extras painted with a preset (tan lines…): ``options.bareExtras``."""
+    data = json.loads(Path(path or EXTRAS_PATH).read_text(encoding="utf-8"))
+    if data.get("schema") != EXTRAS_SCHEMA:
+        raise BodyDetailError(f"not a body-detail extras file: {path or EXTRAS_PATH}")
+    extras = data.get("extras") or {}
+    for name, extra in extras.items():
+        values = extra.get("set", {})
+        if set(values) - set(EXTRA_KEYS):
+            raise BodyDetailError(f"extra {name}: unknown keys {sorted(set(values) - set(EXTRA_KEYS))}")
+        top, bottom = values.get("tanTop", "none"), values.get("tanBottom", "none")
+        if top not in FX.TAN_TOPS or bottom not in FX.TAN_BOTTOMS:
+            raise BodyDetailError(f"extra {name}: unknown tan cut")
+        unknown = set(values.get("piercings", [])) - set(FX.PIERCINGS)
+        if unknown:
+            raise BodyDetailError(f"extra {name}: unknown piercings {sorted(unknown)}")
+        if values.get("tattoo") and values["tattoo"] not in FX.TATTOOS:
+            raise BodyDetailError(f"extra {name}: unknown tattoo {values['tattoo']!r}")
+        if values.get("tattooPlace", "mons") not in FX.TATTOO_PLACES:
+            raise BodyDetailError(f"extra {name}: unknown tattoo place {values['tattooPlace']!r}")
+    return extras
 
 
 @dataclass(frozen=True)
@@ -163,7 +191,8 @@ def find_landmarks(points: np.ndarray, measurements: BodyMeasurements, forward: 
 
 
 def paint_detail(document: GltfDocument, measurements: BodyMeasurements, *, preset: str, forward: float,
-                 presets: dict | None = None, state: str | None = None) -> BodyDetail | None:
+                 presets: dict | None = None, state: str | None = None,
+                 extras: list[str] | tuple[str, ...] = ()) -> BodyDetail | None:
     """Paint ``preset`` (in body ``state``, BD4) on her skin. None: no textured skin or no landmarks."""
     table = presets if presets is not None else load_presets()
     if preset not in table:
@@ -174,6 +203,17 @@ def paint_detail(document: GltfDocument, measurements: BodyMeasurements, *, pres
         if state not in states:
             raise BodyDetailError(f"unknown body state {state!r}; one of {', '.join(sorted(states))}")
         spec.update(states[state].get("set", {}))
+    if extras:
+        table_extras = load_extras()
+        for name in extras:
+            if name not in table_extras:
+                raise BodyDetailError(f"unknown extra {name!r}; one of {', '.join(sorted(table_extras))}")
+            values = dict(table_extras[name].get("set", {}))
+            # BD13. Piercings add up: nipple rings from one extra and labia rings from another are
+            # both worn, not the second replacing the first.
+            if "piercings" in values and "piercings" in spec:
+                values["piercings"] = list(dict.fromkeys([*spec["piercings"], *values["piercings"]]))
+            spec.update(values)
     textures: dict = {}
     skin, _ = skin_surface(document, measurements, set(), textures)
     if skin is None:
@@ -193,7 +233,8 @@ def paint_detail(document: GltfDocument, measurements: BodyMeasurements, *, pres
     s = marks.scale
     reach_chest = float(spec["areolaRadius"]) * s * 2.2
     reach_pelvis = 0.14 * s
-    density = _texels_per_mm(document, skin, main.shape, marks, reach_chest, reach_pelvis)
+    torso = s if FX.wants_torso(spec) else None  # BD5: effects of her whole torso band
+    density = _texels_per_mm(document, skin, main.shape, marks, reach_chest, reach_pelvis, torso)
     upscaled = False
     while density < MIN_TEXELS_PER_MM and max(main.shape[:2]) * 2 <= MAX_TEXTURE:
         main = _resample(main, 2)
@@ -201,7 +242,7 @@ def paint_detail(document: GltfDocument, measurements: BodyMeasurements, *, pres
         density *= 2
         upscaled = True
     h, w = main.shape[:2]
-    samples = _texels(document, skin, w, h, marks, reach_chest, reach_pelvis)
+    samples = _texels(document, skin, w, h, marks, reach_chest, reach_pelvis, torso)
     if samples is None:
         return None
     rows, cols, where, frames = samples
@@ -234,6 +275,10 @@ def _paint(colour: np.ndarray, where: np.ndarray, marks: Landmarks, spec: dict, 
     """The texels' new colours, and which were changed. Pure: colours and body points in, out."""
     out = colour.copy()
     touched = np.zeros(len(colour), dtype=bool)
+    # BD5–BD6. Her skin first: tan lines, then the flush; the anatomy is painted over them.
+    for tint, weight in FX.under(where, marks, spec, s):
+        out = _tint(out, tint, weight)
+        touched |= weight > 0.01
     for nipple in marks.nipples:
         weight = _areola(where, nipple, spec, s)
         if weight is not None:
@@ -256,6 +301,18 @@ def _paint(colour: np.ndarray, where: np.ndarray, marks: Landmarks, spec: dict, 
         tone = np.asarray(spec["hairColor"], dtype=np.float32)[None, :] * variation[:, None]
         tone = tone * (0.75 if shade else 1.0)
         out = out * (1.0 - alpha[:, None]) + tone * alpha[:, None]
+        touched |= alpha > 0.01
+    # BD5. Sweat on top of everything.
+    for tint, weight in FX.over(where, marks, spec, s):
+        out = _tint(out, tint, weight)
+        touched |= weight > 0.01
+    # BD9. Semen last: pearly white, translucent where thin, a wet highlight where thick.
+    wet = FX.fluid(where, marks, spec, s)
+    if wet is not None:
+        alpha, highlight, _ = wet
+        cream = np.array([242.0, 240.0, 230.0]) * (0.92 if shade else 1.0)
+        out = out * (1.0 - alpha[:, None]) + cream[None, :] * alpha[:, None]
+        out = _tint(out, [1.08, 1.08, 1.06], highlight * 0.8)
         touched |= alpha > 0.01
     return np.clip(out, 0, 255), touched
 
@@ -314,11 +371,18 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
     layers = []
 
     # Labia majora: two rounded folds, shaded darker towards the cleft between them.
-    wmaj = g("majoraWidth", 0.014)
+    arousal, opened, anus_open = _state(spec)
+    pumped = _pumped(spec)
+    wmaj = _majora_width(spec, s)
     along = (t - L / 2) / (L / 2)
     outer = (u / wmaj) ** 2 + along ** 2
     majora = (1.0 - _smoothstep(0.7, 1.0, outer)) * (0.25 + 0.75 * (1.0 - np.clip(np.abs(u) / wmaj, 0, 1)))
     layers.append((spec.get("majoraTint", [0.90, 0.76, 0.73]), majora * 0.55))
+    if pumped > 0:
+        # BD13. Pumped: the outer lips engorged — darker, redder, tight and shiny over the swell.
+        layers.append(([0.90, 0.70, 0.72], majora * 0.6 * pumped))
+        layers.append(([1.10, 1.06, 1.06], np.exp(-((np.abs(u) - 0.55 * wmaj) / (0.18 * wmaj)) ** 2)
+                       * (1.0 - _smoothstep(0.5, 1.0, outer)) * 0.45 * pumped))
     # Depth: the inner faces of the outer lips are in their own shadow, the outer curve catches light.
     inner = np.exp(-((np.abs(u) - 0.35 * wmaj) / (0.25 * wmaj)) ** 2) * (1.0 - _smoothstep(0.6, 1.0, outer))
     layers.append(([0.86, 0.78, 0.77], inner * 0.5))
@@ -327,17 +391,20 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
 
     # Labia minora: inner lips with a wandering edge and a darker rim, from near the back of the
     # vulva to the clitoral hood.
-    lm, tm = g("minoraLength", 0.044), L * 0.47
-    arousal, opened, anus_open = _state(spec)
-    # BD4. Aroused, the inner lips swell and part; opened, they part further round the opening.
-    wmin = g("minoraWidth", 0.0055) * (1.0 + 0.25 * arousal + 0.55 * opened)
+    lm, tm = _minora_length(spec, s), L * 0.47
+    wmin = _minora_width(spec, s)
     span = np.clip(1.0 - ((t - tm) / (lm / 2)) ** 2, 0.0, 1.0)
     edge = wmin * np.sqrt(span) * (1.0 + 0.16 * np.sin(t / (0.004 * s)) + 0.08 * np.sin(t / (0.0017 * s)))
     edge = np.maximum(edge, 1e-6)
     minora = (1.0 - _smoothstep(0.8, 1.0, np.abs(u) / edge)) * (span > 0)
     rim = np.exp(-(((np.abs(u) - edge * 0.9) / (0.0007 * s)) ** 2)) * (span > 0.05)
-    layers.append((_flushed(spec.get("minoraTint", [0.90, 0.72, 0.72]), arousal), minora * 0.85))
-    layers.append((spec.get("rimTint", [0.78, 0.60, 0.60]), rim * 0.7))
+    layers.append((_flushed(spec.get("minoraTint", [0.90, 0.72, 0.72]), max(arousal, pumped)), minora * 0.85))
+    layers.append((spec.get("rimTint", [0.78, 0.60, 0.60]), rim * (0.7 + 0.25 * pumped)))
+    if pumped > 0:
+        # BD13. Engorged inner lips: deep red-violet, glossy, the rim darker still.
+        layers.append(([0.82, 0.55, 0.62], minora * 0.55 * pumped))
+        gloss = np.exp(-((np.abs(u) - 0.6 * edge) / (0.22 * edge + 1e-6)) ** 2) * minora
+        layers.append(([1.14, 1.08, 1.10], gloss * 0.4 * pumped))
 
     # Vestibule: the moist pink between the inner lips.
     vest = (1.0 - _smoothstep(0.35, 0.6, np.abs(u) / edge)) * (span > 0.1) * ((t > 0.08 * L) & (t < 0.72 * L))
@@ -368,7 +435,7 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
     layers.append((spec.get("openingTint", [0.56, 0.40, 0.42]), (1.0 - _smoothstep(0.5, 1.0, meatus)) * 0.7))
 
     # Clitoral glans and hood: a small rounded pink spot under a fold with a crease beneath it.
-    tc, rc = 0.76 * L, g("glansRadius", 0.0022) * (1.0 + 0.35 * arousal)
+    tc, rc = 0.76 * L, _glans_radius(spec, s)
     glans = np.sqrt(u ** 2 + (t - tc) ** 2) / rc
     hood = np.sqrt((u / (0.0045 * s)) ** 2 + ((t - (tc + 0.6 * rc + 0.004 * s)) / (0.0055 * s)) ** 2)
     crease = np.exp(-(((t - (tc + rc)) / (0.0006 * s)) ** 2)) * (np.abs(u) < 0.004 * s)
@@ -390,7 +457,8 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
     layers.append((spec.get("majoraTint", [0.88, 0.70, 0.68]), raphe * 0.5))
 
     # Anus: a puckered ring — radial folds darkening in to a closed centre.
-    ra = g("anusRadius", 0.0065) * (1.0 + 0.35 * anus_open)
+    ra = _anus_radius(spec, s)
+    gape = _gape(spec)
     au, at = u, t + per
     ar = np.sqrt(au ** 2 + at ** 2) / ra
     angle = np.arctan2(at, au)
@@ -404,6 +472,19 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
         layers.append(([0.92, 0.62, 0.64], inner * 0.7 * anus_open))
     layers.append((spec.get("openingTint", [0.56, 0.40, 0.42]),
                    (1.0 - _smoothstep(core * 0.15, core, ar)) * (0.6 + 0.3 * anus_open)))
+    if gape > 0:
+        # BD16. After anal fisting: a wide round gape. Its folds are gone, its rim is swollen and
+        # flushed red, its inner walls show pink and wet, and its centre is dark depth, so it reads
+        # clearly from behind on all fours.
+        hole = 0.42 + 0.18 * gape
+        rim = np.exp(-((ar - (hole + 0.2)) / 0.13) ** 2)
+        walls = _smoothstep(hole * 0.7, hole, ar) * (1.0 - _smoothstep(hole, hole + 0.12, ar))
+        layers.append(([0.92, 0.6, 0.62], rim * 0.8 * gape))  # swollen, flushed rim
+        wet = np.exp(-((ar - (hole + 0.24)) / 0.05) ** 2)
+        layers.append(([1.1, 1.04, 1.05], wet * 0.45 * gape))  # wet edge
+        layers.append(([0.86, 0.5, 0.54], walls * 0.85 * gape))  # her inner walls
+        depth = 1.0 - _smoothstep(hole * 0.5, hole * 0.92, ar)
+        layers.append(([0.3, 0.2, 0.22], depth * 0.95 * gape))  # dark depth
 
     hair = _hair(u, np.where(in_front, t, -1.0), in_front, L, spec, s)
     return layers, hair
@@ -411,8 +492,49 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
 
 def _state(spec: dict) -> tuple[float, float, float]:
     """BD4. (arousal, vagina open, anus open), each 0..1, from a preset merged with a state."""
-    clip = lambda key: float(np.clip(float(spec.get(key, 0.0)), 0.0, 1.0))  # noqa: E731
-    return clip("arousal"), clip("vaginaOpen"), clip("anusOpen")
+    clip = lambda key, top=1.0: float(np.clip(float(spec.get(key, 0.0)), 0.0, top))  # noqa: E731
+    # BD8. The openings go past 1 (to 1.5) for the stretched states: stretched beyond wide open.
+    return clip("arousal"), clip("vaginaOpen", 1.5), clip("anusOpen", 1.5)
+
+
+def _pumped(spec: dict) -> float:
+    """BD13. How engorged her vulva is after a pump, 0..1 (``pumped`` in a state)."""
+    return float(np.clip(float(spec.get("pumped", 0.0)), 0.0, 1.0))
+
+
+def _gape(spec: dict) -> float:
+    """BD16. How far her anus gapes after anal fisting, 0..1 (``anusGape``)."""
+    return float(np.clip(float(spec.get("anusGape", 0.0)), 0.0, 1.0))
+
+
+def _anus_radius(spec: dict, s: float) -> float:
+    """Her anus: wider relaxed open (BD4); after fisting it gapes to more than twice that (BD16)."""
+    _, _, anus_open = _state(spec)
+    return float(spec.get("anusRadius", 0.0065)) * s * (1.0 + 0.35 * anus_open + 1.3 * _gape(spec))
+
+
+def _majora_width(spec: dict, s: float) -> float:
+    """BD13. Half width of her outer lips: pumped, they swell out by up to a third."""
+    return float(spec.get("majoraWidth", 0.014)) * s * (1.0 + 0.3 * _pumped(spec))
+
+
+def _minora_width(spec: dict, s: float) -> float:
+    """Half width of her inner lips. BD4: aroused they swell and part, opened they part further round
+    the opening; BD13: pumped they nearly double, the deformation a vacuum pump leaves."""
+    arousal, opened, _ = _state(spec)
+    swell = 1.0 + 0.25 * arousal + 0.55 * opened + 0.9 * _pumped(spec)
+    return float(spec.get("minoraWidth", 0.0055)) * s * swell
+
+
+def _minora_length(spec: dict, s: float) -> float:
+    """Length of her inner lips; pumped, they lengthen a little too."""
+    return float(spec.get("minoraLength", 0.044)) * s * (1.0 + 0.15 * _pumped(spec))
+
+
+def _glans_radius(spec: dict, s: float) -> float:
+    """Her clitoral glans: larger aroused, larger again pumped."""
+    arousal, _, _ = _state(spec)
+    return float(spec.get("glansRadius", 0.0022)) * s * (1.0 + 0.35 * arousal + 0.6 * _pumped(spec))
 
 
 def _introitus(spec: dict, s: float, opened: float) -> tuple[float, float]:
@@ -521,33 +643,41 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.nda
         d = np.linalg.norm(where - nipple, axis=1)
         h += 0.0035 * k * (1.0 - _smoothstep(0.0, rn * 1.1, d)) ** 1.5
         h += 0.0005 * k * (1.0 - _smoothstep(ra * 0.75, ra * 1.05, d))
+        # BD11. Puffy areolae: the whole areola raised as a soft dome (the "puffy" preset).
+        h += float(spec.get("areolaPuff", 0.0)) * 0.003 * k * (1.0 - _smoothstep(0.0, ra, d)) ** 0.8
     u, t, in_front = _coords(where, marks, s)
     g = lambda key, default: float(spec.get(key, default)) * s  # noqa: E731
-    L, wmaj = g("vulvaLength", 0.062), g("majoraWidth", 0.014)
+    L, wmaj = g("vulvaLength", 0.062), _majora_width(spec, s)
+    pumped = _pumped(spec)
     along = (t - L / 2) / (L / 2)
     outer = np.clip(1.0 - ((u / wmaj) ** 2 + along ** 2), 0.0, 1.0)
-    h += 0.004 * k * np.sqrt(outer) * in_front
+    h += 0.004 * k * (1.0 + 0.9 * pumped) * np.sqrt(outer) * in_front
     h -= 0.0022 * k * np.exp(-((u / (0.0013 * s)) ** 2)) * ((t > -0.002 * s) & (t < L)) * in_front
     arousal, opened, anus_open = _state(spec)
-    lm, tm = g("minoraLength", 0.044), L * 0.47
-    wmin = g("minoraWidth", 0.0055) * (1.0 + 0.25 * arousal + 0.55 * opened)
+    lm, tm = _minora_length(spec, s), L * 0.47
+    wmin = _minora_width(spec, s)
     span = np.clip(1.0 - ((t - tm) / (lm / 2)) ** 2, 0.0, 1.0)
     edge = np.maximum(wmin * np.sqrt(span), 1e-6)
     ridge = np.exp(-(((np.abs(u) - edge * 0.55) / (0.4 * edge + 1e-6)) ** 2))
-    h += 0.0014 * k * (1.0 + 0.6 * arousal) * ridge * (span > 0) * in_front
+    h += 0.0014 * k * (1.0 + 0.6 * arousal + 1.6 * pumped) * ridge * (span > 0) * in_front
     ru, rt = _introitus(spec, s, opened)
     ri = np.sqrt((u / ru) ** 2 + ((t - 0.22 * L) / rt) ** 2)
     h -= 0.0045 * k * (1.0 + 1.6 * opened) * (1.0 - _smoothstep(0.0, 1.15, ri)) ** 2
     if opened > 0:
         h += 0.0004 * k * opened * np.cos((t - 0.22 * L) / (0.0011 * s)) * _smoothstep(0.3, 0.6, ri) \
             * (1.0 - _smoothstep(0.7, 1.0, ri))
-    rc = g("glansRadius", 0.0022) * (1.0 + 0.35 * arousal)
+    rc = _glans_radius(spec, s)
     h += 0.0016 * k * (1.0 - _smoothstep(0.0, 1.1, np.sqrt(u ** 2 + (t - 0.76 * L) ** 2) / rc))
     hood_t = 0.76 * L + 0.6 * rc + 0.004 * s
     hood = np.sqrt((u / (0.0045 * s)) ** 2 + ((t - hood_t) / (0.0055 * s)) ** 2)
     h += 0.0014 * k * np.clip(1.0 - hood, 0.0, 1.0) ** 0.7
-    per, ra = g("perineum", 0.032), g("anusRadius", 0.0065) * (1.0 + 0.35 * anus_open)
+    per, ra = g("perineum", 0.032), _anus_radius(spec, s)
     ar = np.sqrt(u ** 2 + (t + per) ** 2) / ra
+    gape = _gape(spec)
+    if gape > 0:  # BD16. a deep round hole, a swollen rim standing round it
+        hole = 0.42 + 0.18 * gape
+        h -= 0.006 * k * gape * (1.0 - _smoothstep(0.0, hole, ar)) ** 1.5
+        h += 0.0012 * k * gape * np.exp(-((ar - (hole + 0.2)) / 0.13) ** 2)
     angle = np.arctan2(t + per, u)
     h -= 0.0032 * k * (1.0 + 1.8 * anus_open) * (1.0 - _smoothstep(0.0, 0.9, ar)) ** 2
     h += 0.0005 * k * (1.0 - 0.7 * anus_open) * np.cos(14 * angle + 0.6 * np.sin(5 * angle)) \
@@ -555,7 +685,7 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.nda
     hair = _hair(u, np.where(in_front, t, -1.0), in_front, L, spec, s)
     if hair is not None:
         h += 0.00035 * k * hair[0]
-    return h
+    return h + FX.relief(where, marks, spec, s) * float(spec.get("relief", 1.0))
 
 
 def _relief_normals(where: np.ndarray, frames: np.ndarray, marks: Landmarks, spec: dict, s: float):
@@ -662,21 +792,22 @@ def _value_noise(x: np.ndarray, y: np.ndarray) -> np.ndarray:
 
 
 def _near(points: np.ndarray, triangles: np.ndarray, marks: Landmarks, reach_chest: float,
-          reach_pelvis: float) -> np.ndarray:
-    """Triangles with a corner near a nipple or her crotch: the only ones worth rasterising."""
+          reach_pelvis: float, torso: float | None = None) -> np.ndarray:
+    """Triangles with a corner near a nipple or her crotch — and her torso band when an effect needs
+    it (``torso`` is her scale then): the only ones worth rasterising."""
     corners = points[triangles]  # (T, 3, 3)
-    near = np.zeros(len(triangles), dtype=bool)
+    near = FX.in_torso(corners, marks, torso) if torso else np.zeros(len(triangles), dtype=bool)
     for nipple in marks.nipples:
         near |= (np.linalg.norm(corners - nipple, axis=2) < reach_chest).any(axis=1)
     near |= (np.linalg.norm(corners - marks.crotch, axis=2) < reach_pelvis).any(axis=1)
     return near
 
 
-def _texels_per_mm(document, skin, shape, marks, reach_chest, reach_pelvis) -> float:
+def _texels_per_mm(document, skin, shape, marks, reach_chest, reach_pelvis, torso=None) -> float:
     h, w = shape[:2]
     pixel_area = body_area = 0.0
     for primitive, points, triangles in skin.parts:
-        chosen = triangles[_near(points, triangles, marks, reach_chest, reach_pelvis)]
+        chosen = triangles[_near(points, triangles, marks, reach_chest, reach_pelvis, torso)]
         if not len(chosen):
             continue
         uv = document.read_accessor(primitive["attributes"]["TEXCOORD_0"]).astype(np.float64)[:, :2]
@@ -688,11 +819,11 @@ def _texels_per_mm(document, skin, shape, marks, reach_chest, reach_pelvis) -> f
     return float(np.sqrt(pixel_area / body_area)) if body_area > 0 else 0.0
 
 
-def _texels(document, skin, w, h, marks, reach_chest, reach_pelvis):
+def _texels(document, skin, w, h, marks, reach_chest, reach_pelvis, torso=None):
     """(rows, cols, body points) of every texel the triangles near the landmarks cover."""
     rows, cols, where, frames = [], [], [], []
     for primitive, points, triangles in skin.parts:
-        chosen = triangles[_near(points, triangles, marks, reach_chest, reach_pelvis)]
+        chosen = triangles[_near(points, triangles, marks, reach_chest, reach_pelvis, torso)]
         if not len(chosen):
             continue
         uv = document.read_accessor(primitive["attributes"]["TEXCOORD_0"]).astype(np.float64)[:, :2]
@@ -788,5 +919,6 @@ def _resample(image: np.ndarray | None, factor: int) -> np.ndarray | None:
     return np.stack(channels, axis=2)
 
 
-__all__ = ["BodyDetail", "BodyDetailError", "Landmarks", "find_landmarks", "load_presets", "load_states",
+__all__ = ["BodyDetail", "BodyDetailError", "Landmarks", "find_landmarks", "load_extras", "load_presets",
+           "load_states",
            "paint_detail"]

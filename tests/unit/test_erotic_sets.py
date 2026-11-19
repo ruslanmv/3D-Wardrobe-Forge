@@ -60,3 +60,28 @@ def test_prebuild_sends_an_erotic_set_over_bare_without_an_added_foundation():
     assert body["options"]["baseBody"] == "bare-dressed" and "ensureFoundation" not in body["options"]
     plain = _prebuild().job_body({"templateId": "outfit:x", "outfit": {"prompt": "x"}})
     assert plain["options"]["ensureFoundation"] is True
+
+
+class _FakeForge:
+    def __init__(self, looks):
+        self.looks, self.calls = looks, []
+
+    def call(self, path, body=None):
+        self.calls.append(path)
+        return {"looks": self.looks}
+
+
+def test_missing_only_keeps_what_the_dataset_lists_and_sends_the_rest():
+    tool = _prebuild()
+    forge = _FakeForge([{"templateId": "under-thong-v2", "color": "black"},
+                        {"templateId": None, "outfitId": "erotic-boudoir"}])
+    pairs = [{"slug": "a", "templateId": "under-thong-v2", "color": "black"},
+             {"slug": "a", "templateId": "under-thong-v2", "color": "red"},
+             {"slug": "a", "templateId": "outfit:erotic-boudoir", "color": None},
+             {"slug": "a", "templateId": "outfit:erotic-dominant", "color": None}]
+    assert tool.mark_listed(forge, pairs) == 2
+    assert [bool(p.get("listed")) for p in pairs] == [True, False, True, False]
+    assert forge.calls == ["/v1/library/a/prebuilt"]  # one read per character
+    # A listed pair is never sent to Forge.
+    out = tool.build(forge, pairs[0], 1.0)
+    assert out["result"] == "present" and forge.calls == ["/v1/library/a/prebuilt"]

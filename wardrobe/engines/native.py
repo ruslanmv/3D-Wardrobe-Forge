@@ -352,6 +352,8 @@ class NativeEngine(FittingEngine):
                 **({"overBare": True} if context.fit_report.base_body.get("mode") == "bare-dressed" else {}),
                 **({"detail": d["preset"], "state": d.get("state")}
                    if (d := context.fit_report.base_body.get("bodyDetail")) else {}),
+                **({"skinPack": "skin-pack/manifest.json"}
+                   if context.fit_report.base_body.get("skinPack") else {}),
                 "removedSourceSlots": context.fit_report.base_body.get("removedSlots", []),
                 "removedSourceMaterials": context.fit_report.base_body.get("removedMaterials", []),
                 "layers": [

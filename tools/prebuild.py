@@ -157,10 +157,43 @@ def job_body(pair: dict) -> dict:
     }
 
 
+def listed_identities(looks: list[dict]) -> set:
+    """ES4. What a character's ready-to-wear list already holds: (template, colour) for a catalog
+    garment, ("outfit:<id>", None) for an outfit dictionary entry."""
+    held = set()
+    for look in looks:
+        if look.get("outfitId"):
+            held.add((f"outfit:{look['outfitId']}", None))
+        if look.get("templateId"):
+            held.add((look["templateId"], look.get("color")))
+    return held
+
+
+def mark_listed(forge: Forge, pairs: list[dict]) -> int:
+    """ES4. ``--missing-only``: a pair whose look the character's list already has is not sent at all
+    — not even to Forge's cache, which bare-based looks (the erotic sets) never read, so they would
+    rebuild for nothing. Marked present; the dataset's look stays exactly as it is."""
+    held: dict[str, set] = {}
+    marked = 0
+    for pair in pairs:
+        if pair.get("skip"):
+            continue
+        slug = pair["slug"]
+        if slug not in held:
+            held[slug] = listed_identities(forge.call(f"/v1/library/{slug}/prebuilt").get("looks", []))
+        if (pair["templateId"], pair.get("color")) in held[slug]:
+            pair["listed"] = True
+            marked += 1
+    return marked
+
+
 def build(forge: Forge, pair: dict, job_timeout: float) -> dict:
     out = dict(pair)
     if pair.get("skip"):
         out["result"] = "skipped"
+        return out
+    if pair.get("listed"):
+        out.update(result="present", reason="already in the dataset: kept, not rebuilt")
         return out
     started = time.monotonic()
     try:
@@ -215,6 +248,8 @@ def main(argv=None) -> int:
     parser.add_argument("--plan-only", action="store_true", help="List the pairs and stop")
     parser.add_argument("--outfits", action="store_true", help="Also every outfit dictionary entry (RU1)")
     parser.add_argument("--outfits-only", action="store_true", help="Only the outfit dictionary entries")
+    parser.add_argument("--missing-only", action="store_true",
+                        help="ES4: send only looks the character's list does not have yet (never a rebuild)")
     opts = parser.parse_args(argv)
 
     token = Path(opts.admin_token_file).expanduser().read_text().strip() if opts.admin_token_file else None
@@ -227,6 +262,13 @@ def main(argv=None) -> int:
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
         print(f"Forge unreachable at {opts.forge}: {exc}", file=sys.stderr)
         return 2
+    if opts.missing_only:
+        try:
+            marked = mark_listed(forge, pairs)
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            print(f"could not read the characters' lists at {opts.forge}: {exc}", file=sys.stderr)
+            return 2
+        print(f"{marked} looks already listed: kept as they are", flush=True)
     if opts.limit:
         pairs = pairs[: opts.limit]
     print(f"{len(pairs)} looks planned across {len({p['slug'] for p in pairs})} characters", flush=True)

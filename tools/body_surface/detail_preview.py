@@ -1,6 +1,8 @@
 """BD1. Build preview VRMs of every body-detail preset on Forge's synthetic adult reference body.
 
     python tools/body_surface/detail_preview.py --out <private dir> [--presets natural,warm]
+        [--base <dir>/ref-atlas.vrm] [--states open,pumped]
+        [--extras tattoo-mons-rose+piercings-labia,glitter]
 
 Development and review only. The output is explicit and stays private (never commit it, never serve
 it from a public route). It is built on ``ref-f-median`` — Forge's own generated adult body — never
@@ -94,6 +96,9 @@ def main(argv=None) -> int:
     parser.add_argument("--presets", default=",".join(load_presets()))
     parser.add_argument("--base", type=Path, help="reuse an earlier ref-atlas.vrm")
     parser.add_argument("--states", default="", help="BD4 body states (states.json), comma-separated")
+    parser.add_argument("--extras", default="",
+                        help="BD6/BD13 extras (extras.json) worn by every preview, '+'-separated; "
+                             "several groups comma-separated each make their own files")
     args = parser.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
     if args.base:
@@ -104,12 +109,15 @@ def main(argv=None) -> int:
         base = atlas_body(build_reference_vrm("ref-f-median"))
         (args.out / "ref-atlas.vrm").write_bytes(base)
     for name in args.presets.split(","):
-        for state in [s for s in args.states.split(",") if s] or [None]:
+        for state, group in [(s, g) for s in ([s for s in args.states.split(",") if s] or [None])
+                             for g in ([g for g in args.extras.split(",") if g] or [""])]:
+            extras = tuple(e for e in group.split("+") if e)
             doc = GltfDocument.from_bytes(base)
             info = inspect_document(doc)
-            report = paint_detail(doc, measure_body(doc, info), preset=name, state=state,
+            report = paint_detail(doc, measure_body(doc, info), preset=name, state=state, extras=extras,
                                   forward=-1.0 if info.spec is VrmSpec.VRM0 else 1.0)
-            label = f"{name}-{state}" if state else name
+            parts = [name, *([state] if state else []), *([group.replace("+", "_")] if group else [])]
+            label = "-".join(parts)
             if report is None:
                 print(f"{label}: not placed")
                 continue

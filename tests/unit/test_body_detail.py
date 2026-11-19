@@ -12,7 +12,7 @@ from wardrobe.vrm import body_detail as BD
 
 def test_presets_load_hairless_and_hairy_variants():
     presets = BD.load_presets()
-    hairless = {"natural", "soft-pink", "warm", "defined"}
+    hairless = {"natural", "soft-pink", "warm", "defined", "outie", "puffy", "porcelain", "anime"}
     assert hairless <= set(presets)
     for name in hairless:
         assert presets[name]["hair"] == "none"
@@ -246,3 +246,326 @@ def test_open_states_darken_and_deepen_the_openings():
 def test_arousal_flushes_towards_red():
     flushed = BD._flushed([0.9, 0.8, 0.8], 1.0)
     assert flushed[0] == pytest.approx(0.9) and flushed[1] < 0.8 and flushed[2] < 0.8
+
+
+def test_effect_states_and_tan_extras_load():
+    """BD5–BD6. New states set only known effect keys; every extra names a known tan cut."""
+    states = BD.load_states()
+    for name in ("flushed", "goosebumps", "sweaty", "afterglow"):
+        assert name in states and set(states[name]["set"]) <= set(BD.STATE_KEYS)
+    extras = BD.load_extras()
+    assert {"tan-triangle-thong", "tan-bandeau-classic"} <= set(extras)
+    for extra in extras.values():
+        assert len(extra["body"]) > 10
+
+
+@pytest.mark.parametrize("options, ok", [
+    ({"baseBody": "bare", "bareDetail": "natural", "bareExtras": ["tan-triangle-thong"]}, True),
+    ({"baseBody": "bare", "bareExtras": ["tan-triangle-thong"]}, False),
+    ({"baseBody": "bare", "bareDetail": "natural", "bareExtras": ["nope"]}, False),
+])
+def test_extras_option_needs_detail_and_known_extras(options, ok):
+    if ok:
+        assert JobOptions.model_validate(options).bare_extras == ["tan-triangle-thong"]
+    else:
+        with pytest.raises(ValueError):
+            JobOptions.model_validate(options)
+
+
+def test_effects_paint_where_they_belong():
+    """Flush on the upper chest not the belly; a tan line paler; sweat beads brighter; nothing at 0."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    chest = np.array([[0.0, 1.17 + 0.12, 0.15]])   # up her chest towards her throat
+    belly = np.array([[0.04, 0.9, 0.12]])
+    flush = FX._flush_field(np.vstack([chest, belly]), marks, 1.0)
+    assert flush[0] > flush[1]
+    assert FX.under(belly, marks, {}, 1.0) == [] and FX.over(belly, marks, {}, 1.0) == []
+    band = np.array([[0.05, 1.17 - 0.05, 0.16]])  # on the band under her bust
+    pale = FX._tan_mask(band, marks, {"tanTop": "triangle"}, 1.0)
+    assert pale[0] > 0.9
+    assert not FX.wants_torso({}) and FX.wants_torso({"sweat": 0.5})
+
+
+def test_erect_nipple_stands_higher():
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    nipple = np.array([marks.nipples[0]])
+    assert FX.relief(nipple, marks, {"erect": 1.0}, 1.0)[0] > FX.relief(nipple, marks, {"erect": 0.0}, 1.0)[0]
+
+
+def test_stretched_states_open_past_wide_open():
+    """BD8. Stretched (fisting) opens beyond wide open: 1.5, clamped there, never more."""
+    states = BD.load_states()
+    assert states["stretched"]["set"]["vaginaOpen"] == 1.5
+    assert states["anus-stretched"]["set"]["anusOpen"] == 1.5
+    assert BD._state({"vaginaOpen": 9, "anusOpen": 9, "arousal": 9}) == (1.0, 1.5, 1.5)
+    base = BD.load_presets()["natural"]
+    wide = BD._introitus({**base, "vaginaOpen": 1.0}, 1.0, 1.0)
+    stretched = BD._introitus({**base, "vaginaOpen": 1.5}, 1.0, 1.5)
+    assert stretched[0] > wide[0] and stretched[1] > wide[1]
+
+
+def test_cum_pools_at_both_openings_and_runs_between():
+    """BD9. Semen is opaque at the vaginal opening and the anus, present on the perineum between them,
+    and absent on her belly; at 0 nothing is drawn."""
+    from wardrobe.vrm import skin_effects as FX
+
+    spec = {**BD.load_presets()["natural"], "cum": 1.0}
+    L, per = spec["vulvaLength"], spec["perineum"]
+    marks = _marks()
+    where = np.array([[0.0, 0.74 + 0.22 * L, 0.004],   # vaginal opening
+                      [0.0, 0.74, -per],               # anus
+                      [0.0, 0.74, -per / 2],           # perineum, between them
+                      [0.06, 0.95, 0.12]])             # belly
+    alpha, highlight, thick = FX.fluid(where, marks, spec, 1.0)
+    assert alpha[0] > 0.5 and alpha[1] > 0.5 and alpha[2] > 0.2
+    assert alpha[3] == 0.0
+    assert FX.fluid(where, marks, {**spec, "cum": 0.0}, 1.0) is None
+    assert "cum" in BD.load_states() and BD.load_states()["cum"]["set"]["cum"] == 1.0
+
+
+def test_cum_inside_fills_the_opened_vagina():
+    """BD10. cumInside fills the opening itself (opaque at its centre), alone or with cum."""
+    from wardrobe.vrm import skin_effects as FX
+
+    base = BD.load_presets()["natural"]
+    L = base["vulvaLength"]
+    where = np.array([[0.0, 0.74 + 0.22 * L, 0.004], [0.06, 0.95, 0.12]])  # the opening; her belly
+    alpha, _, _ = FX.fluid(where, _marks(), {**base, "vaginaOpen": 0.8, "cumInside": 1.0}, 1.0)
+    assert alpha[0] > 0.6 and alpha[1] == 0.0
+    assert BD.load_states()["creampie"]["set"]["cumInside"] == 1.0
+
+
+def test_marks_land_where_they_are_aimed_and_nowhere_else():
+    """BD11. A kiss on her breast, a handprint behind, writing on her belly; none on bare belly skin."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    spots = FX._spots(marks, 1.0)
+    kiss_at = spots["left-breast"][0] + np.array([0.0, 0.0045, 0.0])
+    assert FX._kiss(np.array([kiss_at]), marks, spots["left-breast"][0], True, 1.0)[0] > 0.5
+    hand_at = spots["right-buttock"][0]
+    assert FX._handprint(np.array([hand_at]), marks, hand_at, 1.0)[0] > 0.5
+    far = np.array([[0.15, 0.9, 0.1]])
+    assert FX._kiss(far, marks, spots["left-breast"][0], True, 1.0)[0] == 0.0
+    extras = BD.load_extras()
+    assert {"kisses-red", "love-bites", "spanked", "freckles", "writing-yours", "piercings-all"} <= set(extras)
+
+
+def test_piercings_are_raised_metal_at_the_nipple():
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    spec = {**BD.load_presets()["natural"], "piercings": ["nipples"]}
+    metal, _ = FX._jewel(np.array([marks.nipples[0]]), marks, spec, 1.0)
+    assert metal[0] == 1.0
+    assert FX.relief(np.array([marks.nipples[0]]), marks, spec, 1.0)[0] > 0.001
+
+
+def test_bare_accepts_tattoos_now():
+    """BD12. An intimate tattoo is shown bare: body art is allowed on bare and bare-dressed jobs."""
+    from wardrobe.domain.jobs import CreateJobRequest
+
+    payload = {"avatar": {"storageKey": "s.vrm", "depictsAdult": True},
+               "outfit": {"prompt": "Bare authored body", "templateId": "body-bare-v1"},
+               "options": {"baseBody": "bare", "private": True},
+               "bodyArt": [{"design": "nape-crescent-01", "placement": "lower-back"}]}
+    CreateJobRequest.model_validate(payload)
+    # A skin pack is painted before body art: switching state would erase the tattoo, so refused.
+    packed = {**payload, "options": {**payload["options"], "bareDetail": "natural",
+                                     "bareStates": ["closed", "aroused"]}}
+    with pytest.raises(ValueError, match="bareStates"):
+        CreateJobRequest.model_validate(packed)
+    CreateJobRequest.model_validate({**packed, "bodyArt": []})
+
+
+def test_pumped_swells_the_labia_and_glans_and_raises_them():
+    """BD13. Pumped: outer lips wider, inner lips nearly doubled, glans larger — and higher relief."""
+    base = BD.load_presets()["natural"]
+    pumped = {**base, **BD.load_states()["pumped"]["set"]}
+    calm = {**base, "arousal": pumped["arousal"]}
+    assert BD._majora_width(pumped, 1.0) > BD._majora_width(calm, 1.0) * 1.25
+    assert BD._minora_width(pumped, 1.0) > BD._minora_width(calm, 1.0) * 1.6
+    assert BD._glans_radius(pumped, 1.0) > BD._glans_radius(calm, 1.0) * 1.4
+    marks = _marks()
+    L = base["vulvaLength"]
+    lip = np.array([[0.004, 0.74 + 0.5 * L, 0.004]])
+    assert BD._height(lip, marks, pumped, 1.0)[0] > BD._height(lip, marks, calm, 1.0)[0]
+    assert "pumped-open" in BD.load_states() and "oiled" in BD.load_states()
+
+
+def test_piercings_from_several_extras_add_up(tmp_path):
+    """BD13. Nipple rings from one extra and labia rings from another are both worn."""
+    from wardrobe.vrm import skin_effects as FX
+
+    extras = BD.load_extras()
+    assert set(extras["piercings-intimate"]["set"]["piercings"]) == {"labia", "christina", "hood-bar"}
+    for name, extra in extras.items():
+        assert set(extra["set"].get("piercings", [])) <= set(FX.PIERCINGS), name
+    bad = {"schema": BD.EXTRAS_SCHEMA, "extras": {"x": {"set": {"piercings": ["tongue"]}, "body": "b"}}}
+    path = tmp_path / "extras.json"
+    path.write_text(json.dumps(bad))
+    with pytest.raises(BD.BodyDetailError):
+        BD.load_extras(path)
+
+
+def test_genital_piercings_and_mons_tattoo_land_on_her_vulva_and_mons():
+    """BD13. A Christina bar runs up her mons, labia rings sit on her inner lips; the tattoo is on her
+    mons above the vulva and nowhere on her belly."""
+    from wardrobe.vrm import skin_effects as FX
+
+    base = BD.load_presets()["natural"]
+    marks = _marks()
+    c = marks.crotch
+    L = base["vulvaLength"]
+    # Points on her front, at heights along her (flat, upright) front: up = height above the crotch.
+    def at(x, up):
+        return np.array([[c[0] + x, c[1] + up, c[2] + 0.002]])
+
+    spec = {**base, "piercings": ["christina", "labia"]}
+    metal, _ = FX._jewel(at(0.0, L + 0.012), marks, spec, 1.0)
+    assert metal[0] > 0.9
+    ring_x = base["minoraWidth"] * 0.95 + 0.0028
+    metal, _ = FX._jewel(at(ring_x, 0.38 * L), marks, spec, 1.0)
+    assert metal[0] > 0.5
+    metal, _ = FX._jewel(at(0.03, 0.5 * L), marks, spec, 1.0)
+    assert metal[0] == 0.0
+    tattoo = {**base, "tattoo": "heart"}
+    layers = FX._tattoo(np.vstack([at(0.0, L + 0.03), at(0.0, L + 0.2)]), marks, tattoo, "heart", 1.0)
+    fill = layers[0][1]
+    assert fill[0] > 0.5 and fill[1] == 0.0
+    assert FX._tattoo(at(0.0, L + 0.03), marks, tattoo, "skull", 1.0) == []
+
+
+def test_oil_glitter_paint_and_stretch_marks_stay_on_her_torso():
+    """BD13. Torso effects: present on her belly, absent well away from it; oil whitens, never clips red."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    belly = np.array([[0.02, 0.95, 0.12]])
+    away = np.array([[0.0, 2.5, 0.12]])
+    oil = FX._oil(np.vstack([belly, away]), marks, 1.0, 1.0)
+    assert oil[0][1][0] > 0 and all(layer[1][1] == 0 for layer in oil)
+    for tint, _ in oil[1:]:
+        assert tint[2] >= tint[1] >= tint[0]  # lifts blue and green more than red
+    assert FX._body_paint(away, marks, 1.0)[0] == 0.0
+    assert FX._stretch_marks(away, marks, 1.0)[0] == 0.0
+    spec = {"oil": 1.0}
+    assert FX.wants_torso(spec) and FX.wants_torso({"glitter": 1.0}) and FX.wants_torso({"stretchMarks": 0.5})
+
+
+def test_doggy_states_open_both_holes_with_cum_and_no_hand_marks():
+    """BD14. The doggy skins: both holes open, cum, and no spank or grip marks in any state."""
+    states = BD.load_states()
+    for name in ("doggy-open-cum", "doggy-double-creampie", "doggy-gaping-cum", "doggy-cum-covered",
+                 "doggy-pumped-creampie"):
+        values = states[name]["set"]
+        assert values["vaginaOpen"] > 0 and values["anusOpen"] > 0, name
+        assert any(values.get(k, 0) > 0 for k in ("cum", "cumInside", "anusCumInside")), name
+    for name, state in states.items():
+        assert not state["set"].get("spankRed") and not state["set"].get("grips"), name
+
+
+def test_from_behind_semen_lands_where_aimed():
+    """BD14. cumBack is on her lower back only; cumDrip runs forward over her vulva; anusCumInside
+    fills the opened anus."""
+    from wardrobe.vrm import skin_effects as FX
+
+    base = BD.load_presets()["natural"]
+    marks = _marks()
+    L, per = base["vulvaLength"], base["perineum"]
+    back = np.array([[0.0, 0.74 + 0.14, -0.12], [0.0, 0.74 + 0.14, 0.12]])  # small of her back; belly
+    alpha, _, _ = FX.fluid(back, marks, {**base, "cumBack": 1.0}, 1.0)
+    assert alpha[0] > 0.5 and alpha[1] == 0.0
+    over_lips = np.array([[0.0, 0.74 + 0.5 * L, 0.004]])
+    assert FX.fluid(over_lips, marks, {**base, "cumDrip": 1.0}, 1.0)[0][0] > 0.3
+    anus = np.array([[0.0, 0.74, -per]])
+    spec = {**base, "anusOpen": 1.0, "anusCumInside": 1.0}
+    assert FX.fluid(anus, marks, spec, 1.0)[0][0] > 0.6
+    assert FX.fluid(anus, marks, base, 1.0) is None
+
+
+def test_tribal_tattoo_is_on_her_lower_back_only():
+    """BD14. The tribal sits across the small of her back, seen from behind; nothing on her front."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    spec = {**BD.load_presets()["natural"], **BD.load_extras()["tattoo-lower-back-tribal"]["set"]}
+    where = np.array([[0.0, 0.74 + 0.15, -0.12], [0.0, 0.74 + 0.15, 0.12]])  # the spearhead; her belly
+    layers = FX._tattoo(where, marks, spec, "tribal", 1.0)
+    ink = layers[-1][1]
+    assert ink[0] > 0.5 and ink[1] == 0.0
+    assert FX.wants_torso(spec)
+
+
+def test_fisted_anus_gapes_wide_dark_and_deep():
+    """BD16. After anal fisting her anus is nearly twice as wide as stretched open, dark at its centre
+    and recessed deeper; the doggy-fisted states keep the vagina open too."""
+    base = BD.load_presets()["natural"]
+    stretched = {**base, "anusOpen": 1.5}
+    fisted = {**stretched, "anusGape": 1.0}
+    assert BD._anus_radius(fisted, 1.0) > 1.8 * BD._anus_radius(stretched, 1.0)
+    marks = _marks()
+    anus = np.array([[0.0, 0.74, -base["perineum"]]])
+    assert BD._height(anus, marks, fisted, 1.0)[0] < BD._height(anus, marks, stretched, 1.0)[0]
+    shade = np.array([[200.0, 170.0, 160.0]])
+    dark, _ = BD._paint(shade.copy(), anus, marks, fisted, 1.0, shade=False)
+    plain, _ = BD._paint(shade.copy(), anus, marks, stretched, 1.0, shade=False)
+    assert dark.sum() < plain.sum()
+    states = BD.load_states()
+    for name in ("doggy-anal-fisted", "doggy-anal-fisted-cum", "doggy-both-fisted"):
+        assert states[name]["set"]["anusGape"] == 1.0 and states[name]["set"]["vaginaOpen"] > 0
+
+
+def test_sado_marks_land_where_aimed():
+    """BD15. Rope marks band her chest, welts cross her buttocks behind, wax sits on her front; all
+    the sado states keep both holes open."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    under_breasts = np.array([[0.02, 1.17 - 0.075, 0.15]])
+    assert FX._ropes(under_breasts, marks, 1.0)[0] > 0.5
+    buttock = np.array([[0.05, 0.74 + 0.0, -0.12], [0.05, 0.74, 0.12]])
+    core, halo = FX._welts(buttock, marks, 1.0)
+    assert halo[0] > 0 and halo[1] == 0.0
+    for name, state in BD.load_states().items():
+        if name.startswith("sado-"):
+            assert state["set"]["vaginaOpen"] > 0 and state["set"]["anusOpen"] > 0, name
+
+
+def test_more_tribals_and_their_places():
+    """BD15. Tribal wings and sun go on her lower back; a tribal can sit on her mons instead."""
+    from wardrobe.vrm import skin_effects as FX
+
+    marks = _marks()
+    extras = BD.load_extras()
+    back = np.array([[0.0, 0.74 + 0.15, -0.12]])
+    for name in ("tattoo-lower-back-tribal-wings", "tattoo-lower-back-tribal-sun"):
+        spec = {**BD.load_presets()["natural"], **extras[name]["set"]}
+        layers = FX._tattoo(back, marks, spec, spec["tattoo"], 1.0)
+        assert layers and max(layer[1][0] for layer in layers) > 0.3, name
+    spec = {**BD.load_presets()["natural"], **extras["tattoo-mons-tribal"]["set"]}
+    assert FX._tattoo(back, marks, spec, "tribal", 1.0)[0][1][0] == 0.0  # not on her back
+
+
+def test_lower_back_cum_pools_and_runs_up_her_spine():
+    """BD17. With her ass up the pool sits in the small of her back and runs up her spine (towards her
+    shoulders), never on her front; the lower-back states keep her open."""
+    from wardrobe.vrm import skin_effects as FX
+
+    base = BD.load_presets()["porcelain"]
+    marks = _marks()
+    pool = np.array([[0.0, 0.74 + 0.13, -0.12], [0.0, 0.74 + 0.13, 0.12]])
+    alpha, _, _ = FX.fluid(pool, marks, {**base, "cumPool": 1.0}, 1.0)
+    assert alpha[0] > 0.6 and alpha[1] == 0.0
+    up_spine = np.array([[0.0, 0.74 + 0.2, -0.12]])
+    assert FX.fluid(up_spine, marks, {**base, "cumSpine": 1.0}, 1.0)[0][0] > 0.3
+    states = BD.load_states()
+    for name in ("lower-back-cum", "lower-back-cum-heavy", "lower-back-cum-open", "lower-back-cum-creampie",
+                 "lower-back-cum-gaping"):
+        assert states[name]["set"]["cumPool"] == 1.0 and states[name]["set"]["vaginaOpen"] > 0, name
+    presets = BD.load_presets()
+    assert presets["porcelain"]["hair"] == "none" and presets["anime"]["relief"] < 1.0

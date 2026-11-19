@@ -132,6 +132,12 @@ class JobOptions(BaseModel):
     #: BD4. The body state that detail is painted in (``assets/body_detail/states.json``: closed,
     #: aroused, open, wide-open, anus-open, both-open). Needs ``bareDetail``; None keeps the preset.
     bare_state: str | None = Field(default=None, alias="bareState", max_length=32)
+    #: BD6. Persistent extras painted with the detail (``assets/body_detail/extras.json``: tan lines…).
+    #: Needs ``bareDetail``. Empty by default, so no stored cache key changes.
+    bare_extras: list[str] = Field(default_factory=list, alias="bareExtras", max_length=4)
+    #: BD7. The states a skin pack holds for live switching (``wardrobe.vrm.skin_pack``), built beside
+    #: the look. Needs ``bareDetail``. Empty by default: no pack, no cache key change.
+    bare_states: list[str] = Field(default_factory=list, alias="bareStates", max_length=10)
     #: MG3. Make sure a foundation is on her under the new clothes, adding only what is missing:
     #: a Forge foundation she already wears is kept (only a new foundation replaces one), and a
     #: half the outfit brings itself (a bikini, a lingerie set) is not doubled. It is also what
@@ -190,6 +196,24 @@ class JobOptions(BaseModel):
             states = load_states()
             if self.bare_state not in states:
                 raise ValueError(f"bareState must be one of {', '.join(sorted(states))}")
+        if self.bare_states:
+            from wardrobe.vrm.body_detail import load_states
+
+            if self.bare_detail is None:
+                raise ValueError("bareStates needs bareDetail")
+            known_states = load_states()
+            unknown_states = [s for s in self.bare_states if s not in known_states]
+            if unknown_states:
+                raise ValueError(f"bareStates: unknown {unknown_states}")
+        if self.bare_extras:
+            from wardrobe.vrm.body_detail import load_extras
+
+            if self.bare_detail is None:
+                raise ValueError("bareExtras needs bareDetail")
+            known = load_extras()
+            unknown = [e for e in self.bare_extras if e not in known]
+            if unknown:
+                raise ValueError(f"bareExtras: unknown {unknown}; one of {', '.join(sorted(known))}")
         return self
 
     @model_validator(mode="after")
@@ -232,15 +256,20 @@ class CreateJobRequest(BaseModel):
         if bare_template != (self.options.base_body_mode == "bare"):
             raise ValueError("body-bare-v1 and baseBody=bare must be requested together")
         if self.options.base_body_mode == "bare-dressed" and (
-                self.outfit is None or self.body_art or self.body_art_remove or self.body_surface
-                or self.options.ensure_foundation):
-            # ES1. Her bare body and an outfit over it; the outfit is the whole request.
-            raise ValueError("bare-dressed needs an outfit and accepts no body art, body surface "
-                             "or added foundation")
-        if bare_template and (self.body_art or self.body_art_remove or self.body_surface
+                self.outfit is None or self.body_surface or self.options.ensure_foundation):
+            # ES1. Her bare body and an outfit over it (tattoos allowed, BD12).
+            raise ValueError("bare-dressed needs an outfit and accepts no body surface or added foundation")
+        # BD12. Tattoos are allowed on a bare body now (an intimate tattoo is shown bare); the
+        # exposure check still places each only where her skin shows.
+        if bare_template and (self.body_surface
                               or self.options.ensure_foundation or self.options.foundation_color
                               or self.outfit.layers or self.outfit.color):
-            raise ValueError("bare mode accepts no garments, colours, body art or body surface")
+            raise ValueError("bare mode accepts no garments, colours or body surface")
+        if self.options.bare_states and self.body_art:
+            # BD7. A skin pack is painted before body art is applied, so a state's tiles would
+            # carry no tattoo: switching state would erase one that lands in them. Refused
+            # until the pack composites the art; painted marks (bareExtras) are fine.
+            raise ValueError("bareStates (a skin pack) cannot be combined with bodyArt yet")
         check_items(self.body_art, self.body_art_remove)
         changes_a_look = self.body_art or self.body_art_remove or self.options.foundation_color
         if self.outfit is None and not changes_a_look:

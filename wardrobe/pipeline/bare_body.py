@@ -149,9 +149,22 @@ async def prepare(context, *, dressed: bool = False):
         from wardrobe.vrm.inspect import VrmSpec
 
         forward = -1.0 if context.info.spec is VrmSpec.VRM0 else 1.0
+        pack_states = list(getattr(request.options, "bare_states", None) or [])
+        if pack_states:
+            # BD7. From her body as it is now — prepared, no detail yet — every state's skin as tiles.
+            from wardrobe.vrm import skin_pack
+
+            manifest, files = skin_pack.build(
+                doc.to_bytes(), context.measurements, preset=preset, states=pack_states,
+                extras=tuple(getattr(request.options, "bare_extras", None) or ()), forward=forward)
+            context.extra_files.update(files)
+            context.fit_report.base_body["skinPack"] = {
+                "states": list(manifest["states"]), "tiles": len(manifest["tiles"]), "maps": manifest["maps"],
+                "bytes": sum(len(v) for v in files.values())}
         state = getattr(request.options, "bare_state", None)
+        extras = tuple(getattr(request.options, "bare_extras", None) or ())
         painted = body_detail.paint_detail(doc, context.measurements, preset=preset, forward=forward,
-                                           state=state)
+                                           state=state, extras=extras)
         if painted is None:
             raise BodyIncompleteForBare("body detail could not be placed: no textured skin, or her "
                                         "chest and pelvis landmarks were not found",
@@ -160,6 +173,10 @@ async def prepare(context, *, dressed: bool = False):
         tag.update(detail=preset)
         if state:
             tag.update(state=state)
+        if extras:
+            tag.update(extras=list(extras))
+        if pack_states:
+            tag.update(skinPack="skin-pack/manifest.json")
     if completion and completion["applied"]:
         # BR1. Said in the file itself: this body is not entirely hers. The patch is BC1's,
         # tagged bodyProxy on its own mesh, so a viewer or a reviewer can tell it apart.

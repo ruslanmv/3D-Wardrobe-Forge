@@ -407,3 +407,34 @@ async def restore_access(subject: str, admin: AdminDep, store: StoreDep) -> None
                                                      "message": str(error)}) from None
     if not found:
         raise HTTPException(status_code=404, detail="that account is not revoked")
+
+
+@router.get("/admin/body-detail")
+def body_detail_catalogue(admin: AdminDep) -> dict:
+    """BD18. What the Studio's bare-body panel offers an admin session: every body-detail preset,
+    body state and extra (name, label, and the line the conversation hears), and the erotic sets
+    that are dressed over a bare body.
+
+    Admin only: these are the names of explicit variants, and a guest has no use for them (a bare
+    job needs an admin's declaration anyway). Read from the same files the painter reads, so a new
+    state or extra appears here the moment it is added; nothing to keep in step."""
+    _signed_in(admin)
+    from wardrobe.pipeline import outfit_dictionary as dictionary
+    from wardrobe.vrm import body_detail
+
+    def entries(table: dict) -> list[dict]:
+        return [{"name": name, "label": value.get("label", name), "body": value.get("body", "")}
+                for name, value in table.items()]
+
+    presets = body_detail.load_presets()
+    return {
+        "version": 1,
+        "presets": [{"name": name, "label": p.get("label", name), "hair": p.get("hair", "none")}
+                    for name, p in presets.items()],
+        "states": entries(body_detail.load_states()),
+        "extras": entries(body_detail.load_extras()),
+        "outfits": [{"id": o.id, "title": o.title, "base": o.base,
+                     "request": o.request().model_dump(mode="json", by_alias=True, exclude_none=True)}
+                    for o in dictionary.OUTFITS if o.group == "erotic"],
+        "limits": {"extras": 4, "states": 10},
+    }

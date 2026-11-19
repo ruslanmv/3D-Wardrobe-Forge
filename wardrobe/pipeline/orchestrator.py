@@ -343,6 +343,11 @@ class Orchestrator:
                 context.key(name), data, content_type="image/webp"
             )
 
+        # BD7. Beside the look, under its key: served as privately as the look itself.
+        for name, data in sorted(context.extra_files.items()):
+            kind = "application/json" if name.endswith(".json") else "image/png"
+            await self.store.put(context.key(name), data, content_type=kind)
+
         report = context.fit_report
         record.fit_report = report
         await self.store.put(

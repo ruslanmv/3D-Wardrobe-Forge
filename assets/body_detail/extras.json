@@ -1,0 +1,271 @@
+{
+ "schema": "wardrobe.bodyDetail.extras.v1",
+ "about": "BD6. Persistent extras painted with a body-detail preset (options.bareExtras, up to four). tanTop: none|triangle|bandeau; tanBottom: none|thong|brazilian|classic; tan: how pale the covered skin is against her tan, 0..1. 'body' is a line for the conversation. BD11: marks — kisses (0..1, kissColor), hickeys, spank, freckles, pores; writing (text, writingPlace belly|lower-back, writingInk marker|lipstick); piercings [nipples, navel, hood] (painted metal with relief, not meshes).",
+ "extras": {
+  "tan-triangle-thong": {
+   "label": "Tan lines · triangle & thong",
+   "set": {
+    "tanTop": "triangle",
+    "tanBottom": "thong",
+    "tan": 0.8
+   },
+   "body": "you have tan lines: pale triangles over your breasts and a pale thong shape over your hips"
+  },
+  "tan-triangle-brazilian": {
+   "label": "Tan lines · triangle & brazilian",
+   "set": {
+    "tanTop": "triangle",
+    "tanBottom": "brazilian",
+    "tan": 0.8
+   },
+   "body": "you have tan lines from a triangle bikini and brazilian bottoms"
+  },
+  "tan-bandeau-classic": {
+   "label": "Tan lines · bandeau & classic",
+   "set": {
+    "tanTop": "bandeau",
+    "tanBottom": "classic",
+    "tan": 0.7
+   },
+   "body": "you have tan lines from a bandeau top and classic bikini bottoms"
+  },
+  "tan-thong-only": {
+   "label": "Tan lines · topless, thong",
+   "set": {
+    "tanTop": "none",
+    "tanBottom": "thong",
+    "tan": 0.85
+   },
+   "body": "you sunbathed topless: only a pale thong shape over your hips"
+  },
+  "kisses-red": {
+   "label": "Lipstick kisses (red)",
+   "set": {
+    "kisses": 0.8,
+    "kissColor": [
+     0.62,
+     0.16,
+     0.2
+    ]
+   },
+   "body": "red lipstick kisses are printed over your breasts, belly and inner thigh"
+  },
+  "kisses-pink": {
+   "label": "Lipstick kisses (pink)",
+   "set": {
+    "kisses": 0.6,
+    "kissColor": [
+     0.85,
+     0.4,
+     0.55
+    ]
+   },
+   "body": "pink lipstick kisses are printed on your skin"
+  },
+  "love-bites": {
+   "label": "Love bites",
+   "set": {
+    "hickeys": 0.9
+   },
+   "body": "you have love bites on your neck, a breast and your inner thigh"
+  },
+  "spanked": {
+   "label": "Spanked",
+   "set": {
+    "spank": 0.9
+   },
+   "body": "a pink handprint glows on your buttock from a spank"
+  },
+  "freckles": {
+   "label": "Freckles & beauty marks",
+   "set": {
+    "freckles": 0.8,
+    "pores": 0.6
+   },
+   "body": "freckles are scattered over your chest and shoulders"
+  },
+  "writing-yours": {
+   "label": "Written: Yours",
+   "set": {
+    "writing": "YOURS",
+    "writingPlace": "belly",
+    "writingInk": "marker"
+   },
+   "body": "the word YOURS is written in marker on your belly"
+  },
+  "writing-lower-back": {
+   "label": "Written on lower back",
+   "set": {
+    "writing": "MINE",
+    "writingPlace": "lower-back",
+    "writingInk": "lipstick"
+   },
+   "body": "the word MINE is written in lipstick on your lower back"
+  },
+  "piercings-nipples": {
+   "label": "Nipple piercings",
+   "set": {
+    "piercings": [
+     "nipples"
+    ]
+   },
+   "body": "your nipples are pierced with small steel barbells"
+  },
+  "piercings-all": {
+   "label": "Nipple, navel & hood piercings",
+   "set": {
+    "piercings": [
+     "nipples",
+     "navel",
+     "hood"
+    ]
+   },
+   "body": "your nipples, navel and clitoral hood are pierced"
+  },
+  "tattoo-mons-heart": {
+   "label": "Heart tattoo above her pussy",
+   "set": {
+    "tattoo": "heart",
+    "tattooInk": "black"
+   },
+   "body": "a red heart is tattooed on your mons, just above your pussy"
+  },
+  "tattoo-mons-rose": {
+   "label": "Rose tattoo above her pussy",
+   "set": {
+    "tattoo": "rose",
+    "tattooInk": "black"
+   },
+   "body": "a red rose is tattooed on your mons, just above your pussy"
+  },
+  "tattoo-mons-butterfly": {
+   "label": "Butterfly tattoo above her pussy",
+   "set": {
+    "tattoo": "butterfly",
+    "tattooInk": "black"
+   },
+   "body": "a blue butterfly is tattooed on your mons, just above your pussy"
+  },
+  "tattoo-mons-text": {
+   "label": "Words tattooed above her pussy",
+   "set": {
+    "tattoo": "text",
+    "tattooText": "Yours",
+    "tattooInk": "black"
+   },
+   "body": "the word Yours is tattooed in script on your mons, just above your pussy"
+  },
+  "piercings-intimate": {
+   "label": "Labia rings, Christina & hood bar",
+   "set": {
+    "piercings": [
+     "labia",
+     "christina",
+     "hood-bar"
+    ]
+   },
+   "body": "your pussy is pierced: two rings in each inner lip, a Christina bar down your mons and a bar through your clit hood"
+  },
+  "piercings-labia": {
+   "label": "Labia rings",
+   "set": {
+    "piercings": [
+     "labia"
+    ]
+   },
+   "body": "two small rings pierce each of your inner lips"
+  },
+  "piercings-christina": {
+   "label": "Christina piercing",
+   "set": {
+    "piercings": [
+     "christina"
+    ]
+   },
+   "body": "a Christina bar runs down your mons to the top of your pussy, a gem at its foot"
+  },
+  "piercings-nipple-rings": {
+   "label": "Nipple rings",
+   "set": {
+    "piercings": [
+     "nipple-rings"
+    ]
+   },
+   "body": "rings hang through both your nipples"
+  },
+  "hearts": {
+   "label": "Hearts drawn on her",
+   "set": {
+    "hearts": 1.0,
+    "kissColor": [
+     0.75,
+     0.15,
+     0.3
+    ]
+   },
+   "body": "little hearts are drawn in lipstick on your breasts, belly, thigh and bottom"
+  },
+  "glitter": {
+   "label": "Glitter",
+   "set": {
+    "glitter": 1.0
+   },
+   "body": "glitter sparkles over your chest, breasts and belly"
+  },
+  "body-paint-gold": {
+   "label": "Gold body paint",
+   "set": {
+    "bodyPaint": 1.0,
+    "bodyPaintColor": [
+     1.25,
+     1.0,
+     0.55
+    ]
+   },
+   "body": "flowing gold lines are painted over your breasts, belly and hips"
+  },
+  "stretch-marks": {
+   "label": "Stretch marks",
+   "set": {
+    "stretchMarks": 1.0
+   },
+   "body": "faint silvery stretch marks cross your hips and the undersides of your breasts"
+  },
+  "tattoo-lower-back-tribal": {
+   "label": "Tribal tattoo on her lower back",
+   "set": {
+    "tattoo": "tribal",
+    "tattooPlace": "lower-back",
+    "tattooInk": "black"
+   },
+   "body": "a black tribal tattoo sweeps across the small of your back, just above your ass, where he sees it when he takes you from behind"
+  },
+  "tattoo-lower-back-tribal-wings": {
+   "label": "Tribal wings on her lower back",
+   "set": {
+    "tattoo": "tribal-wings",
+    "tattooPlace": "lower-back",
+    "tattooInk": "black"
+   },
+   "body": "black tribal wings spread across the small of your back, just above your ass"
+  },
+  "tattoo-lower-back-tribal-sun": {
+   "label": "Tribal sun on her lower back",
+   "set": {
+    "tattoo": "tribal-sun",
+    "tattooPlace": "lower-back",
+    "tattooInk": "black"
+   },
+   "body": "a black tribal sun is tattooed in the small of your back, just above your ass"
+  },
+  "tattoo-mons-tribal": {
+   "label": "Tribal above her pussy",
+   "set": {
+    "tattoo": "tribal",
+    "tattooPlace": "mons",
+    "tattooInk": "black"
+   },
+   "body": "a black tribal design is tattooed on your mons, just above your pussy"
+  }
+ }
+}
