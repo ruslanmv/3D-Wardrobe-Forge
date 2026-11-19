@@ -35,6 +35,12 @@ EFFECT_KEYS = (
     # BD14. From behind, on all fours: semen on her back, a creampie dripping the way gravity pulls
     # her on all fours, an anal creampie, grip marks on her hips and both cheeks spanked red.
     "cumBack",
+    # BD17. Lower-back cum, the way it lies with her ass up: a heavier pool in the small of her back,
+    # runs up her spine towards her shoulders, runs down her sides, and a run into her crack.
+    "cumPool",
+    "cumSpine",
+    "cumSides",
+    "cumCrack",
     "cumDrip",
     "anusCumInside",
     "grips",
@@ -96,7 +102,20 @@ def wants_torso(spec: dict) -> bool:
         or any(_p(spec, k) > 0 for k in ("hearts", "glitter", "bodyPaint", "stretchMarks"))
     )
     behind = any(
-        _p(spec, k) > 0 for k in ("cumBack", "grips", "spankRed", "ropeMarks", "wax", "welts", "collarMark")
+        _p(spec, k) > 0
+        for k in (
+            "cumBack",
+            "cumPool",
+            "cumSpine",
+            "cumSides",
+            "cumCrack",
+            "grips",
+            "spankRed",
+            "ropeMarks",
+            "wax",
+            "welts",
+            "collarMark",
+        )
     )
     return tanned or marked or behind or any(_p(spec, k) > 0 for k in ("flush", "goosebumps", "sweat", "oil"))
 
@@ -1045,7 +1064,8 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
     amount = _p(spec, "cum")
     inside = _p(spec, "cumInside")
     back, drip, anal_in = _p(spec, "cumBack"), _p(spec, "cumDrip"), _p(spec, "anusCumInside")
-    if max(amount, inside, back, drip, anal_in) <= 0:
+    lower = {k: _p(spec, k) for k in ("cumPool", "cumSpine", "cumSides", "cumCrack")}
+    if max(amount, inside, back, drip, anal_in, *lower.values()) <= 0:
         return None
     c = marks.crotch
     u = where[:, 0] - c[0]
@@ -1134,9 +1154,57 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
         thick = np.maximum(thick, np.maximum(filled, leak * 0.85 * (1.0 - 0.4 * lead)) * anal_in)
     if back > 0:
         thick = np.maximum(thick, _on_her_back(where, marks, s, back, wobble, fine))
+    if max(lower.values()) > 0:
+        thick = np.maximum(thick, _lower_back(where, marks, s, lower, wobble, fine))
     alpha = _smoothstep(0.04, 0.45, thick) * (0.65 + 0.33 * _smoothstep(0.3, 0.8, thick))
     highlight = _smoothstep(0.55, 0.95, thick) * _smoothstep(0.45, 0.8, fine)
     return alpha, highlight, thick
+
+
+def _lower_back(where, marks, s, amounts, wobble, fine):
+    """BD17. Cum in the small of her back as it lies in doggy: her ass is up and her chest down, so
+    her back slopes down from her hips to her shoulders. A thick pool sits in the hollow above her
+    cleft; what overflows runs *up* her spine towards her shoulders (downhill for her), sideways
+    down over her flanks, and back down into her crack towards her anus. Each run narrows and breaks
+    into drops along its length, and every edge wanders, so none of it looks stamped."""
+    c = marks.crotch
+    behind = _front(where, marks) < -0.02 * s
+    x = where[:, 0] - marks.axis_x
+    y = where[:, 1] - c[1]
+    pool_y = 0.13 * s
+    thick = np.zeros(len(where))
+    pool = amounts["cumPool"]
+    if pool > 0:
+        r = np.hypot(x / (0.042 * s), (y - pool_y) / (0.028 * s)) / (0.75 + 0.5 * wobble)
+        thick = np.maximum(thick, np.clip(1.0 - r, 0, 1) ** 0.45 * pool)
+
+    def run(along, across, length, width0, amount):
+        """A run ``along`` (metres from the pool) and ``across`` it, narrowing and breaking up."""
+        lead = np.clip(along / length, 0, 1)
+        width = width0 * (1.0 - 0.6 * lead) * (0.7 + 0.6 * wobble)
+        body = np.clip(1.0 - np.abs(across) / (width + 1e-6), 0, 1) ** 0.7 * (along > 0) * (along < length)
+        body *= np.where(lead > 0.6, _smoothstep(0.35, 0.6, fine), 1.0)
+        bead = (
+            np.clip(1.0 - np.hypot(across, along - length) / (width0 * 0.9), 0, 1) ** 0.5
+        )  # the drop at its end
+        return np.maximum(body, bead) * amount
+
+    spine = amounts["cumSpine"]
+    if spine > 0:  # up her spine, wandering about it
+        wander = 0.004 * s * np.sin(y / (0.03 * s)) + 0.0015 * s * np.sin(y / (0.009 * s))
+        thick = np.maximum(thick, run(y - pool_y, x - wander, 0.2 * s, 0.006 * s, spine))
+    sides = amounts["cumSides"]
+    if sides > 0:  # over each flank, a little downhill towards her belly
+        for sign in (-1.0, 1.0):
+            along = sign * x - 0.02 * s
+            across = y - pool_y + 0.25 * np.clip(along, 0, None) + 0.003 * s * np.sin(along / (0.012 * s))
+            thick = np.maximum(thick, run(along, across, 0.14 * s, 0.0045 * s, sides))
+    crack = amounts["cumCrack"]
+    if crack > 0:  # down into the cleft between her cheeks
+        thick = np.maximum(
+            thick, run(pool_y - y, x + 0.001 * s * np.sin(y / (0.007 * s)), 0.15 * s, 0.004 * s, crack)
+        )
+    return np.where(behind, thick * (0.8 + 0.2 * fine), 0.0)
 
 
 def _on_her_back(where, marks, s, amount, wobble, fine):

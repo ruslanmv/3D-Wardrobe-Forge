@@ -28,7 +28,7 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   `.venv/bin/python -m pytest tests/unit/test_body_detail.py tests/integration/test_bare_body.py -q`.
 - Plain `python` lacks the deps (`pydantic_settings`). Always use `.venv/bin/python`.
 
-## Bare bodies and body detail (BD1–BD13): where things are
+## Bare bodies and body detail (BD1–BD17): where things are
 
 | What                                       | Where                                                              |
 | ------------------------------------------ | ------------------------------------------------------------------ |
@@ -65,7 +65,7 @@ Rules that break things when missed:
 B=<scratch>/ref-atlas.vrm      # unique-UV synthetic adult; first build ~5 min
 # 1. Seconds, no renderer: colours at her own coordinates (vulva unrolled, nipple, torso)
 .venv/bin/python tools/body_surface/detail_flat.py --base $B --out <scratch>/flat \
-    --preset natural --states pumped,open --extras tattoo-mons-rose+piercings-intimate --views pelvis,nipple,torso
+    --preset natural --states pumped,open --extras tattoo-mons-rose+piercings-intimate --views pelvis,anus,nipple,torso,back
 # 2. VRMs to view (first run without --base writes ref-atlas.vrm)
 .venv/bin/python tools/body_surface/detail_preview.py --out <chatbot>/audits/poses/runs/detail \
     --base $B --presets natural --states pumped --extras glitter+hearts
@@ -79,7 +79,7 @@ often miss the vulva on this fixture, so use the flat view to judge the vulva.
 
 ## Conventions
 
-- **Batch prefixes** in comments and docs: `BD` body detail (BD13 latest), `ES`
+- **Batch prefixes** in comments and docs: `BD` body detail (BD17 latest), `ES`
   erotic sets, `W`/`WF` wardrobe. Comments say why, at length.
 - **PRs and commits for this owner:** PR title and body are just `Updates`.
   Commit messages are `Updates of quality`, and merge commits `Updates`. Do not

@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.states.v1",
- "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), anusGape (BD16: after anal fisting, the anus a wide round gape, rim swollen and red, inner walls showing, a dark centre — clearly visible from behind), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), ropeMarks, wax, welts, clampMarks, collarMark (BD15, sado: shibari rope marks, candle wax, whip welts, nipple-clamp marks, a collar mark), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), anusGape (BD16: after anal fisting, the anus a wide round gape, rim swollen and red, inner walls showing, a dark centre — clearly visible from behind), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), cumPool, cumSpine, cumSides, cumCrack (BD17, lower-back cum with her ass up: a pool in the small of her back, runs up her spine, down her sides, into her crack), ropeMarks, wax, welts, clampMarks, collarMark (BD15, sado: shibari rope marks, candle wax, whip welts, nipple-clamp marks, a collar mark), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
  "states": {
   "closed": {
    "label": "Closed",
@@ -458,6 +458,86 @@
     "sweat": 0.8
    },
    "body": "both your holes have been fisted: your pussy is stretched wide open and your ass gapes, its rim swollen and red"
+  },
+  "lower-back-cum": {
+   "label": "Cum on her lower back",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "vaginaOpen": 0.6,
+    "anusOpen": 0.3,
+    "cumPool": 1.0,
+    "cumSpine": 0.7
+   },
+   "body": "he came on your lower back: a thick warm pool sits in the small of your back above your ass, and with your ass up it runs slowly up your spine"
+  },
+  "lower-back-cum-heavy": {
+   "label": "Lower back: a heavy load",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "vaginaOpen": 0.7,
+    "anusOpen": 0.4,
+    "cumPool": 1.0,
+    "cumSpine": 1.0,
+    "cumSides": 1.0,
+    "cumCrack": 1.0,
+    "cumBack": 0.6
+   },
+   "body": "a heavy load covers your lower back: the pool in the small of your back overflows, running up your spine, down both your sides and down into your crack"
+  },
+  "lower-back-cum-open": {
+   "label": "Lower back cum, both open",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.9,
+    "cumPool": 1.0,
+    "cumSpine": 0.8,
+    "cumCrack": 1.0
+   },
+   "body": "your lower back is covered in cum running down into your crack, and below it both your holes are open and wet"
+  },
+  "lower-back-cum-creampie": {
+   "label": "Lower back and inside",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.9,
+    "cumPool": 1.0,
+    "cumSpine": 0.8,
+    "cumCrack": 0.8,
+    "cumInside": 1.0,
+    "cumDrip": 1.0
+   },
+   "body": "he came in you and on you: your pussy open and full, dripping forward, and a pool of cum on your lower back running up your spine"
+  },
+  "lower-back-cum-gaping": {
+   "label": "Lower back cum, anal gape",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.6,
+    "erect": 0.8,
+    "sweat": 0.5,
+    "vaginaOpen": 0.9,
+    "anusOpen": 1.5,
+    "anusGape": 1.0,
+    "cumPool": 1.0,
+    "cumSpine": 0.8,
+    "cumCrack": 1.0,
+    "anusCumInside": 0.7
+   },
+   "body": "cum pools on your lower back and runs down your crack into your gaping, fisted ass, its rim swollen and red, your pussy open below"
   }
  }
 }

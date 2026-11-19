@@ -223,6 +223,46 @@ prop mesh attached to her pelvis bone: it is a separate feature, not skin. The
 `stretched` states paint the skin as it looks around one. Breast-shape changes
 and real mesh jewellery also change the mesh, which this painter never does.
 
+## Lower-back cum, fisted anus, sado, tribals, white and anime skin (BD15–BD17)
+
+**Lower-back cum (BD17).** In doggy her ass is up and her chest down, so her
+back slopes down from her hips to her shoulders. `cumPool` is a thick pool in
+the small of her back, above her cleft. What overflows runs up her spine
+towards her shoulders (`cumSpine`), down her flanks (`cumSides`), and down into
+her crack (`cumCrack`). Each run narrows and breaks into drops with a bead at
+its end. States: `lower-back-cum`, `lower-back-cum-heavy`,
+`lower-back-cum-open` (both holes open), `lower-back-cum-creampie`,
+`lower-back-cum-gaping` (with the fisted anus). They pair well with
+`tattoo-lower-back-tribal`.
+
+**Fisted anus (BD16).** `anusGape` (0..1) widens the anus to about 1.85× its
+stretched size (`_anus_radius`). It is a round gape: folds gone, a swollen red
+rim with a wet edge, pink inner walls, a dark centre and deep relief, so it reads
+from behind on all fours. States: `doggy-anal-fisted`, `doggy-anal-fisted-cum`,
+`doggy-both-fisted`. `anusCumInside` fills the same, wider opening.
+
+**Sado (BD15).** `ropeMarks` (shibari: bands above and below the breasts, a
+diamond harness down her belly, the spine line and thigh bands, pressed in),
+`wax` (red candle wax on her breasts and belly, glossy and raised), `welts`
+(raised whip stripes across her buttocks, the backs of her thighs and her lower
+back), `clampMarks` and `collarMark`. States: `sado-roped-open`,
+`sado-wax-open`, `sado-whipped-open`, `sado-used-cum` and `sado-full`. Every one
+of them has both holes open.
+
+**Tribals (BD15).** `tattoo-lower-back-tribal-wings`,
+`tattoo-lower-back-tribal-sun` and `tattoo-mons-tribal` (`tattooPlace`: `mons`
+or `lower-back`; `FX.TATTOO_PLACES`).
+
+**White and anime skin (BD17).** Her skin colour is the avatar's own texture:
+choose a pale avatar for white skin. The presets match the anatomy to it.
+`porcelain` has light pink areolae and labia for white skin. `anime` is soft,
+simple and pink, with lower relief (0.6) so toon shading stays clean. Both are
+hairless.
+
+**Thin and fat.** Body shape is the avatar's mesh. Every size here is measured
+from her landmarks and scaled to her height, so the detail follows a thin or a
+full figure without a separate preset.
+
 ## Doggy style: from behind, on all fours (BD14)
 
 States for the all-fours view, where her buttocks, lower back, both openings

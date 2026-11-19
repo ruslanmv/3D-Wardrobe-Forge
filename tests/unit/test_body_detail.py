@@ -12,7 +12,7 @@ from wardrobe.vrm import body_detail as BD
 
 def test_presets_load_hairless_and_hairy_variants():
     presets = BD.load_presets()
-    hairless = {"natural", "soft-pink", "warm", "defined", "outie", "puffy"}
+    hairless = {"natural", "soft-pink", "warm", "defined", "outie", "puffy", "porcelain", "anime"}
     assert hairless <= set(presets)
     for name in hairless:
         assert presets[name]["hair"] == "none"
@@ -549,3 +549,23 @@ def test_more_tribals_and_their_places():
         assert layers and max(layer[1][0] for layer in layers) > 0.3, name
     spec = {**BD.load_presets()["natural"], **extras["tattoo-mons-tribal"]["set"]}
     assert FX._tattoo(back, marks, spec, "tribal", 1.0)[0][1][0] == 0.0  # not on her back
+
+
+def test_lower_back_cum_pools_and_runs_up_her_spine():
+    """BD17. With her ass up the pool sits in the small of her back and runs up her spine (towards her
+    shoulders), never on her front; the lower-back states keep her open."""
+    from wardrobe.vrm import skin_effects as FX
+
+    base = BD.load_presets()["porcelain"]
+    marks = _marks()
+    pool = np.array([[0.0, 0.74 + 0.13, -0.12], [0.0, 0.74 + 0.13, 0.12]])
+    alpha, _, _ = FX.fluid(pool, marks, {**base, "cumPool": 1.0}, 1.0)
+    assert alpha[0] > 0.6 and alpha[1] == 0.0
+    up_spine = np.array([[0.0, 0.74 + 0.2, -0.12]])
+    assert FX.fluid(up_spine, marks, {**base, "cumSpine": 1.0}, 1.0)[0][0] > 0.3
+    states = BD.load_states()
+    for name in ("lower-back-cum", "lower-back-cum-heavy", "lower-back-cum-open", "lower-back-cum-creampie",
+                 "lower-back-cum-gaping"):
+        assert states[name]["set"]["cumPool"] == 1.0 and states[name]["set"]["vaginaOpen"] > 0, name
+    presets = BD.load_presets()
+    assert presets["porcelain"]["hair"] == "none" and presets["anime"]["relief"] < 1.0
