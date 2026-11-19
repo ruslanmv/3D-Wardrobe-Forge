@@ -28,7 +28,7 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   `.venv/bin/python -m pytest tests/unit/test_body_detail.py tests/integration/test_bare_body.py -q`.
 - Plain `python` lacks the deps (`pydantic_settings`). Always use `.venv/bin/python`.
 
-## Bare bodies and body detail (BD1–BD17): where things are
+## Bare bodies and body detail (BD1–BD20): where things are
 
 | What                                       | Where                                                              |
 | ------------------------------------------ | ------------------------------------------------------------------ |
@@ -79,7 +79,7 @@ often miss the vulva on this fixture, so use the flat view to judge the vulva.
 
 ## Conventions
 
-- **Batch prefixes** in comments and docs: `BD` body detail (BD17 latest), `ES`
+- **Batch prefixes** in comments and docs: `BD` body detail (BD20 latest), `ES`
   erotic sets, `W`/`WF` wardrobe. Comments say why, at length.
 - **PRs and commits for this owner:** PR title and body are just `Updates`.
   Commit messages are `Updates of quality`, and merge commits `Updates`. Do not

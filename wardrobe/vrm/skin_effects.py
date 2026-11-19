@@ -41,6 +41,18 @@ EFFECT_KEYS = (
     "cumSpine",
     "cumSides",
     "cumCrack",
+    # BD19. A second load on her back (the first thins to a glaze under it), and sweat that builds
+    # on her back while she is held on all fours: a sheen down her spine, beads, a flush low down.
+    "cumSecond",
+    "sweatBack",
+    # BD20. Facing them (missionary, cowgirl): cum on her belly and in her navel, across her chest
+    # and between her breasts, down her inner thighs, and how her belly's runs go — down to her
+    # mons when she is upright on top, off her sides when she lies on her back.
+    "cumBelly",
+    "cumChest",
+    "cumThighs",
+    "cumRunDown",
+    "cumRunSides",
     "cumDrip",
     "anusCumInside",
     "grips",
@@ -109,6 +121,13 @@ def wants_torso(spec: dict) -> bool:
             "cumSpine",
             "cumSides",
             "cumCrack",
+            "cumSecond",
+            "sweatBack",
+            "cumBelly",
+            "cumChest",
+            "cumThighs",
+            "cumRunDown",
+            "cumRunSides",
             "grips",
             "spankRed",
             "ropeMarks",
@@ -175,6 +194,13 @@ def under(where: np.ndarray, marks, spec: dict, s: float) -> list[tuple[list[flo
     flush = _p(spec, "flush")
     if flush > 0:
         layers.append(([1.0, 0.84, 0.85], _flush_field(where, marks, s) * flush * 0.75))
+    sweaty = _p(spec, "sweatBack")
+    if sweaty > 0:  # BD19. heat in the small of her back and over her cheeks
+        behind = _front(where, marks) < -0.02 * s
+        y = where[:, 1] - marks.crotch[1]
+        warm = _smoothstep(-0.02 * s, 0.04 * s, y) * (1.0 - _smoothstep(0.16 * s, 0.22 * s, y))
+        blotch = 0.5 + 0.5 * _smoothstep(0.35, 0.7, _noise3(where, 0.03 * s))
+        layers.append(([1.0, 0.86, 0.87], np.where(behind, warm * blotch * sweaty * 0.6, 0.0)))
     layers.extend(_marks(where, marks, spec, s))
     return layers
 
@@ -917,6 +943,14 @@ def over(where: np.ndarray, marks, spec: dict, s: float) -> list[tuple[list[floa
         layers.append(([1.3, 1.5, 1.9], fleck * (hue >= 0.6) * (hue < 0.8) * 0.9))  # blue
         layers.append(([1.9, 1.35, 1.7], fleck * (hue >= 0.8) * 0.9))  # pink
     layers.extend(_piercings(where, marks, spec, s))
+    sweaty = _p(spec, "sweatBack")
+    if sweaty > 0:
+        sheen, beads, rims = _sweat_back(where, marks, s, sweaty)
+        layers += [
+            ([1.06, 1.13, 1.18], sheen * 0.85 * sweaty),
+            ([0.9, 0.86, 0.86], rims * 0.5),
+            ([1.08, 1.16, 1.2], beads * 0.8),
+        ]
     sweat = _p(spec, "sweat")
     if sweat <= 0:
         return layers
@@ -1023,6 +1057,22 @@ def _piercings(where, marks, spec, s):
     return [([0.62, 0.64, 0.68], metal * 0.95), ([1.6, 1.6, 1.6], shine * metal * 0.9)]
 
 
+def _sweat_back(where, marks, s, amount):
+    """BD19. Sweat built up on her back while she is held on all fours: a glistening line down the
+    groove of her spine to the small of her back, damp patches across her shoulders and lower back,
+    and beads, more of them low down where her back dips. (sheen, beads, rims)."""
+    behind = _front(where, marks) < -0.02 * s
+    x = where[:, 0] - marks.axis_x
+    y = where[:, 1] - marks.crotch[1]
+    spine = np.exp(-((x / (0.012 * s)) ** 2)) * _smoothstep(0.05 * s, 0.1 * s, y)
+    patches = _smoothstep(0.5, 0.78, _noise3(where * np.array([2.0, 0.8, 2.0]), 0.05 * s))
+    low = _smoothstep(0.04 * s, 0.1 * s, y) * (1.0 - _smoothstep(0.2 * s, 0.26 * s, y))
+    sheen = np.clip(0.8 * spine + 0.5 * patches + 0.3 * low, 0, 1) * _torso_field(where, marks, s)
+    beads, rims = _beads(where, s, amount * 0.8)
+    keep = behind & (y > 0.0)
+    return np.where(keep, sheen, 0.0), np.where(keep, beads, 0.0), np.where(keep, rims, 0.0)
+
+
 def _sheen(where: np.ndarray, marks, s: float) -> np.ndarray:
     """Where skin glistens first: between her breasts, down her belly, the crease of her hips."""
     cleavage = np.exp(-(((where[:, 0] - marks.axis_x) / (0.02 * s)) ** 2)) * (
@@ -1065,7 +1115,9 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
     inside = _p(spec, "cumInside")
     back, drip, anal_in = _p(spec, "cumBack"), _p(spec, "cumDrip"), _p(spec, "anusCumInside")
     lower = {k: _p(spec, k) for k in ("cumPool", "cumSpine", "cumSides", "cumCrack")}
-    if max(amount, inside, back, drip, anal_in, *lower.values()) <= 0:
+    second = _p(spec, "cumSecond")
+    on_front = {k: _p(spec, k) for k in ("cumBelly", "cumChest", "cumThighs", "cumRunDown", "cumRunSides")}
+    if max(amount, inside, back, drip, anal_in, second, *lower.values(), *on_front.values()) <= 0:
         return None
     c = marks.crotch
     u = where[:, 0] - c[0]
@@ -1152,10 +1204,20 @@ def fluid(where: np.ndarray, marks, spec: dict, s: float):
             0.0,
         )
         thick = np.maximum(thick, np.maximum(filled, leak * 0.85 * (1.0 - 0.4 * lead)) * anal_in)
+    # BD19. Her back: the first load, then a second one over it. Under a fresh load the first has
+    # thinned to a glaze (spread, partly soaked in): less thick, so translucent and dull, while the
+    # second lands in other places, thick and pearly, and its pool sits on top of the first.
+    on_back = np.zeros(len(where))
     if back > 0:
-        thick = np.maximum(thick, _on_her_back(where, marks, s, back, wobble, fine))
+        on_back = np.maximum(on_back, _on_her_back(where, marks, s, back, wobble, fine))
     if max(lower.values()) > 0:
-        thick = np.maximum(thick, _lower_back(where, marks, s, lower, wobble, fine))
+        on_back = np.maximum(on_back, _lower_back(where, marks, s, lower, wobble, fine))
+    if second > 0:
+        fresh = _on_her_back(where, marks, s, second, wobble, fine, phase=1.0)
+        on_back = np.maximum(on_back * (1.0 - 0.45 * second), fresh)
+    thick = np.maximum(thick, on_back)
+    if max(on_front.values()) > 0:
+        thick = np.maximum(thick, _on_her_front(where, marks, s, on_front, wobble, fine))
     alpha = _smoothstep(0.04, 0.45, thick) * (0.65 + 0.33 * _smoothstep(0.3, 0.8, thick))
     highlight = _smoothstep(0.55, 0.95, thick) * _smoothstep(0.45, 0.8, fine)
     return alpha, highlight, thick
@@ -1207,28 +1269,139 @@ def _lower_back(where, marks, s, amounts, wobble, fine):
     return np.where(behind, thick * (0.8 + 0.2 * fine), 0.0)
 
 
-def _on_her_back(where, marks, s, amount, wobble, fine):
+def _rope_field(x, y, s, rows, reach, width0, wobble, fine, seed=0.0):
+    """Ropes laid across her, one per height in ``rows`` (metres): wavy, thick in the middle, thin
+    and breaking up towards their ends, lumpy along their length. ``x``/``y`` are across and up."""
+    out = np.zeros(len(x))
+    for k, y0 in enumerate(rows):
+        span = reach * (0.8 + 0.35 * ((k * 5 + int(seed)) % 3) / 2)
+        centre = y0 + 0.008 * s * np.sin(x / (0.025 * s) + 1.9 * k + seed)
+        taper = 1.0 - np.clip(np.abs(x - 0.008 * s * ((k % 2) * 2 - 1)) / span, 0, 1) ** 1.5
+        width = width0 * (0.6 + 0.8 * wobble) * taper
+        rope = np.exp(-(((y - centre) / (width + 1e-6)) ** 2)) * (taper > 0)
+        rope *= np.where(taper < 0.35, _smoothstep(0.4, 0.65, fine), 1.0)
+        out = np.maximum(out, rope * (0.75 + 0.25 * fine))
+    return out
+
+
+def _run_field(along, across, length, width0, wobble, fine):
+    """A run of semen ``along`` (metres from where it starts) and ``across`` it: narrowing,
+    breaking into drops further on, a bead at its end."""
+    lead = np.clip(along / length, 0, 1)
+    width = width0 * (1.0 - 0.6 * lead) * (0.7 + 0.6 * wobble)
+    body = np.clip(1.0 - np.abs(across) / (width + 1e-6), 0, 1) ** 0.7 * (along > 0) * (along < length)
+    body *= np.where(lead > 0.6, _smoothstep(0.35, 0.6, fine), 1.0)
+    bead = np.clip(1.0 - np.hypot(across, along - length) / (width0 * 0.9), 0, 1) ** 0.5
+    return np.maximum(body, bead)
+
+
+def _on_her_front(where, marks, s, amounts, wobble, fine):
+    """BD20. Semen on the front of her, as missionary and cowgirl show it: a pool in her navel with
+    ropes across her belly; ropes across her breasts pooling in her cleavage; streams down her inner
+    thighs from her vulva. Her belly's overflow runs where gravity takes it: down to her mons when
+    she is upright on top (``cumRunDown``), sideways off her flanks when she lies on her back
+    (``cumRunSides``)."""
+    c = marks.crotch
+    nipple_y = float(marks.nipples[0][1])
+    x = where[:, 0] - marks.axis_x
+    y = where[:, 1]
+    facing = _front(where, marks) > 0.02 * s
+    navel_y = nipple_y - 0.2 * s
+    thick = np.zeros(len(where))
+    belly = amounts["cumBelly"]
+    if belly > 0:
+        pool = np.clip(
+            1.0 - np.hypot(x / (0.016 * s), (y - navel_y) / (0.014 * s)) / (0.8 + 0.4 * wobble), 0, 1
+        )
+        ropes = _rope_field(
+            x,
+            y,
+            s,
+            [navel_y + d * s for d in (0.04, 0.015, -0.025)],
+            0.075 * s,
+            0.004 * s,
+            wobble,
+            fine,
+            seed=1.0,
+        )
+        thick = np.maximum(thick, np.maximum(pool**0.5, ropes) * belly)
+    chest = amounts["cumChest"]
+    if chest > 0:
+        ropes = _rope_field(
+            x,
+            y,
+            s,
+            [nipple_y + d * s for d in (0.045, 0.012, -0.03)],
+            0.11 * s,
+            0.0042 * s,
+            wobble,
+            fine,
+            seed=2.0,
+        )
+        cleavage = np.clip(
+            1.0 - np.hypot(x / (0.012 * s), (y - (nipple_y - 0.005 * s)) / (0.03 * s)) / (0.8 + 0.4 * wobble),
+            0,
+            1,
+        )
+        thick = np.maximum(thick, np.maximum(ropes, cleavage**0.6) * chest)
+    down = amounts["cumRunDown"]
+    if down > 0:  # upright: from her navel down her belly to her mons
+        wander = 0.003 * s * np.sin(y / (0.02 * s))
+        thick = np.maximum(
+            thick,
+            _run_field(navel_y - y, x - wander, navel_y - (c[1] + 0.04 * s), 0.004 * s, wobble, fine) * down,
+        )
+    sides = amounts["cumRunSides"]
+    if sides > 0:  # lying on her back: from her navel off her flanks
+        for sign in (-1.0, 1.0):
+            along = sign * x - 0.012 * s
+            across = y - navel_y + 0.003 * s * np.sin(along / (0.01 * s))
+            thick = np.maximum(thick, _run_field(along, across, 0.13 * s, 0.0035 * s, wobble, fine) * sides)
+    thighs = amounts["cumThighs"]
+    if thighs > 0:  # from her vulva down the inside of each thigh
+        inner = _front(where, marks) > -0.03 * s
+        for sign in (-1.0, 1.0):
+            along = c[1] - y
+            centre = sign * (0.026 * s + 0.34 * np.clip(along, 0, None)) + 0.002 * s * np.sin(
+                along / (0.015 * s)
+            )
+            run = _run_field(along, x - centre, 0.13 * s, 0.0035 * s, wobble, fine)
+            thick = np.maximum(thick, np.where(inner, run * thighs, 0.0))
+    keep = facing | (amounts["cumThighs"] > 0) & (_front(where, marks) > -0.03 * s)
+    return np.where(keep, thick, 0.0)
+
+
+def _on_her_back(where, marks, s, amount, wobble, fine, phase=0.0):
     """BD14. Semen across her lower back and buttocks, as when he finishes on her from behind: ropes
     laid across her (each its own wave, thick in the middle and thinning to its ends), a pool in the
-    small of her back, and droplets thrown off round them."""
+    small of her back, and droplets thrown off round them. BD19: ``phase`` lays another load —
+    ropes at other heights and leaning the other way, its pool a little higher — so a second one
+    lands beside and across the first instead of on exactly the same lines."""
     c = marks.crotch
     behind = _front(where, marks) < -0.03 * s
     x = where[:, 0] - marks.axis_x
     y = where[:, 1] - c[1]
     thick = np.zeros(len(where))
     for k in range(2 + int(round(3 * amount))):
-        y0 = (0.02 + 0.04 * k) * s
-        reach = (0.05 + 0.035 * ((k * 7) % 3)) * s
-        centre = y0 + 0.012 * s * np.sin(x / (0.03 * s) + 1.7 * k)
+        y0 = (0.02 + 0.04 * k + 0.019 * phase) * s
+        reach = (0.05 + 0.035 * ((k * 7 + int(phase * 2)) % 3)) * s
+        lean = (1.0 - 2.0 * phase) * 0.12 * x  # the second load crosses the first
+        centre = y0 + lean + 0.012 * s * np.sin(x / (0.03 * s) + 1.7 * k + 2.3 * phase)
         # Thick where it landed first, thinning and breaking up towards its ends; lumpy along it.
-        taper = 1.0 - np.clip(np.abs(x - 0.01 * s * (k % 2)) / reach, 0, 1) ** 1.5
+        taper = 1.0 - np.clip(np.abs(x - 0.01 * s * ((k + int(phase)) % 2)) / reach, 0, 1) ** 1.5
         lumps = 0.6 + 0.8 * _noise3(where * np.array([0.4, 1.0, 1.0]), 0.008 * s)
         width = 0.0048 * s * lumps * taper
         rope = np.exp(-(((y - centre) / (width + 1e-6)) ** 2)) * (taper > 0)
         rope *= np.where(taper < 0.35, _smoothstep(0.4, 0.65, fine), 1.0)
         thick = np.maximum(thick, rope * (0.75 + 0.25 * fine))
     pool = (
-        np.clip(1.0 - np.hypot(x / (0.022 * s), (y - 0.14 * s) / (0.016 * s)) / (0.8 + 0.4 * wobble), 0, 1)
+        np.clip(
+            1.0
+            - np.hypot(x / (0.022 * s), (y - (0.14 + 0.012 * phase) * s) / (0.016 * s))
+            / (0.8 + 0.4 * wobble),
+            0,
+            1,
+        )
         ** 0.6
     )
     thick = np.maximum(thick, pool)
@@ -1265,6 +1438,9 @@ def relief(where: np.ndarray, marks, spec: dict, s: float) -> np.ndarray:
     if sweat > 0:
         bead, _ = _beads(where, s, sweat)
         h += 0.0005 * s * bead
+    sweaty = _p(spec, "sweatBack")
+    if sweaty > 0:
+        h += 0.0005 * s * _sweat_back(where, marks, s, sweaty)[1]
     wet = fluid(where, marks, spec, s)
     if wet is not None:
         h += 0.0012 * s * wet[2]  # semen stands on her skin, thickest in the pools

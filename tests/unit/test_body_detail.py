@@ -569,3 +569,50 @@ def test_lower_back_cum_pools_and_runs_up_her_spine():
         assert states[name]["set"]["cumPool"] == 1.0 and states[name]["set"]["vaginaOpen"] > 0, name
     presets = BD.load_presets()
     assert presets["porcelain"]["hair"] == "none" and presets["anime"]["relief"] < 1.0
+
+
+def test_second_load_crosses_the_first_and_sweat_builds_on_her_back():
+    """BD19. A second load lands in other places over the first (which thins to a glaze); sweat on her
+    back is on her back only; both are in states the doggy finish can use."""
+    from wardrobe.vrm import skin_effects as FX
+
+    base = BD.load_presets()["porcelain"]
+    marks = _marks()
+    behind = np.array([[x, 0.74 + y, -0.12] for x in np.linspace(-0.1, 0.1, 21) for y in np.linspace(0.0, 0.2, 21)])
+    first = FX.fluid(behind, marks, {**base, "cumBack": 1.0}, 1.0)[2]
+    both = FX.fluid(behind, marks, {**base, "cumBack": 1.0, "cumSecond": 1.0}, 1.0)[2]
+    fresh = both > 0.5
+    assert fresh.sum() > 0 and (fresh & (first < 0.2)).sum() > 0  # new ropes where there were none
+    sheen, beads, _ = FX._sweat_back(np.vstack([behind[:5], [[0.0, 0.9, 0.12]]]), marks, 1.0, 1.0)
+    assert sheen[-1] == 0.0 and beads[-1] == 0.0  # never on her front
+    assert FX.wants_torso({"sweatBack": 1.0}) and FX.wants_torso({"cumSecond": 1.0})
+    states = BD.load_states()
+    for name in ("doggy-sweaty", "doggy-sweaty-open", "lower-back-cum-second", "doggy-second-creampie"):
+        assert states[name]["set"]["vaginaOpen"] > 0, name
+
+
+def test_front_finishes_for_missionary_and_cowgirl():
+    """BD20. Belly, chest and thigh semen land on the front of her and nowhere behind; upright her
+    belly runs down to her mons, lying back they run off her sides; the ten states keep her open."""
+    from wardrobe.vrm import skin_effects as FX
+
+    base = BD.load_presets()["porcelain"]
+    marks = _marks()
+    navel = np.array([[0.0, 1.17 - 0.2, 0.12], [0.0, 1.17 - 0.2, -0.12]])  # her navel; behind it
+    alpha = FX.fluid(navel, marks, {**base, "cumBelly": 1.0}, 1.0)[0]
+    assert alpha[0] > 0.6 and alpha[1] == 0.0
+    cleavage = np.array([[0.0, 1.17 - 0.005, 0.15]])
+    assert FX.fluid(cleavage, marks, {**base, "cumChest": 1.0}, 1.0)[0][0] > 0.4
+    above_mons = np.array([[0.0, 1.17 - 0.25, 0.1]])  # on its way from her navel to her mons
+    assert FX.fluid(above_mons, marks, {**base, "cumRunDown": 1.0}, 1.0)[0][0] > 0.3
+    flank = np.array([[0.07, 1.17 - 0.2, 0.08]])
+    assert FX.fluid(flank, marks, {**base, "cumRunSides": 1.0}, 1.0)[0][0] > 0.3
+    states = BD.load_states()
+    names = [n for n in states if n.startswith(("missionary-", "cowgirl-")) and "fisted" not in n]
+    assert len(names) == 10
+    # The missionary fisted variants: stretched past wide open, or the anus gaping.
+    assert states["missionary-fisted"]["set"]["vaginaOpen"] == 1.5
+    assert states["missionary-fisted-anal"]["set"]["anusGape"] == 1.0
+    assert states["missionary-fisted-cum"]["set"]["cumInside"] == 1.0
+    for name in names:
+        assert states[name]["set"]["vaginaOpen"] > 0 and states[name]["body"], name
