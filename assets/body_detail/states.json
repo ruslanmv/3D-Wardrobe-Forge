@@ -769,6 +769,118 @@
     "cum": 0.8
    },
    "body": "after his fist he came in you: your stretched, swollen pussy gapes full of cum, running out of you and down over your perineum to your ass"
+  },
+  "edge": {
+   "label": "On the edge",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.85,
+    "erect": 1.0,
+    "sweat": 0.6,
+    "vaginaOpen": 0.5
+   },
+   "body": "you are right on the edge: flushed from your chest to your face, nipples hard, swollen and soaking, trembling, held there and not allowed to come yet"
+  },
+  "dripping": {
+   "label": "Dripping",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.7,
+    "erect": 0.85,
+    "sweat": 0.6,
+    "vaginaOpen": 0.8,
+    "cumInside": 1.0,
+    "cumDrip": 1.0,
+    "cumThighs": 0.9
+   },
+   "body": "they finished inside you and it is running out of you, down the inside of your thighs"
+  },
+  "breasts-belly": {
+   "label": "Breasts and belly",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.75,
+    "erect": 0.9,
+    "sweat": 0.5,
+    "vaginaOpen": 0.6,
+    "cumChest": 1.0,
+    "cumBelly": 1.0,
+    "cumRunSides": 0.7
+   },
+   "body": "they came across your breasts and down your belly, it glistens between your breasts and runs off your sides"
+  },
+  "oiled-used": {
+   "label": "Oiled and used",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.8,
+    "erect": 0.9,
+    "sweat": 0.7,
+    "oil": 1.0,
+    "vaginaOpen": 0.9,
+    "cumInside": 1.0,
+    "cumBelly": 0.8,
+    "cumThighs": 0.8
+   },
+   "body": "your whole body shines with oil, you are open, filled and dripping, cum on your belly and thighs"
+  },
+  "used": {
+   "label": "Used",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.85,
+    "erect": 1.0,
+    "sweat": 0.9,
+    "vaginaOpen": 1.0,
+    "anusOpen": 0.8,
+    "cumInside": 1.0,
+    "anusCumInside": 1.0,
+    "cumDrip": 1.0,
+    "cumThighs": 1.0,
+    "cumBelly": 1.0,
+    "cumChest": 1.0,
+    "cumBack": 0.8
+   },
+   "body": "you have been taken every way tonight: both holes filled and leaking, cum on your breasts, belly, back and thighs"
+  },
+  "round-three": {
+   "label": "Round three",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.85,
+    "erect": 0.95,
+    "sweat": 1.0,
+    "sweatBack": 1.0,
+    "vaginaOpen": 1.0,
+    "cumInside": 1.0,
+    "cumDrip": 1.0,
+    "cumSecond": 1.0,
+    "cumBack": 1.0,
+    "cumThighs": 1.0
+   },
+   "body": "the third time tonight: soaked in sweat, a second load glazing your back over the first, still filled and dripping"
+  },
+  "tied-edge": {
+   "label": "Tied, on the edge",
+   "set": {
+    "arousal": 1.0,
+    "flush": 0.8,
+    "erect": 1.0,
+    "sweat": 0.6,
+    "vaginaOpen": 0.6,
+    "ropeMarks": 1.0,
+    "collarMark": 0.8
+   },
+   "body": "rope crosses your body and holds you open for them, you are soaking and shaking and cannot move"
+  },
+  "after-shower": {
+   "label": "After the shower",
+   "set": {
+    "arousal": 0.3,
+    "flush": 0.3,
+    "sweat": 0.0
+   },
+   "body": "you are clean and warm from the shower, skin soft and flushed, everything from tonight washed away"
   }
  }
 }

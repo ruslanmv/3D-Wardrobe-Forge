@@ -74,6 +74,9 @@ GROUPS: list[tuple[str, str]] = [
     ("missionary", r"^missionary-"),
     ("cowgirl", r"^cowgirl-"),
     ("rough", r"^(sado-|doggy-.*fisted)"),
+    # Unrestrained (gate 2): the evening's build-up states, composed from existing effects.
+    ("unrestrained",
+     r"^(edge|dripping|breasts-belly|oiled-used|used|round-three|tied-edge|after-shower)$"),
 ]
 
 #: Looks with extras painted in: they cannot be switched live, so each is its own look, with the
