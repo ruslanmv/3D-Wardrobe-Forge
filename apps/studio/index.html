@@ -43,6 +43,8 @@
                     </div>
                 </div>
                 <div class="caps" id="caps" aria-label="What this deployment can do"></div>
+                <!-- WS2. The wardrobe's collections (apps/studio/js/collections.js). -->
+                <button class="secondary collections-btn" id="collections-btn" type="button">Collections</button>
                 <button class="icon-btn" id="key-btn" type="button" title="API key" aria-label="API key" hidden>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7a5 5 0 1 1-4.9 6H7v2H5v2H2v-3l6.1-6.1A5 5 0 0 1 14 7Zm2 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" /></svg>
                 </button>
@@ -395,6 +397,16 @@
                 </div>
             </section>
         </div>
+
+        <dialog id="registry-dialog" class="registry" aria-labelledby="registry-title">
+            <header class="registry-top">
+                <h2 id="registry-title">Collections</h2>
+                <input type="search" id="registry-search" placeholder="Search names and tags" aria-label="Search the collection" />
+                <span class="registry-note" id="registry-note" role="status"></span>
+                <button type="button" class="icon-btn" id="registry-close" aria-label="Close">✕</button>
+            </header>
+            <div class="registry-root" id="registry-root"></div>
+        </dialog>
 
         <dialog id="import-dialog" class="import-vrm" aria-labelledby="import-title">
             <form id="import-form">

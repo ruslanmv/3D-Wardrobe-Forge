@@ -45,6 +45,11 @@ class WardrobeLook(BaseModel):
     #: BI1. The template ids an imported body state is made of (from the file's own garment tags,
     #: or the operator's, checked against the catalogue), so the companion can tell its coverage.
     garments: list[str] | None = None
+    #: BD21. What a bare look's body is, so a client can tell her what it can show without opening
+    #: the file: ``detail`` (the preset), ``state`` (painted in the file), ``states`` (its skin
+    #: pack's, switched live) and ``extras`` (painted in, never switched). Absent on a dressed look.
+    #: A bare look is private, so this travels only to an admin session or a grant for her.
+    body: dict | None = None
 
     def to_avatar_item(self) -> dict:
         """Render as a 3D-Avatar-Chatbot ``avatars.json`` item."""

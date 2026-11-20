@@ -494,6 +494,7 @@ class Orchestrator:
                 wardrobeState=look.wardrobe_state,
                 sourceSha256=context.source_sha256,
                 outputSha256=look.output_sha256,
+                body=record.request.options.body_summary(),
             )
         )
         await self.wardrobes.save(manifest)

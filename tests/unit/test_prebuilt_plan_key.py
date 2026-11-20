@@ -175,3 +175,46 @@ async def test_a_bare_request_is_never_answered_from_the_cache(orchestrator, sto
     queued = await orchestrator.submit(bare)
     assert queued.state == JobState.QUEUED and orchestrator.queue.ids[-1] == queued.id
     assert queued.look is None
+
+
+def _layered(*layers) -> CreateJobRequest:
+    payload = job_request("sources/test-avatar.vrm", "combination", mode="auto")
+    payload["outfit"]["layers"] = [
+        {"prompt": f"{colour} {tid}", "mode": "template", "templateId": tid, "color": colour} for tid, colour in layers
+    ]
+    return CreateJobRequest.model_validate(payload)
+
+
+COMBO = (("top-fitted-tee-v1", "white"), ("skirt-pleated-mini-v1", "black"))
+
+
+def test_a_layered_combination_has_a_key_that_only_the_same_combination_meets(template_catalog):
+    # RU4. A combination the person put together is keyed like a described outfit.
+    key = prebuilt.plan_key(_layered(*COMBO), template_catalog)
+    assert key and key.startswith("plan-")
+    assert prebuilt.plan_key(_layered(*COMBO), template_catalog) == key
+    assert prebuilt.plan_key(_layered(("top-fitted-tee-v1", "red"), COMBO[1]), template_catalog) != key
+    assert prebuilt.plan_key(_layered(COMBO[0]), template_catalog) != key
+
+
+async def test_a_layered_combination_asked_again_is_loaded_not_rebuilt(orchestrator, stored_avatar):
+    orchestrator.queue = RecordingQueue()
+    first = await orchestrator.run_now(_layered(*COMBO))
+    assert first.state == JobState.COMPLETED
+    again = await orchestrator.submit(_layered(*COMBO))
+    assert again.state == JobState.COMPLETED and orchestrator.queue.ids == []
+    assert again.look.id == first.look.id and again.events[-1].detail["cache"] == "prebuilt"
+
+
+async def test_layered_stacks_over_the_same_template_are_both_listed(orchestrator, stored_avatar):
+    # RU4. A top-level templateId must not make two different stacks one wardrobe entry.
+    def stack(bottom):
+        request = _layered(COMBO[0], (bottom, "black"))
+        return request.model_copy(update={"outfit": request.outfit.model_copy(update={"template_id": TEE})})
+
+    first = await orchestrator.run_now(stack("skirt-pleated-mini-v1"))
+    second = await orchestrator.run_now(stack("skirt-a-line-v1"))
+    assert first.state == second.state == JobState.COMPLETED and first.look.id != second.look.id
+    listed = await prebuilt.ready_looks(orchestrator.store, "test-avatar", include_private=True)
+    ids = {item.get("lookId") or item.get("id") for item in listed}
+    assert {first.look.id, second.look.id} <= ids

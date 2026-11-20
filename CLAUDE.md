@@ -28,7 +28,7 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   `.venv/bin/python -m pytest tests/unit/test_body_detail.py tests/integration/test_bare_body.py -q`.
 - Plain `python` lacks the deps (`pydantic_settings`). Always use `.venv/bin/python`.
 
-## Bare bodies and body detail (BD1–BD20): where things are
+## Bare bodies and body detail (BD1–BD21): where things are
 
 | What                                       | Where                                                              |
 | ------------------------------------------ | ------------------------------------------------------------------ |
@@ -39,6 +39,8 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
 | Presets / states / extras (data)           | `assets/body_detail/presets.json`, `states.json`, `extras.json`     |
 | Job options (`bareDetail`, `bareState`, `bareExtras`, `bareStates`) | `wardrobe/domain/jobs.py` |
 | Erotic outfits, partial undress            | `wardrobe/body_surface/outfit_dictionary.py`, `docs/qa/EROTIC_SETS.md` |
+| What a client is told (BD21): each bare look's `body`, the catalogue | `JobOptions.body_summary`, `GET /v1/body-surface/catalog` (admin or grant) |
+| Make every private look for every character (BD21) | `tools/prebuild_private.py` (packs of ≤10 states covering all, extras sets); in CI: Prebuild wardrobe ▸ `private_looks` |
 | Full notes                                 | `docs/qa/BARE_DETAIL.md` (read before changing the painter)         |
 
 Rules that break things when missed:
@@ -54,10 +56,30 @@ Rules that break things when missed:
   anything else.
 - **Brightening tints whiten:** on bright skin a flat multiplier > 1 clips red
   first and turns cyan. Lift blue and green more than red (see `_oil`).
+- **A new state is made by the generator without edits** (an `other` pack), but give it a
+  group in `tools/prebuild_private.py` `GROUPS` so it lands in the pack its scene uses.
+  Each detailed bare look is listed separately (`plan: bare-<key>`); never collapse them.
 - **Detail needs clearance:** `eligibility.detail_clearance` needs a full review
   (packet + ≥40 chars of evidence) or the synthetic reference. Never loosen it.
 - Previews of explicit detail are private: never commit them, never serve them
   from a public route.
+
+## Wardrobe registry (WS1): categories, collections, private gating
+
+Every garment and ready look, typed into 20 clothing types and collected into public and
+admin-only private collections (Adult ones aligned with the chatbot's Private: striptease,
+table dance, undress step by step; Private body ones: naked, gaped, finishes, positions).
+`GET /v1/registry`; the admin manager under `/v1/admin/registry/*`; in the Studio, the top bar's Collections (`apps/studio/js/collections.js`, WS2). Rules in `wardrobe/registry/classify.py`, decisions in
+`state/wardrobe-registry.json`. Read `docs/WARDROBE_REGISTRY.md` before changing it.
+
+- Three tiers: general, **Adult** (what guests already had; shown to everyone) and **Private**
+  (admin only: bare bodies, body states, finishes, marks). `/v1/registry` filters Private on the
+  server; the existing endpoints (`/v1/outfits`, `/v1/collections`, `/v1/templates`) are not
+  re-gated. Never hide Private content only in the page.
+- A finished look is reused, not rebuilt: `prebuilt.keys_for` (words key, plan key; RU4 adds
+  explicit layers). Body art and bare requests are never answered from the cache.
+- An admin's decision always wins over a rule; a garment is never dropped for lack of a
+  collection (All Clothes holds every wearable template).
 
 ## Looking at results (saved tools, fastest first)
 
@@ -89,7 +111,7 @@ often miss the vulva on this fixture, so use the flat view to judge the vulva.
 
 ## Conventions
 
-- **Batch prefixes** in comments and docs: `BD` body detail (BD20 latest), `ES`
+- **Batch prefixes** in comments and docs: `BD` body detail (BD21 latest), `ES`
   erotic sets, `W`/`WF` wardrobe. Comments say why, at length.
 - **PRs and commits for this owner:** PR title and body are just `Updates`.
   Commit messages are `Updates of quality`, and merge commits `Updates`. Do not

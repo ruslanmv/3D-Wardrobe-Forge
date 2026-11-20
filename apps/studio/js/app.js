@@ -26,6 +26,7 @@ import {
     withoutColour,
 } from './occasions.js';
 import { Viewer } from './viewer.js';
+import { initCollections } from './collections.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -200,6 +201,8 @@ async function boot() {
     // For the console and browser tests: window.wardrobeStudio.viewer.polarDegrees() and the like.
     window.wardrobeStudio = { viewer };
     bindChrome();
+    // WS2. The registry's collections, opened from the top bar (apps/studio/js/collections.js).
+    initCollections({ api, describe, whenVisible });
 
     let loaded;
     try {
@@ -3302,12 +3305,17 @@ async function renderWardrobe() {
     const card = (look) => {
             const picture = el('span', { class: 'look-ph', text: '👗' });
             if (look.previewUrl) {
-                api.blobUrl(look.previewUrl)
-                    .then((url) => {
-                        state.urls.previews.push(url);
-                        picture.replaceWith(el('img', { src: url, alt: '', loading: 'lazy' }));
-                    })
-                    .catch(() => {});
+                // WS1. Fetched when its card comes into view, not all at once on render: a shelf of
+                // 130 looks fired 130 requests in a burst and the Space's proxy answered 429.
+                whenVisible(picture, () =>
+                    api
+                        .blobUrl(look.previewUrl)
+                        .then((url) => {
+                            state.urls.previews.push(url);
+                            picture.replaceWith(el('img', { src: url, alt: '', loading: 'lazy' }));
+                        })
+                        .catch(() => {})
+                );
             }
             return el(
                 'article',
@@ -3340,6 +3348,7 @@ async function renderWardrobe() {
                           title: "Made under an admin session's declaration: only an admin session sees it",
                       })
                     : null,
+                bodyChips(look),
                 saved.has(look.id) ? el('span', { class: 'look-saved', title: 'Saved', text: '♥' }) : null,
                 el('button', {
                     class: 'look-del',
@@ -3360,6 +3369,52 @@ async function renderWardrobe() {
     );
 }
 
+/**
+ * BD21. What a bare look's body has, on its card: the preset, how many states its skin pack
+ * switches between live, and the extras painted in. Read from Forge's own `look.body`, so the
+ * card says what the file is — two bare looks used to be told apart only by their names.
+ */
+function bodyChips(look) {
+    const body = look && look.body;
+    if (!body || typeof body !== 'object') return null;
+    const chip = (text, title) => el('span', { class: 'reg-badge', text, title });
+    const states = Array.isArray(body.states) ? body.states : [];
+    const extras = Array.isArray(body.extras) ? body.extras : [];
+    return el(
+        'span',
+        { class: 'look-body' },
+        body.detail ? chip(String(body.detail).replace(/-/g, ' '), 'Body detail preset') : null,
+        states.length ? chip(`${states.length} states`, states.join(', ')) : null,
+        ...extras.map((name) => chip(String(name).replace(/-/g, ' '), 'Painted in: comes with this look'))
+    );
+}
+
+/**
+ * WS1. Run `fn` once `node` is on screen (or near it); at once where IntersectionObserver is missing.
+ * One observer for the page, so a long shelf does not make one per card.
+ */
+let visibleObserver = null;
+const visibleCallbacks = new WeakMap();
+function whenVisible(node, fn) {
+    if (typeof IntersectionObserver === 'undefined') return fn();
+    if (!visibleObserver) {
+        visibleObserver = new IntersectionObserver(
+            (entries) => {
+                for (const entry of entries) {
+                    if (!entry.isIntersecting) continue;
+                    visibleObserver.unobserve(entry.target);
+                    const run = visibleCallbacks.get(entry.target);
+                    visibleCallbacks.delete(entry.target);
+                    if (run) run();
+                }
+            },
+            { rootMargin: '200px' }
+        );
+    }
+    visibleCallbacks.set(node, fn);
+    visibleObserver.observe(node);
+}
+
 async function wearLook(lookId, { mode = null } = {}) {
     const look = state.wardrobe && state.wardrobe.looks.find((item) => item.id === lookId);
     if (!look) return;
@@ -3369,7 +3424,7 @@ async function wearLook(lookId, { mode = null } = {}) {
         .forEach((node) => node.setAttribute('aria-current', String(node.dataset.look === lookId)));
     setStatus(`Loading ${look.name}…`);
     try {
-        const url = await api.blobUrl(look.vrmUrl);
+        const url = await api.blobUrl(look.vrmUrl, { urgent: true });
         if (state.activeLookId !== lookId) return revoke(url);
         const landed = await viewer.load('look', url);
         if (!landed) return revoke(url);

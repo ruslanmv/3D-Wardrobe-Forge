@@ -164,6 +164,20 @@ class JobOptions(BaseModel):
     #: (apps/api/admin.py). The public job routes force it off.
     private: bool = False
 
+    def body_summary(self) -> dict | None:
+        """BD21. The bare look's body as a client lists it (``WardrobeLook.body``), or None when the
+        job paints no detail. Read from the options the job ran with, so it is the file's truth."""
+        if not self.over_bare_body or self.bare_detail is None:
+            return None
+        states = list(dict.fromkeys(self.bare_states))
+        return {
+            "detail": self.bare_detail,
+            "state": self.bare_state or "closed",
+            "states": states,
+            "extras": list(self.bare_extras),
+            "skinPack": bool(states),
+        }
+
     @property
     def over_bare_body(self) -> bool:
         """ES1. Built on her prepared bare body — bare itself, or dressed over it: private, uncached,

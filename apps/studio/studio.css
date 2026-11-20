@@ -2774,3 +2774,366 @@ dialog.login .form-error {
 #bare-panel form > button {
     margin-top: 0.5rem;
 }
+
+/* ------------------------------------------------------- WS2 collections */
+.collections-btn {
+    margin-left: auto;
+}
+
+dialog.registry {
+    width: min(1280px, 100vw);
+    height: min(860px, 100dvh);
+    max-width: 100vw;
+    max-height: 100dvh;
+    padding: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+}
+
+dialog.registry[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+dialog.registry::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.registry-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+}
+
+.registry-top h2 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 20px;
+}
+
+.registry-top input[type='search'] {
+    flex: 0 1 280px;
+    min-width: 0;
+    padding: 7px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--panel-2);
+    color: var(--text);
+}
+
+.registry-note {
+    flex: 1;
+    min-width: 0;
+    color: var(--muted);
+    font-size: 12.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.registry-note.error {
+    color: var(--bad);
+}
+
+.registry-root {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.reg-dashboard {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+.reg-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--panel-2);
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.reg-stat b {
+    color: var(--text);
+    font-size: 14px;
+}
+
+.reg-stat.warn b {
+    color: var(--warn);
+}
+
+.reg-layout {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    flex: 1;
+    min-height: 0;
+}
+
+.reg-sidebar {
+    overflow-y: auto;
+    padding: 12px 10px;
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+}
+
+.reg-new {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.reg-section h3 {
+    margin: 12px 6px 4px;
+    color: var(--faint);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.reg-section ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.reg-col {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.reg-col:hover {
+    background: var(--panel-2);
+}
+
+.reg-col[aria-current='true'] {
+    background: var(--panel-3);
+    color: var(--accent);
+}
+
+.reg-col-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reg-count {
+    color: var(--faint);
+    font-size: 12px;
+}
+
+.reg-badge {
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--panel-3);
+    color: var(--muted);
+    font-size: 10.5px;
+    white-space: nowrap;
+}
+
+.reg-badge.private {
+    background: rgba(239, 139, 128, 0.16);
+    color: var(--bad);
+}
+
+.reg-badge.adult {
+    background: rgba(232, 185, 164, 0.16);
+    color: var(--accent);
+}
+
+.reg-badge.warn {
+    background: rgba(232, 196, 110, 0.16);
+    color: var(--warn);
+}
+
+.reg-body {
+    overflow-y: auto;
+    padding: 14px 16px;
+}
+
+.reg-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.reg-head h3 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 18px;
+}
+
+.reg-desc {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.reg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.reg-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel);
+}
+
+.reg-pic {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 3 / 4;
+    border-radius: var(--radius-sm);
+    background: var(--panel-2);
+    overflow: hidden;
+}
+
+.reg-pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.reg-ph {
+    color: var(--faint);
+    font-size: 28px;
+}
+
+.reg-fav {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.45);
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1;
+    padding: 4px 6px;
+    cursor: pointer;
+}
+
+.reg-fav.on {
+    color: var(--warn);
+}
+
+.reg-name {
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reg-kind {
+    color: var(--muted);
+    font-size: 11.5px;
+    text-transform: capitalize;
+}
+
+.reg-badges,
+.reg-manage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.reg-manage select {
+    flex: 1;
+    min-width: 0;
+    padding: 3px 4px;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 11.5px;
+}
+
+.reg-empty {
+    color: var(--muted);
+}
+
+/* BD21. What a private look's body has, on its Wardrobe card. */
+.look-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+    dialog.registry {
+        width: 100vw;
+        height: 100dvh;
+        border-radius: 0;
+    }
+
+    .registry-top {
+        flex-wrap: wrap;
+    }
+
+    .registry-top input[type='search'] {
+        flex: 1 1 100%;
+        order: 3;
+    }
+
+    .reg-dashboard {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 8px 12px;
+    }
+
+    .reg-stat {
+        flex: none;
+    }
+
+    .reg-layout {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .reg-sidebar {
+        max-height: 30dvh;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .reg-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
+}
