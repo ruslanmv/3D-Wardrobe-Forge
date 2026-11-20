@@ -1,0 +1,38 @@
+{
+  "_doc": "AB1. After Dark · Bare: named bare looks, each one skin preset + one body state + extras (at most four), in the order of an evening. Validated by wardrobe/registry/bare_looks.py against presets.json, states.json and extras.json; listed in the registry as look:<id>, private (admin or grant). Adults only, consensual marks, no injury.",
+  "chapters": [
+    {"id": "ready", "title": "1 · Ready", "description": "Wet, spread and waiting"},
+    {"id": "edge", "title": "2 · On the Edge", "description": "Shaking, soaking, held open"},
+    {"id": "filled", "title": "3 · Filled", "description": "Creampies: pussy, ass, both"},
+    {"id": "covered", "title": "4 · Covered", "description": "Glazed tits, back and everywhere"},
+    {"id": "stretched", "title": "5 · Stretched", "description": "Fisted and gaping, then filled"},
+    {"id": "marked", "title": "6 · Marked", "description": "Rope, wax, welts and cum"},
+    {"id": "ruined", "title": "7 · Ruined", "description": "Used every way, and the afterglow"}
+  ],
+  "looks": {
+    "dripping-wet": {"label": "Dripping Wet", "chapter": "ready", "preset": "natural", "state": "open", "extras": ["love-bites"]},
+    "spread-for-you": {"label": "Spread for You", "chapter": "ready", "preset": "trimmed", "state": "wide-open", "extras": ["piercings-labia"]},
+    "pumped-begging": {"label": "Pumped & Begging", "chapter": "ready", "preset": "puffy", "state": "pumped-open", "extras": ["piercings-intimate"]},
+    "both-holes-ready": {"label": "Both Holes Ready", "chapter": "ready", "preset": "landing-strip", "state": "both-open", "extras": ["spanked"]},
+    "on-the-edge": {"label": "On the Edge", "chapter": "edge", "preset": "triangle", "state": "edge", "extras": ["kisses-red"]},
+    "tied-soaking": {"label": "Tied & Soaking", "chapter": "edge", "preset": "natural-hair", "state": "tied-edge", "extras": ["love-bites"]},
+    "creampie": {"label": "Creampie", "chapter": "filled", "preset": "natural", "state": "creampie", "extras": ["writing-yours"]},
+    "filled-from-behind": {"label": "Filled from Behind", "chapter": "filled", "preset": "defined", "state": "doggy-creampie", "extras": ["spanked"]},
+    "filled-in-the-ass": {"label": "Filled in the Ass", "chapter": "filled", "preset": "trimmed", "state": "anal-creampie", "extras": ["tattoo-lower-back-tribal"]},
+    "both-holes-filled": {"label": "Both Holes Filled", "chapter": "filled", "preset": "puffy", "state": "doggy-double-creampie", "extras": ["writing-lower-back"]},
+    "running-down-thighs": {"label": "Running Down Her Thighs", "chapter": "filled", "preset": "warm", "state": "dripping", "extras": ["tan-thong-only"]},
+    "glazed-tits": {"label": "Glazed Tits", "chapter": "covered", "preset": "natural", "state": "breasts-belly", "extras": ["piercings-nipple-rings"]},
+    "back-glazed": {"label": "Back Glazed", "chapter": "covered", "preset": "auburn-natural", "state": "lower-back-cum-heavy", "extras": ["tattoo-lower-back-tribal-wings"]},
+    "cum-everywhere": {"label": "Cum Everywhere", "chapter": "covered", "preset": "soft-pink", "state": "cowgirl-everything", "extras": ["glitter"]},
+    "second-load": {"label": "Second Load", "chapter": "covered", "preset": "defined", "state": "lower-back-cum-second", "extras": ["kisses-pink"]},
+    "fisted-gaping": {"label": "Fisted & Gaping", "chapter": "stretched", "preset": "natural", "state": "doggy-both-fisted", "extras": ["spanked"]},
+    "fist-then-filled": {"label": "Fist, Then Filled", "chapter": "stretched", "preset": "trimmed", "state": "missionary-fisted-cum", "extras": ["piercings-christina"]},
+    "gaping-glazed": {"label": "Gaping & Glazed", "chapter": "stretched", "preset": "puffy", "state": "lower-back-cum-gaping", "extras": ["writing-lower-back"]},
+    "rope-wax-cum": {"label": "Rope, Wax & Cum", "chapter": "marked", "preset": "natural-hair", "state": "sado-used-cum", "extras": ["love-bites"]},
+    "full-session": {"label": "Full Session", "chapter": "marked", "preset": "defined", "state": "sado-full", "extras": ["writing-yours"]},
+    "used-every-way": {"label": "Used Every Way", "chapter": "ruined", "preset": "natural", "state": "used", "extras": ["spanked", "love-bites", "writing-yours"]},
+    "round-three": {"label": "Round Three", "chapter": "ruined", "preset": "warm", "state": "round-three", "extras": ["kisses-red"]},
+    "oiled-used": {"label": "Oiled & Used", "chapter": "ruined", "preset": "outie", "state": "oiled-used", "extras": ["body-paint-gold"]},
+    "afterglow": {"label": "Afterglow", "chapter": "ruined", "preset": "soft-pink", "state": "afterglow", "extras": ["hearts"]}
+  }
+}

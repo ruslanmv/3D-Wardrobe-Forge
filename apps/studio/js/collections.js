@@ -271,7 +271,29 @@ function card(item, collection) {
                   ),
           })
         : null;
-    const kind = item.kind === 'garment' ? item.type : item.kind === 'outfit' ? `outfit · ${item.group || ''}` : item.type;
+    const kind =
+        item.bodyKind === 'look'
+            ? `bare · ${item.chapterTitle || item.chapter || ''}`
+            : item.kind === 'garment'
+              ? item.type
+              : item.kind === 'outfit'
+                ? `outfit · ${item.group || ''}`
+                : item.type;
+    // AB1. A named bare look is a whole design: put it on the avatar on stage, as a bare job with
+    // its own preset, state and extras. Forge still checks her declaration and detail clearance.
+    const wear =
+        item.bodyKind === 'look' && deps && deps.wearBare
+            ? el('button', {
+                  type: 'button',
+                  class: 'reg-wear',
+                  text: 'Wear on her',
+                  title: item.description || item.name,
+                  onclick: () => {
+                      dialog().close();
+                      deps.wearBare(item);
+                  },
+              })
+            : null;
     return el(
         'article',
         { class: 'reg-card' },
@@ -279,6 +301,7 @@ function card(item, collection) {
         el('div', { class: 'reg-name', text: item.name, title: item.id }),
         el('div', { class: 'reg-kind', text: String(kind || '').replace(/-/g, ' ') }),
         el('div', { class: 'reg-badges' }, badges),
+        wear,
         manageRow(item, collection)
     );
 }
@@ -348,6 +371,19 @@ export function initCollections(options) {
         render();
     });
     box.addEventListener('close', revokeAll);
+}
+
+/**
+ * AB1. Open Collections at one collection: After Dark's "Bare" tile lands on `ad-bare`. The
+ * registry decides whether it exists for this viewer (admin or grant); for anyone else `load`
+ * falls back to All Clothes, so the tile can never show what the server did not send.
+ */
+export function openCollection(id) {
+    const box = dialog();
+    if (!box) return;
+    state.selected = id;
+    if (!box.open) box.showModal();
+    load();
 }
 
 export const _test = { state };

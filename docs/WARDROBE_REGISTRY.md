@@ -117,6 +117,34 @@ detail clearance (their reviews have no packet and 17 characters of evidence;
 detail needs the packet and 40): they are reported as refused until a person
 reviews them (`tools/body_surface/review_packet.py`, then the review record).
 
+## After Dark · Bare: named bare looks (AB1)
+
+After Dark is an occasion, and occasions list outfit dictionary ids only, so its bare looks live
+in the registry's private side, where body items already are. `assets/body_detail/bare_looks.json`
+holds 24 named looks in seven chapters of an evening: Ready, On the Edge, Filled, Covered,
+Stretched, Marked and Ruined. Each look is one skin preset, one state and at most four extras.
+
+- **Loading.** `wardrobe/registry/bare_looks.py` loads the file and checks every look against
+  `presets.json`, `states.json` and `extras.json`. A look naming anything Forge cannot paint is
+  dropped with a warning, and `tests/unit/test_bare_looks.py` fails on it. The same test bans
+  young-coded words in every name and description.
+- **Listing.** Each look is the body item `look:<id>`, carrying its `jobOptions` (a bare job:
+  `bareDetail`, `bareStates: [closed, state]`, `bareExtras`) and its description built from the
+  state's `body` line.
+- **Collections.** `ad-bare` holds every look and `ad-bare-<chapter>` each chapter, in the section
+  `private-after-dark`. A private section is never sent to a guest; an admin or a read grant sees
+  it. Every look is also in `cat-bare-looks`.
+- **Studio.** After Dark gets a 🔞 **Bare** tile that opens Collections at `ad-bare`. Each look's
+  card has **Wear on her**, which runs the bare job on the avatar on stage. Her declaration and
+  detail clearance still decide.
+- **Thumbnails.** `body_previews` paints a look as its preset, state and extras merged, in the view
+  of its state. `tools/render_body_previews.py --only look:` paints only these.
+- **Building for every character.** `tools/prebuild_private.py` makes every look for every
+  character declared adult, in the look's own preset (`--bare-looks all|none|ids`).
+
+To add a look, add an entry to the JSON and nothing else. The test holds it to what Forge can
+paint.
+
 ## A companion app's read grant (GC1)
 
 `GET /v1/registry` and `/v1/registry/collections/{id}` read with a valid read
