@@ -222,3 +222,48 @@ def test_detail_needs_the_finding_the_packet_and_evidence_then_clears_once(env):
         assert ok.json()["character"]["detail"]["cleared"] is True
         assert detail(headers, reviewer="Someone Else").status_code == 409  # write-once
     assert detail_clearance(env["registry"].parent, "/nonexistent", env["sha"]) is not None
+
+
+def test_reviews_export_and_commit_into_a_clean_checkout(env, tmp_path):
+    """RX1. What a person recorded in the Studio leaves its disk as one admin-only file, and lands in
+    another checkout exactly as recorded: the detail review clears the same bytes there too, a
+    finding is never replaced, and a review Forge's rules would refuse is refused on import."""
+    import importlib.util
+    import json
+    import shutil as _shutil
+    from pathlib import Path
+
+    from wardrobe.body_surface.eligibility import detail_clearance
+
+    spec = importlib.util.spec_from_file_location(
+        "import_reviews", Path(__file__).resolve().parents[2] / "tools/body_surface/import_reviews.py")
+    tool = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tool)
+
+    with env["client"]() as client:
+        assert client.get("/v1/admin/reviews/export").status_code == 401  # admin only
+        headers = sign_in(client)
+        assert client.post("/v1/admin/reviews/mira", headers=headers, json=finding(env["sha"])).status_code == 201
+        client.post("/v1/admin/reviews/mira/packet", headers=headers)
+        body = {"sha256": env["sha"], "reviewer": "Test Person", "evidence": DETAIL_EVIDENCE, "examined": True}
+        assert client.post("/v1/admin/reviews/mira/detail", headers=headers, json=body).status_code == 201
+        export = client.get("/v1/admin/reviews/export", headers=headers).json()
+    assert export["schema"] == "wardrobe.reviews.export.v1"
+    assert env["sha"] in export["detailReviews"]["reviews"] and env["sha"] in export["packets"]
+
+    # Another checkout: the shipped registries, none of this session's findings.
+    clean = tmp_path / "clean"
+    _shutil.copytree(Path(__file__).resolve().parents[2] / "assets/body_surface", clean)
+    assert detail_clearance(clean, "/nonexistent", env["sha"]) is None
+    result = tool.merge(export, clean)
+    assert result["detail"] == [env["sha"]] and not result["refused"]
+    assert detail_clearance(clean, "/nonexistent", env["sha"]) is not None
+    entry = json.loads((clean / "adult-detail-reviews.json").read_text())["reviews"][env["sha"]]
+    assert entry["packet"] == f"packets/{env['sha']}.json" and (clean / entry["packet"]).is_file()
+    assert entry["reviewer"] == "Test Person"
+    # Again: nothing replaced. And a review short of Forge's rules is refused, not written.
+    assert tool.merge(export, clean)["detail"] == []
+    thin = json.loads(json.dumps(export))
+    other = "1" * 64
+    thin["detailReviews"]["reviews"] = {other: {**entry, "evidence": "looked"}}
+    assert tool.merge(thin, clean)["refused"]
