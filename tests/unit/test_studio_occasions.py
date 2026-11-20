@@ -117,7 +117,9 @@ def test_without_private_mode_nothing_private_is_offered(result):
 
 
 def test_with_private_mode_the_private_occasion_and_swimwear_appear(result):
-    assert result["adult"][-1]["id"] == "private"
+    # Private and (AD1) After Dark close the list, only in private mode.
+    assert [o["id"] for o in result["adult"]][-2:] == ["private", "after-dark"]
+    assert not any(o["id"] in ("private", "after-dark") for o in result["general"])
     beach = next(s for o in result["adult"] for s in o["styles"] if s["id"] == "beach")
     assert "triangle-bikini" in [look for look, _ in beach["looks"]]
 

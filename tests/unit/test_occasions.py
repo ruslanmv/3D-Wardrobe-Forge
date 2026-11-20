@@ -32,7 +32,7 @@ def test_ids_are_unique_and_every_look_is_in_the_dictionary(entries):
 def test_the_first_screen_is_the_occasions_asked_for():
     titles = [o.title for o in oc.OCCASIONS]
     assert titles == ["Night out", "Try-on haul", "Work", "Gym", "Sleep", "Shopping", "Vacation", "Campus",
-                      "Anime-inspired", "Private"]
+                      "Anime-inspired", "Private", "After Dark"]
 
 
 def test_without_private_mode_no_style_is_left_empty(entries):
@@ -58,7 +58,7 @@ def test_without_private_mode_no_style_is_left_empty(entries):
 
 def test_private_is_hidden_as_a_whole_and_holds_the_private_looks(entries):
     private = oc.occasions()["private"]
-    assert private.private and [o.id for o in oc.OCCASIONS if o.private] == ["anime", "private"]
+    assert private.private and [o.id for o in oc.OCCASIONS if o.private] == ["anime", "private", "after-dark"]
     # Lingerie and stockings are there, rated private by the planner, not by this module.
     looks = {look for style in private.styles for look in style.looks}
     assert {"lace-lingerie-set", "italian-lace-thong", "stockings-pencil"} <= looks
@@ -151,3 +151,17 @@ async def test_a_change_on_a_look_draws_the_carried_garments_in_their_own_colour
     navy = next(g for g in second.plan.garments).material.base_color[:3]
     assert tuple(float(c) for c in navy) in colours
     assert any(max(colour) < 0.1 for colour in colours), colours  # the carried black skirt
+
+
+def test_after_dark_is_private_as_a_whole_and_offers_every_adult_set(entries):
+    """AD1. The complete adult wardrobe as one occasion: hidden outside private mode as a whole,
+    every look a real dictionary entry (rated by the planner, not here), and every erotic, show and
+    role-play set reachable from it."""
+    after = oc.occasions()["after-dark"]
+    assert after.private
+    looks = {look for style in after.styles for look in style.looks}
+    assert looks <= set(entries)
+    for group in ("erotic", "roleplay"):
+        wanted = {e["id"] for e in entries.values() if e.get("group") == group}
+        assert wanted <= looks, wanted - looks
+    assert len({s.id for s in after.styles}) == len(after.styles) >= 9
