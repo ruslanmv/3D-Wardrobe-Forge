@@ -228,16 +228,10 @@ async function boot() {
     renderDesigner();
     initAccount();
     // OC3. Not part of the boot's Promise.all: without it the Studio still works, from Customize.
-    api.outfits()
-        .then((outfits) => (state.outfits = outfits))
-        .catch((error) => {
-            console.warn('occasions unavailable', error);
-            state.outfits = false;
-        })
-        .finally(() => {
-            renderFlow();
-            renderLookActions();
-        });
+    loadOutfits().finally(() => {
+        renderFlow();
+        renderLookActions();
+    });
     if (caps.bodyArt) {
         // BA7. Fetched once; without it the section simply never appears.
         api.bodyArt()
@@ -1066,7 +1060,25 @@ async function endSession(message) {
 }
 
 /** The library and wardrobe as this session (or no session) is allowed to see them. */
+/**
+ * GC4. The occasions as Forge lists them to this session. GC2 lists After Dark (and the outfits
+ * only it offers) to an admin session or a grant, so the answer depends on who is asking: read
+ * once at boot it was a guest's answer, and logging in as admin (reported 2026-11-20 on the
+ * deployed Space) still showed no After Dark until a reload. Asked again on every change of
+ * session, alongside the library and the wardrobe.
+ */
+function loadOutfits() {
+    return api
+        .outfits()
+        .then((outfits) => (state.outfits = outfits))
+        .catch((error) => {
+            console.warn('occasions unavailable', error);
+            if (!state.outfits) state.outfits = false; // keep a list we already have
+        });
+}
+
 async function refreshForSession() {
+    await loadOutfits();
     try {
         const library = await api.library();
         state.library = library.avatars;
