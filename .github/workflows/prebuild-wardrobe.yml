@@ -22,9 +22,16 @@ name: Prebuild wardrobe
 # own (beside another one, or while Hugging Face is answering badly) is how a character's
 # list gets rewritten. Run it from Actions -> Prebuild wardrobe -> Run workflow, on the branch
 # whose garments you want built.
+# Choice inputs, not booleans: GitHub's mobile site and app draw a boolean input as its label
+# with no box to tick (reported 2026-11-20), so a run started from a phone could never turn a
+# switch on. A drop-down shows everywhere. Every expression below compares with 'yes'.
 on:
   workflow_dispatch:
     inputs:
+      slugs:
+        description: Only these characters, comma-separated (empty = every available one), e.g. avatar-sample-a
+        required: false
+        default: ""
       only:
         description: Only templates whose name or id contains this text (empty = all)
         required: false
@@ -32,23 +39,27 @@ on:
       overwrite:
         description: Replace looks the dataset already lists with this run's builds (off = keep every existing look, only add new ones)
         required: false
-        default: false
-        type: boolean
+        default: "no"
+        type: choice
+        options: ["yes", "no"]
       outfits:
         description: Also build every outfit dictionary entry (erotic sets included) on every character
         required: false
-        default: true
-        type: boolean
+        default: "yes"
+        type: choice
+        options: ["yes", "no"]
       missing_only:
         description: Send only looks a character's list does not have yet (never rebuild an existing one)
         required: false
-        default: true
-        type: boolean
+        default: "yes"
+        type: choice
+        options: ["yes", "no"]
       private_looks:
         description: Also make every private bare look (tools/prebuild_private.py; all body states and extras sets) on every character declared adult
         required: false
-        default: false
-        type: boolean
+        default: "no"
+        type: choice
+        options: ["yes", "no"]
       private_presets:
         description: Body-detail presets for the private looks, comma-separated
         required: false
@@ -90,6 +101,8 @@ jobs:
         run: python -m pip install -e .
       - id: slugs
         if: steps.secrets.outputs.enabled == 'true'
+        env:
+          ONLY_SLUGS: ${{ inputs.slugs }}
         run: |
           python tools/fetch_library.py
           python - <<'EOF' >> "$GITHUB_OUTPUT"
@@ -97,7 +110,10 @@ jobs:
           from wardrobe.config import get_settings
           from wardrobe.library import AvatarLibrary
           library = AvatarLibrary.from_directory(get_settings().wardrobe_library_root)
-          print("slugs=" + json.dumps(sorted(a.slug for a in library.available())))
+          import os
+          wanted = {s.strip() for s in os.environ.get("ONLY_SLUGS", "").split(",") if s.strip()}
+          slugs = sorted(a.slug for a in library.available() if not wanted or a.slug in wanted)
+          print("slugs=" + json.dumps(slugs))
           EOF
 
   build:
@@ -133,7 +149,7 @@ jobs:
           echo "::add-mask::$WARDROBE_ADMIN_PASSWORD"
           # BD21. Bare bodies need the operator switch; on only when this run makes private looks.
           # Every other gate (the character's adult declaration, detail clearance) still decides.
-          if [ "${{ inputs.private_looks }}" = "true" ]; then export WARDROBE_ADULT_BODY_SURFACE=true; fi
+          if [ "${{ inputs.private_looks }}" = "yes" ]; then export WARDROBE_ADULT_BODY_SURFACE=true; fi
           (python -m uvicorn apps.api.main:app --port 8090 > forge.log 2>&1 &)
           for i in $(seq 1 90); do curl -sf http://127.0.0.1:8090/health >/dev/null && break; sleep 1; done
           curl -sf -X POST http://127.0.0.1:8090/v1/admin/session -H 'content-type: application/json' \
@@ -145,9 +161,9 @@ jobs:
             --admin-token-file "$RUNNER_TEMP/forge-token" \
             --slugs "${{ matrix.slug }}" ${{ inputs.only && format('--only "{0}"', inputs.only) || '' }} \
             --report "prebuild-${{ matrix.slug }}.json" \
-            ${{ inputs.outfits && '--outfits' || '' }} ${{ inputs.missing_only && '--missing-only' || '' }}
+            ${{ inputs.outfits == 'yes' && '--outfits' || '' }} ${{ inputs.missing_only == 'yes' && '--missing-only' || '' }}
       - name: Private looks for ${{ matrix.slug }}
-        if: inputs.private_looks
+        if: inputs.private_looks == 'yes'
         run: |
           # BD21. Every body state in skin packs, plus the looks with extras, idempotent: a body
           # the character's list already has is not sent again. A gate's refusal is reported in
@@ -170,7 +186,7 @@ jobs:
           if [ -d "$WARDROBE_STORAGE_ROOT/prebuilt" ]; then
             python tools/publish_prebuilt.py --root "$WARDROBE_STORAGE_ROOT" \
               --message "prebuild: ${{ matrix.slug }} at ${{ github.sha }}" \
-              ${{ inputs.overwrite && '--overwrite' || '' }}
+              ${{ inputs.overwrite == 'yes' && '--overwrite' || '' }}
           fi
       - name: Summary
         if: always()

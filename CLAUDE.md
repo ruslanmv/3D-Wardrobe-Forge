@@ -23,8 +23,13 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   Run workflow ▸ branch `ultimate` (`deploy-space.yml` checks out the branch picked). A push
   to `main` also deploys — another reason never to touch it.
 - **A session cannot start workflows** (GitHub answers 403 to a dispatch from Claude Code):
-  ask the owner to run Deploy, or Prebuild wardrobe (`missing_only` on, `overwrite` off;
-  `private_looks` for BD21 in a second run with `only` set to `none`).
+  ask the owner to run Deploy, or Prebuild wardrobe (`missing_only` yes, `overwrite` no;
+  `private_looks` yes for BD21 in a second run with `only` set to `none`; `slugs` limits it to
+  named characters). Its inputs are drop-downs, not tick boxes: GitHub's phone site shows no box.
+- **A detail review recorded in the Studio lives on the Space's disk**, which is lost at restart
+  and which the Prebuild runner never sees. It counts there only once committed
+  (`assets/body_surface/adult-detail-reviews.json` and its packet, under the reviewer's name).
+  Until then, build that character's detailed looks in the Studio on the Space itself.
 - **After any deploy:** `.venv/bin/python tools/qa/space_smoke.py` (routes, gates refuse a
   guest, no Private to a guest, warm timings), `FORGE_GRANT=… .venv/bin/python tools/qa/grant_check.py`
   (what the companion's read grant opens — body catalogue, After Dark, After Dark · Bare — and that
