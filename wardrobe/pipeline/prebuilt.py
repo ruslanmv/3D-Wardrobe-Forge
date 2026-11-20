@@ -157,14 +157,19 @@ def plan_key(request: CreateJobRequest, catalog: TemplateCatalog) -> str | None:
     reveal …) — so whatever plans to the same garments is the same look.
 
     Planning is the pipeline's own rule-based planner (``plan_outfit_stack``): deterministic and
-    milliseconds. Body art and explicit layers stay uncached, as with ``cache_key``. A plan with
+    milliseconds. Body art stays uncached, as with ``cache_key``; explicit layers are keyed
+    (RU4). A plan with
     a garment the catalogue does not hold, or a piece of the prompt it could not plan, has no
     key: that look is not the one asked for, and must not be handed to the next person.
     """
     from wardrobe.pipeline.plan_outfit_stack import plan_outfit_stack
 
     outfit = request.outfit
-    if outfit is None or request.body_art or request.body_art_remove or outfit.layers:
+    # RU4. Explicit layers are keyed too: a combination the person put together (a Try-On stack,
+    # an Outfit Lab set) is planned by the same deterministic rules as a described one, and the
+    # whole request, its layers included, goes into the key, so only the identical combination
+    # meets it. It used to be rebuilt from nothing every time it was asked for.
+    if outfit is None or request.body_art or request.body_art_remove:
         return None
     plan = plan_outfit_stack(outfit, catalog)
     if plan.unplanned:
@@ -401,6 +406,7 @@ async def with_prebuilt(store: ObjectStore, wardrobe_id: str, manifest, *, inclu
                 outputSha256=item.get("outputSha256"),
                 origin=item.get("origin"),
                 garments=item.get("garments") if item.get("origin") == "operator-import" else None,
+                body=item.get("body") if isinstance(item.get("body"), dict) else None,
             )
         )
     return merged
@@ -430,7 +436,19 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
         "sourceSha256": record.look.source_avatar_hash,
         "outputSha256": record.look.output_sha256,
     }
-    if key.startswith("plan-") and not request.outfit.template_id:
+    # BD21. A bare look says what its body is (preset, states, extras), so a list read after a
+    # restart still tells a client what she can show in it.
+    body = request.options.body_summary()
+    if body:
+        item["body"] = body
+        # BD21. Each detailed bare look is its own look: preset, states and extras tell them apart
+        # (``plan`` is in LIST_FIELDS). Without it every bare look shared one identity, the first
+        # was kept and the rest never reached her wardrobe — a closet of one body.
+        item["plan"] = "bare-" + key
+    # RU4. A layered stack is told apart by its plan key even when it also names a top-level
+    # template: otherwise two stacks over the same tee shared one identity and the second
+    # replaced the first in her wardrobe.
+    if key.startswith("plan-") and (not request.outfit.template_id or request.outfit.layers):
         # RU1. An outfit of several garments has no one template: its plan key tells it apart
         # from every other such outfit (all of them share templateId None and color None).
         item["plan"] = key
@@ -441,11 +459,12 @@ async def _list_look(store: ObjectStore, record: JobRecord, key: str) -> None:
     async with _LIST_LOCK:
         # RU2. Read through the merge, so writing her list never drops what the dataset holds.
         listed = await read_list(store, wardrobe_id)
-        if item["templateId"] == "body-bare-v1" and any(
-            old.get("templateId") == "body-bare-v1" for old in listed.get("looks", [])
-        ):
-            return  # Bare prebuilds are keep-existing, never a replacement.
         same = tuple(item.get(f) for f in LIST_FIELDS)
+        if item["templateId"] == "body-bare-v1" and any(
+            old.get("templateId") == "body-bare-v1" and tuple(old.get(f) for f in LIST_FIELDS) == same
+            for old in listed.get("looks", [])
+        ):
+            return  # Bare prebuilds are keep-existing, never a replacement (BD21: of the same look).
         kept = [old for old in listed.get("looks", []) if tuple(old.get(f) for f in LIST_FIELDS) != same]
         listed["looks"] = kept
         listed["looks"].append(item)
