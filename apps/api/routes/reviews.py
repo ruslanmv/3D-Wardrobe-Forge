@@ -24,6 +24,7 @@ Studio shows that.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import logging
 from datetime import UTC, datetime
@@ -164,6 +165,48 @@ async def list_reviews(request: Request, admin: AdminDep, settings: SettingsDep,
     rows = [await _row(a, settings, store, admin.declared) for a in library.available()]
     missing = [a.slug for a in library.avatars if not a.available]
     return {"outcomes": list(REVIEW_OUTCOMES), "characters": rows, "notOnDisk": missing}
+
+
+@router.get("/admin/reviews/export")
+async def export_reviews(admin: AdminDep, settings: SettingsDep) -> dict:
+    """RX1. Every finding recorded here, to take off this disk and commit.
+
+    The Studio records reviews into ``assets/body_surface/`` on whatever disk Forge runs on. On the
+    Space that disk does not persist, and a build that runs anywhere else (the Prebuild workflow,
+    a local Forge) never sees it — so eight characters cleared in the Studio still had every
+    detailed look refused elsewhere (2026-11-20). This hands an admin the registries exactly as
+    written, with every packet a detail review names, as one file; the person commits it
+    (``tools/body_surface/import_reviews.py``), under the reviewer's name. Nothing is made, changed
+    or inferred here: it is a copy of what persons recorded. Admin only, like every review route.
+    """
+    import json as _json
+
+    _signed_in(admin)
+    root = settings.body_surface_root_path
+
+    def read(name: str) -> dict:
+        try:
+            return _json.loads((root / name).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+
+    from wardrobe.body_surface.eligibility import DETAIL_REVIEWS_FILE
+
+    design, detail = read(REGISTRY_FILE), read(DETAIL_REVIEWS_FILE)
+    packets = {}
+    for registry in (design, detail):
+        for sha in (registry.get("reviews") or {}):
+            path = _packet_path(settings, sha)
+            if path.is_file():
+                with contextlib.suppress(OSError, ValueError):  # an unreadable packet is left out
+                    packets[sha] = _json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "schema": "wardrobe.reviews.export.v1",
+        "exportedAt": datetime.now(UTC).isoformat(timespec="seconds"),
+        "designReviews": design,
+        "detailReviews": detail,
+        "packets": packets,
+    }
 
 
 @router.post("/admin/reviews/{slug}", status_code=201)

@@ -32,7 +32,10 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
 - **A detail review recorded in the Studio lives on the Space's disk**, which is lost at restart
   and which the Prebuild runner never sees. It counts there only once committed
   (`assets/body_surface/adult-detail-reviews.json` and its packet, under the reviewer's name).
-  Until then, build that character's detailed looks in the Studio on the Space itself.
+  RX1: the Review page's **Export reviews** button downloads every finding with its packets
+  (`GET /v1/admin/reviews/export`, admin only); `tools/body_surface/import_reviews.py <file>`
+  merges it into `assets/body_surface/` (never replaces a finding, refuses one Forge's rules
+  would), then commit. Until then, build that character's detailed looks in the Studio itself.
 - **After any deploy:** `.venv/bin/python tools/qa/space_smoke.py` (routes, gates refuse a
   guest, no Private to a guest, warm timings), `FORGE_GRANT=… .venv/bin/python tools/qa/grant_check.py`
   (what the companion's read grant opens — body catalogue, After Dark, After Dark · Bare — and that

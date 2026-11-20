@@ -22,6 +22,9 @@
         <header class="review-head">
             <a href="./" class="review-back">← Studio</a>
             <h1>Character review</h1>
+            <!-- RX1. Reviews recorded here live on this server's disk, lost at a restart and unseen by
+                 the Prebuild workflow: one tap downloads them all, to be committed. -->
+            <button type="button" class="secondary review-export" id="review-export" hidden>Export reviews</button>
         </header>
 
         <!-- CG9. Signing in here: the admin session lives in this tab only, so a review link opened

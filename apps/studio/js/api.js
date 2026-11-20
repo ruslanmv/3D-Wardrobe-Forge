@@ -215,6 +215,8 @@ export const api = {
     revokeGrant: (token) => request('/v1/admin/access/revocations', { method: 'POST', body: { token } }),
     /** CG4. Every library character's review state, licence, body and status (admin session only). */
     reviews: () => request('/v1/admin/reviews'),
+    /** RX1. Every recorded finding and its packets, to commit (tools/body_surface/import_reviews.py). */
+    exportReviews: () => request('/v1/admin/reviews/export'),
     // CG10. Forge's review packet for a character's exact file, and a person's detail review of it.
     reviewPacket: (slug) => request(`/v1/admin/reviews/${encodeURIComponent(slug)}/packet`, { method: 'POST', body: {} }),
     recordDetailReview: (slug, finding) =>

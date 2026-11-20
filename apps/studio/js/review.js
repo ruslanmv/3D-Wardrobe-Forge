@@ -504,6 +504,7 @@ async function start() {
         return;
     }
     $('review-main').hidden = false;
+    $('review-export').hidden = false; // RX1. signed in: the reviews can be taken off this disk
     renderAudit();
     renderList();
     if (!wired) {
@@ -530,7 +531,35 @@ async function start() {
     if (first && !state.current) select(first.slug);
 }
 
+/**
+ * RX1. Download every finding recorded on this server, with its packets, as one file. They are on
+ * a disk that does not persist; committed (tools/body_surface/import_reviews.py) they stay, and
+ * the Prebuild workflow and any other Forge see them too.
+ */
+async function exportReviews() {
+    const button = $('review-export');
+    button.disabled = true;
+    try {
+        const data = await api.exportReviews();
+        const blob = new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `forge-reviews-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+    } catch (error) {
+        const node = $('review-error');
+        node.textContent = `Export failed: ${(error && error.message) || error}`;
+        node.hidden = false;
+    } finally {
+        button.disabled = false;
+    }
+}
+
 if (typeof document !== 'undefined' && document.getElementById('review-main')) {
     $('review-locked').addEventListener('submit', signIn);
+    $('review-export').addEventListener('click', exportReviews);
     start();
 }
