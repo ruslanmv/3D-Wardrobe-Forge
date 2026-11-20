@@ -108,10 +108,52 @@ async def _row(avatar, settings, store, declared: set[str]) -> dict:
                        pinned_sha256=avatar.sha256, settings=settings, body=body,
                        library_conditions=conditions))
     row.pop("file", None)  # a server path is nobody's business
+    # CG10. What an auditor needs in one row: whether detail is cleared and what is missing, the
+    # private looks made for her, her body thumbnails, and whether a packet is ready to look at.
+    from wardrobe.body_surface.eligibility import detail_status
+    from wardrobe.registry import body_previews
+
+    row["detail"] = detail_status(settings.body_surface_root_path, settings.wardrobe_calibration_root,
+                                  avatar.sha256)
+    row["packetReady"] = _packet_path(settings, avatar.sha256).exists()
+    try:
+        listed = await prebuilt.read_list(store, avatar.slug)
+        looks = [x for x in listed.get("looks", []) if x.get("templateId") == "body-bare-v1"]
+    except Exception:  # noqa: BLE001 - an unreadable list is no looks, said as zero
+        looks = []
+    row["bareLooks"] = len(looks)
+    row["detailedLooks"] = sum(1 for x in looks if x.get("body"))
+    row["thumbnails"] = len((await body_previews.read_index(store, avatar.slug)).get("items", []))
     row["name"] = avatar.name
     row["collection"] = avatar.collection
     row["avatarUrl"] = f"/v1/library/{avatar.slug}/avatar.vrm"
     return row
+
+
+PACKET_DIR = "packets"
+
+
+def _packet_path(settings, sha256: str):
+    return settings.body_surface_root_path / PACKET_DIR / f"{sha256}.json"
+
+
+def _packet_tool():
+    """tools/body_surface/review_packet.py, the one place a packet is put together."""
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[3] / "tools" / "body_surface" / "review_packet.py"
+    spec = importlib.util.spec_from_file_location("review_packet", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _packet_summary(packet: dict) -> dict:
+    """What the page shows of a packet: the exact file, what it says about itself, the answers."""
+    keys = ("schema", "preparedAt", "file", "whatTheFileSays", "operatorDeclaration", "identity",
+            "clothingAsAuthored", "eligibilityNow")
+    return {k: packet.get(k) for k in keys if k in packet}
 
 
 @router.get("/admin/reviews")
@@ -164,6 +206,66 @@ async def record(slug: str, body: Finding, request: Request, admin: AdminDep, se
     return {"entry": entry, "character": row, "bodyState": auto,
             "persist": f"commit {REGISTRY_FILE} (assets/body_surface/) under the reviewer's name; "
                        "a disk that does not persist loses it at restart"}
+
+
+@router.post("/admin/reviews/{slug}/packet")
+async def make_packet(slug: str, request: Request, admin: AdminDep, settings: SettingsDep,
+                      store: StoreDep) -> dict:
+    """CG10. Forge's review packet for her exact file: what a detail reviewer audits. No finding in it."""
+    import json
+
+    _signed_in(admin)
+    library = await _avatars(request, store)
+    avatar = library.get(slug)
+    if avatar is None or not avatar.available:
+        raise HTTPException(status_code=404, detail="avatar not in the library")
+    tool = _packet_tool()
+    packet = await run_in_threadpool(tool.packet, avatar.path, slug=slug, library=library, settings=settings)
+    packet["file"]["path"] = f"library:{slug}"  # a server path is nobody's business
+    path = _packet_path(settings, avatar.sha256)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(packet, indent=1) + "\n", encoding="utf-8")
+    return {"packet": _packet_summary(packet), "markdown": tool.markdown(packet)}
+
+
+class DetailFinding(BaseModel):
+    sha256: str = Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$")
+    reviewer: str = Field(min_length=1, max_length=120)
+    evidence: str = Field(min_length=1, max_length=2000)
+    examined: bool = False
+
+
+@router.post("/admin/reviews/{slug}/detail", status_code=201)
+async def record_detail(slug: str, body: DetailFinding, request: Request, admin: AdminDep,
+                        settings: SettingsDep, store: StoreDep) -> dict:
+    """CG10. One person's detail review of the file and its packet, as they recorded it."""
+    from wardrobe.body_surface.character_gates import record_detail_review
+
+    _signed_in(admin)
+    library = await _avatars(request, store)
+    avatar = library.get(slug)
+    if avatar is None or not avatar.available:
+        raise HTTPException(status_code=404, detail="avatar not in the library")
+    if body.sha256 != avatar.sha256:
+        raise HTTPException(status_code=409, detail={
+            "reason": "not_this_file", "message": "that SHA-256 is not the file this character is pinned to"})
+    packet = _packet_path(settings, avatar.sha256)
+    if not packet.exists():
+        raise HTTPException(status_code=409, detail={
+            "reason": "no_packet", "message": "make the review packet and look at it first"})
+    date = datetime.now(UTC).date().isoformat()
+    try:
+        entry = await run_in_threadpool(
+            record_detail_review, settings.body_surface_root_path, file=avatar.path, sha256=body.sha256,
+            reviewer=body.reviewer, evidence=f"{body.evidence.strip()} [recorded in Studio]", date=date,
+            packet=packet, examined=body.examined)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail={"reason": "refused", "message": str(exc)}) from None
+    logger.info("detail review recorded for %s by %s", slug, body.reviewer)
+    row = await _row(avatar, settings, store, admin.declared)
+    return {"entry": entry, "character": row,
+            "persist": "commit adult-detail-reviews.json and packets/ (assets/body_surface/) under the "
+                       "reviewer's name; a disk that does not persist loses it at restart"}
 
 
 __all__ = ["router"]

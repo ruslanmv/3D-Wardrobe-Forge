@@ -215,3 +215,141 @@
 .review-signin[hidden] {
     display: none;
 }
+
+/* CG10. The audit: every character at a glance, then one at a time below. */
+.review-audit {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.review-summary,
+.review-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.review-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--panel-2);
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.review-stat b {
+    color: var(--text);
+    font-size: 16px;
+}
+
+.review-stat[data-tone='warn'] b {
+    color: var(--warn);
+}
+
+.review-stat[data-tone='ok'] b {
+    color: var(--ok);
+}
+
+.review-stat[data-tone='bad'] b {
+    color: var(--bad);
+}
+
+.review-filter {
+    padding: 5px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.review-filter[aria-checked='true'] {
+    background: var(--panel-3);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.review-table-wrap summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 13px;
+}
+
+.review-table-scroll {
+    overflow-x: auto;
+    margin-top: 8px;
+}
+
+.review-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+
+.review-table th,
+.review-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+}
+
+.review-table th {
+    color: var(--faint);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.review-table td small {
+    display: block;
+    color: var(--faint);
+}
+
+.review-table tbody tr {
+    cursor: pointer;
+}
+
+.review-table tbody tr:hover,
+.review-table tbody tr[aria-current='true'] {
+    background: var(--panel-2);
+}
+
+.review-detail-clearance {
+    margin: 16px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--panel);
+}
+
+.review-detail-clearance h3 {
+    margin: 0 0 6px;
+    font-family: var(--display);
+}
+
+.review-packet pre {
+    max-height: 320px;
+    overflow: auto;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    background: var(--panel-2);
+    font-size: 12px;
+    white-space: pre-wrap;
+}
+
+#review-detail-count {
+    display: block;
+    color: var(--faint);
+}
+
+/* The hidden attribute wins over every display rule above: a form that must not be offered is not. */
+.review-page [hidden] {
+    display: none !important;
+}

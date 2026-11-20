@@ -74,7 +74,121 @@ async function sha256Hex(buffer) {
     return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-const state = { characters: [], outcomes: [], current: null, localHash: null, viewer: null, blobUrl: null };
+const state = {
+    characters: [],
+    outcomes: [],
+    current: null,
+    localHash: null,
+    viewer: null,
+    blobUrl: null,
+    filter: 'all',
+    notOnDisk: [],
+};
+
+/**
+ * CG10. Where each character stands, in the order an auditor works through them: nobody has
+ * looked yet; found clearly adult but not yet reviewed for body detail; cleared for detail;
+ * blocked by a finding. One word per character, from the server's own answers — never guessed.
+ */
+export function stage(row) {
+    if (row.reviewState === 'pending') return 'needs-review';
+    if (row.status === 'blocked' || (row.review && row.review.outcome && row.review.outcome !== 'clearly-adult'))
+        return 'blocked';
+    if (row.detail && row.detail.cleared) return 'detail-cleared';
+    return 'needs-detail';
+}
+
+export const STAGE_TEXT = {
+    'needs-review': 'Needs review',
+    'needs-detail': 'Needs detail review',
+    'detail-cleared': 'Cleared for detail',
+    blocked: 'Blocked',
+};
+
+const STAGE_TONE = { 'needs-review': 'warn', 'needs-detail': 'warn', 'detail-cleared': 'ok', blocked: 'bad' };
+
+/** Whether the detail-review form may be sent (the server checks every part again). */
+export function canSubmitDetail({ reviewer, evidence, examined, localHash, pinnedHash, packetReady, needed = 40 }) {
+    return Boolean(
+        reviewer &&
+        reviewer.trim() &&
+        evidence &&
+        evidence.trim().length >= needed &&
+        examined &&
+        packetReady &&
+        localHash &&
+        localHash === pinnedHash
+    );
+}
+
+function el(tag, props = {}, ...children) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(props)) {
+        if (value === undefined || value === null || value === false) continue;
+        if (key === 'class') node.className = value;
+        else if (key === 'text') node.textContent = value;
+        else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
+        else node.setAttribute(key, value === true ? '' : value);
+    }
+    for (const child of children.flat()) if (child !== null && child !== undefined && child !== false) node.append(child);
+    return node;
+}
+
+function renderAudit() {
+    const rows = state.characters;
+    const count = (name) => rows.filter((r) => stage(r) === name).length;
+    const stat = (label, value, tone) =>
+        el('div', { class: 'review-stat', 'data-tone': tone || '' }, el('b', { text: String(value) }), el('span', { text: label }));
+    $('review-summary').replaceChildren(
+        stat('characters', rows.length),
+        stat('need review', count('needs-review'), count('needs-review') ? 'warn' : ''),
+        stat('need detail review', count('needs-detail'), count('needs-detail') ? 'warn' : ''),
+        stat('cleared for detail', count('detail-cleared'), 'ok'),
+        stat('blocked', count('blocked'), count('blocked') ? 'bad' : ''),
+        state.notOnDisk.length ? stat('not on this disk', state.notOnDisk.length, 'warn') : null
+    );
+    const filters = [['all', 'All'], ...Object.entries(STAGE_TEXT)];
+    $('review-filters').replaceChildren(
+        ...filters.map(([id, label]) =>
+            el('button', {
+                type: 'button',
+                role: 'radio',
+                class: 'review-filter',
+                'aria-checked': String(state.filter === id),
+                text: id === 'all' ? `${label} ${rows.length}` : `${label} ${count(id)}`,
+                onclick: () => {
+                    state.filter = id;
+                    renderAudit();
+                    renderList();
+                },
+            })
+        )
+    );
+    const head = ['Character', 'File', 'Licence', 'Declared', 'Design review', 'Body detail', 'Missing', 'Bare looks', 'Detailed', 'Thumbnails', 'Status'];
+    const body = rows.map((r) =>
+        el(
+            'tr',
+            { onclick: () => select(r.slug), 'aria-current': String(state.current && state.current.slug === r.slug) },
+            el('td', {}, el('strong', { text: r.name || r.slug }), el('small', { text: r.slug })),
+            el('td', {}, el('code', { text: (r.sha256 || '').slice(0, 12) })),
+            el('td', { text: licenceLabel(r.licence) }),
+            el('td', { text: r.operatorDeclaration ? 'yes' : 'no' }),
+            el('td', { text: r.review ? `${r.review.outcome} · ${r.review.reviewer} · ${r.review.date}` : 'not yet' }),
+            el(
+                'td',
+                {},
+                el('span', { class: 'review-chip', 'data-tone': STAGE_TONE[stage(r)], text: r.detail && r.detail.cleared ? `✓ ${r.detail.kind}` : '✗ not cleared' })
+            ),
+            el('td', { text: ((r.detail && r.detail.missing) || []).join('; ') || '—' }),
+            el('td', { text: String(r.bareLooks || 0) }),
+            el('td', { text: String(r.detailedLooks || 0) }),
+            el('td', { text: String(r.thumbnails || 0) }),
+            el('td', {}, el('span', { class: 'review-chip', 'data-tone': STAGE_TONE[stage(r)], text: STAGE_TEXT[stage(r)] }))
+        )
+    );
+    $('review-table').replaceChildren(el('thead', {}, el('tr', {}, head.map((h) => el('th', { text: h })))), el('tbody', {}, body));
+    $('review-audit').hidden = false;
+}
 
 function showError(message) {
     const box = $('review-error');
@@ -85,7 +199,7 @@ function showError(message) {
 function renderList() {
     const list = $('review-characters');
     list.replaceChildren(
-        ...state.characters.map((row) => {
+        ...state.characters.filter((row) => state.filter === 'all' || stage(row) === state.filter).map((row) => {
             const item = document.createElement('li');
             const button = document.createElement('button');
             button.type = 'button';
@@ -94,10 +208,12 @@ function renderList() {
             name.textContent = row.name || row.title || row.slug;
             const chip = document.createElement('span');
             chip.className = 'review-chip';
-            chip.dataset.tone = STATUS_TONE[row.status] || 'warn';
-            chip.textContent = row.status;
+            chip.dataset.tone = STAGE_TONE[stage(row)] || STATUS_TONE[row.status] || 'warn';
+            chip.textContent = STAGE_TEXT[stage(row)];
             const sub = document.createElement('small');
-            sub.textContent = `${reviewLabel(row.reviewState)} · ${row.bodyState ? row.bodyState.state : 'body ?'}`;
+            sub.textContent =
+                `${reviewLabel(row.reviewState)} · ${row.bodyState ? row.bodyState.state : 'body ?'}` +
+                ` · ${row.detailedLooks || 0} detailed looks · ${row.thumbnails || 0} thumbnails`;
             button.append(name, chip, sub);
             button.addEventListener('click', () => select(row.slug));
             item.append(button);
@@ -129,6 +245,7 @@ function renderDetail() {
             return li;
         })
     );
+    renderDetailClearance(row);
     const pending = row.reviewState === 'pending';
     $('review-form').hidden = !pending;
     if (pending) {
@@ -149,6 +266,87 @@ function renderDetail() {
         );
     }
     updateSubmit();
+}
+
+/** CG10. Body detail: cleared or not, what is missing, and the packet and form when it can be done. */
+function renderDetailClearance(row) {
+    const d = row.detail || { cleared: false, missing: ['not known'] };
+    $('review-detail-state').textContent = d.cleared
+        ? `Cleared (${d.kind}${d.reviewer ? `, ${d.reviewer} on ${d.date}` : ''}).`
+        : 'Not cleared: no body detail is painted on her, and her private looks and thumbnails are refused.';
+    $('review-detail-missing').replaceChildren(...(d.missing || []).map((m) => el('li', { text: `Missing: ${m}` })));
+    // The second look is possible only on a clearly-adult finding, and only once.
+    const canWork = !d.cleared && !d.detailRecorded && row.review && row.review.outcome === 'clearly-adult';
+    $('review-detail-work').hidden = !canWork;
+    $('review-detail-form').hidden = !(canWork && row.packetReady);
+    $('review-packet-btn').textContent = row.packetReady ? 'Make the review packet again' : 'Make the review packet';
+    updateDetailSubmit();
+}
+
+function detailValues() {
+    const row = state.current;
+    return {
+        reviewer: $('review-detail-reviewer').value,
+        evidence: $('review-detail-evidence').value,
+        examined: $('review-detail-examined').checked,
+        localHash: state.localHash,
+        pinnedHash: row && row.sha256,
+        packetReady: Boolean(row && row.packetReady && !$('review-packet').hidden),
+        needed: (row && row.detail && row.detail.needed) || 40,
+    };
+}
+
+function updateDetailSubmit() {
+    const v = detailValues();
+    const n = (v.evidence || '').trim().length;
+    $('review-detail-count').textContent = `${n} / ${v.needed} characters`;
+    $('review-detail-submit').disabled = !canSubmitDetail(v);
+}
+
+async function makePacket() {
+    const row = state.current;
+    if (!row) return;
+    showError('');
+    $('review-packet-btn').disabled = true;
+    try {
+        const result = await api.reviewPacket(row.slug);
+        row.packetReady = true;
+        $('review-packet-text').textContent = result.markdown || JSON.stringify(result.packet, null, 1);
+        $('review-packet').hidden = false;
+        $('review-packet').open = true;
+        renderDetailClearance(row);
+    } catch (error) {
+        showError(`Could not make the packet: ${error.message}`);
+    } finally {
+        $('review-packet-btn').disabled = false;
+    }
+}
+
+async function submitDetail(event) {
+    event.preventDefault();
+    const v = detailValues();
+    if (!canSubmitDetail(v)) return;
+    const name = state.current.name || state.current.slug;
+    if (!window.confirm(`Record your detail review of ${name} (${v.pinnedHash.slice(0, 12)}…) as ${v.reviewer.trim()}?\n\nIt is permanent for these exact bytes.`))
+        return;
+    try {
+        const result = await api.recordDetailReview(state.current.slug, {
+            sha256: v.localHash,
+            reviewer: v.reviewer.trim(),
+            evidence: v.evidence.trim(),
+            examined: true,
+        });
+        const index = state.characters.findIndex((r) => r.slug === state.current.slug);
+        state.characters[index] = result.character;
+        state.current = result.character;
+        renderAudit();
+        renderList();
+        renderDetail();
+        $('review-done').textContent = `Recorded. To keep it, ${result.persist}.`;
+        $('review-done').hidden = false;
+    } catch (error) {
+        showError(error instanceof ApiError ? error.message : String(error));
+    }
 }
 
 function formValues() {
@@ -175,6 +373,8 @@ async function select(slug) {
     state.localHash = null;
     $('review-done').hidden = true;
     $('review-form').reset();
+    $('review-detail-form').reset();
+    $('review-packet').hidden = true;
     renderList();
     renderDetail();
     // CG4. The previous character leaves the stage before the next one loads, and her hash is
@@ -196,6 +396,7 @@ async function select(slug) {
         state.localHash = hash;
         renderDetail();
         updateSubmit();
+        renderAudit();
     } catch (error) {
         console.warn('[review] could not load', slug, error);
         showError(`Could not load ${row.name || slug}: ${error.message}`);
@@ -239,6 +440,7 @@ async function submit(event) {
         const index = state.characters.findIndex((r) => r.slug === state.current.slug);
         state.characters[index] = result.character;
         state.current = result.character;
+        renderAudit();
         renderList();
         renderDetail();
         $('review-done').textContent = `Recorded. To keep it, ${result.persist}.`;
@@ -287,6 +489,7 @@ async function start() {
         const data = await api.reviews();
         state.characters = data.characters || [];
         state.outcomes = data.outcomes || [];
+        state.notOnDisk = data.notOnDisk || [];
         if (data.notOnDisk && data.notOnDisk.length) {
             $('review-missing').textContent = `Not on this disk, not evaluated: ${data.notOnDisk.join(', ')}`;
             $('review-missing').hidden = false;
@@ -301,6 +504,7 @@ async function start() {
         return;
     }
     $('review-main').hidden = false;
+    renderAudit();
     renderList();
     if (!wired) {
         wired = true;
@@ -310,10 +514,19 @@ async function start() {
             $(id).addEventListener('change', updateSubmit);
         }
         $('review-form').addEventListener('submit', submit);
+        $('review-packet-btn').addEventListener('click', makePacket);
+        $('review-detail-form').addEventListener('submit', submitDetail);
+        for (const id of ['review-detail-reviewer', 'review-detail-evidence', 'review-detail-examined']) {
+            $(id).addEventListener('input', updateDetailSubmit);
+            $(id).addEventListener('change', updateDetailSubmit);
+        }
     }
     // CG9. Open a character at once: the first one still waiting for a review, else the first.
     // An empty right-hand two thirds read as a broken page.
-    const first = state.characters.find((row) => row.reviewState === 'pending') || state.characters[0];
+    const first =
+        state.characters.find((row) => stage(row) === 'needs-review') ||
+        state.characters.find((row) => stage(row) === 'needs-detail') ||
+        state.characters[0];
     if (first && !state.current) select(first.slug);
 }
 
