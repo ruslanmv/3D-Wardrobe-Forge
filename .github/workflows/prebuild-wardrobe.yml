@@ -22,6 +22,10 @@ name: Prebuild wardrobe
 # own (beside another one, or while Hugging Face is answering badly) is how a character's
 # list gets rewritten. Run it from Actions -> Prebuild wardrobe -> Run workflow, on the branch
 # whose garments you want built.
+# One click (2026-11-20, from a phone): Run workflow with nothing changed makes the private
+# looks only (private_looks yes, outfits no, missing_only yes, overwrite no — nothing replaced).
+# The garment and outfit build is outfits yes, private_looks no.
+#
 # Choice inputs, not booleans: GitHub's mobile site and app draw a boolean input as its label
 # with no box to tick (reported 2026-11-20), so a run started from a phone could never turn a
 # switch on. A drop-down shows everywhere. Every expression below compares with 'yes'.
@@ -56,7 +60,7 @@ on:
       outfits:
         description: Also build every outfit dictionary entry (erotic sets included) on every character
         required: false
-        default: "yes"
+        default: "no"
         type: choice
         options: ["yes", "no"]
       missing_only:
@@ -68,7 +72,7 @@ on:
       private_looks:
         description: Also make every private bare look (tools/prebuild_private.py; all body states and extras sets) on every character declared adult
         required: false
-        default: "no"
+        default: "yes"
         type: choice
         options: ["yes", "no"]
       private_presets:
