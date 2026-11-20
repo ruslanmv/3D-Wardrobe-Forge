@@ -24,6 +24,9 @@ const state = {
     query: '',
     busy: false,
     urls: [],
+    // WS3. Whose body thumbnails the Private collections show (the reference body unless chosen).
+    previews: null,
+    previewIndex: null,
 };
 
 let deps = null;
@@ -63,8 +66,9 @@ function revokeAll() {
 async function load() {
     note('Loading the wardrobe…');
     try {
-        state.view = await deps.api.registry();
+        state.view = await deps.api.registry(state.previews);
         state.dashboard = state.view.admin ? await deps.api.registryDashboard().catch(() => null) : null;
+        state.previewIndex = state.view.admin ? await deps.api.bodyPreviews().catch(() => null) : null;
         if (!state.view.collections.some((c) => c.id === state.selected)) state.selected = 'all-clothes';
         note('');
     } catch (error) {
@@ -111,6 +115,38 @@ function dashboardStrip() {
     );
 }
 
+/**
+ * WS3. Whose body thumbnails to show: Forge's reference body, or a character that has her own
+ * (painted by Forge behind her detail clearance; tools/render_body_previews.py fills them in).
+ */
+function previewPicker() {
+    const index = state.previewIndex;
+    if (!state.view.admin || !index) return null;
+    const total = index.items || 0;
+    const options = Object.entries(index.characters || {}).map(([slug, count]) =>
+        el('option', {
+            value: slug,
+            text: `${slug === 'reference' ? 'Reference body' : slug} · ${count}/${total}`,
+            selected: slug === (state.view.bodyPreviews || 'reference'),
+        })
+    );
+    return el(
+        'label',
+        { class: 'reg-previews' },
+        el('span', { text: 'Body thumbnails of' }),
+        el(
+            'select',
+            {
+                onchange: (event) => {
+                    state.previews = event.target.value;
+                    load();
+                },
+            },
+            options
+        )
+    );
+}
+
 function sidebar() {
     const view = state.view;
     const groups = view.sections.map((section) => {
@@ -150,7 +186,7 @@ function sidebar() {
     const make = view.admin
         ? el('button', { type: 'button', class: 'secondary reg-new', text: '+ New collection', onclick: newCollection })
         : null;
-    return el('nav', { class: 'reg-sidebar', 'aria-label': 'Collections' }, make, groups);
+    return el('nav', { class: 'reg-sidebar', 'aria-label': 'Collections' }, make, previewPicker(), groups);
 }
 
 function newCollection() {

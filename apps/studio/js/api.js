@@ -215,6 +215,10 @@ export const api = {
     revokeGrant: (token) => request('/v1/admin/access/revocations', { method: 'POST', body: { token } }),
     /** CG4. Every library character's review state, licence, body and status (admin session only). */
     reviews: () => request('/v1/admin/reviews'),
+    // CG10. Forge's review packet for a character's exact file, and a person's detail review of it.
+    reviewPacket: (slug) => request(`/v1/admin/reviews/${encodeURIComponent(slug)}/packet`, { method: 'POST', body: {} }),
+    recordDetailReview: (slug, finding) =>
+        request(`/v1/admin/reviews/${encodeURIComponent(slug)}/detail`, { method: 'POST', body: finding }),
     /** CG4. One person's own finding for the exact file they were shown. Never called with a default. */
     recordReview: (slug, finding) =>
         request(`/v1/admin/reviews/${encodeURIComponent(slug)}`, { method: 'POST', body: finding }),
@@ -265,7 +269,9 @@ export const api = {
     garmentParameters: (templateId) => request(`/v1/catalog/garments/${encodeURIComponent(templateId)}/parameters`),
 
     // WS2. The wardrobe registry (docs/WARDROBE_REGISTRY.md): the Collections browser and its manager.
-    registry: () => request('/v1/registry'),
+    registry: (previews) => request(`/v1/registry${previews ? `?previews=${encodeURIComponent(previews)}` : ''}`),
+    // WS3. Which characters have body thumbnails (admin).
+    bodyPreviews: () => request('/v1/admin/body-previews'),
     registryDashboard: () => request('/v1/admin/registry/dashboard'),
     registryCreate: (body) => request('/v1/admin/registry/collections', { method: 'POST', body }),
     registryEditCollection: (id, body) =>

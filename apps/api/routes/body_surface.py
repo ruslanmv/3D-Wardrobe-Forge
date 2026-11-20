@@ -7,10 +7,11 @@ on a job; the server decides the rest.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from apps.api.admin import AdminDep
-from apps.api.grants import GrantDep
+from apps.api.dependencies import StoreDep
+from apps.api.grants import GrantDep, can_read_private
 from wardrobe.body_surface.library import library_at
 from wardrobe.config import Settings, get_settings
 from wardrobe.vrm import body_detail
@@ -34,7 +35,9 @@ def _kind(name: str) -> str:
 
 
 @router.get("/body-surface/catalog")
-async def body_catalog(admin: AdminDep, grant: GrantDep) -> dict:
+async def body_catalog(
+    admin: AdminDep, grant: GrantDep, store: StoreDep, slug: str | None = Query(default=None, max_length=64)
+) -> dict:
     """BD21. Every bare-body preset, state and extra, named and described, for a client.
 
     Why. A companion holding a read grant lists her bare looks (``WardrobeLook.body`` says which
@@ -47,14 +50,39 @@ async def body_catalog(admin: AdminDep, grant: GrantDep) -> dict:
     Private: the lines describe her body explicitly, so only an admin session or a valid read grant
     reads them (any grant: the catalogue names no avatar and holds no file). Read-only; nothing here
     paints, builds or unlocks anything — a bare look still passes every gate when it is made.
+
+    WS3. Version 2 adds ``categories`` (the admin's Private categories, each with its item ids) and
+    ``previews`` (item id → thumbnail URL): ``?slug=`` asks for that character's own thumbnails,
+    given only when the caller may read her private looks; otherwise the reference body's.
     """
     if admin is None and grant is None:
         raise HTTPException(status_code=403, detail="the body catalogue needs an admin session or a grant")
+    from wardrobe.registry import body_previews, classify, registry
+
     presets = body_detail.load_presets()
     states = body_detail.load_states()
     extras = body_detail.load_extras()
+    # WS3. The same categories the admin files them under (by look, act, position, finish, the most
+    # explicit), so the companion can offer "a creampie", "tattooed", "on her back" as a family.
+    ids = [i["id"] for i in registry.body_items()]
+    categories = [
+        {"id": c.id, "title": c.title, "description": c.description,
+         "items": [i for i in ids if any(registry._body_match(p, i) for p in c.body)]}
+        for c in classify.PRIVATE_CATEGORIES
+    ]
+    # WS3. Thumbnails: the character's own when the caller may read her private looks and she has
+    # them, else Forge's reference body's. The URLs answer only to the same admin or grant.
+    previews: dict[str, str] = {}
+    sources = [body_previews.REFERENCE]
+    if slug and can_read_private(admin, grant, slug):
+        sources.insert(0, slug)
+    for source in reversed(sources):
+        for item_id in (await body_previews.read_index(store, source)).get("items", []):
+            previews[item_id] = f"/v1/assets/{body_previews.key(source, item_id)}"
     return {
-        "version": 1,
+        "version": 2,
+        "categories": categories,
+        "previews": previews,
         "presets": {n: {"label": p.get("label") or n, "hair": p.get("hair")} for n, p in presets.items()},
         "states": {n: {"label": s.get("label") or n, "body": s.get("body")} for n, s in states.items()},
         "extras": {

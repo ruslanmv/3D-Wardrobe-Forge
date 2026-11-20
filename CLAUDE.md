@@ -59,6 +59,7 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
 | Job options (`bareDetail`, `bareState`, `bareExtras`, `bareStates`) | `wardrobe/domain/jobs.py` |
 | Erotic outfits, partial undress            | `wardrobe/body_surface/outfit_dictionary.py`, `docs/qa/EROTIC_SETS.md` |
 | What a client is told (BD21): each bare look's `body`, the catalogue | `JobOptions.body_summary`, `GET /v1/body-surface/catalog` (admin or grant) |
+| Private categories + body thumbnails (WS3) | `classify.PRIVATE_CATEGORIES`, `wardrobe/registry/body_previews.py`, `tools/render_body_previews.py` (`docs/WARDROBE_REGISTRY.md`) |
 | Make every private look for every character (BD21) | `tools/prebuild_private.py` (packs of ≤10 states covering all, extras sets); in CI: Prebuild wardrobe ▸ `private_looks` |
 | Full notes                                 | `docs/qa/BARE_DETAIL.md` (read before changing the painter)         |
 
@@ -80,6 +81,10 @@ Rules that break things when missed:
   Each detailed bare look is listed separately (`plan: bare-<key>`); never collapse them.
 - **Detail needs clearance:** `eligibility.detail_clearance` needs a full review
   (packet + ≥40 chars of evidence) or the synthetic reference. Never loosen it.
+  CG10: the Studio's Review page (`/studio/review.html`) shows every character's
+  stage (needs review, needs detail review, cleared, blocked) and what is missing,
+  makes Forge's packet for the exact file, and records a person's detail review in
+  `adult-detail-reviews.json` beside the write-once design finding (both required).
 - Previews of explicit detail are private: never commit them, never serve them
   from a public route.
 
