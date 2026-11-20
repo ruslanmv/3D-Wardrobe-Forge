@@ -14,6 +14,25 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   (`/home/user/3D-Avatar-Chatbot`), and its viewer renders Forge's VRMs (see
   _Looking at results_).
 
+## Branches, merges and deploys (the owner's rules, 2026-11-20)
+
+- **Never merge or push to `main`.** `main` is the owner's, after their own audit. Every
+  change goes `claude/…` branch → PR into `ultimate` → merge (title and body `Updates`).
+  A merge into `main` once deployed un-audited code (PR #80); do not repeat it.
+- **The Space deploys from `ultimate`, by hand:** Actions ▸ Deploy to Hugging Face Space ▸
+  Run workflow ▸ branch `ultimate` (`deploy-space.yml` checks out the branch picked). A push
+  to `main` also deploys — another reason never to touch it.
+- **A session cannot start workflows** (GitHub answers 403 to a dispatch from Claude Code):
+  ask the owner to run Deploy, or Prebuild wardrobe (`missing_only` on, `overwrite` off;
+  `private_looks` for BD21 in a second run with `only` set to `none`).
+- **After any deploy:** `.venv/bin/python tools/qa/space_smoke.py` (routes, gates refuse a
+  guest, no Private to a guest, warm timings) and `node tools/qa/studio_shot.cjs --out <scratch>`
+  (the Collections browser, desktop and phone; `--admin-token-file` for the admin view). Look at
+  the frames. The registry's first call after a restart is ~18 s (cold), then ~0.3 s.
+- Local Forge for the Studio: `WARDROBE_ADMIN_PASSWORD=<random> WARDROBE_STORAGE_ROOT=<scratch>
+  .venv/bin/python -m uvicorn apps.api.main:app --port 8091`, then `POST /v1/admin/session`
+  for a token kept in an owner-only scratch file, deleted when done.
+
 ## The gate (what CI runs, `.github/workflows/ci.yml`)
 
 ```bash
