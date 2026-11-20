@@ -142,6 +142,11 @@ Stretched, Marked and Ruined. Each look is one skin preset, one state and at mos
 - **Building for every character.** `tools/prebuild_private.py` makes every look for every
   character declared adult, in the look's own preset (`--bare-looks all|none|ids`).
 
+To look at them all at once, `tools/body_surface/bare_looks_sheet.py --base <ref-atlas.vrm> --out
+<scratch>/bare-looks.png` paints every look as its thumbnail does, named, chapter by chapter (in
+scratch only: it is explicit). To check what a companion's grant opens on a deployed Forge,
+`FORGE_GRANT=… tools/qa/grant_check.py`.
+
 To add a look, add an entry to the JSON and nothing else. The test holds it to what Forge can
 paint.
 
