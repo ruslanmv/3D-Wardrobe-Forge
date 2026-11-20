@@ -517,6 +517,109 @@ OCCASIONS: tuple[Occasion, ...] = (
         ),
         private=True,
     ),
+    # AD1. After Dark: the complete adult wardrobe as an occasion of its own, beside Private
+    # (which stays as it was: its looks are already tagged with its style ids). Private grew a
+    # style at a time around lingerie; the erotic sets, the shows the companion plays, the
+    # role-play uniforms and the atelier pieces sat in the dictionary with no tile at all, so the
+    # Studio could only reach them by typing. Private as a whole like Private: not shown, not even
+    # as a locked tile, outside private mode. Every look is still planned, fitted and gated as if
+    # its prompt had been typed; nothing here grants anything.
+    Occasion(
+        "after-dark",
+        "After Dark",
+        "🌙",
+        "Tonight, nothing held back?",
+        (
+            Style(
+                "striptease-show",
+                "Striptease show",
+                "💃",
+                "Dressed for the show, every layer coming off",
+                ("show-strip-red", "show-strip-office", "show-strip-trench", "show-strip-lbd",
+                 "show-strip-robe"),
+                content=_profile("waist", ("lower-back", "waistline"),
+                                 ("rose-vine-01", "neotribal-heart-01")),
+            ),
+            Style(
+                "striptease-underneath",
+                "What's underneath",
+                "🖤",
+                "The sets under each striptease look",
+                ("show-strip-red-under", "show-strip-office-under", "show-strip-trench-under",
+                 "show-strip-lbd-under", "show-strip-robe-under"),
+                content=_profile("back", ("waistline", "lower-back", "upper-back"),
+                                 ("ornamental-butterfly-01", "lotus-ornament-01")),
+            ),
+            Style(
+                "table-dance",
+                "Table dance",
+                "🪩",
+                "Sequins, leather and lace for the pole and the table",
+                ("show-table-sequin", "show-table-leather", "show-table-lace-body",
+                 "show-table-sheer-crop", "show-table-pink-bikini"),
+                content=_profile("legs", ("lower-back", "waistline"),
+                                 ("tribal-butterfly-01", "heart-stars-01")),
+            ),
+            Style(
+                "boudoir",
+                "Boudoir & seduction",
+                "🕯️",
+                "Bedroom sets, guêpière, massage, after the shower",
+                ("erotic-boudoir", "erotic-seduction", "erotic-guepiere", "erotic-massage",
+                 "erotic-after-shower"),
+                content=_profile("construction", ("upper-back", "lower-back"),
+                                 ("lace-ornament-01", "rose-vine-01")),
+            ),
+            Style(
+                "dominant-fetish",
+                "Dominant & fetish",
+                "⛓️",
+                "Harness, fishnet, bodystocking, cut-outs",
+                ("erotic-dominant", "erotic-fishnet", "aa-bodystocking", "erotic-cutout"),
+                content=_profile("back", ("upper-back", "spine-upper"),
+                                 ("thorn-vine-01", "tribal-wings-01")),
+            ),
+            Style(
+                "role-play",
+                "Role-play",
+                "🎭",
+                "Secretary, nurse, police, firefighter, flight attendant",
+                ("roleplay-secretary", "roleplay-secretary-glam", "roleplay-nurse", "roleplay-police",
+                 "roleplay-firefighter", "roleplay-firefighter-glam", "roleplay-flight-attendant",
+                 "roleplay-flight-attendant-glam"),
+                content=_profile("legs", ("lower-back", "upper-back"), ("lace-ornament-01",)),
+            ),
+            Style(
+                "barely-there",
+                "Barely there",
+                "🫦",
+                "Micro bikinis, high-leg, monokini, sheer babydoll",
+                ("erotic-micro-bikini", "aa-micro-bikini", "aa-high-leg", "aa-monokini", "aa-sheer-mini",
+                 "aa-babydoll"),
+                content=_profile("waist", ("waistline", "lower-back"),
+                                 ("tribal-butterfly-01", "waist-filigree-01")),
+            ),
+            Style(
+                "night-tease",
+                "Out tonight",
+                "🍸",
+                "Plunge, backless and slit to the hip",
+                ("erotic-night-out", "aa-plunge-mini", "aa-backless-mini", "aa-slit-gown"),
+                content=_profile("back", ("upper-back", "lower-back"),
+                                 ("spine-vine-01", "nape-crescent-01")),
+            ),
+            Style(
+                "mature-elegance",
+                "Mature & elegant",
+                "🍷",
+                "A grown woman's evening: robe, gown, guêpière, stockings",
+                ("aa-short-robe", "aa-slit-gown", "erotic-guepiere", "stockings-pencil",
+                 "italian-lace-thong"),
+                content=_profile("legs", ("upper-back", "nape"), ("lace-ornament-01", "rose-vine-01")),
+            ),
+        ),
+        private=True,
+    ),
 )
 
 

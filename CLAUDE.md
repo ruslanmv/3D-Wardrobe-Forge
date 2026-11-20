@@ -111,6 +111,12 @@ table dance, undress step by step; Private body ones: naked, gaped, finishes, po
   explicit layers). Body art and bare requests are never answered from the cache.
 - An admin's decision always wins over a rule; a garment is never dropped for lack of a
   collection (All Clothes holds every wearable template).
+- **Occasions** (the Studio's Design tab) are `wardrobe/pipeline/occasions.py`: styles of outfit
+  dictionary ids only (a test refuses anything else). AD1 **After Dark** is the full adult
+  wardrobe as an occasion (striptease, what's underneath, table dance, boudoir, dominant &
+  fetish, role-play, barely there, out tonight, mature & elegant), `private=True` like Private:
+  not shown at all outside private mode. Body states are not outfits: they live in the
+  registry's Private categories (Collections), never in an occasion.
 
 ## Looking at results (saved tools, fastest first)
 
