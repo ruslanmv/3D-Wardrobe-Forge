@@ -22,6 +22,9 @@ def test_every_body_item_is_in_a_category_and_every_category_is_private():
         i for c in classify.PRIVATE_CATEGORIES for i in ids if any(registry._body_match(p, i) for p in c.body)
     }
     assert covered == set(ids)
+    assert all(
+        any(registry._body_match(p, i) for i in ids for p in c.body) for c in classify.PRIVATE_CATEGORIES
+    ), "an empty category"
     assert all(c.private and c.section == "private-categories" for c in classify.PRIVATE_CATEGORIES)
     # Exact ids: the smooth presets never catch the hairy ones by a shared prefix.
     smooth = next(c for c in classify.PRIVATE_CATEGORIES if c.id == "cat-shaved-smooth")
@@ -43,8 +46,15 @@ def test_a_guest_never_sees_the_categories_or_a_thumbnail(env):  # noqa: F811
     assert ok.status_code == 200
     asset = "/v1/assets/body-previews/reference/state-open.webp"
     assert client.get(asset).status_code == 404
-    assert client.get(asset, headers=grant).status_code == 404  # a read grant is not an admin
+    # The companion with a read grant may see the reference thumbnails (and her own covered slugs').
+    assert client.get(asset, headers=grant).status_code == 200
+    assert client.get(asset, headers={"X-Wardrobe-Grant": "forged.token"}).status_code == 404
     assert client.get(asset, headers=admin).status_code == 200
+    catalog = client.get("/v1/body-surface/catalog?slug=mira", headers=grant).json()
+    assert catalog["previews"]["state:open"] == asset
+    cats = {c["id"]: c for c in catalog["categories"]}
+    assert "state:open" in cats["cat-pussy-closeup"]["items"]
+    assert {"cat-pos-doggy", "cat-finish-inside", "cat-most-erotic"} <= set(cats)
     seen = client.get("/v1/registry", headers=admin).json()
     assert any(s["id"] == "private-categories" for s in seen["sections"])
     item = next(i for i in seen["items"] if i["id"] == "state:open")

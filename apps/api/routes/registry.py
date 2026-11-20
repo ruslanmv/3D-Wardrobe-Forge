@@ -226,8 +226,8 @@ __all__ = ["router"]
 
 
 # ------------------------------------------------------------- admin: body thumbnails (WS3)
-#: Items painted per request: a few seconds each on a Space's CPU, so the script sends batches.
-RENDER_BATCH = 16
+#: Items painted per request: ~18 s each (measured 2026-11-20), so a request stays near a minute.
+RENDER_BATCH = 4
 
 
 class RenderBody(BaseModel):

@@ -73,20 +73,33 @@ variant the way top-rated adult sites file their content: Shaved & Smooth,
 Natural & Hairy, Pale & Porcelain, Anime & Hentai Style, Solo & Tease, Pussy
 Close-ups, Anal, Gaping & Stretched, Creampie, Cumshot & Cum on Body, Fisting,
 BDSM & Rough, Oiled/Sweaty & Wet, After Sex, Tattooed, Pierced, Tan Lines, Love
-Marks & Body Writing, Glitter & Body Paint, Natural Body
-(`classify.PRIVATE_CATEGORIES`). Every one of the 99 body items (13 presets, 57
+Marks & Body Writing, Glitter & Body Paint, Natural Body; then by **position**
+(Doggy, Missionary, Cowgirl, Tied & Used), by **finish** (Inside, On Her Back &
+Ass, On Her Belly, On Her Chest, All Over, Open & Dripping), and the admin's
+picks **Most Erotic · Hardcore** and **Sensual & Elegant**
+(`classify.PRIVATE_CATEGORIES`, 32 in all). Every one of the 99 body items (13 presets, 57
 states, 29 extras) is in at least one; a test fails the day one is not. A body
 pattern ending in `$` is an exact id (`preset:natural$` is not `natural-hair`).
 
 Thumbnails (`wardrobe/registry/body_previews.py`): each item is painted in
 memory exactly as a bare job paints it and plotted at her own body coordinates,
 framed on what it changes (vulva, anus, nipple, torso, lower belly and thighs,
-back). Stored at `body-previews/<slug>/<kind>-<value>.webp`, served by
-`/v1/assets` to an admin session only — never a grant, never a guest, never the
-dataset.
+back), ~18 s each. Stored at `body-previews/<slug>/<kind>-<value>.webp`, served
+by `/v1/assets` to an admin session, and to a read grant for the characters it
+covers plus the reference body — the companion's Private mode — never to a
+guest, never to the dataset.
+
+The companion (a read grant) gets everything it needs to offer every variant
+from `GET /v1/body-surface/catalog?slug=<her slug>` (version 2): each preset,
+state and extra with its label and body line, the categories with their item
+ids, and a thumbnail URL per item (hers when she has them, else the reference
+body's). What it can actually *show* on her is what her looks carry
+(`WardrobeLook.body`: the skin pack's states and the extras painted in), made by
+`tools/prebuild_private.py` — which needs her detail clearance like every bare
+job.
 
 - `GET /v1/admin/body-previews` — how many thumbnails each character has.
-- `POST /v1/admin/body-previews/{slug}/render` — Forge paints up to 16 items on
+- `POST /v1/admin/body-previews/{slug}/render` — Forge paints up to 4 items on
   her own plain bare look, **only after the bare job's detail clearance** for her
   exact file (403 `detail-review` otherwise; 409 when she has no plain bare look).
 - `PUT /v1/admin/body-previews/reference/{item}` — the defaults, painted on

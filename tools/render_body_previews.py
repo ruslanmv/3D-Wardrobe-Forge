@@ -45,7 +45,7 @@ sys.path.insert(0, str(ROOT))
 
 ADMIN_HEADER = "X-Wardrobe-Admin"
 #: Forge paints at most this many per request (apps/api/routes/registry.py RENDER_BATCH).
-BATCH = 16
+BATCH = 4
 
 
 class Forge:

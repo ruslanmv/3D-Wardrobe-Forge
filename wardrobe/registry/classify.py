@@ -735,6 +735,32 @@ PRIVATE_CATEGORIES = tuple(
          ["extra:glitter", "extra:body-paint"]),
         ("cat-natural-body", "Natural Body", "Freckles and stretch marks",
          ["extra:freckles", "extra:stretch-marks"]),
+        # By position: where it happens (the chatbot's Private positions).
+        ("cat-pos-doggy", "Position · Doggy", "From behind: her back, her ass, both holes",
+         ["state:doggy-", "state:lower-back-", "state:cum-on-back$", "state:anal-creampie$"]),
+        ("cat-pos-missionary", "Position · Missionary", "On her back, knees up", ["state:missionary-"]),
+        ("cat-pos-cowgirl", "Position · Cowgirl", "Riding them", ["state:cowgirl-"]),
+        ("cat-pos-bdsm", "Position · Tied & Used", "Roped, waxed, whipped", ["state:sado-"]),
+        # By finish: where they finished.
+        ("cat-finish-inside", "Finish · Inside", "Creampies, vaginal and anal", ["creampie"]),
+        ("cat-finish-back", "Finish · On Her Back & Ass", "Cum on her back and lower back",
+         ["cum-on-back", "lower-back-cum", "doggy-cum-covered", "doggy-finish"]),
+        ("cat-finish-belly", "Finish · On Her Belly", "Cum on her belly", ["-belly"]),
+        ("cat-finish-chest", "Finish · On Her Chest", "Cum on her breasts", ["-chest"]),
+        ("cat-finish-all-over", "Finish · All Over", "Covered, everything, used",
+         ["-covered", "-everything", "sado-used-cum", "sado-full", "state:cum$"]),
+        ("cat-finish-open", "Finish · Open & Dripping", "Cum with her open or gaping",
+         ["doggy-open-cum", "doggy-gaping-cum", "lower-back-cum-open", "lower-back-cum-gaping",
+          "fisted-cum"]),
+        # The admin's picks: the most explicit of everything, and the slow, sensual end.
+        ("cat-most-erotic", "Most Erotic · Hardcore", "The most explicit: gaping, fisted, double, covered",
+         ["state:doggy-double-creampie$", "state:doggy-gaping-cum$", "state:doggy-both-fisted$",
+          "state:doggy-anal-fisted-cum$", "state:missionary-fisted-cum$", "state:sado-full$",
+          "state:sado-used-cum$", "state:cowgirl-everything$", "state:missionary-covered$",
+          "state:lower-back-cum-gaping$", "state:both-open$", "state:wide-open$"]),
+        ("cat-sensual", "Sensual & Elegant", "Aroused, oiled, glowing — the slow end of the evening",
+         ["state:aroused$", "state:flushed$", "state:oiled$", "state:oiled-aroused$", "state:afterglow$",
+          "extra:tan-", "extra:kisses-", "extra:glitter", "extra:body-paint-gold"]),
     )
 )
 
