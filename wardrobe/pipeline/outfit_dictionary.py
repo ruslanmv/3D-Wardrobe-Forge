@@ -489,6 +489,43 @@ OUTFITS: tuple[Outfit, ...] = (
     Outfit("erotic-night-out", "Sheer mini & thong", "erotic",
            "black sheer bodycon mini dress + black thong + black stiletto heels",
            tags=("night-out", "tease"), base="bare-dressed"),
+    # --- fetish and "after" (private, UR1): After Dark's Fetish and The Morning After ----------
+    # Made only from garments the catalogue has (a test plans every one): latex and catsuits,
+    # leather corset and garter, suspenders, the buckle-front leather mini, cut-outs and fishnet;
+    # and what she wears after — his shirt, the robe open, stockings and suspenders. Each is rated
+    # private by the planner itself (the group's claim is checked): a garter or a g-string makes it.
+    Outfit("fetish-latex-black", "Black latex catsuit, garter & boots", "erotic",
+           "black high neck latex catsuit + black leather garter + black over-knee boots",
+           tags=("fetish", "latex"), base="bare-dressed"),
+    Outfit("fetish-latex-red", "Red latex catsuit, garter & heels", "erotic",
+           "red high neck latex catsuit + red leather garter + red stiletto heels",
+           tags=("fetish", "latex"), base="bare-dressed"),
+    Outfit("fetish-leather-mistress", "Leather mistress", "erotic",
+           "black structured leather corset + black leather garter + black thigh-high stockings"
+           " + black stiletto heels", tags=("fetish", "dominant", "leather"), base="bare-dressed"),
+    Outfit("fetish-buckle-leather", "Buckled leather & fishnets", "erotic",
+           "black buckle-front leather mini dress + black fishnet tights + black over-knee boots",
+           tags=("fetish", "leather"), base="bare-dressed"),
+    Outfit("fetish-suspenders-only", "Suspenders and nothing else", "erotic",
+           "black suspender belt + black g-string + black thigh-high stockings + black stiletto heels",
+           tags=("fetish", "suspenders"), base="bare-dressed"),
+    Outfit("fetish-cutout-black", "Black cut-out bodysuit & boots", "erotic",
+           "black cut-out bodysuit + black over-knee boots", tags=("fetish", "cut-out"), base="bare-dressed"),
+    Outfit("fetish-mesh-garter", "Fishnet bodystocking & garter", "erotic",
+           "black fishnet bodystocking + black leather garter + black stiletto heels",
+           tags=("fetish", "fishnet"), base="bare-dressed"),
+    Outfit("fetish-catsuit", "Skin-tight catsuit, garter & heels", "erotic",
+           "black catsuit + black leather garter + black stiletto heels",
+           tags=("fetish", "catsuit"), base="bare-dressed"),
+    Outfit("after-his-shirt", "The morning after · his shirt", "erotic",
+           "white oversized button-up shirt + black thong", tags=("after", "morning"), base="bare-dressed"),
+    Outfit("after-robe-open", "The morning after · robe open", "erotic",
+           "white short robe worn open + white thong", tags=("after", "morning"), base="bare-dressed"),
+    Outfit("after-stockings-only", "Stockings, suspenders, nothing else", "erotic",
+           "black suspender belt + black thigh-high stockings + black stiletto heels",
+           tags=("after", "stockings"), base="bare-dressed"),
+    Outfit("after-garter-undone", "Garter set, half off", "erotic",
+           "black garter set + black thigh-high stockings", tags=("after", "undone"), base="bare-dressed"),
     # --- shows (private, VA4): dressed for the chatbot's Private shows ------------------------
     # The striptease takes three layers off, one look down at a time through her own looks
     # (OutfitDecisionEngine.undressStep in the chatbot): so each set is a pair — the outfit and the

@@ -611,6 +611,27 @@ OCCASIONS: tuple[Occasion, ...] = (
                 content=_profile("back", ("upper-back", "lower-back"),
                                  ("spine-vine-01", "nape-crescent-01")),
             ),
+            # UR1. Latex, leather, suspenders, fishnet: the fetish wardrobe.
+            Style(
+                "fetish",
+                "Fetish",
+                "🖤",
+                "Latex, leather, suspenders and fishnet",
+                ("fetish-latex-black", "fetish-latex-red", "fetish-leather-mistress", "fetish-buckle-leather",
+                 "fetish-suspenders-only", "fetish-cutout-black", "fetish-mesh-garter", "fetish-catsuit"),
+                content=_profile("back", ("lower-back", "upper-back"),
+                                 ("thorn-vine-01", "tribal-wings-01")),
+            ),
+            # UR1. What she wears after: his shirt, the robe open, stockings and nothing else.
+            Style(
+                "morning-after",
+                "The morning after",
+                "🌅",
+                "His shirt, the robe open, stockings and nothing else",
+                ("after-his-shirt", "after-robe-open", "after-stockings-only", "after-garter-undone"),
+                content=_profile("legs", ("lower-back", "waistline"),
+                                 ("rose-vine-01", "nape-crescent-01")),
+            ),
             Style(
                 "mature-elegance",
                 "Mature & elegant",
