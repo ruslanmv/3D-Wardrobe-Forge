@@ -73,7 +73,11 @@ GROUPS: list[tuple[str, str]] = [
     ("back", r"^(lower-back-cum.*|cum-on-back|doggy-pumped-creampie|doggy-second-creampie)$"),
     ("missionary", r"^missionary-"),
     ("cowgirl", r"^cowgirl-"),
-    ("rough", r"^(sado-|doggy-.*fisted)"),
+    ("rough", r"^sado-"),
+    # L5. One pack per act from behind, so "fisted, then filled" switches live in the same look:
+    # the three fisted states and their filled ones; the bottle and its filled ones.
+    ("fist", r"^doggy-.*fisted(-cum)?$"),
+    ("bottle", r"^doggy-bottle"),
     # Unrestrained (gate 2): the evening's build-up states, composed from existing effects.
     ("unrestrained",
      r"^(edge|dripping|breasts-belly|oiled-used|used|round-three|tied-edge|after-shower)$"),

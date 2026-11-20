@@ -720,6 +720,8 @@ PRIVATE_CATEGORIES = tuple(
           "doggy-finish", "doggy-open-cum", "doggy-gaping-cum", "sado-used-cum", "fisted-cum",
           "cowgirl-after"]),
         ("cat-fisting", "Fisting", "Fisted, vaginal and anal", ["fisted"]),
+        # L5. After a bottle, from behind: stretched round, then filled.
+        ("cat-bottle", "Bottle", "Stretched by a bottle, then filled", ["bottle"]),
         ("cat-bdsm", "BDSM & Rough", "Roped, wax, whipped, spanked and used",
          ["state:sado-", "extra:spanked", "state:tied-edge$"]),
         ("cat-oiled-wet", "Oiled, Sweaty & Wet", "Oiled, sweaty and glistening",
@@ -754,7 +756,7 @@ PRIVATE_CATEGORIES = tuple(
           "state:round-three$", "state:breasts-belly$"]),
         ("cat-finish-open", "Finish · Open & Dripping", "Cum with her open or gaping",
          ["doggy-open-cum", "doggy-gaping-cum", "lower-back-cum-open", "lower-back-cum-gaping",
-          "fisted-cum"]),
+          "fisted-cum", "bottle-cum", "bottle-anal-cum"]),
         # The admin's picks: the most explicit of everything, and the slow, sensual end.
         ("cat-most-erotic", "Most Erotic · Hardcore", "The most explicit: gaping, fisted, double, covered",
          ["state:doggy-double-creampie$", "state:doggy-gaping-cum$", "state:doggy-both-fisted$",
