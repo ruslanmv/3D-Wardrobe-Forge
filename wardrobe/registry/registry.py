@@ -64,6 +64,50 @@ def body_items(root: Path = BODY_DETAIL) -> list[dict]:
                     "ready": True,
                 }
             )
+    out += bare_look_items(root)
+    return out
+
+
+def bare_look_items(root: Path = BODY_DETAIL) -> list[dict]:
+    """AB1. After Dark · Bare: each named bare look as one private body item (``look:<id>``).
+
+    It carries what a bare job needs (``jobOptions``) and what the look is in words, so the Studio
+    can dress her in it and a client can say what her body shows. Private like every body item.
+    """
+    from wardrobe.registry import bare_looks
+
+    data = bare_looks.load(root)
+    try:
+        states = json.loads((root / "states.json").read_text(encoding="utf-8")).get("states", {})
+    except (OSError, ValueError):
+        states = {}
+    bodies = {k: v.get("body", "") for k, v in states.items()}
+    chapters = {c["id"]: c for c in data["chapters"]}
+    out = []
+    for look_id, spec in data["looks"].items():
+        out.append(
+            {
+                "id": f"look:{look_id}",
+                "kind": "body",
+                "bodyKind": "look",
+                "value": look_id,
+                "name": spec["label"],
+                "description": bare_looks.describe(spec, bodies),
+                "type": "body",
+                "tags": ["after-dark", "bare", spec["chapter"], spec["state"]],
+                "chapter": spec["chapter"],
+                "chapterTitle": chapters.get(spec["chapter"], {}).get("title", spec["chapter"]),
+                "preset": spec["preset"],
+                "state": spec["state"],
+                "extras": list(spec.get("extras", [])),
+                "jobOptions": bare_looks.job_options(spec),
+                "adult": True,
+                "private": True,
+                "body": True,
+                "previewUrl": None,
+                "ready": True,
+            }
+        )
     return out
 
 
@@ -337,7 +381,7 @@ def dashboard(view: dict) -> dict:
         "bodies": len([i for i in items if i.get("body")]),
         "bodyContent": {
             k: len([i for i in items if i["kind"] == "body" and i["id"].startswith(k + ":")])
-            for k in ("preset", "state", "extra")
+            for k in ("preset", "state", "extra", "look")
         },
         "collections": {
             "public": len(

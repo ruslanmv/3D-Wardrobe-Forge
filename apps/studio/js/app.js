@@ -26,7 +26,7 @@ import {
     withoutColour,
 } from './occasions.js';
 import { Viewer } from './viewer.js';
-import { initCollections } from './collections.js';
+import { initCollections, openCollection } from './collections.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -202,7 +202,7 @@ async function boot() {
     window.wardrobeStudio = { viewer };
     bindChrome();
     // WS2. The registry's collections, opened from the top bar (apps/studio/js/collections.js).
-    initCollections({ api, describe, whenVisible });
+    initCollections({ api, describe, whenVisible, wearBare });
 
     let loaded;
     try {
@@ -797,6 +797,15 @@ function bareBody() {
             ...(pack.length ? { bareStates: pack } : {}),
         },
     };
+}
+
+/** AB1. A named bare look from After Dark · Bare, worn by the avatar on stage. */
+function wearBare(item) {
+    if (!state.avatar) return setStatus('Choose an avatar first.', true);
+    runBare({
+        outfit: { prompt: 'Bare authored body', templateId: 'body-bare-v1' },
+        options: { renderPreview: true, engine: 'native', private: true, ...item.jobOptions, bareState: item.state },
+    });
 }
 
 async function runBare(body) {
@@ -2006,6 +2015,19 @@ function renderFlow() {
                         onclick: () => goTo(occasion.id, s.id),
                     })
                 ),
+                // AB1. After Dark's bare looks are body states, not outfits (an occasion lists outfit
+                // ids only), so this tile opens them where body items live: the private collection
+                // After Dark · Bare. After Dark itself is listed only to an admin or a grant.
+                ...(occasion.id === 'after-dark'
+                    ? [
+                          tile({
+                              icon: '🔞',
+                              title: 'Bare',
+                              sub: 'Pure bare bodies, from ready to ruined',
+                              onclick: () => openCollection('ad-bare'),
+                          }),
+                      ]
+                    : []),
                 tile({
                     icon: '🎲',
                     title: 'Surprise me',

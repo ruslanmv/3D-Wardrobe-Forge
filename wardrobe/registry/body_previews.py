@@ -48,6 +48,10 @@ def index_key(slug: str) -> str:
 def view_for(item_id: str) -> str:
     """The flat view that shows what this item changes (see ``detail_flat.py`` for each view)."""
     kind, _, v = item_id.partition(":")
+    if kind == "look":
+        # AB1. A named bare look is pictured where its state shows (its extras ride along).
+        spec = _looks().get(v)
+        return view_for(f"state:{spec['state']}") if spec else "pelvis"
     if kind == "preset":
         return "thighs"  # her hair, lips and skin tone from the front
     if kind == "extra":
@@ -79,9 +83,26 @@ def view_for(item_id: str) -> str:
     return "pelvis"
 
 
+def _looks() -> dict:
+    from wardrobe.registry import bare_looks
+
+    return bare_looks.load()["looks"]
+
+
 def spec_for(item_id: str, presets: dict, states: dict, extras: dict) -> dict:
     """The merged spec a bare job would paint for this one item (detail_flat.spec_for's merge)."""
     kind, _, value = item_id.partition(":")
+    if kind == "look":
+        # AB1. Its own preset, then its state, then each extra, merged as a bare job merges them.
+        look = _looks()[value]
+        spec = spec_for(f"preset:{look['preset']}", presets, states, extras)
+        spec.update(states[look["state"]].get("set", {}))
+        for extra in look.get("extras", []):
+            values = dict(extras[extra].get("set", {}))
+            if "piercings" in values and "piercings" in spec:
+                values["piercings"] = list(dict.fromkeys([*spec["piercings"], *values["piercings"]]))
+            spec.update(values)
+        return spec
     spec = dict(presets[value if kind == "preset" else BASE_PRESET])
     if kind == "state":
         spec.update(states[value].get("set", {}))
@@ -191,6 +212,7 @@ def render_items(vrm: bytes, item_ids: list[str]) -> dict[str, bytes]:
     """Thumbnails for these items on this body. An unknown item is skipped, never guessed."""
     presets, states, extras = catalogue()
     known = {f"preset:{k}" for k in presets} | {f"state:{k}" for k in states} | {f"extra:{k}" for k in extras}
+    known |= {f"look:{k}" for k in _looks()}  # AB1
     body = Body(vrm)
     out = {}
     for item_id in item_ids:

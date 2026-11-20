@@ -3154,3 +3154,20 @@ dialog.registry::backdrop {
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     }
 }
+
+/* AB1. "Wear on her" on a bare look's card in After Dark · Bare. */
+.reg-wear {
+    margin: 6px 8px 0;
+    padding: 4px 10px;
+    border: 1px solid var(--accent, #c0396b);
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+.reg-wear:hover {
+    background: var(--accent, #c0396b);
+    color: #fff;
+}

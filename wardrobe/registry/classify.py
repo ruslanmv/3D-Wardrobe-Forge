@@ -762,11 +762,47 @@ PRIVATE_CATEGORIES = tuple(
           "state:sado-used-cum$", "state:cowgirl-everything$", "state:missionary-covered$",
           "state:lower-back-cum-gaping$", "state:both-open$", "state:wide-open$", "state:used$",
           "state:round-three$"]),
+        # AB1. The named bare looks of After Dark (each one preset + state + extras), so every body
+        # item is in a category; by chapter they are in After Dark · Bare.
+        ("cat-bare-looks", "Bare Looks · After Dark", "Named bare looks, from ready to ruined", ["look:"]),
         ("cat-sensual", "Sensual & Elegant", "Aroused, oiled, glowing — the slow end of the evening",
          ["state:aroused$", "state:flushed$", "state:oiled$", "state:oiled-aroused$", "state:afterglow$",
           "extra:tan-", "extra:kisses-", "extra:glitter", "extra:body-paint-gold"]),
     )
 )
+
+def _after_dark_bare() -> tuple:
+    """AB1. After Dark · Bare: every named bare look, then one collection per chapter of the evening.
+
+    Read from ``assets/body_detail/bare_looks.json`` through its loader, so a look Forge cannot
+    paint never makes a collection. Private, in a section of its own that (like every section
+    starting "private") is never sent to a guest; an admin or a read grant sees it.
+    """
+    from wardrobe.registry import bare_looks
+
+    data = bare_looks.load()
+    looks = data["looks"]
+    out = [
+        _c("ad-bare", "After Dark · Bare", "Every bare look, from ready to ruined", "private-after-dark",
+           private=True, body=["look:"]),
+    ]
+    for chapter in data["chapters"]:
+        ids = [f"look:{k}$" for k, v in looks.items() if v["chapter"] == chapter["id"]]
+        if ids:
+            out.append(
+                _c(
+                    f"ad-bare-{chapter['id']}",
+                    f"Bare {chapter['title']}",
+                    chapter.get("description", ""),
+                    "private-after-dark",
+                    private=True,
+                    body=ids,
+                )
+            )
+    return tuple(out)
+
+
+AFTER_DARK_BARE = _after_dark_bare()
 
 #: Computed collections every viewer has (their contents are filtered by what they may see).
 SMART = (
@@ -785,7 +821,7 @@ SMART = (
     _c("needs-review", "Needs Review", "The rules were not sure what these are", "discover", smart="review"),
 )
 
-ALL = SMART + PUBLIC + ADULT + PRIVATE + PRIVATE_CATEGORIES
+ALL = SMART + PUBLIC + ADULT + PRIVATE + PRIVATE_CATEGORIES + AFTER_DARK_BARE
 BY_ID = {c.id: c for c in ALL}
 
 SECTIONS = (
@@ -799,6 +835,8 @@ SECTIONS = (
     # WS3. The admin's body catalogue by category; like every section starting "private", never
     # sent to anyone else.
     ("private-categories", "Private · Categories"),
+    # AB1. The named bare looks of After Dark, by chapter of the evening (admin or grant only).
+    ("private-after-dark", "After Dark · Bare"),
 )
 
 

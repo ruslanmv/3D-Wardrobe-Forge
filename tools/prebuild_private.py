@@ -127,10 +127,27 @@ def state_groups(states: list[str]) -> dict[str, list[str]]:
     return packs
 
 
+def bare_looks() -> dict:
+    """AB1. After Dark · Bare (assets/body_detail/bare_looks.json), checked by Forge's own loader."""
+    sys.path.insert(0, str(ROOT))
+    from wardrobe.registry import bare_looks as loader
+
+    return loader.load()["looks"]
+
+
 def plan(
-    avatars: list[dict], presets: list[str], packs: dict[str, list[str]], extras_sets: dict[str, list[str]]
+    avatars: list[dict],
+    presets: list[str],
+    packs: dict[str, list[str]],
+    extras_sets: dict[str, list[str]],
+    named: dict | None = None,
 ) -> list[dict]:
-    """Every (character, preset, look) worth asking for."""
+    """Every (character, preset, look) worth asking for.
+
+    AB1. ``named`` looks (After Dark · Bare) come with their own preset, so each is made once per
+    character in its own skin rather than once per ``--presets`` value: a look is a design, and
+    "Pumped & Begging" is puffy whatever the run's default.
+    """
     looks = [{"look": name, "states": states, "extras": []} for name, states in packs.items()]
     core = packs.get("core") or ["closed"]
     looks += [
@@ -145,6 +162,17 @@ def plan(
                 if not avatar.get("depictsAdult"):
                     pair["skip"] = "a bare body needs a character declared adult"
                 pairs.append(pair)
+        for look_id, spec in (named or {}).items():
+            pair = {
+                "slug": avatar["slug"],
+                "preset": spec["preset"],
+                "look": f"ad:{look_id}",
+                "states": ["closed", spec["state"]],
+                "extras": list(spec.get("extras", []))[:MAX_EXTRAS],
+            }
+            if not avatar.get("depictsAdult"):
+                pair["skip"] = "a bare body needs a character declared adult"
+            pairs.append(pair)
     return pairs
 
 
@@ -246,6 +274,11 @@ def main(argv=None) -> int:
         default="all",
         help="Looks with extras: all, none, or names: " + ", ".join(EXTRAS_SETS),
     )
+    parser.add_argument(
+        "--bare-looks",
+        default="all",
+        help="AB1 After Dark · Bare named looks: all, none, or ids (bare_looks.json)",
+    )
     parser.add_argument("--limit", type=int, default=0, help="Stop after this many looks (0 = all)")
     parser.add_argument("--workers", type=int, default=1, help="Jobs in flight (a skin pack is heavy)")
     parser.add_argument("--job-timeout", type=float, default=1800.0, help="Seconds per look")
@@ -276,7 +309,11 @@ def main(argv=None) -> int:
         return 2
     if opts.slugs:
         avatars = [a for a in avatars if a["slug"] in opts.slugs.split(",")]
-    pairs = plan(avatars, presets, packs, extras_sets)
+    named = {} if opts.bare_looks == "none" else bare_looks()
+    if opts.bare_looks not in ("all", "none"):
+        wanted = {w.strip() for w in opts.bare_looks.split(",")}
+        named = {k: v for k, v in named.items() if k in wanted}
+    pairs = plan(avatars, presets, packs, extras_sets, named)
     if opts.limit:
         pairs = pairs[: opts.limit]
     covered = {s for p in pairs for s in p["states"]}
