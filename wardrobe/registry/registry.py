@@ -67,6 +67,11 @@ def body_items(root: Path = BODY_DETAIL) -> list[dict]:
     return out
 
 
+def _body_match(pattern: str, item_id: str) -> bool:
+    """WS3. A body pattern: a substring of the item id, or the exact id when it ends in ``$``."""
+    return item_id == pattern[:-1] if pattern.endswith("$") else pattern in item_id
+
+
 def _restricted(template) -> bool:
     from wardrobe.domain.garments import INTIMATE_CATEGORIES
 
@@ -177,7 +182,7 @@ def _members(c: classify.Collection, items: list[dict], state: dict, favourites:
             ids.append(i["id"])
     if c.body:
         for i in items:
-            if i["kind"] == "body" and any(p in i["id"] for p in c.body):
+            if i["kind"] == "body" and any(_body_match(p, i["id"]) for p in c.body):
                 ids.append(i["id"])
     seen, ordered = set(), []
     for x in ids:
@@ -295,7 +300,7 @@ def build(
         categories.append({"id": cid, "title": title, "count": count})
 
     return {
-        "sections": [{"id": s, "title": t} for s, t in SECTIONS if admin or s != "private"],
+        "sections": [{"id": s, "title": t} for s, t in SECTIONS if admin or not s.startswith("private")],
         "categories": categories,
         "collections": collections,
         "items": shown,

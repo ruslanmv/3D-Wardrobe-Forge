@@ -66,6 +66,57 @@ Open & Gaped, Finishes, the positions (Doggy, Missionary, Cowgirl), Sado,
 Arousal & Afterglow, Marks/Tattoos/Piercings — the body states the chatbot's
 Private switches through skin packs. They list the same ids the chatbot plays.
 
+## Private categories and body thumbnails (WS3)
+
+A second admin-only section, **Private · Categories**, files every bare-body
+variant the way top-rated adult sites file their content: Shaved & Smooth,
+Natural & Hairy, Pale & Porcelain, Anime & Hentai Style, Solo & Tease, Pussy
+Close-ups, Anal, Gaping & Stretched, Creampie, Cumshot & Cum on Body, Fisting,
+BDSM & Rough, Oiled/Sweaty & Wet, After Sex, Tattooed, Pierced, Tan Lines, Love
+Marks & Body Writing, Glitter & Body Paint, Natural Body; then by **position**
+(Doggy, Missionary, Cowgirl, Tied & Used), by **finish** (Inside, On Her Back &
+Ass, On Her Belly, On Her Chest, All Over, Open & Dripping), and the admin's
+picks **Most Erotic · Hardcore** and **Sensual & Elegant**
+(`classify.PRIVATE_CATEGORIES`, 32 in all). Every one of the 99 body items (13 presets, 57
+states, 29 extras) is in at least one; a test fails the day one is not. A body
+pattern ending in `$` is an exact id (`preset:natural$` is not `natural-hair`).
+
+Thumbnails (`wardrobe/registry/body_previews.py`): each item is painted in
+memory exactly as a bare job paints it and plotted at her own body coordinates,
+framed on what it changes (vulva, anus, nipple, torso, lower belly and thighs,
+back), ~18 s each. Stored at `body-previews/<slug>/<kind>-<value>.webp`, served
+by `/v1/assets` to an admin session, and to a read grant for the characters it
+covers plus the reference body — the companion's Private mode — never to a
+guest, never to the dataset.
+
+The companion (a read grant) gets everything it needs to offer every variant
+from `GET /v1/body-surface/catalog?slug=<her slug>` (version 2): each preset,
+state and extra with its label and body line, the categories with their item
+ids, and a thumbnail URL per item (hers when she has them, else the reference
+body's). What it can actually *show* on her is what her looks carry
+(`WardrobeLook.body`: the skin pack's states and the extras painted in), made by
+`tools/prebuild_private.py` — which needs her detail clearance like every bare
+job.
+
+- `GET /v1/admin/body-previews` — how many thumbnails each character has.
+- `POST /v1/admin/body-previews/{slug}/render` — Forge paints up to 4 items on
+  her own plain bare look, **only after the bare job's detail clearance** for her
+  exact file (403 `detail-review` otherwise; 409 when she has no plain bare look).
+- `PUT /v1/admin/body-previews/reference/{item}` — the defaults, painted on
+  Forge's synthetic adult reference body by the script; the only slug that takes
+  uploads.
+- `GET /v1/registry?previews=<slug>` — an admin's body items carry that
+  character's thumbnails (`reference` by default); the Studio's Collections has
+  a "Body thumbnails of" picker.
+
+Make them all: `tools/render_body_previews.py --forge … --admin-token-file …
+--reference <ref-atlas.vrm>` (the reference from
+`tools/body_surface/detail_preview.py`, ~5 min to build once), then every
+character Forge clears. On 2026-11-20 none of the library's characters had
+detail clearance (their reviews have no packet and 17 characters of evidence;
+detail needs the packet and 40): they are reported as refused until a person
+reviews them (`tools/body_surface/review_packet.py`, then the review record).
+
 ## Faster loading: a combination is built once (PB1, RU1, RU4)
 
 A finished look is recorded under the keys of its request

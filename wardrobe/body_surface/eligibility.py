@@ -77,6 +77,31 @@ def design_clearance(review_root, reference_root, source_sha256: str | None) -> 
 #: BD1. Written evidence a full review gives, at least: the placeholder entries of 2026-11-17
 #: ("Its okay is adult", no character, no packet) are not one.
 DETAIL_EVIDENCE_CHARS = 40
+#: CG10. The detail reviews: a person's second look at a file already found clearly adult, made
+#: from Forge's review packet for those exact bytes, with written evidence. Separate from
+#: ``adult-design-reviews.json`` because a finding there is write-once: a design reviewed in the
+#: Studio before packets existed could otherwise never reach detail without a new file.
+DETAIL_REVIEWS_FILE = "adult-detail-reviews.json"
+DETAIL_REVIEWS_SCHEMA = "wardrobe.bodySurface.detailReviews.v1"
+
+
+def detail_review(review_root, source_sha256: str | None) -> dict | None:
+    """CG10. The recorded detail review of these exact bytes, or None (incomplete counts as none)."""
+    if not source_sha256:
+        return None
+    try:
+        data = json.loads((Path(review_root) / DETAIL_REVIEWS_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if data.get("schema") != DETAIL_REVIEWS_SCHEMA:
+        return None
+    entry = (data.get("reviews") or {}).get(source_sha256)
+    fields = ("reviewer", "date", "packet", "evidence")
+    if not isinstance(entry, dict) or not all(entry.get(k) for k in fields):
+        return None
+    if entry.get("examined") is not True or len(str(entry["evidence"]).strip()) < DETAIL_EVIDENCE_CHARS:
+        return None
+    return entry
 
 
 def detail_clearance(review_root, reference_root, source_sha256: str | None) -> dict | None:
@@ -94,10 +119,43 @@ def detail_clearance(review_root, reference_root, source_sha256: str | None) -> 
             and len(str(review.get("evidence", "")).strip()) >= DETAIL_EVIDENCE_CHARS):
         return {"kind": "review", "reviewer": review["reviewer"], "date": review["date"],
                 "packet": review["packet"]}
+    # CG10. The same requirements in two records: the design finding (clearly-adult, by a person)
+    # and that person's or another's detail review of the same bytes (the packet, written evidence,
+    # their statement that they looked). Neither alone is enough.
+    if review and review.get("outcome") == "clearly-adult":
+        detail = detail_review(review_root, source_sha256)
+        if detail:
+            return {"kind": "review", "reviewer": detail["reviewer"], "date": detail["date"],
+                    "packet": detail["packet"]}
     reference = synthetic_reference(reference_root, source_sha256)
     if reference:
         return {"kind": "synthetic-reference", "bodyId": reference["bodyId"]}
     return None
+
+
+def detail_status(review_root, reference_root, source_sha256: str | None) -> dict:
+    """CG10. For the review page: is detail cleared for these bytes, and if not, what is missing."""
+    cleared = detail_clearance(review_root, reference_root, source_sha256)
+    review = design_review(review_root, source_sha256)
+    detail = detail_review(review_root, source_sha256)
+    missing = []
+    if not review:
+        missing.append("a design review (clearly-adult)")
+    elif review.get("outcome") != "clearly-adult":
+        missing.append(f"a clearly-adult finding (recorded: {review.get('outcome')})")
+    elif not cleared:
+        missing.append(f"a detail review: Forge's review packet and at least {DETAIL_EVIDENCE_CHARS} "
+                       "characters of written evidence")
+    return {
+        "cleared": bool(cleared),
+        "kind": cleared["kind"] if cleared else None,
+        "reviewer": (cleared or {}).get("reviewer"),
+        "date": (cleared or {}).get("date"),
+        "designEvidenceChars": len(str((review or {}).get("evidence", "")).strip()),
+        "detailRecorded": bool(detail),
+        "needed": DETAIL_EVIDENCE_CHARS,
+        "missing": [] if cleared else missing,
+    }
 
 
 @dataclass
@@ -136,5 +194,6 @@ def assess(*, terms, operator_enabled: bool, depicts_adult: bool, private: bool,
     return Eligibility(False, first, checks[first]["why"], checks)
 
 
-__all__ = ["DETAIL_EVIDENCE_CHARS", "Eligibility", "SYNTHETIC_FILE", "SYNTHETIC_SCHEMA", "assess",
+__all__ = ["DETAIL_EVIDENCE_CHARS", "DETAIL_REVIEWS_FILE", "DETAIL_REVIEWS_SCHEMA", "Eligibility",
+           "detail_review", "detail_status", "SYNTHETIC_FILE", "SYNTHETIC_SCHEMA", "assess",
            "design_clearance", "detail_clearance", "synthetic_reference"]

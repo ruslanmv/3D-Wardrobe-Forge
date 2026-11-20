@@ -14,6 +14,25 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   (`/home/user/3D-Avatar-Chatbot`), and its viewer renders Forge's VRMs (see
   _Looking at results_).
 
+## Branches, merges and deploys (the owner's rules, 2026-11-20)
+
+- **Never merge or push to `main`.** `main` is the owner's, after their own audit. Every
+  change goes `claude/…` branch → PR into `ultimate` → merge (title and body `Updates`).
+  A merge into `main` once deployed un-audited code (PR #80); do not repeat it.
+- **The Space deploys from `ultimate`, by hand:** Actions ▸ Deploy to Hugging Face Space ▸
+  Run workflow ▸ branch `ultimate` (`deploy-space.yml` checks out the branch picked). A push
+  to `main` also deploys — another reason never to touch it.
+- **A session cannot start workflows** (GitHub answers 403 to a dispatch from Claude Code):
+  ask the owner to run Deploy, or Prebuild wardrobe (`missing_only` on, `overwrite` off;
+  `private_looks` for BD21 in a second run with `only` set to `none`).
+- **After any deploy:** `.venv/bin/python tools/qa/space_smoke.py` (routes, gates refuse a
+  guest, no Private to a guest, warm timings) and `node tools/qa/studio_shot.cjs --out <scratch>`
+  (the Collections browser, desktop and phone; `--admin-token-file` for the admin view). Look at
+  the frames. The registry's first call after a restart is ~18 s (cold), then ~0.3 s.
+- Local Forge for the Studio: `WARDROBE_ADMIN_PASSWORD=<random> WARDROBE_STORAGE_ROOT=<scratch>
+  .venv/bin/python -m uvicorn apps.api.main:app --port 8091`, then `POST /v1/admin/session`
+  for a token kept in an owner-only scratch file, deleted when done.
+
 ## The gate (what CI runs, `.github/workflows/ci.yml`)
 
 ```bash
@@ -40,6 +59,7 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
 | Job options (`bareDetail`, `bareState`, `bareExtras`, `bareStates`) | `wardrobe/domain/jobs.py` |
 | Erotic outfits, partial undress            | `wardrobe/body_surface/outfit_dictionary.py`, `docs/qa/EROTIC_SETS.md` |
 | What a client is told (BD21): each bare look's `body`, the catalogue | `JobOptions.body_summary`, `GET /v1/body-surface/catalog` (admin or grant) |
+| Private categories + body thumbnails (WS3) | `classify.PRIVATE_CATEGORIES`, `wardrobe/registry/body_previews.py`, `tools/render_body_previews.py` (`docs/WARDROBE_REGISTRY.md`) |
 | Make every private look for every character (BD21) | `tools/prebuild_private.py` (packs of ≤10 states covering all, extras sets); in CI: Prebuild wardrobe ▸ `private_looks` |
 | Full notes                                 | `docs/qa/BARE_DETAIL.md` (read before changing the painter)         |
 
@@ -61,6 +81,10 @@ Rules that break things when missed:
   Each detailed bare look is listed separately (`plan: bare-<key>`); never collapse them.
 - **Detail needs clearance:** `eligibility.detail_clearance` needs a full review
   (packet + ≥40 chars of evidence) or the synthetic reference. Never loosen it.
+  CG10: the Studio's Review page (`/studio/review.html`) shows every character's
+  stage (needs review, needs detail review, cleared, blocked) and what is missing,
+  makes Forge's packet for the exact file, and records a person's detail review in
+  `adult-detail-reviews.json` beside the write-once design finding (both required).
 - Previews of explicit detail are private: never commit them, never serve them
   from a public route.
 
