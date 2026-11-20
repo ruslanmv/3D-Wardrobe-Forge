@@ -399,6 +399,23 @@ write-once per file (`record_review`): to redo a character's review, remove its
 old entry first, then record the new finding with `tools/body_surface/gates.py`
 and its packet.
 
+## Wrecked past a fist, and a gaping vagina (BD22)
+
+- `anusGape` now goes past 1 up to 1.5 (`_wreck`). Past a fist, the rim puffs up thick in six
+  uneven lobes, deep red. The inner walls get a wet gloss line, and the centre goes darker and
+  deeper. Relief reads the same helper.
+- `vaginaGape`, from 0 to 1.5 (`_vagina_gape`), rounds the opening out and holds it open. The
+  rim is swollen and flushed, the walls glossy, the centre dark, and the inner lips swell too.
+  It widens `_introitus` and `_minora_width`, so colour and relief move together.
+- Swelling, redness and wetness only, never a tear or blood. `tests/unit/test_gape_bd22.py` holds
+  the ranges and checks that no state using them mentions injury.
+- Used by the from-behind states (`doggy-bottle*` at 1.5 and 1.3; the fisted pussy at 0.7).
+  What matters is how her body looks afterwards; no object is ever painted.
+- Checked in the flat view: the wrecked anus reads clearly wider and redder than the fisted one,
+  and filled reads too. The lobes, and the pussy gape at 0.7 against 1.3, do not read on the
+  reference fixture: its texels are sparse just there. Judge them on a real character with a
+  detail review.
+
 ## Checked
 
 - `tests/unit/test_body_detail.py` (16): presets (hairless and one per hair

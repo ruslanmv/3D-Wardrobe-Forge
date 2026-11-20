@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.states.v1",
- "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), anusGape (BD16: after anal fisting, the anus a wide round gape, rim swollen and red, inner walls showing, a dark centre — clearly visible from behind), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), cumPool, cumSpine, cumSides, cumCrack (BD17, lower-back cum with her ass up: a pool in the small of her back, runs up her spine, down her sides, into her crack), cumSecond (BD19: a second load on her back, the first thinned to a glaze under it), sweatBack (BD19: sweat built up on her back on all fours: a sheen down her spine, beads, a flush low down), cumBelly, cumChest, cumThighs, cumRunDown, cumRunSides (BD20, facing them in missionary and cowgirl: a pool in her navel and ropes across her belly, ropes across her chest pooling between her breasts, streams down her inner thighs, and her belly's runs going down to her mons when upright or off her sides when lying back), ropeMarks, wax, welts, clampMarks, collarMark (BD15, sado: shibari rope marks, candle wax, whip welts, nipple-clamp marks, a collar mark), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
+ "about": "BD4. Body states a body-detail preset can be painted in (options.bareState), on top of any preset. 'set' overrides the preset's state parameters, each 0..1: flush (BD5: a blush over breasts, chest and throat), erect (hard nipples, puckered areolae), goosebumps, sweat (sheen and beads), cumInside (BD10: semen filling the opened vagina, spilling out), cum (BD9: semen pooled at both openings and running between them), arousal (flush, swelling, sheen), vaginaGape (BD22, 0..1.5: her vagina left gaping round after a fist or a bottle — the opening rounds out and stays open, a swollen flushed rim, glossy walls, a dark centre, her lips swollen), anusGape (BD16: after anal fisting; BD22 past 1 to 1.5, wrecked past a fist: a thick lobed swollen rim, glossy walls, a deeper centre — never torn or bleeding, the anus a wide round gape, rim swollen and red, inner walls showing, a dark centre — clearly visible from behind), pumped (BD13: labia and glans engorged after a vacuum pump — outer lips swollen, inner lips nearly doubled, deep red and glossy), cumBack, cumDrip, anusCumInside (BD14, from behind on all fours: semen across her lower back and buttocks; a creampie running forward over her vulva as gravity pulls on all fours; her opened anus filled and leaking), cumPool, cumSpine, cumSides, cumCrack (BD17, lower-back cum with her ass up: a pool in the small of her back, runs up her spine, down her sides, into her crack), cumSecond (BD19: a second load on her back, the first thinned to a glaze under it), sweatBack (BD19: sweat built up on her back on all fours: a sheen down her spine, beads, a flush low down), cumBelly, cumChest, cumThighs, cumRunDown, cumRunSides (BD20, facing them in missionary and cowgirl: a pool in her navel and ropes across her belly, ropes across her chest pooling between her breasts, streams down her inner thighs, and her belly's runs going down to her mons when upright or off her sides when lying back), ropeMarks, wax, welts, clampMarks, collarMark (BD15, sado: shibari rope marks, candle wax, whip welts, nipple-clamp marks, a collar mark), oil (BD13: oiled for a massage, a glossy sheen over her whole torso, no beads), vaginaOpen (0..1.5: past 1 is stretched beyond wide open; inner lips parted, opening widened to show the inner walls), anusOpen (0..1.5; relaxed open, folds stretched, inner rim showing). 'body' is what her body is doing, in the second person, for the conversation (the client says it to the model only when this look is on stage). Painted only where body detail itself is allowed (eligibility.detail_clearance).",
  "states": {
   "closed": {
    "label": "Closed",
@@ -890,7 +890,8 @@
     "erect": 0.9,
     "sweat": 0.7,
     "vaginaOpen": 1.5,
-    "anusOpen": 0.2
+    "anusOpen": 0.2,
+    "vaginaGape": 0.7
    },
    "body": "on all fours after their fist was inside your pussy: from behind your pussy is stretched wide open and swollen, flushed and wet"
   },
@@ -904,7 +905,8 @@
     "vaginaOpen": 1.5,
     "anusOpen": 0.2,
     "cumInside": 1.0,
-    "cumDrip": 1.0
+    "cumDrip": 1.0,
+    "vaginaGape": 0.7
    },
    "body": "they fisted your pussy and then came in it: from behind it gapes wide open, swollen and full of cum, dripping down between your thighs"
   },
@@ -920,7 +922,8 @@
     "anusGape": 1.0,
     "cumInside": 1.0,
     "anusCumInside": 1.0,
-    "cumDrip": 1.0
+    "cumDrip": 1.0,
+    "vaginaGape": 0.7
    },
    "body": "both your holes were fisted and then filled: from behind your pussy and your ass gape wide open, swollen and full of cum, running down your thighs"
   },
@@ -928,55 +931,57 @@
    "label": "Doggy bottle",
    "set": {
     "arousal": 1.0,
-    "flush": 0.8,
+    "flush": 0.9,
     "erect": 0.9,
     "sweat": 0.7,
-    "vaginaOpen": 1.4,
-    "anusOpen": 0.2
+    "vaginaOpen": 1.5,
+    "anusOpen": 0.2,
+    "vaginaGape": 1.3
    },
-   "body": "on all fours after they used a bottle on your pussy: from behind it is stretched round and open, flushed and wet"
+   "body": "on all fours after the bottle: from behind your pussy is left gaping round and open, its lips swollen and flushed deep red, glistening wet inside"
   },
   "doggy-bottle-anal": {
    "label": "Doggy bottle anal",
    "set": {
     "arousal": 1.0,
-    "flush": 0.8,
+    "flush": 0.9,
     "erect": 0.9,
     "sweat": 0.7,
     "vaginaOpen": 0.6,
-    "anusOpen": 1.4,
-    "anusGape": 0.8
+    "anusOpen": 1.5,
+    "anusGape": 1.5
    },
-   "body": "on all fours after they used a bottle on your ass: from behind your anus is stretched round and open, its rim swollen and flushed"
+   "body": "on all fours after the bottle in your ass: from behind your anus is wrecked open, a wide dark gape, its rim puffed up thick, swollen and deep red, glistening wet inside"
   },
   "doggy-bottle-cum": {
    "label": "Doggy bottle cum",
    "set": {
     "arousal": 1.0,
-    "flush": 0.8,
+    "flush": 0.9,
     "erect": 0.9,
     "sweat": 0.7,
-    "vaginaOpen": 1.4,
+    "vaginaOpen": 1.5,
     "anusOpen": 0.2,
     "cumInside": 1.0,
-    "cumDrip": 1.0
+    "cumDrip": 1.0,
+    "vaginaGape": 1.3
    },
-   "body": "after the bottle they came in your pussy: from behind it is stretched open and full of cum, dripping down between your thighs"
+   "body": "after the bottle they came in your pussy: from behind it gapes round and open, swollen and red, full of cum dripping down between your thighs"
   },
   "doggy-bottle-anal-cum": {
    "label": "Doggy bottle anal cum",
    "set": {
     "arousal": 1.0,
-    "flush": 0.8,
+    "flush": 0.9,
     "erect": 0.9,
     "sweat": 0.7,
     "vaginaOpen": 0.6,
-    "anusOpen": 1.4,
-    "anusGape": 0.8,
+    "anusOpen": 1.5,
+    "anusGape": 1.5,
     "anusCumInside": 1.0,
     "cumDrip": 1.0
    },
-   "body": "after the bottle they came in your ass: from behind it is stretched open and full of cum, leaking down over your pussy"
+   "body": "after the bottle they came in your ass: from behind it is wrecked open, the rim puffed and red, the gape full of cum leaking down over your pussy"
   }
  }
 }

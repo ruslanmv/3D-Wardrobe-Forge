@@ -67,7 +67,7 @@ MIDLINE = 0.006
 
 STATES_PATH = PRESETS_PATH.with_name("states.json")
 STATES_SCHEMA = "wardrobe.bodyDetail.states.v1"
-STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen", "pumped", "anusGape", *FX.EFFECT_KEYS)
+STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen", "pumped", "anusGape", "vaginaGape", *FX.EFFECT_KEYS)
 EXTRAS_PATH = PRESETS_PATH.with_name("extras.json")
 EXTRAS_SCHEMA = "wardrobe.bodyDetail.extras.v1"
 #: BD6. What a persistent extra may set (tan lines now; marks, freckles… later).
@@ -423,6 +423,15 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
         rugae = 0.6 + 0.4 * np.cos((t - ti) / (0.0011 * s))
         walls = (1.0 - _smoothstep(0.55, 1.0, ri)) * _smoothstep(0.15 + 0.1 * (1 - opened), 0.5, ri)
         layers.append((_flushed([0.80, 0.50, 0.52], arousal), walls * rugae * 0.95 * opened))
+    vg = _vagina_gape(spec)
+    if vg > 0:
+        # BD22. Gaping round: a flushed, swollen rim, glossy wet walls going down to a dark centre.
+        vrim = np.exp(-((ri - 1.0) / 0.16) ** 2)
+        layers.append((_flushed([0.92, 0.56, 0.58], 1.0), vrim * 0.75 * min(vg, 1.0)))
+        vwall = _smoothstep(0.35, 0.8, ri) * (1.0 - _smoothstep(0.85, 1.0, ri))
+        layers.append(([0.84, 0.42, 0.46], vwall * 0.9 * min(vg, 1.0)))
+        layers.append(([1.06, 1.02, 1.03], np.exp(-((ri - 0.7) / 0.06) ** 2) * 0.4 * min(vg, 1.0)))
+        layers.append(([0.24, 0.14, 0.16], (1.0 - _smoothstep(0.15, 0.45, ri)) * min(vg, 1.0)))
     core = 0.15 + 0.4 * opened
     deep = [0.56 - 0.2 * opened, 0.40 - 0.2 * opened, 0.42 - 0.2 * opened]  # darker the more open
     layers.append((spec.get("openingTint", deep) if opened == 0 else deep,
@@ -484,7 +493,17 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
         layers.append(([1.1, 1.04, 1.05], wet * 0.45 * gape))  # wet edge
         layers.append(([0.86, 0.5, 0.54], walls * 0.85 * gape))  # her inner walls
         depth = 1.0 - _smoothstep(hole * 0.5, hole * 0.92, ar)
-        layers.append(([0.3, 0.2, 0.22], depth * 0.95 * gape))  # dark depth
+        layers.append(([0.3, 0.2, 0.22], depth * 0.95 * min(gape, 1.0)))  # dark depth
+        wreck = _wreck(spec)
+        if wreck > 0:
+            # BD22. Wrecked: the rim puffs up thick in lobes, deep red; the walls glisten; the
+            # centre goes darker and wider. Swelling, redness and wetness — never a tear or blood.
+            lobes = 1.0 + 0.45 * np.cos(6 * angle + 0.8 * np.sin(3 * angle))
+            puff = np.exp(-((ar - (hole + 0.24)) / (0.16 + 0.1 * wreck)) ** 2) * lobes
+            layers.append(([0.88, 0.42, 0.46], np.clip(puff, 0, 1) * 0.85 * wreck))
+            gloss = np.exp(-((ar - hole * 0.86) / 0.05) ** 2)
+            layers.append(([1.08, 1.04, 1.06], gloss * 0.55 * wreck))
+            layers.append(([0.16, 0.09, 0.11], (1.0 - _smoothstep(hole * 0.3, hole * 0.75, ar)) * wreck))
 
     hair = _hair(u, np.where(in_front, t, -1.0), in_front, L, spec, s)
     return layers, hair
@@ -503,8 +522,22 @@ def _pumped(spec: dict) -> float:
 
 
 def _gape(spec: dict) -> float:
-    """BD16. How far her anus gapes after anal fisting, 0..1 (``anusGape``)."""
-    return float(np.clip(float(spec.get("anusGape", 0.0)), 0.0, 1.0))
+    """BD16. How far her anus gapes after anal fisting, 0..1 (``anusGape``); BD22 past 1, to 1.5:
+    wrecked — stretched past a fist (a bottle), see ``_wreck``."""
+    return float(np.clip(float(spec.get("anusGape", 0.0)), 0.0, 1.5))
+
+
+def _wreck(spec: dict) -> float:
+    """BD22. How far past a fist her anus gapes, 0..1 (``anusGape`` from 1 to 1.5): a thicker,
+    puffed and lobed swollen rim, glossy wet inner walls and a deeper centre. Never torn, never
+    bleeding: swelling, redness and wetness only."""
+    return float(np.clip((_gape(spec) - 1.0) / 0.5, 0.0, 1.0))
+
+
+def _vagina_gape(spec: dict) -> float:
+    """BD22. Her vagina left gaping round after a fist or a bottle, 0..1.5 (``vaginaGape``): the
+    opening rounds out and stays open, its walls glossy and flushed, its lips swollen."""
+    return float(np.clip(float(spec.get("vaginaGape", 0.0)), 0.0, 1.5))
 
 
 def _anus_radius(spec: dict, s: float) -> float:
@@ -523,6 +556,7 @@ def _minora_width(spec: dict, s: float) -> float:
     the opening; BD13: pumped they nearly double, the deformation a vacuum pump leaves."""
     arousal, opened, _ = _state(spec)
     swell = 1.0 + 0.25 * arousal + 0.55 * opened + 0.9 * _pumped(spec)
+    swell += 0.4 * _vagina_gape(spec)  # BD22. swollen round a gaping opening
     return float(spec.get("minoraWidth", 0.0055)) * s * swell
 
 
@@ -539,8 +573,9 @@ def _glans_radius(spec: dict, s: float) -> float:
 
 def _introitus(spec: dict, s: float, opened: float) -> tuple[float, float]:
     """BD4. Half width and half length of the vaginal opening, wider and longer as it opens."""
-    return (float(spec.get("introitusWidth", 0.0034)) * s * (1.0 + 1.6 * opened),
-            float(spec.get("introitusLength", 0.0075)) * s * (1.0 + 0.7 * opened))
+    vg = _vagina_gape(spec)  # BD22. a gape rounds it: wider much more than longer
+    return (float(spec.get("introitusWidth", 0.0034)) * s * (1.0 + 1.6 * opened + 1.1 * vg),
+            float(spec.get("introitusLength", 0.0075)) * s * (1.0 + 0.7 * opened + 0.35 * vg))
 
 
 def _flushed(tint, arousal: float) -> list[float]:
@@ -663,6 +698,10 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.nda
     ru, rt = _introitus(spec, s, opened)
     ri = np.sqrt((u / ru) ** 2 + ((t - 0.22 * L) / rt) ** 2)
     h -= 0.0045 * k * (1.0 + 1.6 * opened) * (1.0 - _smoothstep(0.0, 1.15, ri)) ** 2
+    vg = _vagina_gape(spec)
+    if vg > 0:  # BD22. a round gape held open: deeper in, a swollen rim standing round it
+        h -= 0.004 * k * min(vg, 1.0) * (1.0 - _smoothstep(0.0, 0.8, ri)) ** 1.5
+        h += 0.0012 * k * min(vg, 1.0) * np.exp(-((ri - 1.0) / 0.16) ** 2)
     if opened > 0:
         h += 0.0004 * k * opened * np.cos((t - 0.22 * L) / (0.0011 * s)) * _smoothstep(0.3, 0.6, ri) \
             * (1.0 - _smoothstep(0.7, 1.0, ri))
@@ -678,6 +717,12 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.nda
         hole = 0.42 + 0.18 * gape
         h -= 0.006 * k * gape * (1.0 - _smoothstep(0.0, hole, ar)) ** 1.5
         h += 0.0012 * k * gape * np.exp(-((ar - (hole + 0.2)) / 0.13) ** 2)
+        wreck = _wreck(spec)
+        if wreck > 0:  # BD22. the puffed, lobed rim stands out; the centre goes deeper
+            ang = np.arctan2(t + per, u)
+            lobes = 1.0 + 0.45 * np.cos(6 * ang + 0.8 * np.sin(3 * ang))
+            h += 0.0018 * k * wreck * lobes * np.exp(-((ar - (hole + 0.24)) / (0.16 + 0.1 * wreck)) ** 2)
+            h -= 0.003 * k * wreck * (1.0 - _smoothstep(0.0, hole * 0.75, ar)) ** 1.5
     angle = np.arctan2(t + per, u)
     h -= 0.0032 * k * (1.0 + 1.8 * anus_open) * (1.0 - _smoothstep(0.0, 0.9, ar)) ** 2
     h += 0.0005 * k * (1.0 - 0.7 * anus_open) * np.cos(14 * angle + 0.6 * np.sin(5 * angle)) \
