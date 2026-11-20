@@ -95,5 +95,5 @@ def test_the_studio_opens_the_collections_browser():
     assert "initCollections(" in app and "./collections.js" in app
     page = (ROOT / "apps/studio/js/collections.js").read_text()
     # The page never decides what is private: it draws what the registry answers for this caller.
-    for call in ("registry()", "registryAssign", "registryFavourite", "registryCreate"):
+    for call in ("registry(", "registryAssign", "registryFavourite", "registryCreate"):
         assert call in page

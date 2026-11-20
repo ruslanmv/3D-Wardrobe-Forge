@@ -84,7 +84,7 @@ jobs:
       - uses: actions/setup-python@v5
         if: steps.secrets.outputs.enabled == 'true'
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
       - if: steps.secrets.outputs.enabled == 'true'
         run: python -m pip install -e .
@@ -118,7 +118,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
       - run: python -m pip install -e ".[hf,preview]"
       - name: The dataset exists and is private

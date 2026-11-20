@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
       - run: python -m pip install -e ".[dev,preview]"
       - run: ruff check .
@@ -26,10 +26,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # CI1. Every push and pull request runs 3.12; 3.11 (the oldest supported version) runs
-        # when a change lands on ultimate or main. Testing every push twice doubled the wait for
-        # no difference in what most changes could break.
-        python-version: ${{ fromJSON((github.event_name == 'push' && (github.ref == 'refs/heads/ultimate' || github.ref == 'refs/heads/main')) && '["3.11", "3.12"]' || '["3.12"]') }}
+        # CI2. One Python, 3.12, everywhere (the owner's call, 2026-11-20). CI1 added 3.11 on every
+        # push to ultimate and main, which doubled the slowest job (~25 min each) for a version the
+        # Space and the prebuild no longer run on.
+        python-version: ["3.12"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -74,7 +74,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
       - run: python -m pip install -e "../../..[dev,preview]"
       # The avatars the viewer loads: fetched and checked against their sha256 pins, as the
@@ -99,7 +99,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
       - run: python -m pip install -e ".[dev,preview]"
 
