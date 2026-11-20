@@ -85,8 +85,12 @@ def test_discoteca_is_the_collection_and_its_four_boots(entries):
 
 
 def test_the_served_catalogue_rates_each_style(template_catalog):
-    served = od.catalogue(template_catalog)["occasions"]
+    served = od.catalogue(template_catalog, granted=True)["occasions"]
     assert [o["id"] for o in served] == [o.id for o in oc.OCCASIONS]
+    # GC2. Without an admin session or a grant, After Dark is not served at all.
+    guest = od.catalogue(template_catalog)["occasions"]
+    assert [o["id"] for o in guest] == [o.id for o in oc.OCCASIONS if not o.grant]
+    assert "after-dark" not in [o["id"] for o in guest]
     styles = {(o["id"], s["id"]): s for o in served for s in o["styles"]}
     assert styles[("vacation", "beach")]["rating"] == "mixed"
     assert styles[("private", "lingerie")]["rating"] == "private"

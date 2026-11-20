@@ -109,3 +109,13 @@ def test_a_read_grant_sees_every_collection_but_manages_nothing(env):  # noqa: F
     # Reading is all it does: every manager route still answers 401.
     assert client.get("/v1/admin/registry/dashboard", headers=grant).status_code == 401
     assert client.post("/v1/admin/registry/collections", json={"title": "x"}, headers=grant).status_code == 401
+
+
+def test_after_dark_is_served_only_with_an_admin_session_or_a_grant(env):  # noqa: F811
+    """GC2. After Dark needs the companion's second gate; Private stays served to everyone (its
+    gate is the app's adult mode, and each look is gated again when it is made)."""
+    client, admin, grant, _ = env
+    ids = lambda headers=None: [o["id"] for o in client.get("/v1/outfits", headers=headers or {}).json()["occasions"]]  # noqa: E731
+    assert "after-dark" not in ids() and "private" in ids()
+    assert "after-dark" not in ids({"X-Wardrobe-Grant": "forged.token"})
+    assert "after-dark" in ids(grant) and "after-dark" in ids(admin)
