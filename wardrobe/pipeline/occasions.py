@@ -116,6 +116,9 @@ class Occasion:
     styles: tuple[Style, ...]
     #: Hidden as a whole without private mode, whatever its looks are rated.
     private: bool = False
+    #: GC2. Sent only to a caller Forge knows the owner let in: an admin session or a valid read
+    #: grant (the companion's second gate). Others never receive it, not even its name.
+    grant: bool = False
 
 
 #: AB. The Anime Beachwear designs, in the collection's own order.
@@ -619,6 +622,7 @@ OCCASIONS: tuple[Occasion, ...] = (
             ),
         ),
         private=True,
+        grant=True,
     ),
 )
 
@@ -642,14 +646,19 @@ def tag(value: dict | None) -> tuple[str | None, str | None]:
     return occasion.id, style if any(s.id == style for s in occasion.styles) else None
 
 
-def catalogue(entries: dict[str, dict]) -> list[dict]:
+def catalogue(entries: dict[str, dict], *, granted: bool = False) -> list[dict]:
     """The occasions as ``GET /v1/outfits`` lists them, beside the dictionary's planned ``entries``.
+
+    GC2. An occasion that needs a grant (After Dark) is left out unless ``granted``: the caller is
+    an admin session or holds a valid read grant. Filtered here, on the server, never in a page.
 
     Each style says what its looks are rated so a client can hide it without fetching
     anything else: ``general`` (all general), ``private`` (all private) or ``mixed``.
     """
     out = []
     for occasion in OCCASIONS:
+        if occasion.grant and not granted:
+            continue
         styles = []
         for style in occasion.styles:
             ratings = {entries[look]["rating"] for look in style.looks}
@@ -673,17 +682,18 @@ def catalogue(entries: dict[str, dict]) -> list[dict]:
                 "icon": occasion.icon,
                 "question": occasion.question,
                 "private": occasion.private,
+                **({"grant": True} if occasion.grant else {}),
                 "styles": styles,
             }
         )
     return out
 
 
-def planned(catalog: TemplateCatalog) -> list[dict]:
+def planned(catalog: TemplateCatalog, *, granted: bool = False) -> list[dict]:
     """The catalogue against the dictionary as this Forge's planner makes it."""
     from wardrobe.pipeline.outfit_dictionary import catalogue as outfits
 
-    return catalogue({entry["id"]: entry for entry in outfits(catalog)["outfits"]})
+    return catalogue({entry["id"]: entry for entry in outfits(catalog)["outfits"]}, granted=granted)
 
 
 __all__ = [

@@ -813,8 +813,11 @@ def _catalogue(catalog_id: int, catalog: TemplateCatalog) -> tuple[dict, ...]:
     return tuple(plan_entry(outfit, catalog) for outfit in OUTFITS)
 
 
-def catalogue(catalog: TemplateCatalog) -> dict:
-    """``GET /v1/outfits``: the groups and every entry, planned. Cached per catalogue."""
+def catalogue(catalog: TemplateCatalog, *, granted: bool = False) -> dict:
+    """``GET /v1/outfits``: the groups and every entry, planned. Cached per catalogue.
+
+    GC2. ``granted``: the caller is an admin session or holds a valid read grant, so the
+    occasions that need one (After Dark) are listed too."""
     from wardrobe.atelier.orders import report as atelier_report
     from wardrobe.pipeline.occasions import catalogue as occasions
 
@@ -825,7 +828,7 @@ def catalogue(catalog: TemplateCatalog) -> dict:
         "outfits": entries,
         # OC1. Occasion → style → these entries' ids: the Studio's first question. Additive, so
         # a client that reads only groups and outfits is unchanged.
-        "occasions": occasions({entry["id"]: entry for entry in entries}),
+        "occasions": occasions({entry["id"]: entry for entry in entries}, granted=granted),
         # AA. What the atelier built, what is already a prompt, and what still needs a shape.
         # Additive: a client that does not know the key ignores it.
         "atelier": atelier_report(),

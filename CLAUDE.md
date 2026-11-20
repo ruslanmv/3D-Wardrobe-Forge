@@ -114,8 +114,9 @@ table dance, undress step by step; Private body ones: naked, gaped, finishes, po
 - **Occasions** (the Studio's Design tab) are `wardrobe/pipeline/occasions.py`: styles of outfit
   dictionary ids only (a test refuses anything else). AD1 **After Dark** is the full adult
   wardrobe as an occasion (striptease, what's underneath, table dance, boudoir, dominant &
-  fetish, role-play, barely there, out tonight, mature & elegant), `private=True` like Private:
-  not shown at all outside private mode. Body states are not outfits: they live in the
+  fetish, role-play, barely there, out tonight, mature & elegant), `private=True` like Private
+  and GC2 `grant=True`: `GET /v1/outfits` lists it only to an admin session or a valid read
+  grant (the companion's second gate); Private stays listed to everyone (gate 1 is the app's). Body states are not outfits: they live in the
   registry's Private categories (Collections), never in an occasion.
 
 ## Looking at results (saved tools, fastest first)
