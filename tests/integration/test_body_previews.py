@@ -89,3 +89,23 @@ def test_a_character_without_detail_clearance_gets_nothing_painted(env):  # noqa
     assert (
         client.post("/v1/admin/body-previews/mira/render", json={"items": ["state:open"]}).status_code == 401
     )
+
+
+def test_a_read_grant_sees_every_collection_but_manages_nothing(env):  # noqa: F811
+    """GC1. The companion's second gate: with the owner's read grant, its Try-On reads every
+    collection the admin has, Private and its categories included — and no manager control."""
+    client, admin, grant, _ = env
+    guest = client.get("/v1/registry").json()
+    seen = client.get("/v1/registry", headers=grant).json()
+    assert seen["admin"] is False and seen["access"] == "grant"
+    assert {"naked-skin", "cat-creampie", "cat-most-erotic"} <= {c["id"] for c in seen["collections"]}
+    assert any(s["id"] == "private-categories" for s in seen["sections"])
+    assert len(seen["items"]) > len(guest["items"])
+    assert client.get("/v1/registry/collections/cat-creampie", headers=grant).status_code == 200
+    assert client.get("/v1/registry/collections/cat-creampie").status_code == 404
+    assert client.get("/v1/registry", headers={"X-Wardrobe-Grant": "forged.token"}).json()["admin"] is False
+    assert not any(c["private"] for c in client.get(
+        "/v1/registry", headers={"X-Wardrobe-Grant": "forged.token"}).json()["collections"])
+    # Reading is all it does: every manager route still answers 401.
+    assert client.get("/v1/admin/registry/dashboard", headers=grant).status_code == 401
+    assert client.post("/v1/admin/registry/collections", json={"title": "x"}, headers=grant).status_code == 401

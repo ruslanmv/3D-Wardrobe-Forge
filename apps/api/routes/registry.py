@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from apps.api.admin import AdminDep
 from apps.api.dependencies import CatalogDep, SettingsDep, StoreDep
+from apps.api.grants import GrantDep
 from apps.api.routes.catalog import preview_version
 from wardrobe import collections as design_registry
 from wardrobe.pipeline.outfit_dictionary import catalogue
@@ -48,6 +49,27 @@ def _store(settings) -> RegistryStore:
     return RegistryStore(settings.storage_root_path)
 
 
+def _reader_view(catalog, settings, admin, grant) -> dict:
+    """GC1. The registry for this caller: an admin session's, a read grant's, or a guest's.
+
+    A read grant is what the owner gives a companion app for its private experience (BI2); with
+    it, the app's Try-On may show every collection the admin has, Private and its categories
+    included — the second of its two gates (the first is the person's own adult confirmation on
+    the device, which only the app can ask). The grant reads; it never manages: ``admin`` stays
+    False, so no manager control is offered, and an adult garment's picture stays admin-only as
+    ``/v1/catalog`` serves it.
+    """
+    if admin is not None or grant is None:
+        return _view(catalog, settings, admin is not None)
+    view = _view(catalog, settings, True)
+    for item in view["items"]:
+        if item["kind"] == "garment" and item.get("adult") and item.get("previewUrl"):
+            item["previewUrl"] = None
+    view["admin"] = False
+    view["access"] = "grant"
+    return view
+
+
 def _view(catalog, settings, admin: bool) -> dict:
     return registry.build(
         catalog,
@@ -64,11 +86,14 @@ def _signed_in(admin) -> None:
         raise HTTPException(status_code=401, detail="admin_required")
 
 
-async def _with_body_previews(view: dict, store, slug: str | None) -> dict:
+async def _with_body_previews(view: dict, store, slug: str | None, grant=None) -> dict:
     """WS3. An admin's body items carry their thumbnail for one character (``reference`` unless
-    ``previews=`` names another). Only ever on an admin's view: a guest's has no body items."""
-    if not view.get("admin"):
+    ``previews=`` names another). GC1: a read grant's view too, for a character the grant covers
+    (else the reference body's). Never a guest's view: it has no body items."""
+    if not view.get("admin") and view.get("access") != "grant":
         return view
+    if view.get("access") == "grant" and slug and not (grant is not None and grant.covers(slug)):
+        slug = None
     slug = slug or body_previews.REFERENCE
     have = set((await body_previews.read_index(store, slug)).get("items", []))
     for item in view["items"]:
@@ -90,14 +115,17 @@ async def wardrobe(
     settings: SettingsDep,
     admin: AdminDep,
     store: StoreDep,
+    grant: GrantDep,
     previews: str | None = Query(default=None, max_length=64),
 ) -> dict:
-    return await _with_body_previews(_view(catalog, settings, admin is not None), store, previews)
+    view = _reader_view(catalog, settings, admin, grant)
+    return await _with_body_previews(view, store, previews, grant)
 
 
 @router.get("/registry/collections/{collection_id}")
-def collection(collection_id: str, catalog: CatalogDep, settings: SettingsDep, admin: AdminDep) -> dict:
-    view = _view(catalog, settings, admin is not None)
+def collection(collection_id: str, catalog: CatalogDep, settings: SettingsDep, admin: AdminDep,
+               grant: GrantDep) -> dict:
+    view = _reader_view(catalog, settings, admin, grant)
     found = next((c for c in view["collections"] if c["id"] == collection_id), None)
     if found is None:
         # A private collection is "not found" to anyone but the admin: not even its name leaks.

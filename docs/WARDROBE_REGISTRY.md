@@ -117,6 +117,16 @@ detail clearance (their reviews have no packet and 17 characters of evidence;
 detail needs the packet and 40): they are reported as refused until a person
 reviews them (`tools/body_surface/review_packet.py`, then the review record).
 
+## A companion app's read grant (GC1)
+
+`GET /v1/registry` and `/v1/registry/collections/{id}` read with a valid read
+grant (`X-Wardrobe-Grant`) exactly what an admin session reads — Private and its
+categories included — with `admin: false`, `access: "grant"`: no manager control,
+no adult garment picture (still admin-only on `/v1/catalog`), body thumbnails for
+a character the grant covers (else the reference body's). It is the second of the
+companion's two gates; the first, the person's own adult confirmation, is the
+app's. Every `/v1/admin/registry/*` route still answers 401 to a grant.
+
 ## Faster loading: a combination is built once (PB1, RU1, RU4)
 
 A finished look is recorded under the keys of its request
