@@ -822,6 +822,18 @@ def catalogue(catalog: TemplateCatalog, *, granted: bool = False) -> dict:
     from wardrobe.pipeline.occasions import catalogue as occasions
 
     entries = [dict(entry) for entry in _catalogue(id(catalog), catalog)]
+    # GC3. An outfit offered only by an occasion that needs a grant (After Dark's striptease,
+    # role-play and erotic sets) says so, so a companion can keep it out of sight until its second
+    # gate is open. A UI hint, sent to everyone on purpose (the owner's call, 2026-11-20): the job's
+    # own gates still decide what is made. An outfit any other occasion also offers (stockings,
+    # the Italian lace thong) is not flagged: it stays where gate 1 already shows it.
+    from wardrobe.pipeline.occasions import OCCASIONS
+
+    gated = {look for o in OCCASIONS if o.grant for st in o.styles for look in st.looks}
+    gated -= {look for o in OCCASIONS if not o.grant for st in o.styles for look in st.looks}
+    for entry in entries:
+        if entry["id"] in gated:
+            entry["grant"] = True
     return {
         "version": 1,
         "groups": [{"id": g.id, "title": g.title, "private": g.private} for g in GROUPS],

@@ -169,3 +169,12 @@ def test_after_dark_is_private_as_a_whole_and_offers_every_adult_set(entries):
         wanted = {e["id"] for e in entries.values() if e.get("group") == group}
         assert wanted <= looks, wanted - looks
     assert len({s.id for s in after.styles}) == len(after.styles) >= 9
+
+
+def test_after_dark_only_outfits_are_flagged_for_the_second_gate(template_catalog):
+    """GC3. Flagged: what only After Dark offers. Not flagged: what Private also offers."""
+    entries = {e["id"]: e for e in od.catalogue(template_catalog)["outfits"]}
+    for look in ("show-strip-red", "roleplay-nurse", "erotic-dominant", "aa-bodystocking"):
+        assert entries[look].get("grant") is True, look
+    for look in ("stockings-pencil", "italian-lace-thong", "lace-lingerie-set", "tee-jeans"):
+        assert "grant" not in entries[look], look
