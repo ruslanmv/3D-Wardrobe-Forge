@@ -29,6 +29,13 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   guest, no Private to a guest, warm timings) and `node tools/qa/studio_shot.cjs --out <scratch>`
   (the Collections browser, desktop and phone; `--admin-token-file` for the admin view). Look at
   the frames. The registry's first call after a restart is ~18 s (cold), then ~0.3 s.
+- **Populate the dataset from a session** (when the Prebuild workflow cannot be started):
+  `tools/dataset_missing.py` (what is missing, read-only), then
+  `HF_TOKEN=… tools/populate_dataset.sh [slugs]`: one character per fresh Forge, `--missing-only`,
+  publish without `--overwrite` (the dataset's entry wins), local files deleted per character, a
+  watchdog stopping under 3 GB disk / 1.5 GB memory. Needs `pip install -e ".[hf]"` and
+  `tools/fetch_library.py`. Run it detached (`setsid nohup … &`) and watch the log: a character
+  takes hours. The token lives only in the environment — never a file, commit or log.
 - Local Forge for the Studio: `WARDROBE_ADMIN_PASSWORD=<random> WARDROBE_STORAGE_ROOT=<scratch>
   .venv/bin/python -m uvicorn apps.api.main:app --port 8091`, then `POST /v1/admin/session`
   for a token kept in an owner-only scratch file, deleted when done.
