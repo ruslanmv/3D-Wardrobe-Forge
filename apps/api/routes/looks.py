@@ -64,6 +64,9 @@ async def get_asset(key: str, store: StoreDep, admin: AdminDep, grant: GrantDep)
         # through /v1/admin/library/{slug}/withdrawals, never as an asset.
         if parts[0] == withdrawals.PREFIX and admin is None:
             raise KeyError(key)
+        # WS3. Body thumbnails are explicit: an admin session's only, never a grant's or a guest's.
+        if parts[0] == "body-previews" and admin is None:
+            raise KeyError(key)
         # AC1. The revocation list names accounts; it is nobody's asset, an admin's included.
         if parts[0] == revocations.PREFIX:
             raise KeyError(key)

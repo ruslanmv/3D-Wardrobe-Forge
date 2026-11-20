@@ -43,7 +43,7 @@ def test_every_curated_collection_is_filled_from_real_items(world):
 
 def test_private_collections_live_only_in_the_private_section(world):
     for c in classify.ALL:
-        assert (c.section == "private") == c.private, c.id
+        assert c.section.startswith("private") == c.private, c.id
     # Adult is what guests already enjoy, under its own name; it is never the admin-only tier.
     assert all(not c.private for c in classify.ALL if c.section == "adult")
 

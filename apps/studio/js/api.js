@@ -265,7 +265,9 @@ export const api = {
     garmentParameters: (templateId) => request(`/v1/catalog/garments/${encodeURIComponent(templateId)}/parameters`),
 
     // WS2. The wardrobe registry (docs/WARDROBE_REGISTRY.md): the Collections browser and its manager.
-    registry: () => request('/v1/registry'),
+    registry: (previews) => request(`/v1/registry${previews ? `?previews=${encodeURIComponent(previews)}` : ''}`),
+    // WS3. Which characters have body thumbnails (admin).
+    bodyPreviews: () => request('/v1/admin/body-previews'),
     registryDashboard: () => request('/v1/admin/registry/dashboard'),
     registryCreate: (body) => request('/v1/admin/registry/collections', { method: 'POST', body }),
     registryEditCollection: (id, body) =>

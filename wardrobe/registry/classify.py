@@ -688,6 +688,56 @@ PRIVATE = (
     ),
 )
 
+#: WS3. The admin's body catalogue by category, the way the top-rated adult sites file their
+#: content: body type and grooming, close-ups, acts, finishes, fetish, decoration. The position
+#: collections above (doggy, missionary, cowgirl) say WHERE a state happens; these say WHAT it is,
+#: which is how an admin looks for one ("a creampie", "tattooed", "hairy"). Together they cover
+#: every preset, state and extra (tests/unit/test_wardrobe_registry.py holds that). A pattern
+#: ending in ``$`` is an exact id: ``preset:natural`` alone would also catch ``natural-hair``.
+PRIVATE_CATEGORIES = tuple(
+    _c(cid, title, description, "private-categories", private=True, body=body)
+    for cid, title, description, body in (
+        ("cat-shaved-smooth", "Shaved & Smooth", "Bare, smooth skin presets",
+         ["preset:natural$", "preset:soft-pink$", "preset:warm$", "preset:defined$", "preset:outie$",
+          "preset:puffy$", "preset:porcelain$"]),
+        ("cat-natural-hairy", "Natural & Hairy", "Natural hair, trimmed, landing strip, triangle",
+         ["preset:natural-hair", "preset:trimmed", "preset:landing-strip", "preset:triangle",
+          "preset:auburn-natural"]),
+        ("cat-pale-porcelain", "Pale & Porcelain", "Pale and porcelain skin", ["preset:porcelain$"]),
+        ("cat-anime-hentai", "Anime & Hentai Style", "The anime-styled body detail", ["preset:anime"]),
+        ("cat-solo-tease", "Solo & Tease", "Her body at rest, aroused, flushed, wet",
+         ["state:closed$", "state:aroused$", "state:flushed$", "state:goosebumps$"]),
+        ("cat-pussy-closeup", "Pussy Close-ups", "Open, spread, wet and pumped",
+         ["state:open$", "state:wide-open$", "state:pumped$", "state:pumped-open$", "state:oiled-aroused$",
+          "state:missionary-open$", "state:cowgirl-riding$"]),
+        ("cat-anal", "Anal", "Her anus open, stretched, filled and fisted",
+         ["anus-", "anal-", "state:both-open$", "-fisted-anal"]),
+        ("cat-gaping", "Gaping & Stretched", "Gaping, stretched and wide open",
+         ["gaping", "stretched", "state:wide-open$", "state:both-open$", "state:doggy-sweaty-open$"]),
+        ("cat-creampie", "Creampie", "Every creampie, inside and dripping", ["creampie"]),
+        ("cat-cumshot", "Cumshot & Cum on Body", "On her back, belly, chest and all over",
+         ["state:cum$", "cum-on-back", "lower-back-cum", "-belly", "-chest", "-covered", "-everything",
+          "doggy-finish", "doggy-open-cum", "doggy-gaping-cum", "sado-used-cum", "fisted-cum",
+          "cowgirl-after"]),
+        ("cat-fisting", "Fisting", "Fisted, vaginal and anal", ["fisted"]),
+        ("cat-bdsm", "BDSM & Rough", "Roped, wax, whipped, spanked and used",
+         ["state:sado-", "extra:spanked"]),
+        ("cat-oiled-wet", "Oiled, Sweaty & Wet", "Oiled, sweaty and glistening",
+         ["oiled", "sweaty", "state:afterglow$"]),
+        ("cat-after-sex", "After Sex", "Afterglow and what is left on her",
+         ["state:afterglow$", "cowgirl-after", "second", "sado-full"]),
+        ("cat-tattooed", "Tattooed", "Intimate and lower-back tattoos", ["extra:tattoo-"]),
+        ("cat-pierced", "Pierced", "Nipple, intimate and full piercings", ["extra:piercings-"]),
+        ("cat-tan-lines", "Tan Lines", "Bikini and thong tan lines", ["extra:tan-"]),
+        ("cat-love-marks", "Love Marks & Body Writing", "Lipstick kisses, love bites, written words",
+         ["extra:kisses-", "extra:love-bites", "extra:writing-", "extra:hearts"]),
+        ("cat-glitter-paint", "Glitter & Body Paint", "Glitter and gold body paint",
+         ["extra:glitter", "extra:body-paint"]),
+        ("cat-natural-body", "Natural Body", "Freckles and stretch marks",
+         ["extra:freckles", "extra:stretch-marks"]),
+    )
+)
+
 #: Computed collections every viewer has (their contents are filtered by what they may see).
 SMART = (
     _c("all-clothes", "All Clothes", "Every garment in the wardrobe", "discover", smart="all"),
@@ -705,7 +755,7 @@ SMART = (
     _c("needs-review", "Needs Review", "The rules were not sure what these are", "discover", smart="review"),
 )
 
-ALL = SMART + PUBLIC + ADULT + PRIVATE
+ALL = SMART + PUBLIC + ADULT + PRIVATE + PRIVATE_CATEGORIES
 BY_ID = {c.id: c for c in ALL}
 
 SECTIONS = (
@@ -716,6 +766,9 @@ SECTIONS = (
     ("looks", "My Looks"),
     ("adult", "Adult"),
     ("private", "Private"),
+    # WS3. The admin's body catalogue by category; like every section starting "private", never
+    # sent to anyone else.
+    ("private-categories", "Private · Categories"),
 )
 
 
@@ -743,6 +796,7 @@ __all__ = [
     "CATEGORY_IDS",
     "Collection",
     "PRIVATE",
+    "PRIVATE_CATEGORIES",
     "PUBLIC",
     "SECTIONS",
     "SMART",
