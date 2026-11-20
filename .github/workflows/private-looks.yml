@@ -1,0 +1,36 @@
+name: Private looks (one click)
+
+# The private bare looks (body states, fist and gape packs, extras) for every character declared
+# adult, with nothing to choose: Actions -> Private looks (one click) -> Run workflow. It is
+# Prebuild wardrobe with private_looks yes, outfits no, missing_only yes and overwrite no (a
+# look the dataset already has is kept, never rebuilt). Made for a phone, where the full
+# form's options are hard to set. Leave "character" empty for all of them.
+#
+# Detail (open, fisted, gaping, filled) is painted only for a character whose detail review is
+# committed in this repository (assets/body_surface/adult-detail-reviews.json); a review saved
+# only in the Space's Studio is on the Space's disk, not here, and this runner never sees it.
+on:
+  workflow_dispatch:
+    inputs:
+      character:
+        description: One character, e.g. avatar-sample-a (empty = all)
+        required: false
+        default: ""
+
+# No concurrency group here: Prebuild wardrobe holds "prebuild-wardrobe" itself, and the
+# same group on the caller would wait for its own callee forever.
+
+permissions:
+  contents: read
+
+jobs:
+  private:
+    uses: ./.github/workflows/prebuild-wardrobe.yml
+    secrets: inherit
+    with:
+      slugs: ${{ inputs.character }}
+      outfits: "no"
+      missing_only: "yes"
+      overwrite: "no"
+      private_looks: "yes"
+      private_presets: "natural"

@@ -26,6 +26,8 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   ask the owner to run Deploy, or Prebuild wardrobe (`missing_only` yes, `overwrite` no;
   `private_looks` yes for BD21 in a second run with `only` set to `none`; `slugs` limits it to
   named characters). Its inputs are drop-downs, not tick boxes: GitHub's phone site shows no box.
+  One click from a phone: Actions ▸ **Private looks (one click)** (`private-looks.yml`, private
+  looks only, nothing replaced; optional one character).
 - **A detail review recorded in the Studio lives on the Space's disk**, which is lost at restart
   and which the Prebuild runner never sees. It counts there only once committed
   (`assets/body_surface/adult-detail-reviews.json` and its packet, under the reviewer's name).

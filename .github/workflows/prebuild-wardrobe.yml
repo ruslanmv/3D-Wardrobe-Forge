@@ -26,6 +26,17 @@ name: Prebuild wardrobe
 # with no box to tick (reported 2026-11-20), so a run started from a phone could never turn a
 # switch on. A drop-down shows everywhere. Every expression below compares with 'yes'.
 on:
+  # One-click callers (private-looks.yml) run this same build with the settings fixed; their
+  # inputs are plain strings ('yes'/'no'), compared exactly as the drop-downs below are.
+  workflow_call:
+    inputs:
+      slugs: { type: string, required: false, default: "" }
+      only: { type: string, required: false, default: "" }
+      overwrite: { type: string, required: false, default: "no" }
+      outfits: { type: string, required: false, default: "no" }
+      missing_only: { type: string, required: false, default: "yes" }
+      private_looks: { type: string, required: false, default: "yes" }
+      private_presets: { type: string, required: false, default: "natural" }
   workflow_dispatch:
     inputs:
       slugs:
