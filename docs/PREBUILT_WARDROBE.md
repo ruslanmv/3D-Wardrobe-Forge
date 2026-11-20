@@ -262,3 +262,26 @@ secret `deploy-space.yml` already uses, with write access to the dataset. On the
 `WARDROBE_STORAGE_BACKEND=hf` and `WARDROBE_HF_DATASET=ruslanmv/3d-wardrobe-garments`; its
 `HF_TOKEN` needs read access. The first `fem-vroid` looks were built locally and uploaded on
 2026-11-14 with `tools/prebuild.py` and `HfApi.upload_folder`.
+
+
+## DS1. Populating the dataset from one machine (2026-11-20)
+
+When the Prebuild wardrobe workflow cannot be started (a Claude Code session gets 403 on a
+workflow dispatch), the same job runs from any machine with the dataset's write token:
+
+```bash
+.venv/bin/python -m pip install -e ".[hf]"      # the dataset store
+.venv/bin/python tools/fetch_library.py           # every library character on disk
+.venv/bin/python tools/dataset_missing.py         # what is missing (read-only, the Space)
+HF_TOKEN=… setsid nohup tools/populate_dataset.sh > populate.log 2>&1 &
+.venv/bin/python tools/dataset_missing.py         # afterwards: close to 0
+```
+
+It is the workflow's steps in a loop, one character at a time: a fresh Forge on the dataset
+store (signed in as a throwaway admin, so adult-only garments are planned), `prebuild.py
+--outfits --missing-only` (nothing listed is sent again), `publish_prebuilt.py` without
+`--overwrite` (the dataset's entries win; no change, no commit), then the character's local
+files are deleted. A watchdog ends the run cleanly under 3 GB of free disk or 1.5 GB of free
+memory. Measured the first time: 2,320 looks listed, 528 missing for a guest's count (519 of
+them outfit-dictionary combinations); the admin plan for one character is ~506 pairs, most
+already present.
