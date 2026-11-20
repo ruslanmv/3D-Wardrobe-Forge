@@ -37,6 +37,17 @@
         </form>
         <p class="form-error" id="review-error" role="alert" hidden></p>
 
+        <!-- CG10. Every character at a glance, for an audit: what is reviewed, what is cleared for
+             body detail and what is missing, and what has been made for her. -->
+        <section class="review-audit" id="review-audit" hidden aria-label="Audit">
+            <div class="review-summary" id="review-summary"></div>
+            <div class="review-filters" id="review-filters" role="radiogroup" aria-label="Show"></div>
+            <details class="review-table-wrap">
+                <summary>Audit table: every character, every check</summary>
+                <div class="review-table-scroll"><table class="review-table" id="review-table"></table></div>
+            </details>
+        </section>
+
         <main class="review-main" id="review-main" hidden>
             <section class="review-list" aria-label="Characters">
                 <ul id="review-characters"></ul>
@@ -86,6 +97,33 @@
                             anything.</li>
                     </ul>
                 </details>
+
+                <!-- CG10. Body detail: a second look, made from Forge's packet for this exact file. -->
+                <section class="review-detail-clearance" id="review-detail-clearance" aria-label="Body detail">
+                    <h3>Body detail clearance</h3>
+                    <p id="review-detail-state"></p>
+                    <ul class="review-needs" id="review-detail-missing"></ul>
+                    <div id="review-detail-work" hidden>
+                        <button type="button" class="secondary" id="review-packet-btn">Make the review packet</button>
+                        <details class="review-packet" id="review-packet" hidden>
+                            <summary>Review packet for this file</summary>
+                            <pre id="review-packet-text"></pre>
+                        </details>
+                        <form class="review-form" id="review-detail-form" hidden>
+                            <label>Your name <input id="review-detail-reviewer" autocomplete="name" maxlength="120" /></label>
+                            <label
+                                >What you looked at (the packet, the model from every side)
+                                <textarea id="review-detail-evidence" rows="4" maxlength="2000"></textarea>
+                                <small id="review-detail-count"></small>
+                            </label>
+                            <label class="review-check">
+                                <input type="checkbox" id="review-detail-examined" />
+                                I read this packet and looked at this rendered model myself, from every side.
+                            </label>
+                            <button type="submit" id="review-detail-submit" disabled>Record detail review</button>
+                        </form>
+                    </div>
+                </section>
 
                 <form class="review-form" id="review-form" hidden>
                     <fieldset>

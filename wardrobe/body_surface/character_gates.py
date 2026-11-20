@@ -287,8 +287,64 @@ def record_review(registry: Path, *, file: Path, sha256: str, outcome: str, revi
     return entry
 
 
+def record_detail_review(review_root: Path, *, file: Path, sha256: str, reviewer: str, evidence: str,
+                         date: str, packet: Path, examined: bool) -> dict:
+    """CG10. A person's detail review of these exact bytes, written once, beside the design finding.
+
+    Refuses: a SHA-256 that is not the file's; no clearly-adult design finding for these bytes (a
+    detail review adds to that finding, it never stands for one); a packet that is not Forge's for
+    this file; evidence shorter than ``DETAIL_EVIDENCE_CHARS``; a reviewer who did not state they
+    looked; and a second detail review for the same bytes.
+    """
+    import json
+
+    from wardrobe.body_surface.eligibility import (
+        DETAIL_EVIDENCE_CHARS,
+        DETAIL_REVIEWS_FILE,
+        DETAIL_REVIEWS_SCHEMA,
+    )
+
+    actual = hashlib.sha256(Path(file).read_bytes()).hexdigest()
+    if sha256 != actual:
+        raise ValueError(f"SHA-256 {sha256[:12]}… is not this file's ({actual[:12]}…)")
+    finding = design_review(review_root, actual)
+    if not finding or finding.get("outcome") != CLEARED:
+        raise ValueError("a detail review needs a clearly-adult design finding for these bytes first")
+    if not examined:
+        raise ValueError("confirm you looked at the packet and the rendered model yourself")
+    if not reviewer.strip() or not date.strip():
+        raise ValueError("reviewer and date are required")
+    if len(evidence.strip()) < DETAIL_EVIDENCE_CHARS:
+        raise ValueError(f"write at least {DETAIL_EVIDENCE_CHARS} characters of what you looked at")
+    recorded = json.loads(Path(packet).read_text(encoding="utf-8"))
+    if (recorded.get("file") or {}).get("sha256") != actual:
+        raise ValueError("the review packet is for a different file")
+    path = Path(review_root) / DETAIL_REVIEWS_FILE
+    entry = {"reviewer": reviewer.strip(), "date": date.strip(), "evidence": evidence.strip(),
+             "packet": str(packet), "examined": True}
+    with _REGISTRY_LOCK:
+        try:
+            content = json.loads(path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            content = {"schema": DETAIL_REVIEWS_SCHEMA, "reviews": {}}
+        reviews = content.setdefault("reviews", {})
+        if actual in reviews:
+            raise ValueError("a detail review is already recorded for these bytes; it is not replaced")
+        reviews[actual] = entry
+        fd, tmp = tempfile.mkstemp(prefix=".detail-", suffix=".json", dir=path.parent)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(json.dumps(content, indent=1, ensure_ascii=False) + "\n")
+            os.replace(tmp, path)
+        except BaseException:
+            Path(tmp).unlink(missing_ok=True)
+            raise
+    return entry
+
+
 #: One writer of a review registry at a time within this process (the API's worker threads).
 _REGISTRY_LOCK = threading.Lock()
 
 
-__all__ = ["CLEARED", "REVIEW_OUTCOMES", "measure_body_state", "record_review", "status"]
+__all__ = ["CLEARED", "REVIEW_OUTCOMES", "measure_body_state", "record_detail_review", "record_review",
+           "status"]

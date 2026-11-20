@@ -81,6 +81,10 @@ Rules that break things when missed:
   Each detailed bare look is listed separately (`plan: bare-<key>`); never collapse them.
 - **Detail needs clearance:** `eligibility.detail_clearance` needs a full review
   (packet + ≥40 chars of evidence) or the synthetic reference. Never loosen it.
+  CG10: the Studio's Review page (`/studio/review.html`) shows every character's
+  stage (needs review, needs detail review, cleared, blocked) and what is missing,
+  makes Forge's packet for the exact file, and records a person's detail review in
+  `adult-detail-reviews.json` beside the write-once design finding (both required).
 - Previews of explicit detail are private: never commit them, never serve them
   from a public route.
 

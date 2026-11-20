@@ -186,3 +186,39 @@ async def test_an_imported_bare_file_is_counted_by_the_field_the_list_writes(mon
 
     monkeypatch.setattr(reviews.prebuilt, "read_list", listed)
     assert await reviews._body_state_files(None, "mira") == 1
+
+
+DETAIL_EVIDENCE = "packet read; front, side and back looked at in the Studio, adult proportions throughout"
+
+
+def test_detail_needs_the_finding_the_packet_and_evidence_then_clears_once(env):
+    """CG10. Body detail opens only after a clearly-adult finding, Forge's packet for these exact
+    bytes, a person's statement that they looked, and 40+ characters of evidence — once."""
+    from wardrobe.body_surface.eligibility import detail_clearance
+
+    def detail(headers, **change):
+        body = {"sha256": env["sha"], "reviewer": "Test Person", "evidence": DETAIL_EVIDENCE, "examined": True,
+                **change}
+        return client.post("/v1/admin/reviews/mira/detail", headers=headers, json=body)
+
+    with env["client"]() as client:
+        assert client.post("/v1/admin/reviews/mira/packet").status_code == 401
+        headers = sign_in(client)
+        row = next(r for r in client.get("/v1/admin/reviews", headers=headers).json()["characters"])
+        assert row["detail"]["cleared"] is False and row["detail"]["missing"]
+        assert {"bareLooks", "detailedLooks", "thumbnails", "packetReady"} <= set(row)
+        # No design finding yet: no detail review, packet or not.
+        assert client.post("/v1/admin/reviews/mira/packet", headers=headers).status_code == 200
+        assert detail(headers).status_code == 409
+        assert client.post("/v1/admin/reviews/mira", headers=headers, json=finding(env["sha"])).status_code == 201
+        assert detail(headers, evidence="looked").status_code == 409  # under 40 characters
+        assert detail(headers, examined=False).status_code == 409
+        assert detail(headers, sha256="0" * 64).status_code == 409
+        made = client.post("/v1/admin/reviews/mira/packet", headers=headers).json()
+        assert made["packet"]["file"]["sha256"] == env["sha"]
+        assert made["packet"]["file"]["path"] == "library:mira"  # no server path
+        ok = detail(headers)
+        assert ok.status_code == 201, ok.text
+        assert ok.json()["character"]["detail"]["cleared"] is True
+        assert detail(headers, reviewer="Someone Else").status_code == 409  # write-once
+    assert detail_clearance(env["registry"].parent, "/nonexistent", env["sha"]) is not None
