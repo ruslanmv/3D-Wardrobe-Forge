@@ -26,7 +26,9 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   ask the owner to run Deploy, or Prebuild wardrobe (`missing_only` on, `overwrite` off;
   `private_looks` for BD21 in a second run with `only` set to `none`).
 - **After any deploy:** `.venv/bin/python tools/qa/space_smoke.py` (routes, gates refuse a
-  guest, no Private to a guest, warm timings) and `node tools/qa/studio_shot.cjs --out <scratch>`
+  guest, no Private to a guest, warm timings), `FORGE_GRANT=… .venv/bin/python tools/qa/grant_check.py`
+  (what the companion's read grant opens — body catalogue, After Dark, After Dark · Bare — and that
+  a guest gets none of it; the grant from the environment only) and `node tools/qa/studio_shot.cjs --out <scratch>`
   (the Collections browser, desktop and phone; `--admin-token-file` for the admin view). Look at
   the frames. The registry's first call after a restart is ~18 s (cold), then ~0.3 s.
 - **Populate the dataset from a session** (when the Prebuild workflow cannot be started):
@@ -67,7 +69,7 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
 | Erotic outfits, partial undress            | `wardrobe/body_surface/outfit_dictionary.py`, `docs/qa/EROTIC_SETS.md` |
 | What a client is told (BD21): each bare look's `body`, the catalogue | `JobOptions.body_summary`, `GET /v1/body-surface/catalog` (admin or grant) |
 | Private categories + body thumbnails (WS3) | `classify.PRIVATE_CATEGORIES`, `wardrobe/registry/body_previews.py`, `tools/render_body_previews.py` (`docs/WARDROBE_REGISTRY.md`) |
-| After Dark · Bare: 24 named bare looks (AB1) | `assets/body_detail/bare_looks.json`, `wardrobe/registry/bare_looks.py`; collections `ad-bare*`; the Studio's After Dark ▸ 🔞 Bare (`docs/WARDROBE_REGISTRY.md`) |
+| After Dark · Bare: 24 named bare looks (AB1) | `assets/body_detail/bare_looks.json`, `wardrobe/registry/bare_looks.py`; collections `ad-bare*`; the Studio's After Dark ▸ 🔞 Bare (`docs/WARDROBE_REGISTRY.md`); all 24 in one sheet: `tools/body_surface/bare_looks_sheet.py --base <ref-atlas.vrm> --out <scratch>/x.png` |
 | Make every private look for every character (BD21) | `tools/prebuild_private.py` (packs of ≤10 states covering all, extras sets); in CI: Prebuild wardrobe ▸ `private_looks` |
 | Full notes                                 | `docs/qa/BARE_DETAIL.md` (read before changing the painter)         |
 
