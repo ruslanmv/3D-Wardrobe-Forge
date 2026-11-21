@@ -86,7 +86,7 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
 | Erotic outfits, partial undress            | `wardrobe/body_surface/outfit_dictionary.py`, `docs/qa/EROTIC_SETS.md` |
 | What a client is told (BD21): each bare look's `body`, the catalogue | `JobOptions.body_summary`, `GET /v1/body-surface/catalog` (admin or grant) |
 | Private categories + body thumbnails (WS3) | `classify.PRIVATE_CATEGORIES`, `wardrobe/registry/body_previews.py`, `tools/render_body_previews.py` (`docs/WARDROBE_REGISTRY.md`) |
-| After Dark · Bare: 24 named bare looks (AB1) | `assets/body_detail/bare_looks.json`, `wardrobe/registry/bare_looks.py`; collections `ad-bare*`; the Studio's After Dark ▸ 🔞 Bare (`docs/WARDROBE_REGISTRY.md`); all 24 in one sheet: `tools/body_surface/bare_looks_sheet.py --base <ref-atlas.vrm> --out <scratch>/x.png` |
+| After Dark · Bare: 26 named bare looks (AB1, BD24 vivid) | `assets/body_detail/bare_looks.json`, `wardrobe/registry/bare_looks.py`; collections `ad-bare*`; the Studio's After Dark ▸ 🔞 Bare (`docs/WARDROBE_REGISTRY.md`); all 26 in one sheet: `tools/body_surface/bare_looks_sheet.py --base <ref-atlas.vrm> --out <scratch>/x.png` |
 | Make every private look for every character (BD21) | `tools/prebuild_private.py` (packs of ≤10 states covering all, extras sets); in CI: Prebuild wardrobe ▸ `private_looks` |
 | Full notes                                 | `docs/qa/BARE_DETAIL.md` (read before changing the painter)         |
 
