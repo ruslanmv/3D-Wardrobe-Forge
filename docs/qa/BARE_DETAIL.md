@@ -477,3 +477,36 @@ before and after: closed, relaxed open, and after the fist.
 - To tune a preset, change `presets.json`, rebuild that preset with `--base`, and
   render it. Change the anatomy fields in `body_detail.py` (`_pelvis`, `_height`,
   `_hair`) and run `tests/unit/test_body_detail.py`.
+- **Anatomy probe (seconds, a real body):** `tools/body_surface/anatomy_probe.py`
+  `landmarks` (is her crotch on her midline seam?), `mesh` (vertices, bones and
+  facing round her anus), `midline` (her skin along the midline), `layers`
+  (paint landing below her crotch, off her midline, or on thigh-moved skin).
+- **One exact pack in the chatbot, nothing published:** `tools/qa/verify_pack.sh`
+  (local Forge with `WARDROBE_HF_PUBLISH=false`, the look worn by id and hash),
+  then `tools/qa/compare_frames.py` for before/after from the same camera.
+
+## The thigh bands and the open ring (BD24–BD29)
+
+What Avatar A's red bands down her inner thighs (Step 5 rear views, all fours,
+face down, bent over) turned out to be, in the order it was learned:
+
+1. **BD24** masked anus paint below her crotch: thinner bands, still there.
+2. **BD26** guarded skin her thighs move (skin weights, `_thigh_keep`): measured
+   on her skin, the remaining red sat on skin 1-2 cm beside the anus that the
+   thighs move 50-90%; bending the legs stretched it.
+3. **BD27** drew every anus layer inside a compact patch (`_anus_patch`, ~3 cm):
+   thighs clear, but the anus vanished.
+4. **BD28** added a new kind, the open ring after a fist (`anusRing`, states
+   `doggy-anal-ring`, `-ring-cum`, `doggy-both-ring-cum`, pack `ring`): nothing
+   showed. `anatomy_probe.py midline` found no skin where its centre was drawn.
+5. **BD29, the cause:** `find_landmarks` took the lowest point within ~1 cm of
+   her axis as her crotch. Where a VRoid body's thighs meet near the midline
+   (Avatar A), that is a thigh's inner edge, 4 cm under her real crotch (B 1.3,
+   fem 1.6, masc 1.8 cm). Every anatomy distance was measured from under her
+   body. The crotch is now the lowest vertex on the mesh's exact seam. With it
+   the ring's centre and rim land on skin her hips move (thigh share ~0.01) and
+   no mask has to cut anything.
+
+Lessons: measure the body before changing the paint; a test on a synthetic body
+cannot show a landmark that is wrong on a real one; every look painted before
+BD29 has its anatomy lower than it should be and needs repainting, front and back.
