@@ -106,7 +106,7 @@ for slug in $SLUGS; do
 
   if has behind; then
     .venv/bin/python tools/prebuild_private.py $B --presets "$PRESETS" --groups "$BEHIND_GROUPS" \
-      --extras-sets none --bare-looks none --report "$WORK/report-$slug-behind.json"
+      --extras-sets none --bare-looks none --job-timeout "${JOB_TIMEOUT:-3600}" --report "$WORK/report-$slug-behind.json"
     publish "$slug" "behind packs"
     file=$(avatar_file "$slug")
     if [ "$RENDER" = 1 ] && [ -n "$file" ] && [ -d "$CHATBOT" ]; then
@@ -123,7 +123,7 @@ for slug in $SLUGS; do
     fi
   fi
   if has private && [ ! -f "$WORK/.stop" ]; then
-    .venv/bin/python tools/prebuild_private.py $B --presets "$PRESETS" --groups "$REST_GROUPS" \
+    .venv/bin/python tools/prebuild_private.py $B --presets "$PRESETS" --groups "$REST_GROUPS" --job-timeout "${JOB_TIMEOUT:-3600}" \
       --report "$WORK/report-$slug-private.json"
     publish "$slug" "private looks"
   fi
