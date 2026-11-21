@@ -51,3 +51,27 @@ def test_bd23_classic_preset_keeps_the_soft_look_from_before():
     creases, pigment = BD._anus_folds(angle, np.full_like(angle, 0.5), 0.0, BD._anus_detail(presets["classic"]))
     assert creases.max() == 0 and pigment.max() == 0
     assert BD._anus_detail(presets["natural"]) == 1.0
+
+
+def test_bd24_anus_layers_stay_off_her_inner_thighs():
+    # BD24. Her inner thigh, just below the crotch, sits at the same side-view distance as her
+    # anus; a gaped anus painted there as dark streaks. The mask keeps behind-and-above, drops below.
+    from types import SimpleNamespace
+
+    import numpy as np
+
+    from wardrobe.vrm import body_detail as BD
+
+    marks = SimpleNamespace(crotch=np.array([0.0, 0.80, 0.0]))
+    where = np.array([[0.0, 0.81, -0.03], [0.0, 0.80, -0.03], [0.03, 0.775, -0.01], [0.03, 0.74, 0.0]])
+    m = BD._behind_mask(where, marks, 1.0)
+    assert m[0] == 1.0 and m[1] == 1.0  # at and above the crotch: her anus
+    assert m[2] == 0.0 and m[3] == 0.0  # below it: her inner thighs
+
+
+def test_bd24_a_bottle_gape_adds_little_width_past_a_fist():
+    from wardrobe.vrm import body_detail as BD
+
+    fist = BD._anus_radius({"anusOpen": 1.5, "anusGape": 1.0}, 1.0)
+    bottle = BD._anus_radius({"anusOpen": 1.5, "anusGape": 1.5}, 1.0)
+    assert fist < bottle < fist * 1.1

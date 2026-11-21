@@ -49,6 +49,12 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   watchdog stopping under 3 GB disk / 1.5 GB memory. Needs `pip install -e ".[hf]"` and
   `tools/fetch_library.py`. Run it detached (`setsid nohup … &`) and watch the log: a character
   takes hours. The token lives only in the environment — never a file, commit or log.
+- **Every private look and After Dark outfit, rendered from behind** (PV1):
+  `HF_TOKEN=… tools/populate_private.sh [slugs]` — per character a fresh Forge builds the
+  from-behind packs (doggy, back, fist, gape, core), publishes them, renders her in the chatbot
+  (all fours, face down, bent over; frames in `$WORK/renders/<slug>/sheet.png`, never
+  committed), then the rest of her private set and the outfit dictionary, each published as it
+  lands. `PHASES=behind` for the from-behind packs only; `RENDER=0` for no frames.
 - Local Forge for the Studio: `WARDROBE_ADMIN_PASSWORD=<random> WARDROBE_STORAGE_ROOT=<scratch>
   .venv/bin/python -m uvicorn apps.api.main:app --port 8091`, then `POST /v1/admin/session`
   for a token kept in an owner-only scratch file, deleted when done.
@@ -80,7 +86,7 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
 | Erotic outfits, partial undress            | `wardrobe/body_surface/outfit_dictionary.py`, `docs/qa/EROTIC_SETS.md` |
 | What a client is told (BD21): each bare look's `body`, the catalogue | `JobOptions.body_summary`, `GET /v1/body-surface/catalog` (admin or grant) |
 | Private categories + body thumbnails (WS3) | `classify.PRIVATE_CATEGORIES`, `wardrobe/registry/body_previews.py`, `tools/render_body_previews.py` (`docs/WARDROBE_REGISTRY.md`) |
-| After Dark · Bare: 24 named bare looks (AB1) | `assets/body_detail/bare_looks.json`, `wardrobe/registry/bare_looks.py`; collections `ad-bare*`; the Studio's After Dark ▸ 🔞 Bare (`docs/WARDROBE_REGISTRY.md`); all 24 in one sheet: `tools/body_surface/bare_looks_sheet.py --base <ref-atlas.vrm> --out <scratch>/x.png` |
+| After Dark · Bare: 26 named bare looks (AB1, BD24 vivid) | `assets/body_detail/bare_looks.json`, `wardrobe/registry/bare_looks.py`; collections `ad-bare*`; the Studio's After Dark ▸ 🔞 Bare (`docs/WARDROBE_REGISTRY.md`); all 26 in one sheet: `tools/body_surface/bare_looks_sheet.py --base <ref-atlas.vrm> --out <scratch>/x.png` |
 | Make every private look for every character (BD21) | `tools/prebuild_private.py` (packs of ≤10 states covering all, extras sets); in CI: Prebuild wardrobe ▸ `private_looks` |
 | Full notes                                 | `docs/qa/BARE_DETAIL.md` (read before changing the painter)         |
 

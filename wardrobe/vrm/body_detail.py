@@ -466,6 +466,7 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
     layers.append((spec.get("majoraTint", [0.88, 0.70, 0.68]), raphe * 0.5))
 
     # Anus: a puckered ring — radial folds darkening in to a closed centre.
+    first_anus_layer = len(layers)
     ra = _anus_radius(spec, s)
     gape = _gape(spec)
     au, at = u, t + per
@@ -475,7 +476,7 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
     folds = 0.82 + 0.18 * (1.0 - 0.7 * anus_open) * np.cos(14 * angle + 0.6 * np.sin(5 * angle))
     # BD23. The darker, browner skin round her anus first, wider than the ring itself.
     anus_detail = _anus_detail(spec)
-    creases, pigment = _anus_folds(angle, ar, anus_open, anus_detail)
+    creases, pigment = _anus_folds(angle, ar, anus_open, anus_detail, gape)
     layers.append((spec.get("perianalTint", [0.78, 0.62, 0.58]), pigment * 0.55))
     ring = (1.0 - _smoothstep(0.35, 1.0, ar)) * (0.6 + 0.4 * folds * np.clip(ar * 1.6, 0, 1))
     layers.append((spec.get("anusTint", [0.80, 0.64, 0.62]), ring * 0.85))
@@ -494,12 +495,13 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
         # flushed red, its inner walls show pink and wet, and its centre is dark depth, so it reads
         # clearly from behind on all fours.
         hole = 0.42 + 0.18 * gape
-        rim = np.exp(-((ar - (hole + 0.2)) / 0.13) ** 2)
+        # BD24. Narrower, with a hard outer edge: the rim stays a rim, never a wash over her skin.
+        rim = np.exp(-((ar - (hole + 0.18)) / 0.1) ** 2) * (1.0 - _smoothstep(hole + 0.3, hole + 0.45, ar))
         walls = _smoothstep(hole * 0.7, hole, ar) * (1.0 - _smoothstep(hole, hole + 0.12, ar))
-        layers.append(([0.92, 0.6, 0.62], rim * 0.8 * gape))  # swollen, flushed rim
+        layers.append(([0.92, 0.6, 0.62], rim * 0.8 * min(gape, 1.0)))  # swollen, flushed rim (BD24: capped)
         wet = np.exp(-((ar - (hole + 0.24)) / 0.05) ** 2)
         layers.append(([1.1, 1.04, 1.05], wet * 0.45 * gape))  # wet edge
-        layers.append(([0.86, 0.5, 0.54], walls * 0.85 * gape))  # her inner walls
+        layers.append(([0.86, 0.5, 0.54], walls * 0.85 * min(gape, 1.0)))  # her inner walls (BD24: capped)
         depth = 1.0 - _smoothstep(hole * 0.5, hole * 0.92, ar)
         layers.append(([0.3, 0.2, 0.22], depth * 0.95 * min(gape, 1.0)))  # dark depth
         wreck = _wreck(spec)
@@ -507,12 +509,19 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
             # BD22. Wrecked: the rim puffs up thick in lobes, deep red; the walls glisten; the
             # centre goes darker and wider. Swelling, redness and wetness — never a tear or blood.
             lobes = 1.0 + 0.45 * np.cos(6 * angle + 0.8 * np.sin(3 * angle))
-            puff = np.exp(-((ar - (hole + 0.24)) / (0.16 + 0.1 * wreck)) ** 2) * lobes
-            layers.append(([0.88, 0.42, 0.46], np.clip(puff, 0, 1) * 0.85 * wreck))
+            # BD24. A swollen, flushed pink, held to a narrow rim with a hard outer edge. The rim
+            # was a saturated red as wide as the gape, and on Avatar A it ran down the crease onto
+            # her inner thighs as dark red streaks that read as blood (render, 2026-11-21).
+            edge = 1.0 - _smoothstep(hole + 0.32, hole + 0.48, ar)
+            puff = np.exp(-((ar - (hole + 0.2)) / 0.12) ** 2) * lobes * edge
+            layers.append(([0.94, 0.64, 0.66], np.clip(puff, 0, 1) * 0.7 * wreck))
             gloss = np.exp(-((ar - hole * 0.86) / 0.05) ** 2)
             layers.append(([1.08, 1.04, 1.06], gloss * 0.55 * wreck))
             layers.append(([0.16, 0.09, 0.11], (1.0 - _smoothstep(hole * 0.3, hole * 0.75, ar)) * wreck))
 
+    # BD24. Every anus layer stays off her inner thighs (``_behind_mask``).
+    behind = _behind_mask(where, marks, s)
+    layers[first_anus_layer:] = [(tint, weight * behind) for tint, weight in layers[first_anus_layer:]]
     hair = _hair(u, np.where(in_front, t, -1.0), in_front, L, spec, s)
     return layers, hair
 
@@ -558,7 +567,7 @@ def _anus_detail(spec: dict) -> float:
     return float(np.clip(float(spec.get("anusDetail", 1.0)), 0.0, 1.0))
 
 
-def _anus_folds(angle, ar, anus_open: float, detail: float = 1.0):
+def _anus_folds(angle, ar, anus_open: float, detail: float = 1.0, gape: float = 0.0):
     """BD23. Her anus in detail: the radial creases of a puckered ring and the darker skin round it.
 
     Returns ``(creases, pigment)``, both 0..1 per point. Eighteen creases of uneven depth (a few run
@@ -567,20 +576,32 @@ def _anus_folds(angle, ar, anus_open: float, detail: float = 1.0):
     folds. One source for the colour (``_pelvis``) and the relief (``_height``), so a crease is
     where its shadow is.
     """
-    flatten = 1.0 - 0.75 * anus_open
+    # BD24. ``ar`` is measured against her anus radius, which grows to 3.5x with a bottle gape
+    # (``_anus_radius``). Sized by it, the creases ran ~3 cm out and the dark ring ~3.6 cm, down
+    # her crease onto her thighs as dark red streaks (Avatar A, 2026-11-21). A gape stretches the
+    # folds away, so the creases go with it; the ring is measured at her un-gaped size. Clamped:
+    # at anusOpen 1.5 the old ``1 - 0.75 * open`` went below zero and painted the creases inverted.
+    g = float(np.clip(gape, 0.0, 1.5))
+    grow = (1.0 + 0.35 * anus_open + 1.3 * g) / (1.0 + 0.35 * anus_open)
+    flatten = float(np.clip(1.0 - 0.75 * anus_open, 0.0, 1.0)) * (1.0 - min(g, 1.0))
     wobble = angle + 0.08 * np.sin(5 * angle) + 0.05 * np.sin(11 * angle + 1.3)
     depth = 0.65 + 0.35 * np.cos(7 * angle + 0.9) ** 2  # some creases deeper than others
     lines = np.clip(np.cos(18 * wobble), 0.0, 1.0) ** 6 * depth
     reach = (1.0 - _smoothstep(0.25, 1.05 + 0.25 * depth, ar)) * _smoothstep(0.05, 0.22, ar)
     creases = lines * reach * flatten * detail
-    pigment = (1.0 - _smoothstep(0.55, 1.6, ar)) * detail
+    pigment = (1.0 - _smoothstep(0.55, 1.6, ar * grow)) * detail
     return creases, pigment
 
 
 def _anus_radius(spec: dict, s: float) -> float:
     """Her anus: wider relaxed open (BD4); after fisting it gapes to more than twice that (BD16)."""
     _, _, anus_open = _state(spec)
-    return float(spec.get("anusRadius", 0.0065)) * s * (1.0 + 0.35 * anus_open + 1.3 * _gape(spec))
+    # BD24. A fist gape (to 1) widens it as before; past a fist (a bottle, to 1.5) it adds only a
+    # little more width (its rim swells and its centre deepens instead, ``_wreck``). Growing at the
+    # full rate to 3.5x put the rim ~2.5 cm out, across a slim body's crease onto her thighs.
+    g = _gape(spec)
+    grow = 1.3 * min(g, 1.0) + 0.4 * max(g - 1.0, 0.0)
+    return float(spec.get("anusRadius", 0.0065)) * s * (1.0 + 0.35 * anus_open + grow)
 
 
 def _majora_width(spec: dict, s: float) -> float:
@@ -619,6 +640,19 @@ def _flushed(tint, arousal: float) -> list[float]:
     """BD4. A tint flushed towards red as she is aroused (blood in the tissue)."""
     base = np.asarray(tint, dtype=np.float64)
     return list(base * (1.0 - arousal) + base * np.array([1.0, 0.86, 0.88]) * arousal)
+
+
+def _behind_mask(where: np.ndarray, marks: Landmarks, s: float) -> np.ndarray:
+    """BD24. 1 where her anus may be painted, fading to 0 just below her crotch.
+
+    ``_coords`` measures ``t`` in the side-view plane through her crotch and ignores how far down
+    her leg a point is, so a point on her inner thigh a few centimetres below the crotch sits at
+    the same "distance" as her anus. Anything centred on the anus wider than ~2 cm then also
+    painted her inner thighs — in lines down the leg crease, which on Avatar A's gaped states read
+    as dark red streaks (render, 2026-11-21). Her anus lies behind and above the crotch point; her
+    thighs fall away below it.
+    """
+    return _smoothstep(marks.crotch[1] - 0.012 * s, marks.crotch[1] - 0.004 * s, where[:, 1])
 
 
 def _coords(where: np.ndarray, marks: Landmarks, s: float):
@@ -747,25 +781,31 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.nda
     hood_t = 0.76 * L + 0.6 * rc + 0.004 * s
     hood = np.sqrt((u / (0.0045 * s)) ** 2 + ((t - hood_t) / (0.0055 * s)) ** 2)
     h += 0.0014 * k * np.clip(1.0 - hood, 0.0, 1.0) ** 0.7
+    before_anus = h.copy()  # BD24. the anus relief is masked off her thighs, as its colour
     per, ra = g("perineum", 0.032), _anus_radius(spec, s)
     ar = np.sqrt(u ** 2 + (t + per) ** 2) / ra
     gape = _gape(spec)
     if gape > 0:  # BD16. a deep round hole, a swollen rim standing round it
         hole = 0.42 + 0.18 * gape
         h -= 0.006 * k * gape * (1.0 - _smoothstep(0.0, hole, ar)) ** 1.5
-        h += 0.0012 * k * gape * np.exp(-((ar - (hole + 0.2)) / 0.13) ** 2)
+        # BD24. The same rim the colour paints.
+        h += 0.0012 * k * min(gape, 1.0) * np.exp(-((ar - (hole + 0.18)) / 0.1) ** 2) \
+            * (1.0 - _smoothstep(hole + 0.3, hole + 0.45, ar))
         wreck = _wreck(spec)
         if wreck > 0:  # BD22. the puffed, lobed rim stands out; the centre goes deeper
             ang = np.arctan2(t + per, u)
             lobes = 1.0 + 0.45 * np.cos(6 * ang + 0.8 * np.sin(3 * ang))
-            h += 0.0018 * k * wreck * lobes * np.exp(-((ar - (hole + 0.24)) / (0.16 + 0.1 * wreck)) ** 2)
+            # BD24. The same narrow rim the colour paints (see _pelvis), so colour and relief agree.
+            edge = 1.0 - _smoothstep(hole + 0.32, hole + 0.48, ar)
+            h += 0.0018 * k * wreck * lobes * np.exp(-((ar - (hole + 0.2)) / 0.12) ** 2) * edge
             h -= 0.003 * k * wreck * (1.0 - _smoothstep(0.0, hole * 0.75, ar)) ** 1.5
     angle = np.arctan2(t + per, u)
     h -= 0.0032 * k * (1.0 + 1.8 * anus_open) * (1.0 - _smoothstep(0.0, 0.9, ar)) ** 2
     h += 0.0005 * k * (1.0 - 0.7 * anus_open) * np.cos(14 * angle + 0.6 * np.sin(5 * angle)) \
         * (1.0 - _smoothstep(0.3, 1.1, ar)) * _smoothstep(0.1, 0.35, ar)
-    creases, _ = _anus_folds(angle, ar, anus_open, _anus_detail(spec))
+    creases, _ = _anus_folds(angle, ar, anus_open, _anus_detail(spec), _gape(spec))
     h -= 0.0009 * k * creases  # BD23. each crease cut in, so it catches the light
+    h = before_anus + (h - before_anus) * _behind_mask(where, marks, s)
     hair = _hair(u, np.where(in_front, t, -1.0), in_front, L, spec, s)
     if hair is not None:
         h += 0.00035 * k * hair[0]

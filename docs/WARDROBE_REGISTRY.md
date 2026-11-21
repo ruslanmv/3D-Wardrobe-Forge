@@ -121,7 +121,7 @@ reviews them (`tools/body_surface/review_packet.py`, then the review record).
 
 After Dark is an occasion, and occasions list outfit dictionary ids only, so its bare looks live
 in the registry's private side, where body items already are. `assets/body_detail/bare_looks.json`
-holds 24 named looks in seven chapters of an evening: Ready, On the Edge, Filled, Covered,
+holds 26 named looks (two in the BD24 vivid presets) in seven chapters of an evening: Ready, On the Edge, Filled, Covered,
 Stretched, Marked and Ruined. Each look is one skin preset, one state and at most four extras.
 
 - **Loading.** `wardrobe/registry/bare_looks.py` loads the file and checks every look against
