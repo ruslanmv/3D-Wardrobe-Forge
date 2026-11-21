@@ -267,6 +267,9 @@ def record_review(registry: Path, *, file: Path, sha256: str, outcome: str, revi
     # or replaced one for the same bytes, against the write-once rule. The file is replaced
     # atomically, so a reader never sees half a registry.
     with _REGISTRY_LOCK:
+        from wardrobe.body_surface.review_files import normalize
+
+        normalize(path.parent)  # RX2. an export committed here becomes the registry first
         content = json.loads(path.read_text(encoding="utf-8"))
         reviews = content.setdefault("reviews", {})
         if actual in reviews:
@@ -323,6 +326,9 @@ def record_detail_review(review_root: Path, *, file: Path, sha256: str, reviewer
     entry = {"reviewer": reviewer.strip(), "date": date.strip(), "evidence": evidence.strip(),
              "packet": str(packet), "examined": True}
     with _REGISTRY_LOCK:
+        from wardrobe.body_surface.review_files import normalize
+
+        normalize(path.parent)  # RX2. an export committed here becomes the registries first
         try:
             content = json.loads(path.read_text(encoding="utf-8"))
         except FileNotFoundError:

@@ -49,6 +49,9 @@ def merge(export: dict, root: Path) -> dict:
 
     if export.get("schema") != "wardrobe.reviews.export.v1":
         raise ValueError("not a Forge review export (schema wardrobe.reviews.export.v1)")
+    from wardrobe.body_surface.review_files import normalize
+
+    normalize(root)  # RX2. an export committed over a registry becomes the registries first
     out = {"design": [], "detail": [], "kept": [], "refused": []}
     design_path, detail_path = root / DESIGN_FILE, root / DETAIL_REVIEWS_FILE
     here_design = load(design_path, (export.get("designReviews") or {}).get("schema", ""))

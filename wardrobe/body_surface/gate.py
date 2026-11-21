@@ -56,16 +56,13 @@ def design_review(root, source_sha256: str | None) -> dict | None:
     reviewed VRM's bytes, so it belongs to the file that was looked at: a caller cannot send it, and
     an edited or swapped file is not covered. Unreadable or incomplete records count as no review.
     """
-    import json
-    from pathlib import Path
 
     if not source_sha256:
         return None
-    try:
-        data = json.loads((Path(root) / "adult-design-reviews.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if data.get("schema") != REVIEWS_SCHEMA:
+    from wardrobe.body_surface.review_files import design_registry
+
+    data = design_registry(root)  # RX2. the registry, or an export committed in its place
+    if not data or data.get("schema") != REVIEWS_SCHEMA:
         return None
     review = (data.get("reviews") or {}).get(source_sha256)
     if not isinstance(review, dict) or any(not review.get(k) for k in REVIEW_FIELDS):
