@@ -42,3 +42,12 @@ def test_bd23_anus_creases_flatten_as_she_opens_and_colour_and_relief_share_them
     # Far out, neither: the detail stays on her anus.
     far, far_pigment = BD._anus_folds(angle, np.full_like(angle, 2.0), 0.0)
     assert far.max() == 0 and far_pigment.max() == 0
+
+
+def test_bd23_classic_preset_keeps_the_soft_look_from_before():
+    presets = BD.load_presets()
+    assert presets["classic"]["anusDetail"] == 0
+    angle = np.linspace(-np.pi, np.pi, 360)
+    creases, pigment = BD._anus_folds(angle, np.full_like(angle, 0.5), 0.0, BD._anus_detail(presets["classic"]))
+    assert creases.max() == 0 and pigment.max() == 0
+    assert BD._anus_detail(presets["natural"]) == 1.0

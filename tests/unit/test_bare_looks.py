@@ -18,7 +18,7 @@ def test_every_written_look_is_one_forge_can_paint():
 def test_every_chapter_has_looks_and_every_preset_is_used():
     looks = RAW["looks"].values()
     assert {c["id"] for c in RAW["chapters"]} == {v["chapter"] for v in looks}
-    presets = set(json.loads((ROOT / "presets.json").read_text())["presets"]) - {"porcelain", "anime"}
+    presets = set(json.loads((ROOT / "presets.json").read_text())["presets"]) - {"porcelain", "anime", "classic"}
     assert presets <= {v["preset"] for v in looks}
 
 
