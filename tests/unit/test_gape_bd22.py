@@ -74,7 +74,9 @@ def test_bd24_a_bottle_gape_adds_little_width_past_a_fist():
 
     fist = BD._anus_radius({"anusOpen": 1.5, "anusGape": 1.0}, 1.0)
     bottle = BD._anus_radius({"anusOpen": 1.5, "anusGape": 1.5}, 1.0)
-    assert fist < bottle < fist * 1.1
+    assert fist <= bottle < fist * 1.1
+    # BD27. Neither gape's rim (~1.2 radii) reaches past her patch's solid core.
+    assert bottle * 1.2 <= BD.ANUS_RIM_LIMIT + 1e-9 <= BD.ANUS_PATCH[0]
 
 
 def test_bd26_the_anus_is_never_painted_on_skin_her_thighs_move():
@@ -109,3 +111,24 @@ def test_bd26_only_the_anus_layers_are_protected_never_her_vulva():
         a, b = weights(free[i]), weights(thigh[i])
         assert np.allclose(a[front], b[front]), f"layer {i} changed her vulva"
         assert (b <= a + 1e-9).all()  # protection only ever takes paint away
+
+
+def test_bd27_every_anus_layer_stays_inside_her_compact_patch():
+    from types import SimpleNamespace
+
+    from wardrobe.vrm import body_detail as BD
+
+    marks = SimpleNamespace(crotch=np.array([0.0, 0.80, 0.0]), forward=1.0)
+    spec = {**BD.load_presets()["natural"], "anusOpen": 1.5, "anusGape": 1.5}
+    per = spec["perineum"]
+    # Points on her midline behind the crotch, and 2 cm to her side of the anus (where the bands were).
+    centre = np.array([[0.0, 0.80 + 0.01, -per]])
+    beside = np.array([[0.02, 0.80 + 0.01, -per]])
+    where = np.vstack([centre, beside])
+    layers, _ = BD._pelvis(where, marks, spec, 1.0)
+    side = sum(float(np.broadcast_to(np.asarray(w, float), (2,))[1]) for _, w in layers[-14:])
+    middle = sum(float(np.broadcast_to(np.asarray(w, float), (2,))[0]) for _, w in layers[-14:])
+    assert middle > 0.5  # her anus is drawn
+    assert side < 1e-6  # nothing of it 2 cm out
+    patch = BD._anus_patch(np.array([0.0, 0.012, 0.02]), np.full(3, -per), spec, 1.0)
+    assert patch[0] == 1.0 and 0.0 < patch[1] < 1.0 and patch[2] == 0.0  # solid, feathered, gone

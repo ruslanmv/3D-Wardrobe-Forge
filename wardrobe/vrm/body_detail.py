@@ -523,7 +523,7 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float, keep: np.
 
     # BD24. Every anus layer stays off her inner thighs (``_behind_mask``); BD26, and off the skin
     # beside it that her thighs move (``_thigh_keep``), which bending her legs stretched into bands.
-    behind = _behind_mask(where, marks, s)
+    behind = _behind_mask(where, marks, s) * _anus_patch(u, t, spec, s)  # BD27
     if keep is not None:
         behind = behind * keep
     layers[first_anus_layer:] = [(tint, weight * behind) for tint, weight in layers[first_anus_layer:]]
@@ -598,6 +598,29 @@ def _anus_folds(angle, ar, anus_open: float, detail: float = 1.0, gape: float = 
     return creases, pigment
 
 
+#: BD27. Her anus patch, metres at 1.63 m: solid to the first radius, feathered out to the second.
+#: About 3 cm across with its skin, as a real anus at rest reads (owner's reference, 2026-11-21).
+ANUS_PATCH = (0.011, 0.016)
+#: BD27. How far out the swollen rim of a gape may reach: inside the patch's solid core.
+ANUS_RIM_LIMIT = 0.0105
+
+
+def _anus_patch(u: np.ndarray, t: np.ndarray, spec: dict, s: float) -> np.ndarray:
+    """BD27. 1 on the compact patch of pelvis skin her anus is drawn on, feathering to 0 at its edge.
+
+    Why (Avatar A's bottle pack rebuilt on BD24, Step 5 rear views, 2026-11-21): BD24's height
+    mask removed the paint below her crotch, but a gape still spread its red rim and walls ~2 cm
+    out, onto skin beside the anus that her thighs move; bending her legs stretched it into bands
+    down both inner thighs. Every anus layer, colour and relief alike, is drawn only inside this
+    patch (with BD24's mask and BD26's thigh guard as backups), so it stays on her pelvis however
+    her legs move, and a strip of plain skin stays between it and her vulva.
+    """
+    per = float(spec.get("perineum", 0.032)) * s
+    d = np.sqrt(u ** 2 + (t + per) ** 2)
+    inner, outer = ANUS_PATCH[0] * s, ANUS_PATCH[1] * s
+    return 1.0 - _smoothstep(inner, outer, d)
+
+
 def _anus_radius(spec: dict, s: float) -> float:
     """Her anus: wider relaxed open (BD4); after fisting it gapes to more than twice that (BD16)."""
     _, _, anus_open = _state(spec)
@@ -606,7 +629,10 @@ def _anus_radius(spec: dict, s: float) -> float:
     # full rate to 3.5x put the rim ~2.5 cm out, across a slim body's crease onto her thighs.
     g = _gape(spec)
     grow = 1.3 * min(g, 1.0) + 0.4 * max(g - 1.0, 0.0)
-    return float(spec.get("anusRadius", 0.0065)) * s * (1.0 + 0.35 * anus_open + grow)
+    radius = float(spec.get("anusRadius", 0.0065)) * s * (1.0 + 0.35 * anus_open + grow)
+    # BD27. A gape is deeper and darker, never wider than her patch (``_anus_patch``): its swollen
+    # rim, at ~1.2 radii, ends inside the patch's solid core, so nothing is cut at the feather.
+    return min(radius, ANUS_RIM_LIMIT * s / 1.2)
 
 
 def _majora_width(spec: dict, s: float) -> float:
@@ -811,7 +837,7 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float,
         * (1.0 - _smoothstep(0.3, 1.1, ar)) * _smoothstep(0.1, 0.35, ar)
     creases, _ = _anus_folds(angle, ar, anus_open, _anus_detail(spec), _gape(spec))
     h -= 0.0009 * k * creases  # BD23. each crease cut in, so it catches the light
-    mask = _behind_mask(where, marks, s)
+    mask = _behind_mask(where, marks, s) * _anus_patch(u, t, spec, s)  # BD27: the colour's boundary
     if keep is not None:
         mask = mask * keep  # BD26
     h = before_anus + (h - before_anus) * mask
