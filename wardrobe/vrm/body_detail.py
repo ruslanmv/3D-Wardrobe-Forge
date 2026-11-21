@@ -73,6 +73,7 @@ MAX_CROTCH_LIFT = 0.04
 STATES_PATH = PRESETS_PATH.with_name("states.json")
 STATES_SCHEMA = "wardrobe.bodyDetail.states.v1"
 STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen", "pumped", "anusGape", "vaginaGape", "anusRing",
+              "anusWide",
               *FX.EFFECT_KEYS)
 EXTRAS_PATH = PRESETS_PATH.with_name("extras.json")
 EXTRAS_SCHEMA = "wardrobe.bodyDetail.extras.v1"
@@ -638,7 +639,12 @@ def _anus_patch(u: np.ndarray, t: np.ndarray, spec: dict, s: float) -> np.ndarra
     per = float(spec.get("perineum", 0.032)) * s
     ring = _ring(spec) > 0
     d = _ring_distance(u, t, spec, s) if ring else np.sqrt(u ** 2 + (t + per) ** 2)  # BD30
-    inner, outer = (RING_PATCH if ring else ANUS_PATCH)
+    if ring:
+        inner, outer = RING_PATCH
+    else:  # BD35. a wide fist grows the patch toward the ring's, measured on the same skin
+        w = _wide(spec)
+        inner = ANUS_PATCH[0] + w * (ANUS_WIDE_PATCH[0] - ANUS_PATCH[0])
+        outer = ANUS_PATCH[1] + w * (ANUS_WIDE_PATCH[1] - ANUS_PATCH[1])
     return 1.0 - _smoothstep(inner * s, outer * s, d)
 
 
@@ -653,6 +659,20 @@ RING_RADIUS = 0.018
 #: 0.55 on Avatar A (Step 5 views, 2026-11-21): the wings only thinned and the ring read as an oval
 #: from behind, so it stays round; the wings need the mesh itself (a recess, finer triangles).
 RING_ASPECT = 1.0
+
+
+#: BD35. Her patch and rim limit after two fists (``anusWide`` 1): the same fisted anus, only
+#: wider, ~3.5 cm across with its rim instead of ~2 cm. It borrows the ring's patch (BD28), the
+#: skin measured on Avatar A as still moving with her hips, so the wider rim stays off her thighs.
+ANUS_WIDE_PATCH = RING_PATCH
+ANUS_WIDE_RIM_LIMIT = 0.0175
+
+
+def _wide(spec: dict) -> float:
+    """BD35. How much wider than one fist her gape is left, 0..1 (``anusWide``): two hands, or a
+    whole fist (owner, 2026-11-21: "a few cm bigger, so a whole fist or two small fists go in").
+    It only lifts BD27's size limit; the gape itself, its colour and relief, are the fist's."""
+    return float(np.clip(float(spec.get("anusWide", 0.0)), 0.0, 1.0))
 
 
 def _ring_distance(u: np.ndarray, t: np.ndarray, spec: dict, s: float) -> np.ndarray:
@@ -723,7 +743,9 @@ def _anus_radius(spec: dict, s: float) -> float:
     radius = float(spec.get("anusRadius", 0.0065)) * s * (1.0 + 0.35 * anus_open + grow)
     # BD27. A gape is deeper and darker, never wider than her patch (``_anus_patch``): its swollen
     # rim, at ~1.2 radii, ends inside the patch's solid core, so nothing is cut at the feather.
-    return min(radius, ANUS_RIM_LIMIT * s / 1.2)
+    # BD35. Two fists: the limit grows with ``anusWide`` (its patch grows with it, above).
+    limit = ANUS_RIM_LIMIT + _wide(spec) * (ANUS_WIDE_RIM_LIMIT - ANUS_RIM_LIMIT)
+    return min(radius, limit * s / 1.2)
 
 
 def _majora_width(spec: dict, s: float) -> float:

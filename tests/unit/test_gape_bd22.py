@@ -206,3 +206,29 @@ def test_bd34_legata_e_spalancata_comes_in_three_strengths_of_marks():
         rest = {k: v for k, v in strong.items() if k not in ("ropeMarks", "welts", "collarMark")}
         assert {k: soft[k] for k in rest} == rest == {k: light[k] for k in rest}
     assert states["sado-soft-roped-open"]["set"]["ropeMarks"] <= 0.15  # barely there, the default
+
+
+def test_bd35_two_hands_the_same_fisted_anus_only_wider_and_still_inside_its_patch():
+    fist = {"anusOpen": 1.5, "anusGape": 1.0}
+    wide = {**fist, "anusWide": 1.0}
+    assert "anusWide" in BD.STATE_KEYS
+    r1, r2 = BD._anus_radius(fist, 1.0), BD._anus_radius(wide, 1.0)
+    # About 3.5 cm across with its rim instead of 2: more than a centimetre and a half wider.
+    assert 2 * 1.2 * (r2 - r1) > 0.013
+    # Its swollen rim still ends inside the solid core of its patch (the ring's, measured on her).
+    assert r2 * 1.2 <= BD.ANUS_WIDE_RIM_LIMIT + 1e-9 <= BD.ANUS_WIDE_PATCH[0]
+    # The patch grows with it, and a plain fist keeps BD27's compact one exactly.
+    per = 0.032
+    at = np.array([0.0, 0.015, 0.02])
+    p1 = BD._anus_patch(at, np.full(3, -per), fist, 1.0)
+    p2 = BD._anus_patch(at, np.full(3, -per), wide, 1.0)
+    assert p1[1] < 0.5 < p2[1] and p2[0] == 1.0
+    assert BD._wide({}) == 0.0 and BD._wide({"anusWide": 4}) == 1.0
+
+
+def test_bd35_the_wide_states_are_the_fisted_ones_plus_anus_wide():
+    states = BD.load_states()
+    for wide, base in (("doggy-anal-fisted-wide", "doggy-anal-fisted"),
+                       ("doggy-anal-fisted-wide-cum", "doggy-anal-fisted-cum")):
+        assert states[wide]["set"] == {**states[base]["set"], "anusWide": 1.0}
+        assert states[wide]["body"]
