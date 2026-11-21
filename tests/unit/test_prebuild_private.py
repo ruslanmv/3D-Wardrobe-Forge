@@ -147,9 +147,13 @@ def test_populate_private_builds_every_pack_group_by_default():
 
 def test_bd37_the_strong_marks_are_left_out_of_the_full_run_but_not_the_lighter_ones():
     packs = pp.state_groups(STATES)
-    kept = pp.skip_packs(packs, {"rough"})
-    assert "rough" not in kept and {"rough-soft", "rough-light"} <= set(kept)
+    kept = pp.skip_packs(packs, {"rough-strong"})
+    assert "rough-strong" not in kept and {"rough", "rough-soft", "rough-light"} <= set(kept)
+    # Only the four strong marks with lighter versions go; wax, used and full are still built.
+    assert packs["rough-strong"] == ["closed", "sado-roped-open", "sado-whipped-open", "sado-both-fisted",
+                                     "sado-both-fisted-cum"]
+    assert {"sado-wax-open", "sado-used-cum", "sado-full"} <= set(kept["rough"])
     script = (ROOT / "tools/populate_private.sh").read_text()
-    assert 'SKIP_GROUPS="${SKIP_GROUPS:-rough}"' in script
+    assert 'SKIP_GROUPS="${SKIP_GROUPS:-rough-strong}"' in script
     assert script.count('--skip-groups "$SKIP_GROUPS"') == 3  # repaint, behind, rest
-    assert pp.group_of("sado-both-fisted") == "rough" and pp.group_of("sado-soft-both-fisted") == "rough-soft"
+    assert pp.group_of("sado-both-fisted") == "rough-strong" and pp.group_of("sado-soft-both-fisted") == "rough-soft"
