@@ -59,7 +59,10 @@ MIN_DISK_GB="${MIN_DISK_GB:-3}"
 MIN_MEM_MB="${MIN_MEM_MB:-1500}"
 # BD28 ring, BD34 the two lighter mark strengths (rough-soft is "Legata e spalancata"'s default),
 # BD35 two hands (fist-wide). The Prebuild workflow builds every group already (no --groups).
-BEHIND_GROUPS="${BEHIND_GROUPS:-core,doggy,back,fist,fist-wide,ring,bottle,rough-soft,rough-light,rough}"
+BEHIND_GROUPS="${BEHIND_GROUPS:-core,doggy,back,fist,fist-wide,ring,bottle,rough-soft,rough-light}"
+# BD37. Left out on purpose: the strong marks (the app stops at light, BD36). Built only on
+# request (`tools/prebuild_private.py --groups rough`); never made or repainted by this run.
+SKIP_GROUPS="${SKIP_GROUPS:-rough}"
 REST_GROUPS="${REST_GROUPS:-oiled,missionary,cowgirl,unrestrained,other}"
 # What the frames show on each position: her fisted states and the gape filled after them.
 STATES="${STATES:-doggy-anal-fisted,doggy-anal-fisted-cum,doggy-both-fisted-cum}"
@@ -137,20 +140,20 @@ for slug in $SLUGS; do
   B="--forge http://127.0.0.1:$PORT --admin-token-file $WORK/.admin --slugs $slug --workers 1"
 
   if has repaint && [ -n "$REPAINT_BEFORE" ] && ! case ",$REPAINT_SKIP," in *",$slug,"*) true;; *) false;; esac; then
-    .venv/bin/python tools/prebuild_private.py $B --repaint-before "$REPAINT_BEFORE" \
+    .venv/bin/python tools/prebuild_private.py $B --repaint-before "$REPAINT_BEFORE" --skip-groups "$SKIP_GROUPS" \
       --job-timeout "${JOB_TIMEOUT:-3600}" --report "$WORK/report-$slug-repaint.json"
     publish "$slug" "repainted looks" --overwrite
     # What was repainted is published; the phases below publish missing-only from a clean root.
     rm -rf "$WARDROBE_STORAGE_ROOT/prebuilt"
   fi
   if has behind && [ ! -f "$WORK/.stop" ]; then
-    .venv/bin/python tools/prebuild_private.py $B --presets "$PRESETS" --groups "$BEHIND_GROUPS" \
+    .venv/bin/python tools/prebuild_private.py $B --presets "$PRESETS" --groups "$BEHIND_GROUPS" --skip-groups "$SKIP_GROUPS" \
       --extras-sets none --bare-looks none --job-timeout "${JOB_TIMEOUT:-3600}" --report "$WORK/report-$slug-behind.json"
     publish "$slug" "behind packs"
   fi
   if (has repaint || has behind) && [ ! -f "$WORK/.stop" ]; then render "$slug"; fi
   if has private && [ ! -f "$WORK/.stop" ]; then
-    .venv/bin/python tools/prebuild_private.py $B --presets "$PRESETS" --groups "$REST_GROUPS" --job-timeout "${JOB_TIMEOUT:-3600}" \
+    .venv/bin/python tools/prebuild_private.py $B --presets "$PRESETS" --groups "$REST_GROUPS" --skip-groups "$SKIP_GROUPS" --job-timeout "${JOB_TIMEOUT:-3600}" \
       --report "$WORK/report-$slug-private.json"
     publish "$slug" "private looks"
   fi

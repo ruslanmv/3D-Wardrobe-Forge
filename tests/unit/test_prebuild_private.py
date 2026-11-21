@@ -135,7 +135,7 @@ def test_populate_private_builds_every_pack_group_by_default():
     root = _Path(__file__).resolve().parents[2]
     script = (root / "tools/populate_private.sh").read_text()
     named = set()
-    for var in ("BEHIND_GROUPS", "REST_GROUPS"):
+    for var in ("BEHIND_GROUPS", "REST_GROUPS", "SKIP_GROUPS"):
         named |= set(_re.search(var + r'="\$\{' + var + r':-([^}]*)\}"', script).group(1).split(","))
     spec = importlib.util.spec_from_file_location("pp_groups", root / "tools/prebuild_private.py")
     module = importlib.util.module_from_spec(spec)
@@ -143,3 +143,13 @@ def test_populate_private_builds_every_pack_group_by_default():
     groups = {g for g, _ in module.GROUPS} | {"other"}
     assert named == groups
     assert 'PHASES="${PHASES:-repaint,' in script  # old looks with the thigh bands go first
+
+
+def test_bd37_the_strong_marks_are_left_out_of_the_full_run_but_not_the_lighter_ones():
+    packs = pp.state_groups(STATES)
+    kept = pp.skip_packs(packs, {"rough"})
+    assert "rough" not in kept and {"rough-soft", "rough-light"} <= set(kept)
+    script = (ROOT / "tools/populate_private.sh").read_text()
+    assert 'SKIP_GROUPS="${SKIP_GROUPS:-rough}"' in script
+    assert script.count('--skip-groups "$SKIP_GROUPS"') == 3  # repaint, behind, rest
+    assert pp.group_of("sado-both-fisted") == "rough" and pp.group_of("sado-soft-both-fisted") == "rough-soft"

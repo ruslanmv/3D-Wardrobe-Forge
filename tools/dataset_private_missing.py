@@ -41,6 +41,7 @@ def main(argv=None) -> int:
         "--repaint-before", default="2026-11-21T10:30", help="BD29's fix; as populate_private.sh"
     )
     parser.add_argument("--repaint-skip", default="vroid-rinna", help="As populate_private.sh REPAINT_SKIP")
+    parser.add_argument("--skip-groups", default="rough", help="As populate_private.sh SKIP_GROUPS (BD37)")
     opts = parser.parse_args(argv)
     grant = os.environ.get("FORGE_GRANT", "").strip()
     if not grant:
@@ -61,7 +62,8 @@ def main(argv=None) -> int:
         with urllib.request.urlopen(request, timeout=180) as response:
             return json.load(response)
 
-    packs = pp.state_groups(pp.load_names(pp.STATES_PATH, "states"))
+    skip_groups = {g for g in opts.skip_groups.split(",") if g}
+    packs = pp.skip_packs(pp.state_groups(pp.load_names(pp.STATES_PATH, "states")), skip_groups)
     avatars = [a for a in get("/v1/library").get("avatars", []) if a.get("available")]
     if opts.slugs:
         avatars = [a for a in avatars if a["slug"] in opts.slugs.split(",")]
