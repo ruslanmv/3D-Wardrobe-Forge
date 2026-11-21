@@ -59,3 +59,33 @@ def test_an_export_with_only_design_findings_keeps_them(tmp_path):
     RF.normalize(tmp_path)
     assert not (tmp_path / RF.DETAIL_FILE).exists()
     assert design_review(tmp_path, SHA) is not None
+
+
+OTHER = "b" * 64
+
+
+def test_codex_detail_reviews_in_an_export_are_read_beside_an_existing_detail_file(tmp_path):
+    # A detail file with one review must not hide the detail reviews an export carries.
+    (tmp_path / RF.DETAIL_FILE).write_text(json.dumps({"schema": RF.DETAIL_SCHEMA, "reviews": {
+        OTHER: {**DETAIL[SHA], "evidence": EVIDENCE}}}))
+    (tmp_path / RF.DESIGN_FILE).write_text(json.dumps(export(DESIGN, DETAIL, PACKET)))
+    assert detail_review(tmp_path, SHA) is not None and detail_review(tmp_path, OTHER) is not None
+
+
+def test_codex_design_findings_in_an_export_over_the_detail_file_are_read(tmp_path):
+    (tmp_path / RF.DESIGN_FILE).write_text(json.dumps({"schema": RF.DESIGN_SCHEMA, "reviews": {}}))
+    (tmp_path / RF.DETAIL_FILE).write_text(json.dumps(export(DESIGN, DETAIL, PACKET)))
+    assert design_review(tmp_path, SHA)["reviewer"] == "John"
+    assert detail_review(tmp_path, SHA) is not None
+
+
+def test_codex_the_registry_own_entry_wins_over_an_export_for_the_same_bytes(tmp_path):
+    mine = {SHA: {**DESIGN[SHA], "evidence": "the reviewer's own words, as recorded"}}
+    (tmp_path / RF.DESIGN_FILE).write_text(json.dumps({"schema": RF.DESIGN_SCHEMA, "reviews": mine}))
+    (tmp_path / RF.DETAIL_FILE).write_text(json.dumps(export(DESIGN)))
+    assert design_review(tmp_path, SHA)["evidence"] == "the reviewer's own words, as recorded"
+
+
+def test_codex_packets_carried_by_an_installed_export_are_found(tmp_path):
+    (tmp_path / RF.DESIGN_FILE).write_text(json.dumps(export(DESIGN, DETAIL, PACKET)))
+    assert RF.packets(tmp_path)[SHA] == PACKET[SHA]

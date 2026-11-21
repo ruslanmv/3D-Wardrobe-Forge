@@ -24,7 +24,6 @@ Studio shows that.
 
 from __future__ import annotations
 
-import contextlib
 import hashlib
 import logging
 from datetime import UTC, datetime
@@ -179,27 +178,18 @@ async def export_reviews(admin: AdminDep, settings: SettingsDep) -> dict:
     (``tools/body_surface/import_reviews.py``), under the reviewer's name. Nothing is made, changed
     or inferred here: it is a copy of what persons recorded. Admin only, like every review route.
     """
-    import json as _json
+    from wardrobe.body_surface import review_files
 
     _signed_in(admin)
     root = settings.body_surface_root_path
-
-    def read(name: str) -> dict:
-        try:
-            return _json.loads((root / name).read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return {}
-
-    from wardrobe.body_surface.eligibility import DETAIL_REVIEWS_FILE
-
-    design, detail = read(REGISTRY_FILE), read(DETAIL_REVIEWS_FILE)
-    packets = {}
-    for registry in (design, detail):
-        for sha in (registry.get("reviews") or {}):
-            path = _packet_path(settings, sha)
-            if path.is_file():
-                with contextlib.suppress(OSError, ValueError):  # an unreadable packet is left out
-                    packets[sha] = _json.loads(path.read_text(encoding="utf-8"))
+    # Codex (#104). Through the readers that know an export may stand in a registry's place, so a
+    # second download after an export was committed is the findings again, not an export wrapped
+    # inside another, and the packets that export carried come along.
+    design = review_files.design_registry(root) or {}
+    detail = review_files.detail_registry(root) or {}
+    known = review_files.packets(root)
+    wanted = set(design.get("reviews") or {}) | set(detail.get("reviews") or {})
+    packets = {sha: known[sha] for sha in wanted if sha in known}
     return {
         "schema": "wardrobe.reviews.export.v1",
         "exportedAt": datetime.now(UTC).isoformat(timespec="seconds"),

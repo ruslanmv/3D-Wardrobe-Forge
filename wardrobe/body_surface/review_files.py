@@ -47,22 +47,57 @@ def _part(data: dict | None, key: str) -> dict | None:
     return data
 
 
+def _merged(root, key: str, schema: str, own_file: str) -> dict | None:
+    """One registry from every place it may be: its own file first, then any export in either file.
+
+    Codex (#104). Each source used to hide the others: a detail file with one review hid the
+    detail reviews an export carried, and an export over the detail file had its design findings
+    unread. Now all are read; for the same bytes the registry's own entry wins (write-once).
+    """
+    root = Path(root)
+    own = _read(root / own_file)
+    merged = None
+    if own and own.get("schema") == schema:
+        merged = dict(own)
+        merged["reviews"] = dict(own.get("reviews") or {})
+    for name in (DESIGN_FILE, DETAIL_FILE):
+        data = _read(root / name)
+        if not data or data.get("schema") != EXPORT_SCHEMA:
+            continue
+        part = data.get(key) or {}
+        if merged is None:
+            merged = {"schema": part.get("schema") or schema, "reviews": {}}
+        for sha, entry in (part.get("reviews") or {}).items():
+            merged["reviews"].setdefault(sha, entry)
+    return merged
+
+
 def design_registry(root) -> dict | None:
-    """The design findings registry (``wardrobe.bodySurface.adultDesignReviews.v1``), or None."""
-    return _part(_read(Path(root) / DESIGN_FILE), "designReviews")
+    """The design findings (``wardrobe.bodySurface.adultDesignReviews.v1``) from every source, or None."""
+    return _merged(root, "designReviews", DESIGN_SCHEMA, DESIGN_FILE)
 
 
 def detail_registry(root) -> dict | None:
-    """The detail reviews registry, from its own file, or an export in either file."""
-    own = _part(_read(Path(root) / DETAIL_FILE), "detailReviews")
-    if own and own.get("reviews"):
-        return own
-    design_file = _read(Path(root) / DESIGN_FILE)
-    if design_file and design_file.get("schema") == EXPORT_SCHEMA:
-        part = _part(design_file, "detailReviews")
-        if part and part.get("reviews"):
-            return part
-    return own
+    """The detail reviews from their own file and any export in either file, or None."""
+    return _merged(root, "detailReviews", DETAIL_SCHEMA, DETAIL_FILE)
+
+
+def packets(root) -> dict:
+    """Every review packet known here: ``packets/<sha>.json`` files, then any an export carries."""
+    root = Path(root)
+    out = {}
+    folder = root / "packets"
+    if folder.is_dir():
+        for path in folder.glob("*.json"):
+            data = _read(path)
+            if data:
+                out[path.stem] = data
+    for name in (DESIGN_FILE, DETAIL_FILE):
+        data = _read(root / name)
+        if data and data.get("schema") == EXPORT_SCHEMA:
+            for sha, packet in (data.get("packets") or {}).items():
+                out.setdefault(sha, packet)
+    return out
 
 
 def _write(path: Path, content: dict) -> None:
@@ -116,4 +151,5 @@ def normalize(root) -> bool:
     return True
 
 
-__all__ = ["DESIGN_FILE", "DETAIL_FILE", "EXPORT_SCHEMA", "design_registry", "detail_registry", "normalize"]
+__all__ = ["DESIGN_FILE", "DETAIL_FILE", "EXPORT_SCHEMA", "design_registry", "detail_registry", "normalize",
+           "packets"]

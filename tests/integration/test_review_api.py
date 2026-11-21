@@ -267,3 +267,26 @@ def test_reviews_export_and_commit_into_a_clean_checkout(env, tmp_path):
     other = "1" * 64
     thin["detailReviews"]["reviews"] = {other: {**entry, "evidence": "looked"}}
     assert tool.merge(thin, clean)["refused"]
+
+
+def test_codex_a_second_export_after_one_was_committed_round_trips(env):
+    """Codex (#104). Committing an export over the design file, then exporting again, gives the
+    same findings with their packets — not an export nested inside another."""
+    import json
+
+    with env["client"]() as client:
+        headers = sign_in(client)
+        assert client.post("/v1/admin/reviews/mira", headers=headers, json=finding(env["sha"])).status_code == 201
+        client.post("/v1/admin/reviews/mira/packet", headers=headers)
+        body = {"sha256": env["sha"], "reviewer": "Test Person", "evidence": DETAIL_EVIDENCE, "examined": True}
+        assert client.post("/v1/admin/reviews/mira/detail", headers=headers, json=body).status_code == 201
+        first = client.get("/v1/admin/reviews/export", headers=headers).json()
+        root = env["registry"].parent
+        env["registry"].write_text(json.dumps(first))  # committed over the design file
+        (root / "adult-detail-reviews.json").unlink()
+        for packet in (root / "packets").glob("*.json"):
+            packet.unlink()
+        second = client.get("/v1/admin/reviews/export", headers=headers).json()
+    assert second["designReviews"]["schema"] != "wardrobe.reviews.export.v1"
+    assert env["sha"] in second["designReviews"]["reviews"] and env["sha"] in second["detailReviews"]["reviews"]
+    assert env["sha"] in second["packets"]
