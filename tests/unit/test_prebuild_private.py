@@ -124,3 +124,22 @@ def test_bd25_repaint_takes_only_open_detailed_looks_built_before_the_fix():
     assert pairs[0]["states"] == ["closed", "doggy-anal-fisted"]
     # A repaint is built even though its body is listed (that is the point of it).
     assert pairs[0]["repaint"] is True
+
+
+def test_populate_private_builds_every_pack_group_by_default():
+    """BD35. tools/populate_private.sh names its groups by hand: a new group (ring, the lighter
+    marks, two hands) left out of both lists was never made for any character by a full run."""
+    import re as _re
+    from pathlib import Path as _Path
+
+    root = _Path(__file__).resolve().parents[2]
+    script = (root / "tools/populate_private.sh").read_text()
+    named = set()
+    for var in ("BEHIND_GROUPS", "REST_GROUPS"):
+        named |= set(_re.search(var + r'="\$\{' + var + r':-([^}]*)\}"', script).group(1).split(","))
+    spec = importlib.util.spec_from_file_location("pp_groups", root / "tools/prebuild_private.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    groups = {g for g, _ in module.GROUPS} | {"other"}
+    assert named == groups
+    assert 'PHASES="${PHASES:-repaint,' in script  # old looks with the thigh bands go first

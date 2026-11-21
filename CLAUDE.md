@@ -98,6 +98,7 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
 | Private categories + body thumbnails (WS3) | `classify.PRIVATE_CATEGORIES`, `wardrobe/registry/body_previews.py`, `tools/render_body_previews.py` (`docs/WARDROBE_REGISTRY.md`) |
 | After Dark · Bare: 26 named bare looks (AB1, BD24 vivid) | `assets/body_detail/bare_looks.json`, `wardrobe/registry/bare_looks.py`; collections `ad-bare*`; the Studio's After Dark ▸ 🔞 Bare (`docs/WARDROBE_REGISTRY.md`); all 26 in one sheet: `tools/body_surface/bare_looks_sheet.py --base <ref-atlas.vrm> --out <scratch>/x.png` |
 | Make every private look for every character (BD21) | `tools/prebuild_private.py` (packs of ≤10 states covering all, extras sets); in CI: Prebuild wardrobe ▸ `private_looks` |
+| …from a session, everything at once (PV1, BD35) | `HF_TOKEN=proxy-injected setsid nohup tools/populate_private.sh [slugs] > run.log 2>&1 &`: per character, one fresh Forge; repaints looks from before the BD29 fix (`--overwrite`, those only), then every pack group (a test keeps its lists complete), extras, After Dark; publishes each as it lands (missing-only), renders her from behind. Hours per character; watch the log |
 | Full notes                                 | `docs/qa/BARE_DETAIL.md` (read before changing the painter)         |
 
 Rules that break things when missed:

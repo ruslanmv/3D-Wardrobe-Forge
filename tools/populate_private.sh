@@ -27,7 +27,7 @@
 # `pip install -e ".[hf]"`, the library on disk (`tools/fetch_library.py`), and the chatbot checked
 # out beside this repository with its `npm ci` done (CHATBOT=… to point elsewhere).
 #
-#   HF_TOKEN=… tools/populate_private.sh                          # every character
+#   HF_TOKEN=… tools/populate_private.sh                          # every character, everything
 #   HF_TOKEN=… tools/populate_private.sh avatar-sample-b          # some
 #   HF_TOKEN=… PHASES=behind tools/populate_private.sh            # only the from-behind packs
 #   HF_TOKEN=… RENDER=0 tools/populate_private.sh                 # build and publish, no frames
@@ -47,13 +47,19 @@ RENDERS="${RENDERS:-$WORK/renders}"
 PORT="${PORT:-8096}"
 DATASET="${DATASET:-ruslanmv/3d-wardrobe-garments}"
 PRESETS="${PRESETS:-natural}"
-PHASES="${PHASES:-behind,private,outfits}"
-REPAINT_BEFORE="${REPAINT_BEFORE:-}"
+PHASES="${PHASES:-repaint,behind,private,outfits}"
+# BD29 (2026-11-21 10:28 UTC): the crotch landmark fix that ended the red bands down her inner
+# thighs. Every listed detailed look opening her anus built before it is repainted first. If the
+# Space built bare looks after that time but before it was deployed with the fix, pass the
+# deploy time instead.
+REPAINT_BEFORE="${REPAINT_BEFORE:-2026-11-21T10:30}"
 REPAINT_SKIP="${REPAINT_SKIP:-vroid-rinna}"
 RENDER="${RENDER:-1}"
 MIN_DISK_GB="${MIN_DISK_GB:-3}"
 MIN_MEM_MB="${MIN_MEM_MB:-1500}"
-BEHIND_GROUPS="${BEHIND_GROUPS:-core,doggy,back,fist,bottle,rough}"
+# BD28 ring, BD34 the two lighter mark strengths (rough-soft is "Legata e spalancata"'s default),
+# BD35 two hands (fist-wide). The Prebuild workflow builds every group already (no --groups).
+BEHIND_GROUPS="${BEHIND_GROUPS:-core,doggy,back,fist,fist-wide,ring,bottle,rough-soft,rough-light,rough}"
 REST_GROUPS="${REST_GROUPS:-oiled,missionary,cowgirl,unrestrained,other}"
 # What the frames show on each position: her fisted states and the gape filled after them.
 STATES="${STATES:-doggy-anal-fisted,doggy-anal-fisted-cum,doggy-both-fisted-cum}"
