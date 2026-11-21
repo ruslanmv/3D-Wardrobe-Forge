@@ -12,7 +12,7 @@ on:
       hidden_source:
         description: "HS1: hide the code (the Space gets a loader only; the code goes to a private repository)"
         required: false
-        default: "no"
+        default: "yes"   # HS1. "yes" on the hidden-source test branch only; "no" on main/ultimate
         type: choice
         options: ["no", "yes"]
 
