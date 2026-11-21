@@ -76,10 +76,10 @@ GROUPS: list[tuple[str, str]] = [
     ("rough", r"^sado-"),
     # L5. One pack per act from behind, so "fisted, then filled" switches live in the same look:
     # the three fisted states and their filled ones; the bottle and its filled ones.
-    ("fist", r"^doggy-.*fisted(-cum)?$"),
+    ("fist", r"^doggy-.*fisted(-cum|-creampie)?$"),
     ("bottle", r"^doggy-bottle"),
     # BD28. The open ring after a fist (a new kind, beside the fisted pack): one pack, live switch.
-    ("ring", r"^doggy-.*ring(-cum)?$"),
+    ("ring", r"^doggy-.*ring(-cum|-creampie)?$"),
     # Unrestrained (gate 2): the evening's build-up states, composed from existing effects.
     ("unrestrained",
      r"^(edge|dripping|breasts-belly|oiled-used|used|round-three|tied-edge|after-shower)$"),
