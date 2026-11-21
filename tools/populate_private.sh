@@ -31,7 +31,13 @@
 #   HF_TOKEN=… tools/populate_private.sh avatar-sample-b          # some
 #   HF_TOKEN=… PHASES=behind tools/populate_private.sh            # only the from-behind packs
 #   HF_TOKEN=… RENDER=0 tools/populate_private.sh                 # build and publish, no frames
+#   HF_TOKEN=… PHASES=repaint REPAINT_BEFORE=2026-11-21T09:00 tools/populate_private.sh a b   # BD25
 #   Run it detached and watch the log: setsid nohup tools/populate_private.sh > run.log 2>&1 &
+#
+# BD25 (`repaint`, first when asked): the listed detailed looks built before REPAINT_BEFORE whose
+# states open her anus are painted again with the fixed painter (BD24 `_behind_mask`: no more red
+# streaks down her inner thighs) and published with --overwrite, replacing exactly those looks and
+# nothing else. REPAINT_SKIP lists characters left alone (vroid-rinna until her bare looks strip).
 set -u
 : "${HF_TOKEN:?set HF_TOKEN (write access to the dataset) in the environment}"
 FORGE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -42,6 +48,8 @@ PORT="${PORT:-8096}"
 DATASET="${DATASET:-ruslanmv/3d-wardrobe-garments}"
 PRESETS="${PRESETS:-natural}"
 PHASES="${PHASES:-behind,private,outfits}"
+REPAINT_BEFORE="${REPAINT_BEFORE:-}"
+REPAINT_SKIP="${REPAINT_SKIP:-vroid-rinna}"
 RENDER="${RENDER:-1}"
 MIN_DISK_GB="${MIN_DISK_GB:-3}"
 MIN_MEM_MB="${MIN_MEM_MB:-1500}"
@@ -79,11 +87,29 @@ watchdog() {
 }
 rm -f "$WORK/.stop"; watchdog & WATCH=$!; trap 'kill $WATCH 2>/dev/null; stop_all; rm -f "$WORK/.admin" "$WORK/.grant"' EXIT
 
-publish() { # $1 slug, $2 what
+publish() { # $1 slug, $2 what, $3 "--overwrite" for a repaint (replaces exactly this run's looks)
   if [ -d "$WARDROBE_STORAGE_ROOT/prebuilt" ]; then
-    .venv/bin/python tools/publish_prebuilt.py --root "$WARDROBE_STORAGE_ROOT" --message "prebuild: $1 $2 (missing only)"
+    .venv/bin/python tools/publish_prebuilt.py --root "$WARDROBE_STORAGE_ROOT" ${3:-} \
+      --message "prebuild: $1 $2 (${3:+repainted, }missing only)"
     echo "--- $1 $2 published (exit $?)"
   fi
+}
+
+# Her from behind (all fours, face down, bent over) in the chatbot's own viewer against THIS Forge,
+# her hair aside (HA1) so nothing covers what was just painted. Once per character.
+render() { # $1 slug
+  local slug="$1" file; file=$(avatar_file "$slug")
+  [ "$RENDER" = 1 ] && [ -n "$file" ] && [ -d "$CHATBOT" ] || return 0
+  curl -s -X POST "http://127.0.0.1:$PORT/v1/admin/grants" -H "X-Wardrobe-Admin: $(cat "$WORK/.admin")" \
+    -H 'content-type: application/json' -d "{\"slugs\":[\"$slug\"],\"ttlSeconds\":3600,\"label\":\"populate render\"}" \
+    | python3 -c 'import json,sys;print(json.load(sys.stdin)["token"])' > "$WORK/.grant"
+  chmod 600 "$WORK/.grant"
+  (cd "$CHATBOT" && FORGE_GRANT="$(cat "$WORK/.grant")" timeout 1500 node tools/qa/private-positions-live.mjs \
+    --level5 --forge-grant --forge-url "http://127.0.0.1:$PORT" --behind --hair-aside --world bright-hotel \
+    --keys all-fours,face-down,bent-over --avatar "$file" --slug "$slug" --states "$STATES" \
+    --out "$RENDERS/$slug" > "$RENDERS/$slug.log" 2>&1)
+  echo "--- $slug rendered (exit $?): $RENDERS/$slug/sheet.png"
+  rm -f "$WORK/.grant"
 }
 
 has() { case ",$PHASES," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
@@ -104,24 +130,19 @@ for slug in $SLUGS; do
   chmod 600 "$WORK/.admin"; PASS=""
   B="--forge http://127.0.0.1:$PORT --admin-token-file $WORK/.admin --slugs $slug --workers 1"
 
-  if has behind; then
+  if has repaint && [ -n "$REPAINT_BEFORE" ] && ! case ",$REPAINT_SKIP," in *",$slug,"*) true;; *) false;; esac; then
+    .venv/bin/python tools/prebuild_private.py $B --repaint-before "$REPAINT_BEFORE" \
+      --job-timeout "${JOB_TIMEOUT:-3600}" --report "$WORK/report-$slug-repaint.json"
+    publish "$slug" "repainted looks" --overwrite
+    # What was repainted is published; the phases below publish missing-only from a clean root.
+    rm -rf "$WARDROBE_STORAGE_ROOT/prebuilt"
+  fi
+  if has behind && [ ! -f "$WORK/.stop" ]; then
     .venv/bin/python tools/prebuild_private.py $B --presets "$PRESETS" --groups "$BEHIND_GROUPS" \
       --extras-sets none --bare-looks none --job-timeout "${JOB_TIMEOUT:-3600}" --report "$WORK/report-$slug-behind.json"
     publish "$slug" "behind packs"
-    file=$(avatar_file "$slug")
-    if [ "$RENDER" = 1 ] && [ -n "$file" ] && [ -d "$CHATBOT" ]; then
-      curl -s -X POST "http://127.0.0.1:$PORT/v1/admin/grants" -H "X-Wardrobe-Admin: $(cat "$WORK/.admin")" \
-        -H 'content-type: application/json' -d "{\"slugs\":[\"$slug\"],\"ttlSeconds\":3600,\"label\":\"populate render\"}" \
-        | python3 -c 'import json,sys;print(json.load(sys.stdin)["token"])' > "$WORK/.grant"
-      chmod 600 "$WORK/.grant"
-      (cd "$CHATBOT" && FORGE_GRANT="$(cat "$WORK/.grant")" timeout 1500 node tools/qa/private-positions-live.mjs \
-        --level5 --forge-grant --forge-url "http://127.0.0.1:$PORT" --behind --world bright-hotel \
-        --keys all-fours,face-down,bent-over --avatar "$file" --slug "$slug" --states "$STATES" \
-        --out "$RENDERS/$slug" > "$RENDERS/$slug.log" 2>&1)
-      echo "--- $slug rendered (exit $?): $RENDERS/$slug/sheet.png"
-      rm -f "$WORK/.grant"
-    fi
   fi
+  if (has repaint || has behind) && [ ! -f "$WORK/.stop" ]; then render "$slug"; fi
   if has private && [ ! -f "$WORK/.stop" ]; then
     .venv/bin/python tools/prebuild_private.py $B --presets "$PRESETS" --groups "$REST_GROUPS" --job-timeout "${JOB_TIMEOUT:-3600}" \
       --report "$WORK/report-$slug-private.json"

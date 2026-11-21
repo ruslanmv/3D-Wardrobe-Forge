@@ -211,12 +211,57 @@ def listed(forge, slug: str) -> set:
     }
 
 
+def anus_open_of(states_path: Path = None) -> dict[str, float]:
+    """How far each state opens her anus (``states.json`` ``set.anusOpen``), 0 when it does not."""
+    data = json.loads((states_path or STATES_PATH).read_text())
+    table = data.get("states", data)
+    return {
+        k: float((v.get("set") or {}).get("anusOpen") or 0)
+        for k, v in table.items()
+        if isinstance(v, dict)
+    }
+
+
+def repaint_plan(looks: list[dict], slug: str, before: str, min_open: float, opened: dict) -> list[dict]:
+    """BD25. The listed detailed looks to paint again, exactly as they were asked for.
+
+    Why. Looks built before BD24's ``_behind_mask`` carry the anus colour layers below the crotch:
+    thin red streaks down both inner thighs, worst where she is open (fisted, gaped, the bottle's
+    aftermath). Missing-only runs never touch a listed look, so these stay forever unless they are
+    made again. Chosen here: a look with a body detail, built before ``before`` (ISO time), whose
+    skin pack opens her anus at least ``min_open``. Each comes back with its own preset, states and
+    extras, so the new build has the same identity (key) and replaces the old one on publish
+    (``--overwrite``); nothing else in her list is touched.
+    """
+    out = []
+    for look in looks:
+        body = look.get("body")
+        if not isinstance(body, dict) or not body.get("detail"):
+            continue
+        if str(look.get("builtAt") or "") >= before:
+            continue
+        states = list(body.get("states") or ([body["state"]] if body.get("state") else []))
+        if max((opened.get(s, 0.0) for s in states), default=0.0) < min_open:
+            continue
+        out.append(
+            {
+                "slug": slug,
+                "preset": body["detail"],
+                "look": f"repaint:{look.get('lookId', '')}",
+                "states": states,
+                "extras": list(body.get("extras") or [])[:MAX_EXTRAS],
+                "repaint": True,
+            }
+        )
+    return out
+
+
 def build(forge, pair: dict, held: set, job_timeout: float) -> dict:
     out = dict(pair)
     if pair.get("skip"):
         out["result"] = "skipped"
         return out
-    if identity(pair["preset"], pair["states"], pair["extras"]) in held:
+    if not pair.get("repaint") and identity(pair["preset"], pair["states"], pair["extras"]) in held:
         out.update(result="present", reason="already listed: kept, not rebuilt")
         return out
     started = time.monotonic()
@@ -288,6 +333,14 @@ def main(argv=None) -> int:
     parser.add_argument("--job-timeout", type=float, default=1800.0, help="Seconds per look")
     parser.add_argument("--report", type=Path, help="Write the per-look results here as JSON")
     parser.add_argument("--plan-only", action="store_true", help="List the looks and stop")
+    parser.add_argument(
+        "--repaint-before",
+        help="BD25: instead of planning, paint again the listed detailed looks built before this ISO "
+        "time whose states open her anus (publish them with --overwrite)",
+    )
+    parser.add_argument(
+        "--repaint-min-open", type=float, default=0.5, help="BD25: least anusOpen that counts (0..1)"
+    )
     opts = parser.parse_args(argv)
 
     states = load_names(STATES_PATH, "states")
@@ -317,7 +370,20 @@ def main(argv=None) -> int:
     if opts.bare_looks not in ("all", "none"):
         wanted = {w.strip() for w in opts.bare_looks.split(",")}
         named = {k: v for k, v in named.items() if k in wanted}
-    pairs = plan(avatars, presets, packs, extras_sets, named)
+    if opts.repaint_before:
+        opened = anus_open_of()
+        pairs = []
+        try:
+            for avatar in avatars:
+                looks = forge.call(f"/v1/library/{avatar['slug']}/prebuilt").get("looks", [])
+                pairs += repaint_plan(
+                    looks, avatar["slug"], opts.repaint_before, opts.repaint_min_open, opened
+                )
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            print(f"could not read the characters' lists: {exc}", file=sys.stderr)
+            return 2
+    else:
+        pairs = plan(avatars, presets, packs, extras_sets, named)
     if opts.limit:
         pairs = pairs[: opts.limit]
     covered = {s for p in pairs for s in p["states"]}

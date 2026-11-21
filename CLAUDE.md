@@ -54,7 +54,11 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   from-behind packs (doggy, back, fist, gape, core), publishes them, renders her in the chatbot
   (all fours, face down, bent over; frames in `$WORK/renders/<slug>/sheet.png`, never
   committed), then the rest of her private set and the outfit dictionary, each published as it
-  lands. `PHASES=behind` for the from-behind packs only; `RENDER=0` for no frames.
+  lands. `PHASES=behind` for the from-behind packs only; `RENDER=0` for no frames. Renders
+  use the chatbot's hair aside (HA1) so her hair never covers the frames.
+  BD25 `PHASES=repaint REPAINT_BEFORE=<ISO>` paints again the listed detailed looks built before
+  that time whose states open her anus (`prebuild_private.py --repaint-before`), published with
+  `--overwrite`: what to run after a painter fix, since missing-only never touches a listed look.
 - Local Forge for the Studio: `WARDROBE_ADMIN_PASSWORD=<random> WARDROBE_STORAGE_ROOT=<scratch>
   .venv/bin/python -m uvicorn apps.api.main:app --port 8091`, then `POST /v1/admin/session`
   for a token kept in an owner-only scratch file, deleted when done.
