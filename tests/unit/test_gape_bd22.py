@@ -189,3 +189,20 @@ def test_bd30_colour_and_relief_share_the_ring_distance():
     d = BD._ring_distance(u, t, spec, 1.0)
     assert d[0] == 0.0 and np.isclose(d[1], 0.5 * R / BD.RING_ASPECT) and np.isclose(d[2], 0.5 * R)
     assert 0.0 < BD.RING_ASPECT <= 1.0
+
+
+def test_bd34_legata_e_spalancata_comes_in_three_strengths_of_marks():
+    from wardrobe.vrm import body_detail as BD
+
+    states = BD.load_states()
+    for base in ("sado-roped-open", "sado-whipped-open", "sado-both-fisted", "sado-both-fisted-cum"):
+        strong = states[base]["set"]
+        light = states[base.replace("sado-", "sado-light-", 1)]["set"]
+        soft = states[base.replace("sado-", "sado-soft-", 1)]["set"]
+        for key in ("ropeMarks", "welts", "collarMark"):
+            if key in strong:
+                assert 0 < soft[key] < light[key] < strong[key], (base, key)
+        # Everything else (her body, the gape, the cum) is the same in every strength.
+        rest = {k: v for k, v in strong.items() if k not in ("ropeMarks", "welts", "collarMark")}
+        assert {k: soft[k] for k in rest} == rest == {k: light[k] for k in rest}
+    assert states["sado-soft-roped-open"]["set"]["ropeMarks"] <= 0.15  # barely there, the default
