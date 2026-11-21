@@ -181,22 +181,7 @@ async def export_reviews(admin: AdminDep, settings: SettingsDep) -> dict:
     from wardrobe.body_surface import review_files
 
     _signed_in(admin)
-    root = settings.body_surface_root_path
-    # Codex (#104). Through the readers that know an export may stand in a registry's place, so a
-    # second download after an export was committed is the findings again, not an export wrapped
-    # inside another, and the packets that export carried come along.
-    design = review_files.design_registry(root) or {}
-    detail = review_files.detail_registry(root) or {}
-    known = review_files.packets(root)
-    wanted = set(design.get("reviews") or {}) | set(detail.get("reviews") or {})
-    packets = {sha: known[sha] for sha in wanted if sha in known}
-    return {
-        "schema": "wardrobe.reviews.export.v1",
-        "exportedAt": datetime.now(UTC).isoformat(timespec="seconds"),
-        "designReviews": design,
-        "detailReviews": detail,
-        "packets": packets,
-    }
+    return review_files.export_document(settings.body_surface_root_path)
 
 
 @router.post("/admin/reviews/{slug}", status_code=201)
@@ -235,10 +220,12 @@ async def record(slug: str, body: Finding, request: Request, admin: AdminDep, se
 
         auto = await auto_body_state.ensure(avatar, settings, store,
                                            declared_adult=slug in admin.declared)
+    from wardrobe.body_surface import review_files
+
+    await review_files.save(store, settings.body_surface_root_path)  # RX3. kept in the dataset
     row = await _row(avatar, settings, store, admin.declared)
     return {"entry": entry, "character": row, "bodyState": auto,
-            "persist": f"commit {REGISTRY_FILE} (assets/body_surface/) under the reviewer's name; "
-                       "a disk that does not persist loses it at restart"}
+            "persist": "saved: kept in the private dataset, read back after a restart"}
 
 
 @router.post("/admin/reviews/{slug}/packet")
@@ -295,10 +282,12 @@ async def record_detail(slug: str, body: DetailFinding, request: Request, admin:
     except ValueError as exc:
         raise HTTPException(status_code=409, detail={"reason": "refused", "message": str(exc)}) from None
     logger.info("detail review recorded for %s by %s", slug, body.reviewer)
+    from wardrobe.body_surface import review_files
+
+    await review_files.save(store, settings.body_surface_root_path)  # RX3. kept in the dataset
     row = await _row(avatar, settings, store, admin.declared)
     return {"entry": entry, "character": row,
-            "persist": "commit adult-detail-reviews.json and packets/ (assets/body_surface/) under the "
-                       "reviewer's name; a disk that does not persist loses it at restart"}
+            "persist": "saved: kept in the private dataset, read back after a restart"}
 
 
 __all__ = ["router"]

@@ -89,3 +89,51 @@ def test_codex_the_registry_own_entry_wins_over_an_export_for_the_same_bytes(tmp
 def test_codex_packets_carried_by_an_installed_export_are_found(tmp_path):
     (tmp_path / RF.DESIGN_FILE).write_text(json.dumps(export(DESIGN, DETAIL, PACKET)))
     assert RF.packets(tmp_path)[SHA] == PACKET[SHA]
+
+
+class _Store:
+    """A store as Forge uses it: put, exists, get by key."""
+
+    def __init__(self):
+        self.files = {}
+
+    async def put(self, key, data, *, content_type=None):
+        self.files[key] = data
+        return key
+
+    async def exists(self, key):
+        return key in self.files
+
+    async def get(self, key):
+        return self.files[key]
+
+
+def test_rx3_reviews_saved_to_the_store_come_back_on_a_fresh_forge(tmp_path):
+    import asyncio
+
+    space, fresh = tmp_path / "space", tmp_path / "fresh"
+    space.mkdir()
+    fresh.mkdir()
+    (space / RF.DESIGN_FILE).write_text(json.dumps({"schema": RF.DESIGN_SCHEMA, "reviews": DESIGN}))
+    (space / RF.DETAIL_FILE).write_text(json.dumps({"schema": RF.DETAIL_SCHEMA, "reviews": {
+        SHA: {**DETAIL[SHA], "packet": f"packets/{SHA}.json"}}}))
+    (space / "packets").mkdir()
+    (space / "packets" / f"{SHA}.json").write_text(json.dumps(PACKET[SHA]))
+    store = _Store()
+    asyncio.run(RF.save(store, space))
+    assert RF.STORE_KEY in store.files
+    # A restart, the workflow or this sandbox: an empty disk, the same dataset.
+    result = asyncio.run(RF.restore(store, fresh))
+    assert result["design"] == [SHA] and result["detail"] == [SHA] and not result["refused"]
+    assert design_review(fresh, SHA) is not None and detail_review(fresh, SHA) is not None
+    # Restored again: nothing changes, nothing replaced.
+    assert asyncio.run(RF.restore(store, fresh))["detail"] == []
+
+
+def test_rx3_a_store_without_reviews_or_a_broken_one_never_stops_a_forge(tmp_path):
+    import asyncio
+
+    store = _Store()
+    assert asyncio.run(RF.restore(store, tmp_path)) is None
+    store.files[RF.STORE_KEY] = b"not json"
+    assert asyncio.run(RF.restore(store, tmp_path)) is None

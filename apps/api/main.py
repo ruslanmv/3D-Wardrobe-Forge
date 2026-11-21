@@ -69,6 +69,14 @@ async def lifespan(app: FastAPI):
         await prebuilt.resume_withdrawals(orchestrator.store)
     except Exception:  # pragma: no cover - startup must not fail on this
         logger.exception("resuming withdrawals failed; pending ones stay blocked by their receipts")
+    # RX3. The reviews persons recorded, back from the dataset: a restart, the Prebuild runner and
+    # a local Forge see what the Space's Studio recorded. Merged, never replacing; never fatal.
+    from wardrobe.body_surface import review_files
+
+    restored = await review_files.restore(orchestrator.store, settings.body_surface_root_path)
+    if restored and (restored["design"] or restored["detail"]):
+        logger.info("reviews restored from the store: %d design, %d detail",
+                    len(restored["design"]), len(restored["detail"]))
     # CG6. Bare body-state files Forge can make itself, in the background: startup never waits
     # for them, and each one is imported only if the import check accepts it (a review first).
     auto_task = None

@@ -40,63 +40,10 @@ def load(path: Path, schema: str) -> dict:
 
 
 def merge(export: dict, root: Path) -> dict:
-    """Merge an export into ``root``; returns what was added, kept and refused, with reasons."""
-    from wardrobe.body_surface.eligibility import (
-        DETAIL_EVIDENCE_CHARS,
-        DETAIL_REVIEWS_FILE,
-        DETAIL_REVIEWS_SCHEMA,
-    )
+    """Merge an export into ``root`` (``review_files.merge_export``, the one implementation)."""
+    from wardrobe.body_surface.review_files import merge_export
 
-    if export.get("schema") != "wardrobe.reviews.export.v1":
-        raise ValueError("not a Forge review export (schema wardrobe.reviews.export.v1)")
-    from wardrobe.body_surface.review_files import normalize
-
-    normalize(root)  # RX2. an export committed over a registry becomes the registries first
-    out = {"design": [], "detail": [], "kept": [], "refused": []}
-    design_path, detail_path = root / DESIGN_FILE, root / DETAIL_REVIEWS_FILE
-    here_design = load(design_path, (export.get("designReviews") or {}).get("schema", ""))
-    here_detail = load(detail_path, DETAIL_REVIEWS_SCHEMA)
-    packets = export.get("packets") or {}
-
-    for sha, entry in ((export.get("designReviews") or {}).get("reviews") or {}).items():
-        mine = here_design.setdefault("reviews", {})
-        if sha in mine:
-            out["kept" if mine[sha] == entry else "refused"].append(
-                sha if mine[sha] == entry else f"{sha[:12]} design: a different finding is already here")
-            continue
-        mine[sha] = entry
-        out["design"].append(sha)
-
-    for sha, entry in ((export.get("detailReviews") or {}).get("reviews") or {}).items():
-        mine = here_detail.setdefault("reviews", {})
-        if sha in mine:
-            out["kept"].append(sha)
-            continue
-        design = (here_design.get("reviews") or {}).get(sha) or {}
-        packet = packets.get(sha)
-        why = None
-        if design.get("outcome") != "clearly-adult":
-            why = "no clearly-adult design finding for these bytes"
-        elif not packet or (packet.get("file") or {}).get("sha256") != sha:
-            why = "its review packet is missing or for other bytes"
-        elif len(str(entry.get("evidence", "")).strip()) < DETAIL_EVIDENCE_CHARS:
-            why = f"fewer than {DETAIL_EVIDENCE_CHARS} characters of evidence"
-        elif not entry.get("examined") or not str(entry.get("reviewer", "")).strip():
-            why = "no reviewer, or not marked as examined"
-        if why:
-            out["refused"].append(f"{sha[:12]} detail: {why}")
-            continue
-        packet_path = root / "packets" / f"{sha}.json"
-        packet_path.parent.mkdir(parents=True, exist_ok=True)
-        if not packet_path.exists():
-            packet_path.write_text(json.dumps(packet, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-        # The Space wrote its own absolute path; here the packet is the committed file.
-        mine[sha] = {**entry, "packet": f"packets/{sha}.json"}
-        out["detail"].append(sha)
-
-    for path, content in ((design_path, here_design), (detail_path, here_detail)):
-        path.write_text(json.dumps(content, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    return out
+    return merge_export(export, root)
 
 
 def main(argv=None) -> int:

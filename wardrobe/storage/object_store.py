@@ -477,7 +477,7 @@ class HfDatasetObjectStore(LocalObjectStore):
                 # WD1. A receipt is the only thing that keeps a withdrawn look withdrawn after
                 # this disk is gone, so it goes up with the next batch like a list does.
                 self._pending_receipts.add(key)
-            elif key == "access/revocations.json":
+            elif key in ("access/revocations.json", "state/reviews.json"):
                 # CG8. A revoked grant must stay revoked after a restart wipes this disk: the
                 # list goes up at once, on its own (rare, small, and a no-expiry grant depends
                 # on it). load() reads it back from the dataset when the disk has none.

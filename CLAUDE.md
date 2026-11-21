@@ -29,18 +29,13 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   One click from a phone: Prebuild wardrobe on branch `ultimate` with nothing changed makes the
   private looks only (its defaults); the garment and outfit build is `outfits` yes, `private_looks`
   no. `private-looks.yml` does the same once it is on the default branch.
-- **A detail review recorded in the Studio lives on the Space's disk**, which is lost at restart
-  and which the Prebuild runner never sees. It counts there only once committed
-  (`assets/body_surface/adult-detail-reviews.json` and its packet, under the reviewer's name).
-  RX1: the Review page's **Export reviews** button downloads every finding with its packets
-  (`GET /v1/admin/reviews/export`, admin only); `tools/body_surface/import_reviews.py <file>`
-  merges it into `assets/body_surface/` (never replaces a finding, refuses one Forge's rules
-  would), then commit. RX2: committing the export file straight over `adult-design-reviews.json`
-  works too — `wardrobe/body_surface/review_files.py` reads an export in place of either
-  registry, and turns it back into the registries and packets before the next review is written.
-  A finding's `evidence` is the reviewer's own words; when the reviewer restates it (2026-11-21:
-  the eight design findings), the earlier text stays beside it as `previousEvidence`, never lost.
-  Until then, build that character's detailed looks in the Studio itself.
+- **Reviews (RX3, simple):** in the Studio's Review page, a character whose design review is
+  clearly adult gets detail with one tap, **Approve detail** (the packet is made for her exact
+  file, the review recorded under the reviewer's name). Every review is saved to the private
+  dataset (`state/reviews.json`, `wardrobe/body_surface/review_files.py`) and read back when any
+  Forge starts — the Space after a restart, the Prebuild workflow, a local Forge. Nothing to
+  export or commit; **Export reviews** stays for a copy. A finding is never replaced; a reviewer
+  restating evidence keeps the old text as `previousEvidence`.
 - **After any deploy:** `.venv/bin/python tools/qa/space_smoke.py` (routes, gates refuse a
   guest, no Private to a guest, warm timings), `FORGE_GRANT=… .venv/bin/python tools/qa/grant_check.py`
   (what the companion's read grant opens — body catalogue, After Dark, After Dark · Bare — and that
