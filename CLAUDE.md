@@ -49,6 +49,12 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   watchdog stopping under 3 GB disk / 1.5 GB memory. Needs `pip install -e ".[hf]"` and
   `tools/fetch_library.py`. Run it detached (`setsid nohup … &`) and watch the log: a character
   takes hours. The token lives only in the environment — never a file, commit or log.
+- **Every private look and After Dark outfit, rendered from behind** (PV1):
+  `HF_TOKEN=… tools/populate_private.sh [slugs]` — per character a fresh Forge builds the
+  from-behind packs (doggy, back, fist, gape, core), publishes them, renders her in the chatbot
+  (all fours, face down, bent over; frames in `$WORK/renders/<slug>/sheet.png`, never
+  committed), then the rest of her private set and the outfit dictionary, each published as it
+  lands. `PHASES=behind` for the from-behind packs only; `RENDER=0` for no frames.
 - Local Forge for the Studio: `WARDROBE_ADMIN_PASSWORD=<random> WARDROBE_STORAGE_ROOT=<scratch>
   .venv/bin/python -m uvicorn apps.api.main:app --port 8091`, then `POST /v1/admin/session`
   for a token kept in an owner-only scratch file, deleted when done.
