@@ -158,3 +158,22 @@ def test_bd28_the_open_ring_is_round_dark_inside_and_stays_inside_its_patch():
     assert np.allclose(out[2][:2], shade[2][:2], atol=40)  # her own skin past the patch, near enough
     h = BD._height(where, marks, spec, 1.0)
     assert h[0] < h[1]  # the centre goes in, the rim stands up
+
+
+def test_bd29_her_crotch_is_on_her_midline_seam_not_the_inner_edge_of_a_thigh():
+    from types import SimpleNamespace
+
+    from wardrobe.vrm import body_detail as BD
+
+    h = 1.63
+    nip = lambda x: [x, h * 0.72, 0.12]  # noqa: E731 - in the nipple band, in front
+    seam = [[0.0, 0.80, -0.01 * i] for i in range(4)]  # her midline seam, lowest at 0.80 m
+    thighs = [[0.006, 0.76, 0.0], [-0.006, 0.76, 0.0]]  # thighs meeting 4 cm lower, 6 mm out
+    points = np.array([nip(0.09), nip(-0.09), *seam, *thighs, [0.0, 0.0, 0.0]])
+    marks = BD.find_landmarks(points, SimpleNamespace(height_m=h), 1.0, 0.0, 0.0)
+    assert marks is not None
+    assert marks.crotch[0] == 0.0 and abs(marks.crotch[1] - 0.80) < 1e-9
+    # No seam near it (covered, cut away): the old landmark stands.
+    marks = BD.find_landmarks(np.array([nip(0.09), nip(-0.09), *thighs, [0.0, 0.0, 0.0]]),
+                              SimpleNamespace(height_m=h), 1.0, 0.0, 0.0)
+    assert abs(marks.crotch[1] - 0.76) < 1e-9

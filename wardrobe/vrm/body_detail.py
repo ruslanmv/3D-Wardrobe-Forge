@@ -63,6 +63,11 @@ NIPPLE_BAND = (0.66, 0.79)
 NIPPLE_LATERAL = (0.025, 0.09)
 CROTCH_BAND = (0.38, 0.56)
 MIDLINE = 0.006
+#: BD29. How close to her axis a vertex must be to be on the mesh's seam (VRoid seams are exact).
+SEAM_TOLERANCE_M = 0.0015
+#: BD29. How far above the old landmark the seam's lowest point may be (a share of her height): a
+#: body whose skin has no seam near the crotch (covered, cut away) keeps the old landmark.
+MAX_CROTCH_LIFT = 0.04
 
 
 STATES_PATH = PRESETS_PATH.with_name("states.json")
@@ -187,6 +192,18 @@ def find_landmarks(points: np.ndarray, measurements: BodyMeasurements, forward: 
     # Her body is symmetric about the axis through her hips: the lowest point inside the midline band
     # can be the inner edge of a thigh (MakeHuman's, 19 mm out). The vulva is on the axis itself.
     crotch[0] = axis_x
+    # BD29. And its height: on VRoid bodies whose thighs meet (Avatar A), that inner thigh edge is
+    # 4 cm below her real crotch (B 1.3, fem 1.6, masc 1.8 cm), so every distance the anatomy is
+    # drawn at was measured from a point under her body: the anus centre fell where she has no
+    # midline skin, and its rim and the vulva's lower part were painted on her inner thighs —
+    # which bending her legs then stretched into bands (Step 5 rear views, 2026-11-21). A
+    # symmetric mesh has vertices on the seam itself; the lowest of those is her crotch.
+    seam = between & (np.abs(points[:, 0] - axis_x) < SEAM_TOLERANCE_M)
+    if seam.any():
+        low = float(points[seam, 1].min())
+        if crotch[1] < low <= crotch[1] + MAX_CROTCH_LIFT * height:
+            crotch[1] = low
+            crotch[2] = float(points[np.flatnonzero(seam)[np.argmin(points[seam, 1])], 2])
     return Landmarks(nipples=(nipples[0], nipples[1]), crotch=crotch, forward=forward, axis_x=axis_x,
                      scale=height / REFERENCE_HEIGHT_M)
 
