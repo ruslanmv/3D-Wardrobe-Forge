@@ -521,7 +521,9 @@ switches live in one look:
 | ass (`doggy-anal-fisted`) | in her pussy | `doggy-anal-fisted-creampie`: ass gaping, empty | fist |
 | ass, the ring (`doggy-anal-ring`) | in her pussy | `doggy-ring-creampie` | ring |
 | pussy (`doggy-fisted`) | in her ass | `doggy-fisted-anal-cum`: pussy gaping, ass full | fist |
+| both, tied and marked (`sado-both-fisted`) | anywhere | `sado-both-fisted-cum`: rope lines, welts, both full | rough |
 
 The chatbot picks them in `PrivateActionBridge` `AFTER_ANAL_FIST`; its shows are
-`fist-then-inside` (Valentina), `worse-than-last-time` (Chiara), `fist-then-ass` (Valentina).
+`fist-then-inside` (Valentina), `worse-than-last-time` (Chiara), `fist-then-ass` (Valentina),
+`two-hands` (Valentina, BD33: tied, marked, both hands, agreed with green/yellow/red).
 Check them with `tools/qa/verify_set.sh tools/qa/checks/painter.txt <out>` (line `stories-a`).
