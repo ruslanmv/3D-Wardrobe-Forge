@@ -150,7 +150,8 @@ def test_bd28_the_open_ring_is_round_dark_inside_and_stays_inside_its_patch():
     spec = {**BD.load_presets()["natural"], **states["doggy-anal-ring"]["set"]}
     per, R = spec["perineum"], BD.RING_RADIUS
     # On her midline behind the crotch: the centre, the rim, and 2.6 cm out (past the patch).
-    where = np.array([[0.0, 0.80 + 0.005, -per], [0.7 * R, 0.80 + 0.005, -per], [0.026, 0.80 + 0.005, -per]])
+    # BD30: the rim is probed along her cleft (the ring is narrow across it).
+    where = np.array([[0.0, 0.80 + 0.005, -per], [0.0, 0.80 + 0.005, -per - 0.7 * R], [0.026, 0.80 + 0.005, -per]])
     shade = np.repeat([[200.0, 170.0, 160.0]], 3, axis=0)
     out, _ = BD._paint(shade.copy(), where, marks, spec, 1.0, shade=False)
     assert out[0].sum() < 0.45 * shade[0].sum()  # a dark centre
@@ -177,3 +178,15 @@ def test_bd29_her_crotch_is_on_her_midline_seam_not_the_inner_edge_of_a_thigh():
     marks = BD.find_landmarks(np.array([nip(0.09), nip(-0.09), *thighs, [0.0, 0.0, 0.0]]),
                               SimpleNamespace(height_m=h), 1.0, 0.0, 0.0)
     assert abs(marks.crotch[1] - 0.76) < 1e-9
+
+
+def test_bd30_the_ring_is_narrow_across_her_cleft():
+    from wardrobe.vrm import body_detail as BD
+
+    spec = {**BD.load_presets()["natural"], **BD.load_states()["doggy-anal-ring"]["set"]}
+    per, R = spec["perineum"], BD.RING_RADIUS
+    t = np.array([-per, -per - 0.8 * R])
+    across = BD._ring_distance(np.array([0.8 * R, 0.0]), t, spec, 1.0)
+    assert across[0] > across[1]  # the same offset reaches further out across the cleft than along it
+    patch = BD._anus_patch(np.array([0.012, 0.0]), np.array([-per, -per - 0.012]), spec, 1.0)
+    assert patch[0] < 1.0 == patch[1]  # 1.2 cm to her side is already the feather; along it, solid

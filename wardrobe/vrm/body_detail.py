@@ -636,8 +636,9 @@ def _anus_patch(u: np.ndarray, t: np.ndarray, spec: dict, s: float) -> np.ndarra
     her legs move, and a strip of plain skin stays between it and her vulva.
     """
     per = float(spec.get("perineum", 0.032)) * s
-    d = np.sqrt(u ** 2 + (t + per) ** 2)
-    inner, outer = (RING_PATCH if _ring(spec) > 0 else ANUS_PATCH)
+    ring = _ring(spec) > 0
+    d = _ring_distance(u, t, spec, s) if ring else np.sqrt(u ** 2 + (t + per) ** 2)  # BD30
+    inner, outer = (RING_PATCH if ring else ANUS_PATCH)
     return 1.0 - _smoothstep(inner * s, outer * s, d)
 
 
@@ -646,6 +647,17 @@ def _anus_patch(u: np.ndarray, t: np.ndarray, spec: dict, s: float) -> np.ndarra
 RING_PATCH = (0.019, 0.023)
 #: BD28. The ring's outer radius (its puffy rim's edge), metres at 1.63 m: ~3.6 cm across.
 RING_RADIUS = 0.018
+#: BD30. How much narrower the ring is across her cleft than along it. At rest her cleft walls rise
+#: within ~1 cm of the midline; a round ring's sides sat on them, and every position that opens the
+#: cleft (bending over, knees up) stretched them into pink wings or a sideways band (2026-11-21).
+#: Drawn this narrow, the opened cleft spreads it back to round.
+RING_ASPECT = 0.55
+
+
+def _ring_distance(u: np.ndarray, t: np.ndarray, spec: dict, s: float) -> np.ndarray:
+    """BD30. Distance from the ring's centre, across her cleft counted 1/RING_ASPECT times."""
+    per = float(spec.get("perineum", 0.032)) * s
+    return np.sqrt((u / RING_ASPECT) ** 2 + (t + per) ** 2)
 
 
 def _ring(spec: dict) -> float:
@@ -661,7 +673,7 @@ def _ring_layers(u: np.ndarray, t: np.ndarray, spec: dict, s: float) -> list:
     k = _ring(spec)
     R = RING_RADIUS * s
     per = float(spec.get("perineum", 0.032)) * s
-    au, at = u, t + per
+    au, at = u / RING_ASPECT, t + per  # BD30. narrow across her cleft
     d = np.sqrt(au ** 2 + at ** 2)
     angle = np.arctan2(at, au)
     out = []
@@ -690,8 +702,8 @@ def _ring_height(u: np.ndarray, t: np.ndarray, spec: dict, s: float, k: float) -
     goes in deep; the creases are cut in."""
     R = RING_RADIUS * s
     per = float(spec.get("perineum", 0.032)) * s
-    d = np.sqrt(u ** 2 + (t + per) ** 2)
-    angle = np.arctan2(t + per, u)
+    d = _ring_distance(u, t, spec, s)  # BD30
+    angle = np.arctan2(t + per, u / RING_ASPECT)
     seams = np.clip((np.cos(9 * angle + 0.4) - 0.82) / 0.18, 0.0, 1.0)
     h = 0.0026 * k * np.exp(-((d / R - 0.68) / 0.16) ** 2) * (1.0 - 0.35 * seams)
     h -= 0.007 * k * (1.0 - _smoothstep(0.0, 0.48 * R, d)) ** 1.4
