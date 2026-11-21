@@ -1,0 +1,66 @@
+# HS1. Does the Space deploy still work, both ways, without touching Hugging Face?
+#
+# Runs on every push to a branch that changes the deploy (and by hand). It never uploads: both
+# modes are dry runs, and each image is built and started here, on the runner.
+#   1. Today's deploy (the default): staged as before, its image built from the main Dockerfile
+#      and started, /health answered.
+#   2. The hidden-source deploy (HIDDEN_SOURCE=1): the Space folder holds only the four loader
+#      files and no code of ours; the thin image built from them holds none either; started
+#      with the staged source as if downloaded (SRC_DIR), /health answered.
+name: Verify Space deploy
+on:
+  push:
+    paths:
+      - "deploy/huggingface/**"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - ".github/workflows/verify-space-deploy.yml"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Today's deploy, dry run (unchanged)
+        run: DRY_RUN=1 STAGE_TO="$RUNNER_TEMP/classic" sh deploy/huggingface/deploy.sh
+
+      - name: Today's image builds and answers /health
+        run: |
+          docker build --build-arg FETCH_LIBRARY=0 -t forge-classic "$RUNNER_TEMP/classic"
+          docker run -d --name classic -p 8081:8080 forge-classic
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8081/health && exit 0; sleep 2; done
+          docker logs classic; exit 1
+
+      - name: Hidden-source deploy, dry run
+        run: |
+          DRY_RUN=1 HIDDEN_SOURCE=1 STAGE_TO="$RUNNER_TEMP/src" THIN_TO="$RUNNER_TEMP/thin" \
+            sh deploy/huggingface/deploy.sh
+
+      - name: The Space folder holds the loader only, no code of ours
+        run: |
+          cd "$RUNNER_TEMP/thin"
+          ls -A | sort > files.txt; cat files.txt
+          test "$(grep -v '^files.txt$' files.txt | tr '\n' ' ')" = "Dockerfile README.md requirements.txt start.sh "
+          ! grep -rqE "^(from|import) wardrobe|apps\.api" Dockerfile requirements.txt README.md
+          test -f "$RUNNER_TEMP/src/apps/studio/next/index.html"   # the Studio build travels with the code
+
+      - name: The thin image builds, has no code of ours, and runs the staged source
+        run: |
+          rm -f "$RUNNER_TEMP/thin/files.txt"
+          docker build -t forge-thin "$RUNNER_TEMP/thin"
+          docker run --rm --entrypoint sh forge-thin -c \
+            '! find / -xdev \( -path "*/wardrobe/vrm/*" -o -path "*/apps/api/*" \) -name "*.py" 2>/dev/null | grep -q .'
+          chmod -R a+rX "$RUNNER_TEMP/src"
+          docker run -d --name thin -p 8082:8080 -e SRC_DIR=/src -e FETCH_LIBRARY=0 \
+            -v "$RUNNER_TEMP/src:/src:ro" forge-thin
+          for i in $(seq 1 90); do curl -sf http://127.0.0.1:8082/health && exit 0; sleep 2; done
+          docker logs thin; exit 1

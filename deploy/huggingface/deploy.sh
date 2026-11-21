@@ -4,6 +4,13 @@
 #     HF_TOKEN=hf_... sh deploy/huggingface/deploy.sh                 # ruslanmv/3D-Wardrobe-Forge
 #     HF_TOKEN=hf_... HF_SPACE_REPO=you/your-space sh deploy/huggingface/deploy.sh
 #     DRY_RUN=1 sh deploy/huggingface/deploy.sh                       # stage only, print the tree
+#     HIDDEN_SOURCE=1 HF_TOKEN=hf_... sh deploy/huggingface/deploy.sh  # HS1: no code in the Space
+#
+# HS1. With HIDDEN_SOURCE=1 the Space gets no code: the staged source (with the Studio's React
+# build made here) goes to a PRIVATE repository (HF_SOURCE_REPO, default <space>-src), and the
+# Space gets deploy/huggingface/thin (Dockerfile, start.sh), its README and a requirements.txt of
+# third-party names; start.sh downloads the code at start with SRC_TOKEN, a read-only token set
+# as a Space SECRET. Without HIDDEN_SOURCE nothing in this script changes.
 #
 # What the Space receives is the committed HEAD, not the working tree: `git
 # archive` of exactly what the Dockerfile copies. Uploading `.` (as this script
@@ -46,6 +53,30 @@ echo "Staged $(find "$STAGE" -type f | wc -l | tr -d ' ') files from $SHA ($(du 
 if [ -n "${STAGE_TO:-}" ]; then
     # Keep a copy, e.g. to `docker build` exactly what the Space will build.
     rm -rf "$STAGE_TO" && cp -R "$STAGE" "$STAGE_TO"
+fi
+
+if [ "${HIDDEN_SOURCE:-0}" = "1" ]; then
+    HF_SOURCE_REPO="${HF_SOURCE_REPO:-${HF_SPACE_REPO}-src}"
+    # The Studio's React build (the main Dockerfile's `studio` stage), made here into the source.
+    if [ "${SKIP_STUDIO:-0}" != "1" ]; then
+        (cd "$STAGE/apps/studio/web" && npm ci --no-audit --no-fund >/dev/null && npm run build >/dev/null \
+            && rm -rf node_modules)
+    fi
+    THIN="$(mktemp -d)"
+    trap 'rm -rf "$STAGE" "$THIN"' EXIT
+    cp deploy/huggingface/thin/Dockerfile deploy/huggingface/thin/start.sh "$THIN/"
+    cp deploy/huggingface/SPACE_README.md "$THIN/README.md"
+    # Third-party names and versions only, exactly what `pip install ".[preview,s3,redis,hf]"` asks.
+    python3 deploy/huggingface/thin/requirements.py "$STAGE/pyproject.toml" > "$THIN/requirements.txt"
+    echo "Hidden source: code -> $HF_SOURCE_REPO (private); Space -> $(ls "$THIN" | tr '\n' ' ')"
+    if [ -n "${STAGE_TO:-}" ]; then rm -rf "$STAGE_TO" && cp -R "$STAGE" "$STAGE_TO"; fi
+    if [ -n "${THIN_TO:-}" ]; then rm -rf "$THIN_TO" && cp -R "$THIN" "$THIN_TO"; fi
+    if [ "${DRY_RUN:-0}" = "1" ]; then exit 0; fi
+    : "${HF_TOKEN:?Set HF_TOKEN to a Hugging Face token with write access to $HF_SPACE_REPO and $HF_SOURCE_REPO}"
+    export HF_TOKEN
+    python3 deploy/huggingface/thin/publish.py "$HF_SPACE_REPO" "$HF_SOURCE_REPO" "$STAGE" "$THIN" "$SHA" \
+        "$(git rev-parse HEAD)"
+    exit 0
 fi
 if [ "${DRY_RUN:-0}" = "1" ]; then
     (cd "$STAGE" && find . -maxdepth 1 | sort)
