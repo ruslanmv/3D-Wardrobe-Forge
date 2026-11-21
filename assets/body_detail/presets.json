@@ -1,6 +1,6 @@
 {
  "schema": "wardrobe.bodyDetail.presets.v1",
- "about": "BD1-BD3. Variants of the detail painted on a bare body's skin (wardrobe/vrm/body_detail.py): colour and relief (a normal map). Sizes are metres for a 1.63 m body and scale with her height; tints multiply her own skin colour, so a preset suits every skin tone. hair: none | strip | triangle | trimmed | natural; hairColor RGB; relief: 0 (paint only) to about 1.5. Genital proportions: Lloyd et al., BJOG 2005 (adult women). Painted only on a bare look whose source has a person's full adult-design review with its packet, or Forge's own synthetic adult reference body.",
+ "about": "BD1-BD3. Variants of the detail painted on a bare body's skin (wardrobe/vrm/body_detail.py): colour and relief (a normal map). Sizes are metres for a 1.63 m body and scale with her height; tints multiply her own skin colour, so a preset suits every skin tone. hair: none | strip | triangle | trimmed | natural; hairColor RGB; relief: 0 (paint only) to about 1.5. Genital proportions: Lloyd et al., BJOG 2005 (adult women). Painted only on a bare look whose source has a person's full adult-design review with its packet, or Forge's own synthetic adult reference body. BD24: vivid and vivid-pink are the same anatomy with deeper contrast and stronger relief, so it reads at viewing distance (the owner, 2026-11-21); every earlier preset is kept.",
  "presets": {
   "natural": {
    "label": "Natural",
@@ -539,6 +539,148 @@
    "anusRadius": 0.0065,
    "relief": 1.0,
    "anusDetail": 0.0
+  },
+  "vivid": {
+   "label": "Vivid (more visible detail)",
+   "areolaRadius": 0.019,
+   "nippleRadius": 0.0055,
+   "areolaTint": [
+    0.8,
+    0.62,
+    0.58
+   ],
+   "nippleTint": [
+    0.64,
+    0.44,
+    0.42
+   ],
+   "areolaStrength": 0.95,
+   "glands": 7,
+   "hair": "none",
+   "hairColor": [
+    58,
+    40,
+    31
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.062,
+   "majoraWidth": 0.0135,
+   "minoraWidth": 0.0075,
+   "minoraLength": 0.052,
+   "perineum": 0.032,
+   "anusRadius": 0.0065,
+   "relief": 1.4,
+   "majoraTint": [
+    0.88,
+    0.72,
+    0.7
+   ],
+   "minoraTint": [
+    0.8,
+    0.56,
+    0.58
+   ],
+   "rimTint": [
+    0.62,
+    0.42,
+    0.44
+   ],
+   "cleftTint": [
+    0.54,
+    0.39,
+    0.41
+   ],
+   "hoodTint": [
+    0.8,
+    0.62,
+    0.62
+   ],
+   "openingTint": [
+    0.46,
+    0.28,
+    0.32
+   ],
+   "perianalTint": [
+    0.7,
+    0.52,
+    0.5
+   ],
+   "anusTint": [
+    0.66,
+    0.46,
+    0.46
+   ]
+  },
+  "vivid-pink": {
+   "label": "Vivid pink (more visible detail, for pale and toon skin)",
+   "areolaRadius": 0.019,
+   "nippleRadius": 0.0055,
+   "areolaTint": [
+    0.9,
+    0.66,
+    0.68
+   ],
+   "nippleTint": [
+    0.8,
+    0.52,
+    0.56
+   ],
+   "areolaStrength": 0.95,
+   "glands": 7,
+   "hair": "none",
+   "hairColor": [
+    58,
+    40,
+    31
+   ],
+   "hairDensity": 0.0,
+   "vulvaLength": 0.062,
+   "majoraWidth": 0.0135,
+   "minoraWidth": 0.0075,
+   "minoraLength": 0.052,
+   "perineum": 0.032,
+   "anusRadius": 0.0065,
+   "relief": 1.3,
+   "majoraTint": [
+    0.94,
+    0.78,
+    0.78
+   ],
+   "minoraTint": [
+    0.9,
+    0.58,
+    0.64
+   ],
+   "rimTint": [
+    0.78,
+    0.46,
+    0.52
+   ],
+   "cleftTint": [
+    0.7,
+    0.44,
+    0.5
+   ],
+   "hoodTint": [
+    0.9,
+    0.68,
+    0.7
+   ],
+   "openingTint": [
+    0.6,
+    0.3,
+    0.38
+   ],
+   "perianalTint": [
+    0.88,
+    0.66,
+    0.66
+   ],
+   "anusTint": [
+    0.82,
+    0.54,
+    0.58
+   ]
   }
  }
 }
