@@ -38,6 +38,8 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
   would), then commit. RX2: committing the export file straight over `adult-design-reviews.json`
   works too — `wardrobe/body_surface/review_files.py` reads an export in place of either
   registry, and turns it back into the registries and packets before the next review is written.
+  A finding's `evidence` is the reviewer's own words; when the reviewer restates it (2026-11-21:
+  the eight design findings), the earlier text stays beside it as `previousEvidence`, never lost.
   Until then, build that character's detailed looks in the Studio itself.
 - **After any deploy:** `.venv/bin/python tools/qa/space_smoke.py` (routes, gates refuse a
   guest, no Private to a guest, warm timings), `FORGE_GRANT=… .venv/bin/python tools/qa/grant_check.py`
