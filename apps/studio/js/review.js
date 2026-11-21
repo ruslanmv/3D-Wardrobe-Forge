@@ -322,6 +322,55 @@ async function makePacket() {
     }
 }
 
+/**
+ * RX3. Approve detail in one tap (the owner's choice, 2026-11-21): her design review already says
+ * clearly adult; this makes Forge's packet for the exact file on screen and records the detail
+ * review under the reviewer's name, remembered on this device. Forge still checks every rule
+ * (the packet for these bytes, the design finding) and saves it to the private dataset.
+ */
+async function approveDetail() {
+    const row = state.current;
+    if (!row || !state.localHash) return;
+    let reviewer = '';
+    try {
+        reviewer = localStorage.getItem('forge_reviewer') || '';
+    } catch (_) {
+        /* no storage: asked each time */
+    }
+    if (!reviewer) reviewer = (window.prompt('Your name, as the reviewer') || '').trim();
+    if (!reviewer) return;
+    try {
+        localStorage.setItem('forge_reviewer', reviewer);
+    } catch (_) {
+        /* remembered for this tap only */
+    }
+    showError('');
+    const button = $('review-approve-detail');
+    button.disabled = true;
+    try {
+        await api.reviewPacket(row.slug);
+        const name = row.name || row.slug;
+        const result = await api.recordDetailReview(row.slug, {
+            sha256: state.localHash,
+            reviewer,
+            evidence: `Approved in the Studio: ${name} looked at front, side and back; her design review is clearly adult.`,
+            examined: true,
+        });
+        const index = state.characters.findIndex((r) => r.slug === row.slug);
+        state.characters[index] = result.character;
+        state.current = result.character;
+        renderAudit();
+        renderList();
+        renderDetail();
+        $('review-done').textContent = `Detail approved for ${name}. ${result.persist}.`;
+        $('review-done').hidden = false;
+    } catch (error) {
+        showError(error instanceof ApiError ? error.message : String(error));
+    } finally {
+        button.disabled = false;
+    }
+}
+
 async function submitDetail(event) {
     event.preventDefault();
     const v = detailValues();
@@ -342,7 +391,7 @@ async function submitDetail(event) {
         renderAudit();
         renderList();
         renderDetail();
-        $('review-done').textContent = `Recorded. To keep it, ${result.persist}.`;
+        $('review-done').textContent = `Recorded — ${result.persist}.`;
         $('review-done').hidden = false;
     } catch (error) {
         showError(error instanceof ApiError ? error.message : String(error));
@@ -443,7 +492,7 @@ async function submit(event) {
         renderAudit();
         renderList();
         renderDetail();
-        $('review-done').textContent = `Recorded. To keep it, ${result.persist}.`;
+        $('review-done').textContent = `Recorded — ${result.persist}.`;
         $('review-done').hidden = false;
     } catch (error) {
         showError(error instanceof ApiError ? error.message : String(error));
@@ -516,6 +565,7 @@ async function start() {
         }
         $('review-form').addEventListener('submit', submit);
         $('review-packet-btn').addEventListener('click', makePacket);
+        $('review-approve-detail').addEventListener('click', approveDetail);
         $('review-detail-form').addEventListener('submit', submitDetail);
         for (const id of ['review-detail-reviewer', 'review-detail-evidence', 'review-detail-examined']) {
             $(id).addEventListener('input', updateDetailSubmit);

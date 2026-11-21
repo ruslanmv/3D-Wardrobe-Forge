@@ -24,7 +24,6 @@ Studio shows that.
 
 from __future__ import annotations
 
-import contextlib
 import hashlib
 import logging
 from datetime import UTC, datetime
@@ -179,34 +178,10 @@ async def export_reviews(admin: AdminDep, settings: SettingsDep) -> dict:
     (``tools/body_surface/import_reviews.py``), under the reviewer's name. Nothing is made, changed
     or inferred here: it is a copy of what persons recorded. Admin only, like every review route.
     """
-    import json as _json
+    from wardrobe.body_surface import review_files
 
     _signed_in(admin)
-    root = settings.body_surface_root_path
-
-    def read(name: str) -> dict:
-        try:
-            return _json.loads((root / name).read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return {}
-
-    from wardrobe.body_surface.eligibility import DETAIL_REVIEWS_FILE
-
-    design, detail = read(REGISTRY_FILE), read(DETAIL_REVIEWS_FILE)
-    packets = {}
-    for registry in (design, detail):
-        for sha in (registry.get("reviews") or {}):
-            path = _packet_path(settings, sha)
-            if path.is_file():
-                with contextlib.suppress(OSError, ValueError):  # an unreadable packet is left out
-                    packets[sha] = _json.loads(path.read_text(encoding="utf-8"))
-    return {
-        "schema": "wardrobe.reviews.export.v1",
-        "exportedAt": datetime.now(UTC).isoformat(timespec="seconds"),
-        "designReviews": design,
-        "detailReviews": detail,
-        "packets": packets,
-    }
+    return review_files.export_document(settings.body_surface_root_path)
 
 
 @router.post("/admin/reviews/{slug}", status_code=201)
@@ -245,10 +220,12 @@ async def record(slug: str, body: Finding, request: Request, admin: AdminDep, se
 
         auto = await auto_body_state.ensure(avatar, settings, store,
                                            declared_adult=slug in admin.declared)
+    from wardrobe.body_surface import review_files
+
+    await review_files.save(store, settings.body_surface_root_path)  # RX3. kept in the dataset
     row = await _row(avatar, settings, store, admin.declared)
     return {"entry": entry, "character": row, "bodyState": auto,
-            "persist": f"commit {REGISTRY_FILE} (assets/body_surface/) under the reviewer's name; "
-                       "a disk that does not persist loses it at restart"}
+            "persist": "saved: kept in the private dataset, read back after a restart"}
 
 
 @router.post("/admin/reviews/{slug}/packet")
@@ -305,10 +282,12 @@ async def record_detail(slug: str, body: DetailFinding, request: Request, admin:
     except ValueError as exc:
         raise HTTPException(status_code=409, detail={"reason": "refused", "message": str(exc)}) from None
     logger.info("detail review recorded for %s by %s", slug, body.reviewer)
+    from wardrobe.body_surface import review_files
+
+    await review_files.save(store, settings.body_surface_root_path)  # RX3. kept in the dataset
     row = await _row(avatar, settings, store, admin.declared)
     return {"entry": entry, "character": row,
-            "persist": "commit adult-detail-reviews.json and packets/ (assets/body_surface/) under the "
-                       "reviewer's name; a disk that does not persist loses it at restart"}
+            "persist": "saved: kept in the private dataset, read back after a restart"}
 
 
 __all__ = ["router"]

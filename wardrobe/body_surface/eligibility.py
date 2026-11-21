@@ -89,11 +89,10 @@ def detail_review(review_root, source_sha256: str | None) -> dict | None:
     """CG10. The recorded detail review of these exact bytes, or None (incomplete counts as none)."""
     if not source_sha256:
         return None
-    try:
-        data = json.loads((Path(review_root) / DETAIL_REVIEWS_FILE).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if data.get("schema") != DETAIL_REVIEWS_SCHEMA:
+    from wardrobe.body_surface.review_files import detail_registry
+
+    data = detail_registry(review_root)  # RX2. its own file, or an export committed in its place
+    if not data or data.get("schema") != DETAIL_REVIEWS_SCHEMA:
         return None
     entry = (data.get("reviews") or {}).get(source_sha256)
     fields = ("reviewer", "date", "packet", "evidence")
