@@ -67,7 +67,8 @@ MIDLINE = 0.006
 
 STATES_PATH = PRESETS_PATH.with_name("states.json")
 STATES_SCHEMA = "wardrobe.bodyDetail.states.v1"
-STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen", "pumped", "anusGape", "vaginaGape", *FX.EFFECT_KEYS)
+STATE_KEYS = ("arousal", "vaginaOpen", "anusOpen", "pumped", "anusGape", "vaginaGape", "anusRing",
+              *FX.EFFECT_KEYS)
 EXTRAS_PATH = PRESETS_PATH.with_name("extras.json")
 EXTRAS_SCHEMA = "wardrobe.bodyDetail.extras.v1"
 #: BD6. What a persistent extra may set (tan lines now; marks, freckles… later).
@@ -521,6 +522,8 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float, keep: np.
             layers.append(([1.08, 1.04, 1.06], gloss * 0.55 * wreck))
             layers.append(([0.16, 0.09, 0.11], (1.0 - _smoothstep(hole * 0.3, hole * 0.75, ar)) * wreck))
 
+    if _ring(spec) > 0:  # BD28. the open ring is drawn instead of the anus above
+        layers[first_anus_layer:] = _ring_layers(u, t, spec, s)
     # BD24. Every anus layer stays off her inner thighs (``_behind_mask``); BD26, and off the skin
     # beside it that her thighs move (``_thigh_keep``), which bending her legs stretched into bands.
     behind = _behind_mask(where, marks, s) * _anus_patch(u, t, spec, s)  # BD27
@@ -617,8 +620,66 @@ def _anus_patch(u: np.ndarray, t: np.ndarray, spec: dict, s: float) -> np.ndarra
     """
     per = float(spec.get("perineum", 0.032)) * s
     d = np.sqrt(u ** 2 + (t + per) ** 2)
-    inner, outer = ANUS_PATCH[0] * s, ANUS_PATCH[1] * s
-    return 1.0 - _smoothstep(inner, outer, d)
+    inner, outer = (RING_PATCH if _ring(spec) > 0 else ANUS_PATCH)
+    return 1.0 - _smoothstep(inner * s, outer * s, d)
+
+
+#: BD28. The open ring's patch: solid to 1.9 cm, feathered out by 2.3 cm, measured on Avatar A as
+#: the skin her hips still move (79% hips at 1.5-2 cm; 94% thigh past 2 cm, which BD26 guards).
+RING_PATCH = (0.019, 0.023)
+#: BD28. The ring's outer radius (its puffy rim's edge), metres at 1.63 m: ~3.6 cm across.
+RING_RADIUS = 0.018
+
+
+def _ring(spec: dict) -> float:
+    """BD28. How far her anus is left open as a round ring after a fist, 0..1 (``anusRing``)."""
+    return float(np.clip(float(spec.get("anusRing", 0.0)), 0.0, 1.0))
+
+
+def _ring_layers(u: np.ndarray, t: np.ndarray, spec: dict, s: float) -> list:
+    """BD28. Her anus open in a round ring, facing whoever is behind her (owner's mock-ups,
+    2026-11-21): a puffy pink rim in soft segments, darker walls inside it, a dark centre, and two
+    fine creases round it in her own skin. Swollen and wet, never torn, never bleeding. Everything
+    sits inside ``RING_RADIUS`` (the patch, BD27, keeps it on skin her hips move)."""
+    k = _ring(spec)
+    R = RING_RADIUS * s
+    per = float(spec.get("perineum", 0.032)) * s
+    au, at = u, t + per
+    d = np.sqrt(au ** 2 + at ** 2)
+    angle = np.arctan2(at, au)
+    out = []
+    # Her skin flushed round it, fading to nothing by the crease.
+    out.append(([0.96, 0.80, 0.80], 0.35 * k * (1.0 - _smoothstep(0.8 * R, 1.15 * R, d))))
+    # Two fine creases just outside the rim, broken like real skin folds.
+    broken = 0.55 + 0.45 * np.cos(23 * angle + 0.7 * np.sin(4 * angle))
+    for at_r, width in ((1.0, 0.035), (1.1, 0.03)):
+        out.append(([0.62, 0.44, 0.46], 0.55 * k * broken * np.exp(-((d / R - at_r) / width) ** 2)))
+    # The puffy rim: a soft pink band in nine segments, a darker seam between each.
+    band = _smoothstep(0.42 * R, 0.52 * R, d) * (1.0 - _smoothstep(0.86 * R, 0.96 * R, d))
+    out.append(([0.98, 0.72, 0.74], 0.9 * k * band))
+    seams = np.clip((np.cos(9 * angle + 0.4) - 0.82) / 0.18, 0.0, 1.0)
+    out.append(([0.80, 0.52, 0.56], 0.6 * k * band * seams))
+    out.append(([1.10, 1.04, 1.05], 0.45 * k * band * np.exp(-((d / R - 0.66) / 0.08) ** 2)))  # wet
+    # Inside: her walls, darker going in, and the dark centre.
+    walls = _smoothstep(0.2 * R, 0.3 * R, d) * (1.0 - _smoothstep(0.42 * R, 0.5 * R, d))
+    out.append(([0.80, 0.46, 0.52], 0.9 * k * walls))
+    out.append(([0.40, 0.20, 0.24], 0.9 * k * (1.0 - _smoothstep(0.18 * R, 0.3 * R, d))))
+    out.append(([0.14, 0.07, 0.09], k * (1.0 - _smoothstep(0.1 * R, 0.2 * R, d))))
+    return out
+
+
+def _ring_height(u: np.ndarray, t: np.ndarray, spec: dict, s: float, k: float) -> np.ndarray:
+    """BD28. The ring's relief, from the same radii as its colour: the rim stands up, the centre
+    goes in deep; the creases are cut in."""
+    R = RING_RADIUS * s
+    per = float(spec.get("perineum", 0.032)) * s
+    d = np.sqrt(u ** 2 + (t + per) ** 2)
+    angle = np.arctan2(t + per, u)
+    seams = np.clip((np.cos(9 * angle + 0.4) - 0.82) / 0.18, 0.0, 1.0)
+    h = 0.0026 * k * np.exp(-((d / R - 0.68) / 0.16) ** 2) * (1.0 - 0.35 * seams)
+    h -= 0.007 * k * (1.0 - _smoothstep(0.0, 0.48 * R, d)) ** 1.4
+    h -= 0.0006 * k * np.exp(-((d / R - 1.0) / 0.035) ** 2)
+    return h
 
 
 def _anus_radius(spec: dict, s: float) -> float:
@@ -837,6 +898,9 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float,
         * (1.0 - _smoothstep(0.3, 1.1, ar)) * _smoothstep(0.1, 0.35, ar)
     creases, _ = _anus_folds(angle, ar, anus_open, _anus_detail(spec), _gape(spec))
     h -= 0.0009 * k * creases  # BD23. each crease cut in, so it catches the light
+    ring = _ring(spec)
+    if ring > 0:  # BD28. the open ring's relief instead, as its colour replaces the anus's
+        h = before_anus + _ring_height(u, t, spec, s, k * ring)
     mask = _behind_mask(where, marks, s) * _anus_patch(u, t, spec, s)  # BD27: the colour's boundary
     if keep is not None:
         mask = mask * keep  # BD26

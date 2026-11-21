@@ -132,3 +132,29 @@ def test_bd27_every_anus_layer_stays_inside_her_compact_patch():
     assert side < 1e-6  # nothing of it 2 cm out
     patch = BD._anus_patch(np.array([0.0, 0.012, 0.02]), np.full(3, -per), spec, 1.0)
     assert patch[0] == 1.0 and 0.0 < patch[1] < 1.0 and patch[2] == 0.0  # solid, feathered, gone
+
+
+def test_bd28_the_open_ring_is_round_dark_inside_and_stays_inside_its_patch():
+    from types import SimpleNamespace
+
+    from wardrobe.vrm import body_detail as BD
+
+    states = BD.load_states()
+    for name in ("doggy-anal-ring", "doggy-anal-ring-cum", "doggy-both-ring-cum"):
+        assert states[name]["set"]["anusRing"] == 1.0 and states[name]["body"]
+        assert not any(w in states[name]["body"] for w in ("torn", "blood", "bleed", "injur"))
+    marks = SimpleNamespace(
+        crotch=np.array([0.0, 0.80, 0.0]), forward=1.0, scale=1.0, axis_x=0.0,
+        nipples=(np.array([-0.09, 1.17, 0.1]), np.array([0.09, 1.17, 0.1])),
+    )
+    spec = {**BD.load_presets()["natural"], **states["doggy-anal-ring"]["set"]}
+    per, R = spec["perineum"], BD.RING_RADIUS
+    # On her midline behind the crotch: the centre, the rim, and 2.6 cm out (past the patch).
+    where = np.array([[0.0, 0.80 + 0.005, -per], [0.7 * R, 0.80 + 0.005, -per], [0.026, 0.80 + 0.005, -per]])
+    shade = np.repeat([[200.0, 170.0, 160.0]], 3, axis=0)
+    out, _ = BD._paint(shade.copy(), where, marks, spec, 1.0, shade=False)
+    assert out[0].sum() < 0.45 * shade[0].sum()  # a dark centre
+    assert out[1][0] > out[1][1] + 25  # a pink rim
+    assert np.allclose(out[2][:2], shade[2][:2], atol=40)  # her own skin past the patch, near enough
+    h = BD._height(where, marks, spec, 1.0)
+    assert h[0] < h[1]  # the centre goes in, the rim stands up

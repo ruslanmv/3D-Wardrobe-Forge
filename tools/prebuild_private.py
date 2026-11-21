@@ -78,6 +78,8 @@ GROUPS: list[tuple[str, str]] = [
     # the three fisted states and their filled ones; the bottle and its filled ones.
     ("fist", r"^doggy-.*fisted(-cum)?$"),
     ("bottle", r"^doggy-bottle"),
+    # BD28. The open ring after a fist (a new kind, beside the fisted pack): one pack, live switch.
+    ("ring", r"^doggy-.*ring(-cum)?$"),
     # Unrestrained (gate 2): the evening's build-up states, composed from existing effects.
     ("unrestrained",
      r"^(edge|dripping|breasts-belly|oiled-used|used|round-three|tied-edge|after-shower)$"),
