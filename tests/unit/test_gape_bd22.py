@@ -75,3 +75,37 @@ def test_bd24_a_bottle_gape_adds_little_width_past_a_fist():
     fist = BD._anus_radius({"anusOpen": 1.5, "anusGape": 1.0}, 1.0)
     bottle = BD._anus_radius({"anusOpen": 1.5, "anusGape": 1.5}, 1.0)
     assert fist < bottle < fist * 1.1
+
+
+def test_bd26_the_anus_is_never_painted_on_skin_her_thighs_move():
+    from wardrobe.vrm import body_detail as BD
+
+    keep = BD._thigh_keep(np.array([0.0, 0.3, 0.55, 0.8, 1.0]))
+    assert keep[0] == 1.0 and keep[1] == 1.0  # hips' skin: painted as before
+    assert 0.0 < keep[2] < 1.0  # feathered: her own skin blends in, no edge
+    assert keep[3] == 0.0 and keep[4] == 0.0  # thigh skin: never anus paint
+    assert BD._thigh_keep(None) is None  # no bones to read: as before BD26
+
+
+def test_bd26_only_the_anus_layers_are_protected_never_her_vulva():
+    from types import SimpleNamespace
+
+    from wardrobe.vrm import body_detail as BD
+
+    marks = SimpleNamespace(crotch=np.array([0.0, 0.80, 0.0]), forward=1.0)
+    # A strip of points through her crotch, from the vulva in front to past the anus behind.
+    t = np.linspace(-0.06, 0.07, 400)
+    where = np.stack([np.full_like(t, 0.004), 0.80 + np.abs(t) * 0.3, t], axis=1)
+    spec = {**BD.load_presets()["natural"], "anusOpen": 1.5, "anusGape": 1.5, "vaginaOpen": 0.6}
+    free, _ = BD._pelvis(where, marks, spec, 1.0)
+    thigh, _ = BD._pelvis(where, marks, spec, 1.0, np.zeros(len(where)))
+    front = where[:, 2] > 0.004  # her vulva's side of the crotch
+    def weights(layer):
+        return np.broadcast_to(np.asarray(layer[1], float), len(t))
+
+    changed = [i for i, (a, b) in enumerate(zip(free, thigh, strict=True)) if not np.allclose(weights(a), weights(b))]
+    assert changed, "the anus layers answer the protection"
+    for i in range(len(free)):
+        a, b = weights(free[i]), weights(thigh[i])
+        assert np.allclose(a[front], b[front]), f"layer {i} changed her vulva"
+        assert (b <= a + 1e-9).all()  # protection only ever takes paint away

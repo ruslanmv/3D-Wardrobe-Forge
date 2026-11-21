@@ -242,15 +242,17 @@ def paint_detail(document: GltfDocument, measurements: BodyMeasurements, *, pres
         density *= 2
         upscaled = True
     h, w = main.shape[:2]
-    samples = _texels(document, skin, w, h, marks, reach_chest, reach_pelvis, torso)
+    legs = _leg_weights(document, skin)
+    samples = _texels(document, skin, w, h, marks, reach_chest, reach_pelvis, torso, legs=legs)
     if samples is None:
         return None
-    rows, cols, where, frames = samples
+    rows, cols, where, frames, leg = samples
+    keep = _thigh_keep(leg)
     painted = np.zeros(len(rows), dtype=bool)
     layers = [(main, False)] + ([(shade, True)] if shade is not None else [])
     for image, is_shade in layers:
         colour = image[rows, cols, :3]
-        out, touched = _paint(colour, where, marks, spec, s, shade=is_shade)
+        out, touched = _paint(colour, where, marks, spec, s, shade=is_shade, keep=keep)
         image[rows, cols, :3] = out
         painted |= touched
     replaced = {skin.texture: _add(document, skin.texture, main, f"body detail {preset}")}
@@ -260,7 +262,7 @@ def paint_detail(document: GltfDocument, measurements: BodyMeasurements, *, pres
     relief = None
     if float(spec.get("relief", 1.0)) > 0:
         relief = _apply_relief(document, skin, material, textures, (h, w), rows, cols, where, frames,
-                               marks, spec, s, preset)
+                               marks, spec, s, preset, keep=keep)
     document.invalidate_cache()
     return BodyDetail(preset=preset, landmarks=marks.to_dict(), painted_texels=int(painted.sum()),
                       texels_per_mm=density, upscaled=upscaled,
@@ -271,7 +273,7 @@ def paint_detail(document: GltfDocument, measurements: BodyMeasurements, *, pres
 
 
 def _paint(colour: np.ndarray, where: np.ndarray, marks: Landmarks, spec: dict, s: float, *,
-           shade: bool) -> tuple[np.ndarray, np.ndarray]:
+           shade: bool, keep: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
     """The texels' new colours, and which were changed. Pure: colours and body points in, out."""
     out = colour.copy()
     touched = np.zeros(len(colour), dtype=bool)
@@ -292,7 +294,7 @@ def _paint(colour: np.ndarray, where: np.ndarray, marks: Landmarks, spec: dict, 
             out = _tint(out, [1.12, 1.08, 1.06], lift * 0.5)
             out = _tint(out, [1.06, 1.0, 0.98], gland * 0.6)  # glands: a touch lighter, raised
             touched |= (areola > 0.01) | (nipple_w > 0.01)
-    layers, hair = _pelvis(where, marks, spec, s)
+    layers, hair = _pelvis(where, marks, spec, s, keep)
     for tint, weight in layers:
         out = _tint(out, tint, weight)
         touched |= weight > 0.01
@@ -354,7 +356,7 @@ def _areola(where: np.ndarray, centre: np.ndarray, spec: dict, s: float):
     return areola, nipple, gland
 
 
-def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
+def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float, keep: np.ndarray | None = None):
     """The vulva, perineum and anus as tint layers, and pubic hair, in her own coordinates.
 
     ``u`` is lateral (metres from her midline); ``t`` runs along her midline through her crotch
@@ -519,8 +521,11 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
             layers.append(([1.08, 1.04, 1.06], gloss * 0.55 * wreck))
             layers.append(([0.16, 0.09, 0.11], (1.0 - _smoothstep(hole * 0.3, hole * 0.75, ar)) * wreck))
 
-    # BD24. Every anus layer stays off her inner thighs (``_behind_mask``).
+    # BD24. Every anus layer stays off her inner thighs (``_behind_mask``); BD26, and off the skin
+    # beside it that her thighs move (``_thigh_keep``), which bending her legs stretched into bands.
     behind = _behind_mask(where, marks, s)
+    if keep is not None:
+        behind = behind * keep
     layers[first_anus_layer:] = [(tint, weight * behind) for tint, weight in layers[first_anus_layer:]]
     hair = _hair(u, np.where(in_front, t, -1.0), in_front, L, spec, s)
     return layers, hair
@@ -736,7 +741,8 @@ def _hair(u, t, in_front, length, spec, s):
 RELIEF_STEP_M = 0.0003
 
 
-def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.ndarray:
+def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float,
+            keep: np.ndarray | None = None) -> np.ndarray:
     """BD2. How far her surface stands out (+) or in (-) of the mesh, metres, at each point.
 
     The same fields the colours are drawn from, so a fold is where its colour is. Depths are what
@@ -805,22 +811,26 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.nda
         * (1.0 - _smoothstep(0.3, 1.1, ar)) * _smoothstep(0.1, 0.35, ar)
     creases, _ = _anus_folds(angle, ar, anus_open, _anus_detail(spec), _gape(spec))
     h -= 0.0009 * k * creases  # BD23. each crease cut in, so it catches the light
-    h = before_anus + (h - before_anus) * _behind_mask(where, marks, s)
+    mask = _behind_mask(where, marks, s)
+    if keep is not None:
+        mask = mask * keep  # BD26
+    h = before_anus + (h - before_anus) * mask
     hair = _hair(u, np.where(in_front, t, -1.0), in_front, L, spec, s)
     if hair is not None:
         h += 0.00035 * k * hair[0]
     return h + FX.relief(where, marks, spec, s) * float(spec.get("relief", 1.0))
 
 
-def _relief_normals(where: np.ndarray, frames: np.ndarray, marks: Landmarks, spec: dict, s: float):
+def _relief_normals(where: np.ndarray, frames: np.ndarray, marks: Landmarks, spec: dict, s: float,
+                    keep: np.ndarray | None = None):
     """BD2. Tangent-space normals (N, 3) from the height field's gradient on her surface, and which
     texels it bends at all."""
     grad = np.zeros_like(where)
     for axis in range(3):
         step = np.zeros(3)
         step[axis] = RELIEF_STEP_M
-        grad[:, axis] = (_height(where + step, marks, spec, s) - _height(where - step, marks, spec, s)) \
-            / (2 * RELIEF_STEP_M)
+        ahead = _height(where + step, marks, spec, s, keep)
+        grad[:, axis] = (ahead - _height(where - step, marks, spec, s, keep)) / (2 * RELIEF_STEP_M)
     tangent, up, normal = frames[:, 0], frames[:, 1], frames[:, 2]
     along = grad - normal * np.sum(grad * normal, axis=1, keepdims=True)
     bent = normal - along
@@ -832,9 +842,9 @@ def _relief_normals(where: np.ndarray, frames: np.ndarray, marks: Landmarks, spe
 
 
 def _apply_relief(document, skin, material, textures, shape, rows, cols, where, frames, marks, spec, s,
-                  preset) -> dict | None:
+                  preset, keep: np.ndarray | None = None) -> dict | None:
     """BD2. Write the relief into her skin material's normal map (blended), or a new one."""
-    local, moved = _relief_normals(where, frames, marks, spec, s)
+    local, moved = _relief_normals(where, frames, marks, spec, s, keep)
     if not moved.any():
         return None
     h, w = shape
@@ -943,11 +953,18 @@ def _texels_per_mm(document, skin, shape, marks, reach_chest, reach_pelvis, tors
     return float(np.sqrt(pixel_area / body_area)) if body_area > 0 else 0.0
 
 
-def _texels(document, skin, w, h, marks, reach_chest, reach_pelvis, torso=None):
-    """(rows, cols, body points) of every texel the triangles near the landmarks cover."""
+def _texels(document, skin, w, h, marks, reach_chest, reach_pelvis, torso=None, legs=None):
+    """(rows, cols, body points, frames) of every texel the triangles near the landmarks cover.
+
+    BD26. With ``legs`` (one array per skin part, from ``_leg_weights``, or None), a fifth element:
+    how much her thighs move each texel, 0..1, interpolated across the triangle like its point.
+    """
     rows, cols, where, frames = [], [], [], []
-    for primitive, points, triangles in skin.parts:
+    for index, (primitive, points, triangles) in enumerate(skin.parts):
         chosen = triangles[_near(points, triangles, marks, reach_chest, reach_pelvis, torso)]
+        if legs is not None:  # BD26. the thigh share rides along as a fourth column
+            column = legs[index] if legs[index] is not None else np.zeros(len(points))
+            points = np.hstack([points, column[:, None]])
         if not len(chosen):
             continue
         uv = document.read_accessor(primitive["attributes"]["TEXCOORD_0"]).astype(np.float64)[:, :2]
@@ -962,7 +979,7 @@ def _texels(document, skin, w, h, marks, reach_chest, reach_pelvis, torso=None):
                 rows.append(r)
                 cols.append(c)
                 where.append(p)
-                frames.append(np.repeat(_frame(points[tri], corners)[None], len(r), axis=0))
+                frames.append(np.repeat(_frame(points[tri, :3], corners)[None], len(r), axis=0))
     if not rows:
         return None
     rows, cols = np.concatenate(rows), np.concatenate(cols)
@@ -970,7 +987,78 @@ def _texels(document, skin, w, h, marks, reach_chest, reach_pelvis, torso=None):
     # A texel two triangles share is painted once.
     key = rows.astype(np.int64) * w + cols
     _, first = np.unique(key, return_index=True)
-    return rows[first], cols[first], where[first], frames[first]
+    if legs is None:
+        return rows[first], cols[first], where[first], frames[first]
+    return rows[first], cols[first], where[first, :3], frames[first], where[first, 3]
+
+
+def _leg_weights(document, skin) -> list | None:
+    """BD26. Per skin part, how much each vertex is moved by her thighs (0..1), or None.
+
+    The share of its skin weights held by her upper legs and every bone under them (VRoid's
+    twist and helper bones included). None for the whole body when the file has no humanoid
+    upper legs; None for a part without joints, which then counts as not thigh.
+    """
+    from wardrobe.vrm.inspect import inspect_document
+
+    try:
+        bones = inspect_document(document).humanoid_bones or {}
+    except Exception:  # noqa: BLE001 - not a VRM we can read bones from: no protection, as before
+        return None
+    gltf = document.gltf
+    nodes = gltf.get("nodes", [])
+    stack = [bones[b] for b in ("leftUpperLeg", "rightUpperLeg") if b in bones]
+    if not stack:
+        return None
+    leg: set[int] = set()
+    while stack:
+        n = stack.pop()
+        if n in leg:
+            continue
+        leg.add(n)
+        stack += nodes[n].get("children", [])
+    out = []
+    for primitive, points, _ in skin.parts:
+        attrs = primitive.get("attributes", {})
+        joints = None
+        for mesh_index, mesh in enumerate(gltf.get("meshes", [])):
+            if any(p is primitive for p in mesh.get("primitives", [])):
+                for node in nodes:
+                    if node.get("mesh") == mesh_index and "skin" in node:
+                        joints = gltf["skins"][node["skin"]]["joints"]
+                        break
+                break
+        if joints is None or "JOINTS_0" not in attrs or "WEIGHTS_0" not in attrs:
+            out.append(None)
+            continue
+        J = document.read_accessor(attrs["JOINTS_0"]).astype(np.int64)
+        W = document.read_accessor(attrs["WEIGHTS_0"]).astype(np.float64)
+        if W.max() > 1.5:  # normalized integer weights
+            W = W / W.max()
+        is_leg = np.isin(np.asarray(joints, dtype=np.int64)[np.clip(J, 0, len(joints) - 1)], list(leg))
+        share = (W * is_leg).sum(axis=1) / np.maximum(W.sum(axis=1), 1e-9)
+        out.append(share if len(share) == len(points) else None)
+    return out
+
+
+def _thigh_keep(leg: np.ndarray | None) -> np.ndarray | None:
+    """BD26. 1 where her anus may be painted, fading to 0 on skin her thighs move.
+
+    Why (Avatar A from behind, 2026-11-21, after BD24). Skin 1-2 cm beside her anus, at the
+    height of her crotch, is skinned mostly to her thighs (50-90%). Painted there, a gaped or
+    fisted anus's red rim and walls were right in the mesh's rest pose, but every position that
+    bends her legs (all fours, face down, bent over) stretched those triangles down her inner
+    thighs into long red bands. BD24's mask by height could not see it: the skin is above the
+    crotch. Where the thigh moves the skin, her own skin shows: the anus colour and relief are
+    weighted down, so the texture underneath, the nearby thigh skin, is what remains, with a
+    feathered edge (the thresholds below). Only the anus: the skin round her vulva is itself
+    mostly thigh-skinned on VRoid bodies, and weighting it down took half her vulva away; it never
+    made bands. Her leg contours and the shading between her thighs are the texture's and the
+    renderer's, untouched.
+    """
+    if leg is None:
+        return None
+    return 1.0 - _smoothstep(0.4, 0.7, leg)
 
 
 def _frame(corners3d: np.ndarray, uv: np.ndarray) -> np.ndarray:
