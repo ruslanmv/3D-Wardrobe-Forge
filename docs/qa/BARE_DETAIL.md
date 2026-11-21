@@ -525,5 +525,5 @@ switches live in one look:
 
 The chatbot picks them in `PrivateActionBridge` `AFTER_ANAL_FIST`; its shows are
 `fist-then-inside` (Valentina), `worse-than-last-time` (Chiara), `fist-then-ass` (Valentina),
-`two-hands` (Valentina, BD33: tied, marked, both hands, agreed with green/yellow/red).
+`two-hands` (Valentina, BD33, shown as "Legata e spalancata": tied, marked, both hands, green/yellow/red).
 Check them with `tools/qa/verify_set.sh tools/qa/checks/painter.txt <out>` (line `stories-a`).
