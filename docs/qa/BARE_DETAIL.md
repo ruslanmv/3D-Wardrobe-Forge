@@ -399,6 +399,15 @@ write-once per file (`record_review`): to redo a character's review, remove its
 old entry first, then record the new finding with `tools/body_surface/gates.py`
 and its packet.
 
+## Her anus in detail (BD23)
+
+`_anus_folds` adds what a close look from behind expects: eighteen radial creases of uneven
+depth, sharpest near the centre, plus the darker, browner ring of skin round it (`perianalTint`)
+and a faint wet sheen between the creases. As she relaxes open the creases flatten, and under a
+gape they are covered. Colour (`_pelvis`) and relief (`_height`, each crease cut in) read the
+same helper. It is in every detailed look, not a state of its own. Checked in the flat view
+before and after: closed, relaxed open, and after the fist.
+
 ## Wrecked past a fist, and a gaping vagina (BD22)
 
 - `anusGape` now goes past 1 up to 1.5 (`_wreck`). Past a fist, the rim puffs up thick in six
