@@ -477,3 +477,53 @@ before and after: closed, relaxed open, and after the fist.
 - To tune a preset, change `presets.json`, rebuild that preset with `--base`, and
   render it. Change the anatomy fields in `body_detail.py` (`_pelvis`, `_height`,
   `_hair`) and run `tests/unit/test_body_detail.py`.
+- **Anatomy probe (seconds, a real body):** `tools/body_surface/anatomy_probe.py`
+  `landmarks` (is her crotch on her midline seam?), `mesh` (vertices, bones and
+  facing round her anus), `midline` (her skin along the midline), `layers`
+  (paint landing below her crotch, off her midline, or on thigh-moved skin).
+- **One exact pack in the chatbot, nothing published:** `tools/qa/verify_pack.sh`
+  (local Forge with `WARDROBE_HF_PUBLISH=false`, the look worn by id and hash),
+  then `tools/qa/compare_frames.py` for before/after from the same camera.
+
+## The thigh bands and the open ring (BD24–BD29)
+
+What Avatar A's red bands down her inner thighs (Step 5 rear views, all fours,
+face down, bent over) turned out to be, in the order it was learned:
+
+1. **BD24** masked anus paint below her crotch: thinner bands, still there.
+2. **BD26** guarded skin her thighs move (skin weights, `_thigh_keep`): measured
+   on her skin, the remaining red sat on skin 1-2 cm beside the anus that the
+   thighs move 50-90%; bending the legs stretched it.
+3. **BD27** drew every anus layer inside a compact patch (`_anus_patch`, ~3 cm):
+   thighs clear, but the anus vanished.
+4. **BD28** added a new kind, the open ring after a fist (`anusRing`, states
+   `doggy-anal-ring`, `-ring-cum`, `doggy-both-ring-cum`, pack `ring`): nothing
+   showed. `anatomy_probe.py midline` found no skin where its centre was drawn.
+5. **BD29, the cause:** `find_landmarks` took the lowest point within ~1 cm of
+   her axis as her crotch. Where a VRoid body's thighs meet near the midline
+   (Avatar A), that is a thigh's inner edge, 4 cm under her real crotch (B 1.3,
+   fem 1.6, masc 1.8 cm). Every anatomy distance was measured from under her
+   body. The crotch is now the lowest vertex on the mesh's exact seam. With it
+   the ring's centre and rim land on skin her hips move (thigh share ~0.01) and
+   no mask has to cut anything.
+
+Lessons: measure the body before changing the paint; a test on a synthetic body
+cannot show a landmark that is wrong on a real one; every look painted before
+BD29 has its anatomy lower than it should be and needs repainting, front and back.
+
+## The fist, then the finish (BD31, BD32)
+
+States for the chatbot's stories, each in the pack its first state is in, so the whole story
+switches live in one look:
+
+| After their fist in her… | then they finish… | state | pack |
+|---|---|---|---|
+| ass (`doggy-anal-fisted`) | in her pussy | `doggy-anal-fisted-creampie`: ass gaping, empty | fist |
+| ass, the ring (`doggy-anal-ring`) | in her pussy | `doggy-ring-creampie` | ring |
+| pussy (`doggy-fisted`) | in her ass | `doggy-fisted-anal-cum`: pussy gaping, ass full | fist |
+| both, tied and marked (`sado-both-fisted`) | anywhere | `sado-both-fisted-cum`: rope lines, welts, both full | rough |
+
+The chatbot picks them in `PrivateActionBridge` `AFTER_ANAL_FIST`; its shows are
+`fist-then-inside` (Valentina), `worse-than-last-time` (Chiara), `fist-then-ass` (Valentina),
+`two-hands` (Valentina, BD33, shown as "Legata e spalancata": tied, marked, both hands, green/yellow/red).
+Check them with `tools/qa/verify_set.sh tools/qa/checks/painter.txt <out>` (line `stories-a`).
