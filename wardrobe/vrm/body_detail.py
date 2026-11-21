@@ -473,8 +473,15 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
     angle = np.arctan2(at, au)
     # BD4. Relaxed open, the folds stretch flat and the centre widens to show her pinker inner rim.
     folds = 0.82 + 0.18 * (1.0 - 0.7 * anus_open) * np.cos(14 * angle + 0.6 * np.sin(5 * angle))
+    # BD23. The darker, browner skin round her anus first, wider than the ring itself.
+    creases, pigment = _anus_folds(angle, ar, anus_open)
+    layers.append((spec.get("perianalTint", [0.78, 0.62, 0.58]), pigment * 0.55))
     ring = (1.0 - _smoothstep(0.35, 1.0, ar)) * (0.6 + 0.4 * folds * np.clip(ar * 1.6, 0, 1))
     layers.append((spec.get("anusTint", [0.80, 0.64, 0.62]), ring * 0.85))
+    # BD23. Its creases, dark lines radiating from the centre, and a faint wet sheen between them.
+    layers.append(([0.52, 0.36, 0.36], creases * 0.75))
+    sheen = np.exp(-((ar - 0.42) / 0.12) ** 2) * (1.0 - creases)
+    layers.append(([1.06, 1.0, 1.01], sheen * 0.18 * (1.0 - 0.5 * anus_open)))
     core = 0.22 + 0.33 * anus_open
     if anus_open > 0:
         inner = np.exp(-((ar - core * 1.15) / (0.12 + 0.05 * anus_open)) ** 2)
@@ -538,6 +545,25 @@ def _vagina_gape(spec: dict) -> float:
     """BD22. Her vagina left gaping round after a fist or a bottle, 0..1.5 (``vaginaGape``): the
     opening rounds out and stays open, its walls glossy and flushed, its lips swollen."""
     return float(np.clip(float(spec.get("vaginaGape", 0.0)), 0.0, 1.5))
+
+
+def _anus_folds(angle, ar, anus_open: float):
+    """BD23. Her anus in detail: the radial creases of a puckered ring and the darker skin round it.
+
+    Returns ``(creases, pigment)``, both 0..1 per point. Eighteen creases of uneven depth (a few run
+    longer, as real ones do), sharpest near the centre and fading out; they flatten as she relaxes
+    open. The pigment is the darker, browner ring of skin that surrounds an anus, wider than the
+    folds. One source for the colour (``_pelvis``) and the relief (``_height``), so a crease is
+    where its shadow is.
+    """
+    flatten = 1.0 - 0.75 * anus_open
+    wobble = angle + 0.08 * np.sin(5 * angle) + 0.05 * np.sin(11 * angle + 1.3)
+    depth = 0.65 + 0.35 * np.cos(7 * angle + 0.9) ** 2  # some creases deeper than others
+    lines = np.clip(np.cos(18 * wobble), 0.0, 1.0) ** 6 * depth
+    reach = (1.0 - _smoothstep(0.25, 1.05 + 0.25 * depth, ar)) * _smoothstep(0.05, 0.22, ar)
+    creases = lines * reach * flatten
+    pigment = 1.0 - _smoothstep(0.55, 1.6, ar)
+    return creases, pigment
 
 
 def _anus_radius(spec: dict, s: float) -> float:
@@ -727,6 +753,8 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.nda
     h -= 0.0032 * k * (1.0 + 1.8 * anus_open) * (1.0 - _smoothstep(0.0, 0.9, ar)) ** 2
     h += 0.0005 * k * (1.0 - 0.7 * anus_open) * np.cos(14 * angle + 0.6 * np.sin(5 * angle)) \
         * (1.0 - _smoothstep(0.3, 1.1, ar)) * _smoothstep(0.1, 0.35, ar)
+    creases, _ = _anus_folds(angle, ar, anus_open)
+    h -= 0.0009 * k * creases  # BD23. each crease cut in, so it catches the light
     hair = _hair(u, np.where(in_front, t, -1.0), in_front, L, spec, s)
     if hair is not None:
         h += 0.00035 * k * hair[0]

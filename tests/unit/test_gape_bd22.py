@@ -30,3 +30,15 @@ def test_states_using_them_are_from_behind_and_never_injury():
         assert "from behind" in body
         assert not any(w in body for w in ("blood", "bleed", "torn", "tear", "injur"))
     assert np.isclose(states["doggy-bottle-anal"]["set"]["anusGape"], 1.5)
+
+
+def test_bd23_anus_creases_flatten_as_she_opens_and_colour_and_relief_share_them():
+    angle = np.linspace(-np.pi, np.pi, 720)
+    ar = np.full_like(angle, 0.5)
+    closed, pigment = BD._anus_folds(angle, ar, 0.0)
+    opened, _ = BD._anus_folds(angle, ar, 1.0)
+    assert closed.max() > 0.3 and opened.max() < closed.max() * 0.4
+    assert pigment.min() > 0.5  # the darker ring covers her anus
+    # Far out, neither: the detail stays on her anus.
+    far, far_pigment = BD._anus_folds(angle, np.full_like(angle, 2.0), 0.0)
+    assert far.max() == 0 and far_pigment.max() == 0
