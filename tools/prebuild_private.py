@@ -117,6 +117,18 @@ def load_names(path: Path, key: str) -> list[str]:
     return list(json.loads(path.read_text(encoding="utf-8"))[key])
 
 
+def group_of(state: str) -> str:
+    """The pack group a state lands in (``GROUPS`` in order, ``other`` when none matches)."""
+    return next((g for g, pattern in GROUPS if re.search(pattern, state)), "other")
+
+
+def skip_packs(packs: dict[str, list[str]], skip: set[str]) -> dict[str, list[str]]:
+    """BD37. ``packs`` without the groups in ``skip``, matched exactly: ``rough`` is the strong
+    marks only, never ``rough-soft`` or ``rough-light`` (a pack split past ten states,
+    ``rough-2``, goes with its group)."""
+    return {k: v for k, v in packs.items() if re.sub(r"-\d+$", "", k) not in skip}
+
+
 def state_groups(states: list[str]) -> dict[str, list[str]]:
     """Every state, in skin packs of at most ``MAX_STATES``, each starting with ``closed``.
 
@@ -127,7 +139,7 @@ def state_groups(states: list[str]) -> dict[str, list[str]]:
     for name in states:
         if name == "closed":
             continue
-        group = next((g for g, pattern in GROUPS if re.search(pattern, name)), "other")
+        group = group_of(name)
         found.setdefault(group, []).append(name)
     order = [g for g, _ in GROUPS] + ["other"]
     packs: dict[str, list[str]] = {}
@@ -327,6 +339,10 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--groups", help="Skin packs to make (default all): " + ", ".join(g for g, _ in GROUPS)
     )
+    # BD37. What a run leaves out on purpose, exact group names. The strong marks (``rough``) are
+    # left out of the full population (owner, 2026-11-21: the app stops at light marks, BD36, so
+    # they are not needed in the dataset); a run asked for them by --groups still makes them.
+    parser.add_argument("--skip-groups", default="", help="Pack groups to leave out (exact names): rough")
     parser.add_argument(
         "--extras-sets",
         default="all",
@@ -363,6 +379,8 @@ def main(argv=None) -> int:
     if opts.groups:
         wanted = {g.strip() for g in opts.groups.split(",")}
         packs = {k: v for k, v in packs.items() if k.split("-")[0] in wanted or k in wanted}
+    skip = {g.strip() for g in opts.skip_groups.split(",") if g.strip()}
+    packs = skip_packs(packs, skip)
     extras_sets = _pick(opts.extras_sets, EXTRAS_SETS)
     presets = [p.strip() for p in opts.presets.split(",") if p.strip()]
 
@@ -385,9 +403,10 @@ def main(argv=None) -> int:
         try:
             for avatar in avatars:
                 looks = forge.call(f"/v1/library/{avatar['slug']}/prebuilt").get("looks", [])
-                pairs += repaint_plan(
-                    looks, avatar["slug"], opts.repaint_before, opts.repaint_min_open, opened
-                )
+                slug = avatar["slug"]
+                found = repaint_plan(looks, slug, opts.repaint_before, opts.repaint_min_open, opened)
+                # BD37: a skipped group is never repainted either.
+                pairs += [p for p in found if not any(group_of(s) in skip for s in p["states"])]
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
             print(f"could not read the characters' lists: {exc}", file=sys.stderr)
             return 2
