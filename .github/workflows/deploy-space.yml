@@ -37,7 +37,6 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HIDDEN_SOURCE: ${{ inputs.hidden_source == 'yes' && '1' || '0' }}
-          HF_SOURCE_READ_TOKEN: ${{ secrets.HF_SOURCE_READ_TOKEN }}
         run: |
           if [ -z "$HF_TOKEN" ]; then
             echo "::warning::HF_TOKEN secret is not set; the Space was not updated."

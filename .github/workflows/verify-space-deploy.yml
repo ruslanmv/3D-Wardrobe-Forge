@@ -49,8 +49,8 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/thin"
           ls -A | sort > files.txt; cat files.txt
-          test "$(grep -v '^files.txt$' files.txt | tr '\n' ' ')" = "Dockerfile README.md requirements.txt start.sh "
-          ! grep -rqE "^(from|import) wardrobe|apps\.api" Dockerfile requirements.txt README.md
+          test "$(grep -v '^files.txt$' files.txt | tr '\n' ' ')" = "Dockerfile README.md requirements.txt source.env start.sh "
+          ! grep -rqE "^(from|import) wardrobe|apps\.api" Dockerfile requirements.txt README.md source.env
           test -f "$RUNNER_TEMP/src/apps/studio/next/index.html"   # the Studio build travels with the code
 
       - name: The thin image builds, has no code of ours, and runs the staged source
