@@ -7,10 +7,11 @@
 #     HIDDEN_SOURCE=1 HF_TOKEN=hf_... sh deploy/huggingface/deploy.sh  # HS1: no code in the Space
 #
 # HS1. With HIDDEN_SOURCE=1 the Space gets no code: the staged source (with the Studio's React
-# build made here) goes to a PRIVATE repository (HF_SOURCE_REPO, default <space>-src), and the
-# Space gets deploy/huggingface/thin (Dockerfile, start.sh), its README and a requirements.txt of
-# third-party names; start.sh downloads the code at start with SRC_TOKEN, a read-only token set
-# as a Space SECRET. Without HIDDEN_SOURCE nothing in this script changes.
+# build made here) goes to the private dataset the Space already reads, on its own branch
+# `forge-source`, and the Space gets deploy/huggingface/thin (Dockerfile, start.sh, source.env),
+# its README and a requirements.txt of third-party names. start.sh downloads the code at start
+# with the Space's existing HF_TOKEN. No Space variable or secret is added or changed.
+# Without HIDDEN_SOURCE nothing in this script changes.
 #
 # What the Space receives is the committed HEAD, not the working tree: `git
 # archive` of exactly what the Dockerfile copies. Uploading `.` (as this script
@@ -56,7 +57,8 @@ if [ -n "${STAGE_TO:-}" ]; then
 fi
 
 if [ "${HIDDEN_SOURCE:-0}" = "1" ]; then
-    HF_SOURCE_REPO="${HF_SOURCE_REPO:-${HF_SPACE_REPO}-src}"
+    # The private dataset the Space already reads with its own HF_TOKEN: the code goes on a branch.
+    HF_SOURCE_REPO="${HF_SOURCE_REPO:-${WARDROBE_HF_DATASET:-ruslanmv/3d-wardrobe-garments}}"
     # The Studio's React build (the main Dockerfile's `studio` stage), made here into the source.
     if [ "${SKIP_STUDIO:-0}" != "1" ]; then
         (cd "$STAGE/apps/studio/web" && npm ci --no-audit --no-fund >/dev/null && npm run build >/dev/null \
@@ -68,7 +70,9 @@ if [ "${HIDDEN_SOURCE:-0}" = "1" ]; then
     cp deploy/huggingface/SPACE_README.md "$THIN/README.md"
     # Third-party names and versions only, exactly what `pip install ".[preview,s3,redis,hf]"` asks.
     python3 deploy/huggingface/thin/requirements.py "$STAGE/pyproject.toml" > "$THIN/requirements.txt"
-    echo "Hidden source: code -> $HF_SOURCE_REPO (private); Space -> $(ls "$THIN" | tr '\n' ' ')"
+    # Which code to run (publish.py pins the exact commit; a dry run names the branch).
+    printf 'SRC_BRANCH=forge-source\nSRC_REVISION=\n' > "$THIN/source.env"
+    echo "Hidden source: code -> $HF_SOURCE_REPO branch forge-source (private); Space -> $(ls "$THIN" | tr '\n' ' ')"
     if [ -n "${STAGE_TO:-}" ]; then rm -rf "$STAGE_TO" && cp -R "$STAGE" "$STAGE_TO"; fi
     if [ -n "${THIN_TO:-}" ]; then rm -rf "$THIN_TO" && cp -R "$THIN" "$THIN_TO"; fi
     if [ "${DRY_RUN:-0}" = "1" ]; then exit 0; fi

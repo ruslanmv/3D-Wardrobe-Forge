@@ -1,48 +1,40 @@
-"""HS1. Publish with the source hidden: the code to a PRIVATE repository, the thin loader to the Space.
+"""HS1. Publish with the source hidden, changing nothing in the Space's settings.
 
-    python3 deploy/huggingface/thin/publish.py <space> <source> <stage> <thin> <sha> <full sha>
+    python3 deploy/huggingface/thin/publish.py <space> <dataset> <stage> <thin> <sha> <full sha>
 
-The source repository is created private if missing and refused if it is not private. The Space
-gets the thin folder only (its other files deleted), and the variables start.sh reads: SRC_REPO
-and SRC_REVISION (the exact commit just uploaded, so every start runs this deploy). SRC_TOKEN,
-the read-only token, is a Space SECRET: stored from HF_SOURCE_READ_TOKEN when given, otherwise
-otherwise the deploy's own token. No token is ever printed.
+The owner's rule: one click, no new repository, secret or variable, none changed. So the code
+goes to the private dataset the Space already reads (its WARDROBE_HF_DATASET, with its existing
+HF_TOKEN secret), on its own branch `forge-source`, never on the branch that holds the looks.
+The Space gets the thin folder only (its other files deleted) plus source.env, naming the exact
+commit of that branch to run. Its history is squashed, so the old deploys' code is gone too.
+Refused if the dataset is not private. No token is ever printed.
 """
 
-import os
 import sys
+from pathlib import Path
 
 from huggingface_hub import HfApi
 
-space, source, stage, thin, sha, full = sys.argv[1:7]
+BRANCH = "forge-source"
+space, dataset, stage, thin, sha, full = sys.argv[1:7]
 api = HfApi()
-api.create_repo(source, repo_type="model", private=True, exist_ok=True)
-if not api.model_info(source).private:
-    sys.exit(f"refusing: {source} is not private")
-commit = api.upload_folder(
-    repo_id=source, repo_type="model", folder_path=stage, delete_patterns="*",
-    commit_message=f"Deploy {sha}", commit_description=f"From 3D-Wardrobe-Forge {full}",
+if not api.dataset_info(dataset).private:
+    sys.exit(f"refusing: {dataset} is not private, the code would be public")
+api.create_branch(dataset, repo_type="dataset", branch=BRANCH, exist_ok=True)
+api.upload_folder(
+    repo_id=dataset, repo_type="dataset", revision=BRANCH, folder_path=stage, delete_patterns="*",
+    commit_message=f"Forge source {sha}", commit_description=f"From 3D-Wardrobe-Forge {full}",
 )
+# The code branch keeps one commit (the dataset's main branch, the looks, is never touched).
+api.super_squash_history(repo_id=dataset, repo_type="dataset", branch=BRANCH,
+                         commit_message=f"Forge source {sha}")
+refs = api.list_repo_refs(dataset, repo_type="dataset").branches
+revision = next(b.target_commit for b in refs if b.name == BRANCH)
+Path(thin, "source.env").write_text(f"SRC_BRANCH={BRANCH}\nSRC_REVISION={revision}\n")
 api.upload_folder(repo_id=space, repo_type="space", folder_path=thin, delete_patterns="*",
                   commit_message=f"Deploy {sha} (source hidden)")
-variables = {"WARDROBE_PROFILE": "space", "WARDROBE_JOB_CONCURRENCY": "1", "WARDROBE_QUEUE_CAP": "8",
-             "SRC_REPO": source, "SRC_REVISION": commit.oid}
-domains = api.get_space_runtime(space).raw.get("domains") or []
-if domains:
-    variables["PUBLIC_BASE_URL"] = f"https://{domains[0]['domain']}"
-for key, value in variables.items():
-    api.add_space_variable(space, key, value)
-    print(f"  {key}={value}")
-# One click: the Space must be able to read the source. A read-only token (HF_SOURCE_READ_TOKEN)
-# when the owner gave one; otherwise the deploy's own token, which just wrote the source, so it
-# certainly reads it (the Space's HF_TOKEN may be scoped to the dataset only). Stored as a Space
-# SECRET, never shown to visitors, never printed.
-read = os.environ.get("HF_SOURCE_READ_TOKEN", "").strip() or os.environ.get("HF_TOKEN", "").strip()
-api.add_space_secret(space, "SRC_TOKEN", read)
-given = "" if os.environ.get("HF_SOURCE_READ_TOKEN") else " from the deploy token"
-print(f"  SRC_TOKEN set (secret){given}")
-# HS1. Every earlier Space commit holds the full source (the old deploys): squash the Space's
-# history to this one commit, so its Files tab and history show the loader only.
+# Every earlier Space commit holds the full source (the old deploys): one commit, the loader only.
 api.super_squash_history(repo_id=space, repo_type="space", commit_message=f"Deploy {sha} (source hidden)")
-print("  Space history squashed: earlier commits with source are gone")
+print(f"  code: {dataset} branch {BRANCH} @ {revision[:12]} (private)")
+print("  Space: loader only, history squashed; its variables and secrets untouched")
 print(f"Building: https://huggingface.co/spaces/{space}?logs=build")

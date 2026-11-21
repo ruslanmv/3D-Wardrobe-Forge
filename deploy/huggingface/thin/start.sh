@@ -1,33 +1,37 @@
 #!/bin/bash
 # HS1. Start Forge from code that is not in this image (see Dockerfile beside this file).
 #
-#   SRC_REPO      the private repository holding the code (a Space variable, set by deploy.sh)
-#   SRC_REVISION  the exact commit to run (a Space variable: every start runs the deployed code)
-#   SRC_TOKEN     a read-only token for SRC_REPO (a Space SECRET, never a variable or a file);
-#                 without it, the Space's own HF_TOKEN secret (it already reads and writes the
-#                 dataset), so a one-click deploy needs no new secret
-#   SRC_DIR       for CI only: run code already on disk instead of downloading it
+# Nothing new in the Space's settings (the owner's rule): the code is read from the private
+# dataset the Space already uses (WARDROBE_HF_DATASET), on its own branch, with the Space's
+# existing HF_TOKEN secret. Which commit of that branch to run is in /app/source.env, written by
+# the deploy (a branch name and a commit hash, no code), so every start runs the deployed code.
+#
+#   SRC_DIR   for CI only: run code already on disk instead of downloading it
 #
 # The token is used once, to download, and never printed; nothing is written outside /app/src.
 set -eu
 cd /app
+SRC_BRANCH=forge-source
+SRC_REVISION=""
+# shellcheck disable=SC1091
+[ -f /app/source.env ] && . /app/source.env
 if [ -n "${SRC_DIR:-}" ]; then
   echo "start: code from $SRC_DIR (local)"
   cp -R "$SRC_DIR"/. /app/src/
 else
-  : "${SRC_REPO:?SRC_REPO is not set (a Space variable)}"
-  SRC_TOKEN="${SRC_TOKEN:-${HF_TOKEN:-}}"
-  : "${SRC_TOKEN:?neither SRC_TOKEN nor HF_TOKEN is set (a Space secret with read access to SRC_REPO)}"
-  export SRC_TOKEN
-  echo "start: downloading ${SRC_REPO}@${SRC_REVISION:-main}"
+  : "${WARDROBE_HF_DATASET:?WARDROBE_HF_DATASET is not set (the Space's dataset variable)}"
+  : "${HF_TOKEN:?HF_TOKEN is not set (the Space's secret for its dataset)}"
+  export SRC_REVISION="${SRC_REVISION:-$SRC_BRANCH}"
+  echo "start: downloading the code from ${WARDROBE_HF_DATASET}@${SRC_REVISION}"
   python - <<'EOF'
 import os
 from huggingface_hub import snapshot_download
 
 snapshot_download(
-    os.environ["SRC_REPO"],
-    revision=os.environ.get("SRC_REVISION") or None,
-    token=os.environ["SRC_TOKEN"],
+    os.environ["WARDROBE_HF_DATASET"],
+    repo_type="dataset",
+    revision=os.environ["SRC_REVISION"],
+    token=os.environ["HF_TOKEN"],
     local_dir="/app/src",
 )
 EOF
