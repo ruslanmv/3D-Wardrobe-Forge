@@ -405,7 +405,9 @@ and its packet.
 depth, sharpest near the centre, plus the darker, browner ring of skin round it (`perianalTint`)
 and a faint wet sheen between the creases. As she relaxes open the creases flatten, and under a
 gape they are covered. Colour (`_pelvis`) and relief (`_height`, each crease cut in) read the
-same helper. It is in every detailed look, not a state of its own. Checked in the flat view
+same helper. It is in every detailed look, not a state of its own. The look from before BD23 is kept as the
+**Classic** preset (`anusDetail: 0`, Natural otherwise): pixel-identical to the old painting,
+checked in the flat view. Checked in the flat view
 before and after: closed, relaxed open, and after the fist.
 
 ## Wrecked past a fist, and a gaping vagina (BD22)

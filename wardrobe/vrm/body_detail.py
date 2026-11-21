@@ -474,14 +474,15 @@ def _pelvis(where: np.ndarray, marks: Landmarks, spec: dict, s: float):
     # BD4. Relaxed open, the folds stretch flat and the centre widens to show her pinker inner rim.
     folds = 0.82 + 0.18 * (1.0 - 0.7 * anus_open) * np.cos(14 * angle + 0.6 * np.sin(5 * angle))
     # BD23. The darker, browner skin round her anus first, wider than the ring itself.
-    creases, pigment = _anus_folds(angle, ar, anus_open)
+    anus_detail = _anus_detail(spec)
+    creases, pigment = _anus_folds(angle, ar, anus_open, anus_detail)
     layers.append((spec.get("perianalTint", [0.78, 0.62, 0.58]), pigment * 0.55))
     ring = (1.0 - _smoothstep(0.35, 1.0, ar)) * (0.6 + 0.4 * folds * np.clip(ar * 1.6, 0, 1))
     layers.append((spec.get("anusTint", [0.80, 0.64, 0.62]), ring * 0.85))
     # BD23. Its creases, dark lines radiating from the centre, and a faint wet sheen between them.
     layers.append(([0.52, 0.36, 0.36], creases * 0.75))
     sheen = np.exp(-((ar - 0.42) / 0.12) ** 2) * (1.0 - creases)
-    layers.append(([1.06, 1.0, 1.01], sheen * 0.18 * (1.0 - 0.5 * anus_open)))
+    layers.append(([1.06, 1.0, 1.01], sheen * 0.18 * (1.0 - 0.5 * anus_open) * anus_detail))
     core = 0.22 + 0.33 * anus_open
     if anus_open > 0:
         inner = np.exp(-((ar - core * 1.15) / (0.12 + 0.05 * anus_open)) ** 2)
@@ -547,7 +548,17 @@ def _vagina_gape(spec: dict) -> float:
     return float(np.clip(float(spec.get("vaginaGape", 0.0)), 0.0, 1.5))
 
 
-def _anus_folds(angle, ar, anus_open: float):
+def _anus_detail(spec: dict) -> float:
+    """BD23. How much of the creased detail a preset shows, 0..1 (``anusDetail``, default 1).
+
+    0 is her anus as painted before BD23 — a soft puckered ring, no creases, no darker skin round
+    it — kept as the ``classic`` preset at the owner's request (2026-11-21) so that look is not
+    lost. Colour and relief both read it here.
+    """
+    return float(np.clip(float(spec.get("anusDetail", 1.0)), 0.0, 1.0))
+
+
+def _anus_folds(angle, ar, anus_open: float, detail: float = 1.0):
     """BD23. Her anus in detail: the radial creases of a puckered ring and the darker skin round it.
 
     Returns ``(creases, pigment)``, both 0..1 per point. Eighteen creases of uneven depth (a few run
@@ -561,8 +572,8 @@ def _anus_folds(angle, ar, anus_open: float):
     depth = 0.65 + 0.35 * np.cos(7 * angle + 0.9) ** 2  # some creases deeper than others
     lines = np.clip(np.cos(18 * wobble), 0.0, 1.0) ** 6 * depth
     reach = (1.0 - _smoothstep(0.25, 1.05 + 0.25 * depth, ar)) * _smoothstep(0.05, 0.22, ar)
-    creases = lines * reach * flatten
-    pigment = 1.0 - _smoothstep(0.55, 1.6, ar)
+    creases = lines * reach * flatten * detail
+    pigment = (1.0 - _smoothstep(0.55, 1.6, ar)) * detail
     return creases, pigment
 
 
@@ -753,7 +764,7 @@ def _height(where: np.ndarray, marks: Landmarks, spec: dict, s: float) -> np.nda
     h -= 0.0032 * k * (1.0 + 1.8 * anus_open) * (1.0 - _smoothstep(0.0, 0.9, ar)) ** 2
     h += 0.0005 * k * (1.0 - 0.7 * anus_open) * np.cos(14 * angle + 0.6 * np.sin(5 * angle)) \
         * (1.0 - _smoothstep(0.3, 1.1, ar)) * _smoothstep(0.1, 0.35, ar)
-    creases, _ = _anus_folds(angle, ar, anus_open)
+    creases, _ = _anus_folds(angle, ar, anus_open, _anus_detail(spec))
     h -= 0.0009 * k * creases  # BD23. each crease cut in, so it catches the light
     hair = _hair(u, np.where(in_front, t, -1.0), in_front, L, spec, s)
     if hair is not None:

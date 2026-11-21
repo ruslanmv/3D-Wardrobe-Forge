@@ -12,7 +12,7 @@ from wardrobe.vrm import body_detail as BD
 
 def test_presets_load_hairless_and_hairy_variants():
     presets = BD.load_presets()
-    hairless = {"natural", "soft-pink", "warm", "defined", "outie", "puffy", "porcelain", "anime"}
+    hairless = {"natural", "soft-pink", "warm", "defined", "outie", "puffy", "porcelain", "anime", "classic"}
     assert hairless <= set(presets)
     for name in hairless:
         assert presets[name]["hair"] == "none"

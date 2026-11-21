@@ -699,7 +699,7 @@ PRIVATE_CATEGORIES = tuple(
     for cid, title, description, body in (
         ("cat-shaved-smooth", "Shaved & Smooth", "Bare, smooth skin presets",
          ["preset:natural$", "preset:soft-pink$", "preset:warm$", "preset:defined$", "preset:outie$",
-          "preset:puffy$", "preset:porcelain$"]),
+          "preset:puffy$", "preset:porcelain$", "preset:classic$"]),
         ("cat-natural-hairy", "Natural & Hairy", "Natural hair, trimmed, landing strip, triangle",
          ["preset:natural-hair", "preset:trimmed", "preset:landing-strip", "preset:triangle",
           "preset:auburn-natural"]),
