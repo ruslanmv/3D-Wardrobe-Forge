@@ -76,7 +76,7 @@ GROUPS: list[tuple[str, str]] = [
     ("rough", r"^sado-"),
     # L5. One pack per act from behind, so "fisted, then filled" switches live in the same look:
     # the three fisted states and their filled ones; the bottle and its filled ones.
-    ("fist", r"^doggy-.*fisted(-cum|-creampie)?$"),
+    ("fist", r"^doggy-.*fisted(-cum|-creampie|-anal-cum)?$"),
     ("bottle", r"^doggy-bottle"),
     # BD28. The open ring after a fist (a new kind, beside the fisted pack): one pack, live switch.
     ("ring", r"^doggy-.*ring(-cum|-creampie)?$"),

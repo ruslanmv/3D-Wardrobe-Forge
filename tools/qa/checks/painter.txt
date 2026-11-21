@@ -1,0 +1,7 @@
+# BD32. The checks run before merging a painter change (2026-11-21): Avatar A's ring, fisted and
+# bottle packs, the fist-then-finish stories' states, and Avatar B. One line per exact pack:
+# name slug avatar-file preset pack-states render-states positions [hair]
+ring-a      avatar-sample-a AvatarSample_A.vrm natural closed,doggy-anal-ring,doggy-anal-ring-cum,doggy-both-ring-cum doggy-anal-ring,doggy-anal-ring-cum,doggy-both-ring-cum all-fours,face-down,bent-over,knees-up
+fb-a        avatar-sample-a AvatarSample_A.vrm natural closed,doggy-anal-fisted,doggy-anal-fisted-cum,doggy-both-fisted-cum,doggy-bottle,doggy-bottle-anal,doggy-bottle-anal-cum doggy-anal-fisted,doggy-both-fisted-cum,doggy-bottle-anal,doggy-bottle-anal-cum all-fours,face-down,bent-over
+stories-a   avatar-sample-a AvatarSample_A.vrm natural closed,doggy-anal-fisted,doggy-anal-fisted-creampie,doggy-fisted,doggy-fisted-anal-cum,doggy-anal-ring,doggy-ring-creampie doggy-anal-fisted,doggy-anal-fisted-creampie,doggy-fisted,doggy-fisted-anal-cum,doggy-ring-creampie all-fours,face-down,bent-over
+ring-b      avatar-sample-b AvatarSample_B.vrm natural closed,doggy-anal-ring,doggy-anal-ring-cum,doggy-both-ring-cum doggy-anal-ring,doggy-anal-ring-cum,doggy-both-ring-cum all-fours,face-down,bent-over,knees-up hair

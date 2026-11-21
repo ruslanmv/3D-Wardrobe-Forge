@@ -510,3 +510,18 @@ face down, bent over) turned out to be, in the order it was learned:
 Lessons: measure the body before changing the paint; a test on a synthetic body
 cannot show a landmark that is wrong on a real one; every look painted before
 BD29 has its anatomy lower than it should be and needs repainting, front and back.
+
+## The fist, then the finish (BD31, BD32)
+
+States for the chatbot's stories, each in the pack its first state is in, so the whole story
+switches live in one look:
+
+| After their fist in her… | then they finish… | state | pack |
+|---|---|---|---|
+| ass (`doggy-anal-fisted`) | in her pussy | `doggy-anal-fisted-creampie`: ass gaping, empty | fist |
+| ass, the ring (`doggy-anal-ring`) | in her pussy | `doggy-ring-creampie` | ring |
+| pussy (`doggy-fisted`) | in her ass | `doggy-fisted-anal-cum`: pussy gaping, ass full | fist |
+
+The chatbot picks them in `PrivateActionBridge` `AFTER_ANAL_FIST`; its shows are
+`fist-then-inside` (Valentina), `worse-than-last-time` (Chiara), `fist-then-ass` (Valentina).
+Check them with `tools/qa/verify_set.sh tools/qa/checks/painter.txt <out>` (line `stories-a`).

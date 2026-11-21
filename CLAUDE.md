@@ -184,6 +184,8 @@ was 4 cm under her real crotch, on a thigh's inner edge, so anatomy was drawn on
 # 2. One exact pack, seen as a person sees it, NOTHING published (local Forge, WARDROBE_HF_PUBLISH=false)
 HF_TOKEN=… tools/qa/verify_pack.sh avatar-sample-a AvatarSample_A.vrm natural \
     closed,doggy-anal-ring,doggy-anal-ring-cum doggy-anal-ring,doggy-anal-ring-cum
+# 2b. Several packs in a row (one Forge at a time), from a checks file
+HF_TOKEN=… tools/qa/verify_set.sh tools/qa/checks/painter.txt <scratch>/vset
 # 3. Same frames, before and after, one image
 .venv/bin/python tools/qa/compare_frames.py --out <scratch>/c.png --run OLD=<dir> --run NEW=<dir> --frames …
 ```
