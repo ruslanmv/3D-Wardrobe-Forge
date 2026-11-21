@@ -3,7 +3,9 @@
 #
 #   SRC_REPO      the private repository holding the code (a Space variable, set by deploy.sh)
 #   SRC_REVISION  the exact commit to run (a Space variable: every start runs the deployed code)
-#   SRC_TOKEN     a read-only token for SRC_REPO (a Space SECRET, never a variable or a file)
+#   SRC_TOKEN     a read-only token for SRC_REPO (a Space SECRET, never a variable or a file);
+#                 without it, the Space's own HF_TOKEN secret (it already reads and writes the
+#                 dataset), so a one-click deploy needs no new secret
 #   SRC_DIR       for CI only: run code already on disk instead of downloading it
 #
 # The token is used once, to download, and never printed; nothing is written outside /app/src.
@@ -14,7 +16,9 @@ if [ -n "${SRC_DIR:-}" ]; then
   cp -R "$SRC_DIR"/. /app/src/
 else
   : "${SRC_REPO:?SRC_REPO is not set (a Space variable)}"
-  : "${SRC_TOKEN:?SRC_TOKEN is not set (a Space secret with read access to SRC_REPO)}"
+  SRC_TOKEN="${SRC_TOKEN:-${HF_TOKEN:-}}"
+  : "${SRC_TOKEN:?neither SRC_TOKEN nor HF_TOKEN is set (a Space secret with read access to SRC_REPO)}"
+  export SRC_TOKEN
   echo "start: downloading ${SRC_REPO}@${SRC_REVISION:-main}"
   python - <<'EOF'
 import os
