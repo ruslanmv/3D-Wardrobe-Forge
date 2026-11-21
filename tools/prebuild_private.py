@@ -78,6 +78,9 @@ GROUPS: list[tuple[str, str]] = [
     # holds one strength and the chatbot changes look to change strength.
     ("rough-soft", r"^sado-soft-"),
     ("rough-light", r"^sado-light-"),
+    # BD37. The strong marks of "Legata e spalancata" (the four with soft and light versions) in
+    # their own pack, so a run can leave exactly them out; wax, used and full stay in ``rough``.
+    ("rough-strong", r"^sado-(roped-open|whipped-open|both-fisted|both-fisted-cum)$"),
     ("rough", r"^sado-"),
     # L5. One pack per act from behind, so "fisted, then filled" switches live in the same look:
     # the three fisted states and their filled ones; the bottle and its filled ones.

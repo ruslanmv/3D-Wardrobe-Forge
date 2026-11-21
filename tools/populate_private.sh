@@ -59,10 +59,11 @@ MIN_DISK_GB="${MIN_DISK_GB:-3}"
 MIN_MEM_MB="${MIN_MEM_MB:-1500}"
 # BD28 ring, BD34 the two lighter mark strengths (rough-soft is "Legata e spalancata"'s default),
 # BD35 two hands (fist-wide). The Prebuild workflow builds every group already (no --groups).
-BEHIND_GROUPS="${BEHIND_GROUPS:-core,doggy,back,fist,fist-wide,ring,bottle,rough-soft,rough-light}"
-# BD37. Left out on purpose: the strong marks (the app stops at light, BD36). Built only on
-# request (`tools/prebuild_private.py --groups rough`); never made or repainted by this run.
-SKIP_GROUPS="${SKIP_GROUPS:-rough}"
+BEHIND_GROUPS="${BEHIND_GROUPS:-core,doggy,back,fist,fist-wide,ring,bottle,rough-soft,rough-light,rough}"
+# BD37. Left out on purpose: the strong marks of "Legata e spalancata" only (the app stops at
+# light, BD36); the other sado states (wax, used, full) are built. Built only on request
+# (`tools/prebuild_private.py --groups rough-strong`); never made or repainted by this run.
+SKIP_GROUPS="${SKIP_GROUPS:-rough-strong}"
 REST_GROUPS="${REST_GROUPS:-oiled,missionary,cowgirl,unrestrained,other}"
 # What the frames show on each position: her fisted states and the gape filled after them.
 STATES="${STATES:-doggy-anal-fisted,doggy-anal-fisted-cum,doggy-both-fisted-cum}"

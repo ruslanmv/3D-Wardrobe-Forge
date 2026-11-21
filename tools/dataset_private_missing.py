@@ -41,7 +41,7 @@ def main(argv=None) -> int:
         "--repaint-before", default="2026-11-21T10:30", help="BD29's fix; as populate_private.sh"
     )
     parser.add_argument("--repaint-skip", default="vroid-rinna", help="As populate_private.sh REPAINT_SKIP")
-    parser.add_argument("--skip-groups", default="rough", help="As populate_private.sh SKIP_GROUPS (BD37)")
+    parser.add_argument("--skip-groups", default="rough-strong", help="As SKIP_GROUPS (BD37)")
     opts = parser.parse_args(argv)
     grant = os.environ.get("FORGE_GRANT", "").strip()
     if not grant:
