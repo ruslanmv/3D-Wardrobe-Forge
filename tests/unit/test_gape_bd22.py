@@ -180,13 +180,12 @@ def test_bd29_her_crotch_is_on_her_midline_seam_not_the_inner_edge_of_a_thigh():
     assert abs(marks.crotch[1] - 0.76) < 1e-9
 
 
-def test_bd30_the_ring_is_narrow_across_her_cleft():
+def test_bd30_colour_and_relief_share_the_ring_distance():
     from wardrobe.vrm import body_detail as BD
 
     spec = {**BD.load_presets()["natural"], **BD.load_states()["doggy-anal-ring"]["set"]}
     per, R = spec["perineum"], BD.RING_RADIUS
-    t = np.array([-per, -per - 0.8 * R])
-    across = BD._ring_distance(np.array([0.8 * R, 0.0]), t, spec, 1.0)
-    assert across[0] > across[1]  # the same offset reaches further out across the cleft than along it
-    patch = BD._anus_patch(np.array([0.012, 0.0]), np.array([-per, -per - 0.012]), spec, 1.0)
-    assert patch[0] < 1.0 == patch[1]  # 1.2 cm to her side is already the feather; along it, solid
+    u, t = np.array([0.0, 0.5 * R, 0.0]), np.array([-per, -per, -per - 0.5 * R])
+    d = BD._ring_distance(u, t, spec, 1.0)
+    assert d[0] == 0.0 and np.isclose(d[1], 0.5 * R / BD.RING_ASPECT) and np.isclose(d[2], 0.5 * R)
+    assert 0.0 < BD.RING_ASPECT <= 1.0

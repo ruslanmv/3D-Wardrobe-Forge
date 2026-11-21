@@ -647,11 +647,12 @@ def _anus_patch(u: np.ndarray, t: np.ndarray, spec: dict, s: float) -> np.ndarra
 RING_PATCH = (0.019, 0.023)
 #: BD28. The ring's outer radius (its puffy rim's edge), metres at 1.63 m: ~3.6 cm across.
 RING_RADIUS = 0.018
-#: BD30. How much narrower the ring is across her cleft than along it. At rest her cleft walls rise
-#: within ~1 cm of the midline; a round ring's sides sat on them, and every position that opens the
-#: cleft (bending over, knees up) stretched them into pink wings or a sideways band (2026-11-21).
-#: Drawn this narrow, the opened cleft spreads it back to round.
-RING_ASPECT = 0.55
+#: BD30. How much narrower the ring is across her cleft than along it (1.0: round). At rest her
+#: cleft walls rise within ~1 cm of the midline; the ring's sides sit on them, and positions that
+#: open the cleft (bending over, knees up) stretch them into pink wings or a sideways band. Tried
+#: 0.55 on Avatar A (Step 5 views, 2026-11-21): the wings only thinned and the ring read as an oval
+#: from behind, so it stays round; the wings need the mesh itself (a recess, finer triangles).
+RING_ASPECT = 1.0
 
 
 def _ring_distance(u: np.ndarray, t: np.ndarray, spec: dict, s: float) -> np.ndarray:
