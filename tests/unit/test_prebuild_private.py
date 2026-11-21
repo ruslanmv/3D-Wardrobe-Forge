@@ -81,11 +81,13 @@ def test_the_prebuild_workflow_can_make_the_private_looks():
         if True in flow
         else flow["on"]["workflow_dispatch"]["inputs"]
     )
-    assert inputs["private_looks"]["default"] is False  # never made unless a person ticks it
+    # A drop-down (GitHub's phone site shows no tick box): "yes" by default, so one click on
+    # Prebuild wardrobe makes the private looks (the owner's choice, 2026-11-20).
+    assert inputs["private_looks"]["type"] == "choice" and set(inputs["private_looks"]["options"]) == {"yes", "no"}
     steps = flow["jobs"]["build"]["steps"]
     step = next(s for s in steps if s.get("name", "").startswith("Private looks"))
     assert "tools/prebuild_private.py" in step["run"] and "--admin-token-file" in step["run"]
-    assert step["if"] == "inputs.private_looks"
+    assert step["if"] == "inputs.private_looks == 'yes'"
 
 
 def test_the_studio_opens_the_collections_browser():
@@ -97,3 +99,28 @@ def test_the_studio_opens_the_collections_browser():
     # The page never decides what is private: it draws what the registry answers for this caller.
     for call in ("registry(", "registryAssign", "registryFavourite", "registryCreate"):
         assert call in page
+
+
+def test_bd25_repaint_takes_only_open_detailed_looks_built_before_the_fix():
+    opened = pp.anus_open_of()
+    assert opened["doggy-anal-fisted"] >= 0.5 and opened["closed"] == 0
+    looks = [
+        # Open and old: painted again, exactly as asked (preset, states, extras).
+        {"lookId": "a", "builtAt": "2026-11-21T01:00:00+00:00",
+         "body": {"detail": "natural", "states": ["closed", "doggy-anal-fisted"], "extras": ["glitter"]}},
+        # Open but built after the fix: kept.
+        {"lookId": "b", "builtAt": "2026-11-21T09:00:00+00:00",
+         "body": {"detail": "natural", "states": ["closed", "doggy-anal-fisted"], "extras": []}},
+        # Old but closed: kept.
+        {"lookId": "c", "builtAt": "2026-11-21T01:00:00+00:00",
+         "body": {"detail": "natural", "states": ["closed", "aroused"], "extras": []}},
+        # Not a detailed look (an outfit, a plain bare body): never.
+        {"lookId": "d", "builtAt": "2026-11-21T01:00:00+00:00"},
+        {"lookId": "e", "builtAt": "2026-11-21T01:00:00+00:00", "body": {"states": ["doggy-anal-fisted"]}},
+    ]
+    pairs = pp.repaint_plan(looks, "avatar-sample-a", "2026-11-21T08:00:00", 0.5, opened)
+    assert [p["look"] for p in pairs] == ["repaint:a"]
+    assert pairs[0]["preset"] == "natural" and pairs[0]["extras"] == ["glitter"]
+    assert pairs[0]["states"] == ["closed", "doggy-anal-fisted"]
+    # A repaint is built even though its body is listed (that is the point of it).
+    assert pairs[0]["repaint"] is True
