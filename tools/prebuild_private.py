@@ -73,11 +73,18 @@ GROUPS: list[tuple[str, str]] = [
     ("back", r"^(lower-back-cum.*|cum-on-back|doggy-pumped-creampie|doggy-second-creampie)$"),
     ("missionary", r"^missionary-"),
     ("cowgirl", r"^cowgirl-"),
+    # BD34. "Legata e spalancata" in three strengths of marks: barely there (the scene's default),
+    # light, and the strong one (rough) only when the person asks. Each its own pack, so a look
+    # holds one strength and the chatbot changes look to change strength.
+    ("rough-soft", r"^sado-soft-"),
+    ("rough-light", r"^sado-light-"),
     ("rough", r"^sado-"),
     # L5. One pack per act from behind, so "fisted, then filled" switches live in the same look:
     # the three fisted states and their filled ones; the bottle and its filled ones.
-    ("fist", r"^doggy-.*fisted(-cum)?$"),
+    ("fist", r"^doggy-.*fisted(-cum|-creampie|-anal-cum)?$"),
     ("bottle", r"^doggy-bottle"),
+    # BD28. The open ring after a fist (a new kind, beside the fisted pack): one pack, live switch.
+    ("ring", r"^doggy-.*ring(-cum|-creampie)?$"),
     # Unrestrained (gate 2): the evening's build-up states, composed from existing effects.
     ("unrestrained",
      r"^(edge|dripping|breasts-belly|oiled-used|used|round-three|tied-edge|after-shower)$"),

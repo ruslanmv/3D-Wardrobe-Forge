@@ -177,6 +177,32 @@ The flat view shows the fixture's sparse texels as stripes and gaps. That is the
 fixture, not the paint. The renderer's pelvis close-ups (`seated`, `kneesup`)
 often miss the vulva on this fixture, so use the flat view to judge the vulva.
 
+### Changing the painter: measure on the real body, verify one exact pack (BD29)
+
+Three paint fixes for Avatar A's red thigh bands (BD24 mask, BD26 thigh guard, BD27 patch) passed
+their tests and still failed in the chatbot. Measuring the body found the cause: her crotch landmark
+was 4 cm under her real crotch, on a thigh's inner edge, so anatomy was drawn on her thighs. Order:
+
+```bash
+# 1. Measure first (seconds, no Forge): landmark on her seam? what moves the skin? where does paint land?
+(ulimit -v 7000000; .venv/bin/python tools/body_surface/anatomy_probe.py landmarks assets/library/*.vrm)
+.venv/bin/python tools/body_surface/anatomy_probe.py mesh|midline|layers assets/library/AvatarSample_A.vrm
+# 2. One exact pack, seen as a person sees it, NOTHING published (local Forge, WARDROBE_HF_PUBLISH=false)
+HF_TOKEN=… tools/qa/verify_pack.sh avatar-sample-a AvatarSample_A.vrm natural \
+    closed,doggy-anal-ring,doggy-anal-ring-cum doggy-anal-ring,doggy-anal-ring-cum
+# 2b. Several packs in a row (one Forge at a time), from a checks file
+HF_TOKEN=… tools/qa/verify_set.sh tools/qa/checks/painter.txt <scratch>/vset
+# 3. Same frames, before and after, one image
+.venv/bin/python tools/qa/compare_frames.py --out <scratch>/c.png --run OLD=<dir> --run NEW=<dir> --frames …
+```
+
+- **A Forge with the HF backend publishes every look it makes** ("forge: N looks made on demand").
+  A local test is local only with `WARDROBE_HF_PUBLISH=false`.
+- **A rebuilt bare look is saved but never listed** while one with the same body is (keep-existing,
+  `prebuilt._list_look`), so `--repaint-before` + `publish --overwrite` replaces nothing yet; the
+  chatbot render picks from the list, so wear the rebuild by id (`--look-id`, `--look-sha`).
+- Judge frames from the original Step 5 camera; numbers missed both the landmark and the bands.
+
 ## Conventions
 
 - **Batch prefixes** in comments and docs: `BD` body detail (BD21 latest), `ES`

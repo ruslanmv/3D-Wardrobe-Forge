@@ -579,7 +579,9 @@ OCCASIONS: tuple[Occasion, ...] = (
                 "⛓️",
                 "Harness, fishnet, bodystocking, cut-outs",
                 ("erotic-dominant", "erotic-fishnet", "aa-bodystocking", "erotic-cutout"),
-                content=_profile("back", ("upper-back", "spine-upper"),
+                # Its thorn vine is a lower-back design (body-art.json): the lower back is offered
+                # with the upper back, as in role-play below, so every design named can be placed.
+                content=_profile("back", ("lower-back", "upper-back"),
                                  ("thorn-vine-01", "tribal-wings-01")),
             ),
             Style(
@@ -608,7 +610,7 @@ OCCASIONS: tuple[Occasion, ...] = (
                 "🍸",
                 "Plunge, backless and slit to the hip",
                 ("erotic-night-out", "aa-plunge-mini", "aa-backless-mini", "aa-slit-gown"),
-                content=_profile("back", ("upper-back", "lower-back"),
+                content=_profile("back", ("upper-back", "lower-back", "spine-upper", "nape"),
                                  ("spine-vine-01", "nape-crescent-01")),
             ),
             # UR1. Latex, leather, suspenders, fishnet: the fetish wardrobe.
@@ -629,7 +631,7 @@ OCCASIONS: tuple[Occasion, ...] = (
                 "🌅",
                 "His shirt, the robe open, stockings and nothing else",
                 ("after-his-shirt", "after-robe-open", "after-stockings-only", "after-garter-undone"),
-                content=_profile("legs", ("lower-back", "waistline"),
+                content=_profile("legs", ("lower-back", "waistline", "nape"),
                                  ("rose-vine-01", "nape-crescent-01")),
             ),
             Style(
@@ -639,7 +641,8 @@ OCCASIONS: tuple[Occasion, ...] = (
                 "A grown woman's evening: robe, gown, guêpière, stockings",
                 ("aa-short-robe", "aa-slit-gown", "erotic-guepiere", "stockings-pencil",
                  "italian-lace-thong"),
-                content=_profile("legs", ("upper-back", "nape"), ("lace-ornament-01", "rose-vine-01")),
+                content=_profile("legs", ("upper-back", "nape", "lower-back"),
+                                 ("lace-ornament-01", "rose-vine-01")),
             ),
         ),
         private=True,

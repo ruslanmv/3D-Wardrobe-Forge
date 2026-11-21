@@ -74,4 +74,135 @@ def test_bd24_a_bottle_gape_adds_little_width_past_a_fist():
 
     fist = BD._anus_radius({"anusOpen": 1.5, "anusGape": 1.0}, 1.0)
     bottle = BD._anus_radius({"anusOpen": 1.5, "anusGape": 1.5}, 1.0)
-    assert fist < bottle < fist * 1.1
+    assert fist <= bottle < fist * 1.1
+    # BD27. Neither gape's rim (~1.2 radii) reaches past her patch's solid core.
+    assert bottle * 1.2 <= BD.ANUS_RIM_LIMIT + 1e-9 <= BD.ANUS_PATCH[0]
+
+
+def test_bd26_the_anus_is_never_painted_on_skin_her_thighs_move():
+    from wardrobe.vrm import body_detail as BD
+
+    keep = BD._thigh_keep(np.array([0.0, 0.3, 0.55, 0.8, 1.0]))
+    assert keep[0] == 1.0 and keep[1] == 1.0  # hips' skin: painted as before
+    assert 0.0 < keep[2] < 1.0  # feathered: her own skin blends in, no edge
+    assert keep[3] == 0.0 and keep[4] == 0.0  # thigh skin: never anus paint
+    assert BD._thigh_keep(None) is None  # no bones to read: as before BD26
+
+
+def test_bd26_only_the_anus_layers_are_protected_never_her_vulva():
+    from types import SimpleNamespace
+
+    from wardrobe.vrm import body_detail as BD
+
+    marks = SimpleNamespace(crotch=np.array([0.0, 0.80, 0.0]), forward=1.0)
+    # A strip of points through her crotch, from the vulva in front to past the anus behind.
+    t = np.linspace(-0.06, 0.07, 400)
+    where = np.stack([np.full_like(t, 0.004), 0.80 + np.abs(t) * 0.3, t], axis=1)
+    spec = {**BD.load_presets()["natural"], "anusOpen": 1.5, "anusGape": 1.5, "vaginaOpen": 0.6}
+    free, _ = BD._pelvis(where, marks, spec, 1.0)
+    thigh, _ = BD._pelvis(where, marks, spec, 1.0, np.zeros(len(where)))
+    front = where[:, 2] > 0.004  # her vulva's side of the crotch
+    def weights(layer):
+        return np.broadcast_to(np.asarray(layer[1], float), len(t))
+
+    changed = [i for i, (a, b) in enumerate(zip(free, thigh, strict=True)) if not np.allclose(weights(a), weights(b))]
+    assert changed, "the anus layers answer the protection"
+    for i in range(len(free)):
+        a, b = weights(free[i]), weights(thigh[i])
+        assert np.allclose(a[front], b[front]), f"layer {i} changed her vulva"
+        assert (b <= a + 1e-9).all()  # protection only ever takes paint away
+
+
+def test_bd27_every_anus_layer_stays_inside_her_compact_patch():
+    from types import SimpleNamespace
+
+    from wardrobe.vrm import body_detail as BD
+
+    marks = SimpleNamespace(crotch=np.array([0.0, 0.80, 0.0]), forward=1.0)
+    spec = {**BD.load_presets()["natural"], "anusOpen": 1.5, "anusGape": 1.5}
+    per = spec["perineum"]
+    # Points on her midline behind the crotch, and 2 cm to her side of the anus (where the bands were).
+    centre = np.array([[0.0, 0.80 + 0.01, -per]])
+    beside = np.array([[0.02, 0.80 + 0.01, -per]])
+    where = np.vstack([centre, beside])
+    layers, _ = BD._pelvis(where, marks, spec, 1.0)
+    side = sum(float(np.broadcast_to(np.asarray(w, float), (2,))[1]) for _, w in layers[-14:])
+    middle = sum(float(np.broadcast_to(np.asarray(w, float), (2,))[0]) for _, w in layers[-14:])
+    assert middle > 0.5  # her anus is drawn
+    assert side < 1e-6  # nothing of it 2 cm out
+    patch = BD._anus_patch(np.array([0.0, 0.012, 0.02]), np.full(3, -per), spec, 1.0)
+    assert patch[0] == 1.0 and 0.0 < patch[1] < 1.0 and patch[2] == 0.0  # solid, feathered, gone
+
+
+def test_bd28_the_open_ring_is_round_dark_inside_and_stays_inside_its_patch():
+    from types import SimpleNamespace
+
+    from wardrobe.vrm import body_detail as BD
+
+    states = BD.load_states()
+    for name in ("doggy-anal-ring", "doggy-anal-ring-cum", "doggy-both-ring-cum"):
+        assert states[name]["set"]["anusRing"] == 1.0 and states[name]["body"]
+        assert not any(w in states[name]["body"] for w in ("torn", "blood", "bleed", "injur"))
+    marks = SimpleNamespace(
+        crotch=np.array([0.0, 0.80, 0.0]), forward=1.0, scale=1.0, axis_x=0.0,
+        nipples=(np.array([-0.09, 1.17, 0.1]), np.array([0.09, 1.17, 0.1])),
+    )
+    spec = {**BD.load_presets()["natural"], **states["doggy-anal-ring"]["set"]}
+    per, R = spec["perineum"], BD.RING_RADIUS
+    # On her midline behind the crotch: the centre, the rim, and 2.6 cm out (past the patch).
+    # BD30: the rim is probed along her cleft (the ring is narrow across it).
+    where = np.array([[0.0, 0.80 + 0.005, -per], [0.0, 0.80 + 0.005, -per - 0.7 * R], [0.026, 0.80 + 0.005, -per]])
+    shade = np.repeat([[200.0, 170.0, 160.0]], 3, axis=0)
+    out, _ = BD._paint(shade.copy(), where, marks, spec, 1.0, shade=False)
+    assert out[0].sum() < 0.45 * shade[0].sum()  # a dark centre
+    assert out[1][0] > out[1][1] + 25  # a pink rim
+    assert np.allclose(out[2][:2], shade[2][:2], atol=40)  # her own skin past the patch, near enough
+    h = BD._height(where, marks, spec, 1.0)
+    assert h[0] < h[1]  # the centre goes in, the rim stands up
+
+
+def test_bd29_her_crotch_is_on_her_midline_seam_not_the_inner_edge_of_a_thigh():
+    from types import SimpleNamespace
+
+    from wardrobe.vrm import body_detail as BD
+
+    h = 1.63
+    nip = lambda x: [x, h * 0.72, 0.12]  # noqa: E731 - in the nipple band, in front
+    seam = [[0.0, 0.80, -0.01 * i] for i in range(4)]  # her midline seam, lowest at 0.80 m
+    thighs = [[0.006, 0.76, 0.0], [-0.006, 0.76, 0.0]]  # thighs meeting 4 cm lower, 6 mm out
+    points = np.array([nip(0.09), nip(-0.09), *seam, *thighs, [0.0, 0.0, 0.0]])
+    marks = BD.find_landmarks(points, SimpleNamespace(height_m=h), 1.0, 0.0, 0.0)
+    assert marks is not None
+    assert marks.crotch[0] == 0.0 and abs(marks.crotch[1] - 0.80) < 1e-9
+    # No seam near it (covered, cut away): the old landmark stands.
+    marks = BD.find_landmarks(np.array([nip(0.09), nip(-0.09), *thighs, [0.0, 0.0, 0.0]]),
+                              SimpleNamespace(height_m=h), 1.0, 0.0, 0.0)
+    assert abs(marks.crotch[1] - 0.76) < 1e-9
+
+
+def test_bd30_colour_and_relief_share_the_ring_distance():
+    from wardrobe.vrm import body_detail as BD
+
+    spec = {**BD.load_presets()["natural"], **BD.load_states()["doggy-anal-ring"]["set"]}
+    per, R = spec["perineum"], BD.RING_RADIUS
+    u, t = np.array([0.0, 0.5 * R, 0.0]), np.array([-per, -per, -per - 0.5 * R])
+    d = BD._ring_distance(u, t, spec, 1.0)
+    assert d[0] == 0.0 and np.isclose(d[1], 0.5 * R / BD.RING_ASPECT) and np.isclose(d[2], 0.5 * R)
+    assert 0.0 < BD.RING_ASPECT <= 1.0
+
+
+def test_bd34_legata_e_spalancata_comes_in_three_strengths_of_marks():
+    from wardrobe.vrm import body_detail as BD
+
+    states = BD.load_states()
+    for base in ("sado-roped-open", "sado-whipped-open", "sado-both-fisted", "sado-both-fisted-cum"):
+        strong = states[base]["set"]
+        light = states[base.replace("sado-", "sado-light-", 1)]["set"]
+        soft = states[base.replace("sado-", "sado-soft-", 1)]["set"]
+        for key in ("ropeMarks", "welts", "collarMark"):
+            if key in strong:
+                assert 0 < soft[key] < light[key] < strong[key], (base, key)
+        # Everything else (her body, the gape, the cum) is the same in every strength.
+        rest = {k: v for k, v in strong.items() if k not in ("ropeMarks", "welts", "collarMark")}
+        assert {k: soft[k] for k in rest} == rest == {k: light[k] for k in rest}
+    assert states["sado-soft-roped-open"]["set"]["ropeMarks"] <= 0.15  # barely there, the default

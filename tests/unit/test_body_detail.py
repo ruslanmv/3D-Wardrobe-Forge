@@ -507,7 +507,9 @@ def test_fisted_anus_gapes_wide_dark_and_deep():
     base = BD.load_presets()["natural"]
     stretched = {**base, "anusOpen": 1.5}
     fisted = {**stretched, "anusGape": 1.0}
-    assert BD._anus_radius(fisted, 1.0) > 1.8 * BD._anus_radius(stretched, 1.0)
+    # BD27. Never wider than her compact patch (it stays on her pelvis as her legs bend): a gape
+    # reads as darker and deeper, not wider. At least as wide as stretched open.
+    assert BD._anus_radius(stretched, 1.0) <= BD._anus_radius(fisted, 1.0) <= BD.ANUS_RIM_LIMIT / 1.2 + 1e-9
     marks = _marks()
     anus = np.array([[0.0, 0.74, -base["perineum"]]])
     assert BD._height(anus, marks, fisted, 1.0)[0] < BD._height(anus, marks, stretched, 1.0)[0]
