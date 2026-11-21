@@ -8,6 +8,13 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      hidden_source:
+        description: "HS1: hide the code (the Space gets a loader only; the code goes to a private repository)"
+        required: false
+        default: "no"
+        type: choice
+        options: ["no", "yes"]
 
 concurrency:
   group: deploy-space
@@ -22,9 +29,15 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install "huggingface_hub[cli]>=0.34"
+      - uses: actions/setup-node@v4   # HS1: the Studio build travels with the hidden code
+        if: inputs.hidden_source == 'yes'
+        with:
+          node-version: "22"
       - name: Upload to the Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HIDDEN_SOURCE: ${{ inputs.hidden_source == 'yes' && '1' || '0' }}
+          HF_SOURCE_READ_TOKEN: ${{ secrets.HF_SOURCE_READ_TOKEN }}
         run: |
           if [ -z "$HF_TOKEN" ]; then
             echo "::warning::HF_TOKEN secret is not set; the Space was not updated."
