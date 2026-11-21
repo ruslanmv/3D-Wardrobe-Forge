@@ -12,7 +12,7 @@ on:
       hidden_source:
         description: "HS1: hide the code (the Space gets a loader only; the code goes to a private repository)"
         required: false
-        default: "yes"   # HS1. "yes" on the hidden-source test branch only; "no" on main/ultimate
+        default: "yes"   # HS1. the code stays hidden by default (verified on the Space 2026-11-21); "no" = the old full upload
         type: choice
         options: ["no", "yes"]
 

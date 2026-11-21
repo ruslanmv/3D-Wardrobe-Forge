@@ -22,6 +22,12 @@ its `src/wardrobe/`). Python ≥ 3.11, dependencies in `.venv/`.
 - **The Space deploys from `ultimate`, by hand:** Actions ▸ Deploy to Hugging Face Space ▸
   Run workflow ▸ branch `ultimate` (`deploy-space.yml` checks out the branch picked). A push
   to `main` also deploys — another reason never to touch it.
+- **The Space's code is hidden (HS1).** Deploy's `hidden_source` (default `yes`) uploads only a
+  loader to the Space (Dockerfile, `start.sh`, README, `requirements.txt`, `source.env`); the code goes
+  to the private dataset's `forge-source` branch, and `start.sh` downloads it at boot with the Space's
+  existing `HF_TOKEN` and `WARDROBE_HF_DATASET` — no new variable or secret. `no` is the old full
+  upload. Files: `deploy/huggingface/thin/`, the `HIDDEN_SOURCE` block in `deploy.sh`; checked
+  without uploading by `verify-space-deploy.yml`. A push to `main` (no inputs) is the full upload.
 - **A session cannot start workflows** (GitHub answers 403 to a dispatch from Claude Code):
   ask the owner to run Deploy, or Prebuild wardrobe (`missing_only` yes, `overwrite` no;
   `private_looks` yes for BD21 in a second run with `only` set to `none`; `slugs` limits it to
