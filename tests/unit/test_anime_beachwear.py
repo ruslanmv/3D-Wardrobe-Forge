@@ -115,10 +115,11 @@ def test_existing_occasions_keep_their_styles_and_looks():
     now = {o.id: [(s.id, list(s.looks)) for s in o.styles] for o in oc.OCCASIONS}
     before = {o["id"]: [(s["id"], s["looks"]) for s in o["styles"]] for o in PRESERVED["occasions"]}
     # Every occasion that existed is still here, in the same order; the only one added is the
-    # Anime Fan Service collection's own (docs/ANIME_FAN_SERVICE.md), never by this collection.
+    # Anime Fan Service collection's own (docs/ANIME_FAN_SERVICE.md), never by this collection,
+    # and AD1's After Dark (the full adult wardrobe as an occasion, added on purpose after it).
     ids = [o.id for o in oc.OCCASIONS]
     assert [i for i in ids if i in before] == list(before)
-    assert set(ids) - set(before) <= {"anime"}
+    assert set(ids) - set(before) <= {"anime", "after-dark"}
     for occasion, styles in before.items():
         # Every style that existed keeps its looks and its place among the others. The only
         # styles added are the Anime Fan Service collection's (anime-*) and this one.
